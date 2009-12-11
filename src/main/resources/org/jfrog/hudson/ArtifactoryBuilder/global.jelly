@@ -1,0 +1,33 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:section title="Artifactory">
+        <f:entry title="Artifactory servers"
+                 description="List of Artifactory servers that projects will want to deploy artifacts and build info to">
+            <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}">
+                <table width="100%">
+                    <f:entry title="URL" help="/plugin/hudson-artifactory-plugin/help-url.html">
+                        <f:textbox name="artifactory.url" value="${server.url}"/>
+                    </f:entry>
+                    <f:entry title="User Name"
+                             help="/plugin/hudson-artifactory-plugin/help-userName.html"
+                             description="If anonymous user is enabled in Artifactory server, you can leave the username/password empty">
+                        <f:textbox name="artifactory.userName" value="${server.userName}"
+                                   description="User with admin privileges"
+                                   checkMethod="post"/>
+                    </f:entry>
+                    <f:entry title="Password" help="/plugin/hudson-artifactory-plugin/help-password.html">
+                        <input class="setting-input" name="artifactory.password"
+                               type="password" value="${server.password}"
+                               onchange="Form.findMatchingInput(this,'artifactory.userName').onchange()"/>
+                    </f:entry>
+
+                    <f:entry title="">
+                        <div align="right">
+                            <f:repeatableDeleteButton/>
+                        </div>
+                    </f:entry>
+                </table>
+            </f:repeatable>
+        </f:entry>
+    </f:section>
+</j:jelly>

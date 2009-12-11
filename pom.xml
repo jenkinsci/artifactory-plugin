@@ -1,0 +1,69 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jvnet.hudson.plugins</groupId>
+        <artifactId>plugin</artifactId>
+        <version>1.336</version>
+    </parent>
+
+    <artifactId>artifactory</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>hpi</packaging>
+    <name>Artifactory Plugin</name>
+    <description>Integrates Artifactory to Hudson</description>
+    <url>http://wiki.hudson-ci.org/display/HUDSON/Artifactory+Plugin</url>
+
+    <developers>
+        <developer>
+            <id>yossis</id>
+            <name>Yossi Shaul</name>
+            <email>yossis@jfrog.org</email>
+            <roles>
+                <role>Lead Developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <organization>
+        <name>jFrog</name>
+        <url>http://www.jfrog.org</url>
+    </organization>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jvnet.hudson.main</groupId>
+            <artifactId>maven-plugin</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog</groupId>
+            <artifactId>jfrog-build-info-api</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.0</version>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>maven-glassfish</id>
+            <repositories>
+                <repository>
+                    <id>m.g.o-public</id>
+                    <url>http://maven.glassfish.org/content/groups/public/</url>
+                </repository>
+            </repositories>
+
+            <pluginRepositories>
+                <pluginRepository>
+                    <id>m.g.o-public</id>
+                    <url>http://maven.glassfish.org/content/groups/public/</url>
+                </pluginRepository>
+            </pluginRepositories>
+        </profile>
+    </profiles>
+</project>
