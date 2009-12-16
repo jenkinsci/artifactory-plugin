@@ -18,7 +18,7 @@ class BuildInfoResultAction implements Action {
     }
 
     public String getIconFileName() {
-        return "/plugin/hudson-artifactory-plugin/images/artifactory-icon.png";
+        return "/plugin/artifactory/images/artifactory-icon.png";
     }
 
     public String getDisplayName() {

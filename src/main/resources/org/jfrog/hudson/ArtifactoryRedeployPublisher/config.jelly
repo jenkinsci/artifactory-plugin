@@ -20,16 +20,16 @@
     </f:dropdownList>
 
     <f:entry title="${%Deployer username}" field="username"
-             help="/plugin/hudson-artifactory-plugin/ArtifactoryRedeployPublisher/help-userName.html">
+             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-userName.html">
         <f:textbox/>
     </f:entry>
     <f:entry title="${%Deployer password}" field="password"
-             help="/plugin/hudson-artifactory-plugin/ArtifactoryRedeployPublisher/help-password.html">
+             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-password.html">
         <f:password/>
     </f:entry>
     <f:advanced>
         <f:entry field="deployArtifacts"
-                 help="/plugin/hudson-artifactory-plugin/ArtifactoryRedeployPublisher/help-deployArtifacts.html">
+                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployArtifacts.html">
             <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
             <label class="attach-previous">${%Deploy maven artifacts}</label>
         </f:entry>
