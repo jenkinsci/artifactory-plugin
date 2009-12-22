@@ -35,10 +35,13 @@ public class ArtifactoryServer {
     private static final Logger log = Logger.getLogger(ArtifactoryServer.class.getName());
 
     private static final String LOCAL_REPOS_REST_RUL = "/api/repositories?repoType=local";
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 120000;    // 2 Minutes
 
     private final String url;
     private final String userName;
     private final String password;    // base64 scrambled password
+    // Network timeout in milliseconds to use both for connection establishment and for unanswered requests
+    private int timeout = DEFAULT_CONNECTION_TIMEOUT;
 
     /**
      * List of repository keys, last time we checked. Copy on write semantics.
@@ -46,10 +49,11 @@ public class ArtifactoryServer {
     private transient volatile List<String> repositories;
 
     @DataBoundConstructor
-    public ArtifactoryServer(String url, String userName, String password) {
+    public ArtifactoryServer(String url, String userName, String password, int timeout) {
         this.url = url;
         this.userName = userName;
         this.password = Scrambler.scramble(password);
+        this.timeout = timeout > 0 ? timeout : DEFAULT_CONNECTION_TIMEOUT;
     }
 
     public String getName() {
@@ -66,6 +70,10 @@ public class ArtifactoryServer {
 
     public String getPassword() {
         return Scrambler.descramble(password);
+    }
+
+    public int getTimeout() {
+        return timeout;
     }
 
     public List<String> getRepositoryKeys() {
@@ -101,8 +109,8 @@ public class ArtifactoryServer {
 
     public DefaultHttpClient createHttpClient(String userName, String password) {
         BasicHttpParams params = new BasicHttpParams();
-        HttpConnectionParams.setConnectionTimeout(params, 5000);
-        HttpConnectionParams.setSoTimeout(params, 20000);
+        HttpConnectionParams.setConnectionTimeout(params, timeout);
+        HttpConnectionParams.setSoTimeout(params, timeout);
         DefaultHttpClient client = new DefaultHttpClient(params);
 
         if (userName != null && !"".equals(userName)) {

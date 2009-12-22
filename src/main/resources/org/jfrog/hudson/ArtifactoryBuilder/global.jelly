@@ -21,6 +21,11 @@
                                onchange="Form.findMatchingInput(this,'artifactory.userName').onchange()"/>
                     </f:entry>
 
+                    <f:advanced>
+                        <f:entry title="Connection Timeout" help="/plugin/artifactory/help-timeout.html">
+                            <f:textbox clazz="number" name="artifactory.timeout" value="${server.timeout}"/>
+                        </f:entry>
+                    </f:advanced>
                     <f:entry title="">
                         <div align="right">
                             <f:repeatableDeleteButton/>
