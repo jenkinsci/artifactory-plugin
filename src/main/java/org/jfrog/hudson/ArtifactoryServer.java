@@ -1,22 +1,13 @@
 package org.jfrog.hudson;
 
-import hudson.ProxyConfiguration;
-import hudson.model.Hudson;
 import hudson.util.Scrambler;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.conn.params.ConnRoutePNames;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpConnectionParams;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -78,7 +69,7 @@ public class ArtifactoryServer {
 
     public List<String> getRepositoryKeys() {
         try {
-            DefaultHttpClient httpclient = createHttpClient(userName, getPassword());
+            PreemptiveHttpClient httpclient = createHttpClient(userName, getPassword());
 
             String localReposUrl = url + LOCAL_REPOS_REST_RUL;
             HttpGet httpget = new HttpGet(localReposUrl);
@@ -107,31 +98,7 @@ public class ArtifactoryServer {
         return repositories;
     }
 
-    public DefaultHttpClient createHttpClient(String userName, String password) {
-        BasicHttpParams params = new BasicHttpParams();
-        HttpConnectionParams.setConnectionTimeout(params, timeout);
-        HttpConnectionParams.setSoTimeout(params, timeout);
-        DefaultHttpClient client = new DefaultHttpClient(params);
-
-        if (userName != null && !"".equals(userName)) {
-            client.getCredentialsProvider().setCredentials(
-                    new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT),
-                    new UsernamePasswordCredentials(userName, password)
-            );
-        }
-
-        ProxyConfiguration proxyConfiguration = Hudson.getInstance().proxy;
-        if (proxyConfiguration != null) {
-            HttpHost proxy = new HttpHost(proxyConfiguration.name, proxyConfiguration.port);
-            client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
-            if (proxyConfiguration.getUserName() != null) {
-                client.getCredentialsProvider().setCredentials(
-                        new AuthScope(proxyConfiguration.name, proxyConfiguration.port),
-                        new UsernamePasswordCredentials(proxyConfiguration.getUserName(),
-                                proxyConfiguration.getPassword())
-                );
-            }
-        }
-        return client;
+    public PreemptiveHttpClient createHttpClient(String userName, String password) {
+        return new PreemptiveHttpClient(userName, password, timeout);
     }
 }

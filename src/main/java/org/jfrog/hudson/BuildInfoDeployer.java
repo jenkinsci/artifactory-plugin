@@ -15,7 +15,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.artifactory.build.api.Agent;
 import org.artifactory.build.api.Artifact;
 import org.artifactory.build.api.Build;
@@ -31,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Builds and deployes the build info.
+ * Builds and deploys the build info.
  *
  * @author Yossi Shaul
  */
@@ -160,7 +159,7 @@ public class BuildInfoDeployer {
         String restUrl = "api/build";
         String url = publisher.getArtifactoryName() + "/" + restUrl;
         JSONObject buildInfoJson = JSONObject.fromObject(buildInfo);
-        DefaultHttpClient httpClient =
+        PreemptiveHttpClient httpClient =
                 publisher.getArtifactoryServer().createHttpClient(
                         publisher.getUsername(), publisher.getPassword());
         HttpPut httpPut = new HttpPut(url);

@@ -11,10 +11,8 @@ import hudson.model.BuildListener;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.FileEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,7 +22,7 @@ import java.net.URLEncoder;
 import java.util.Map;
 
 /**
- * Deployes artifacts to Artifactory.
+ * Deploys artifacts to Artifactory.
  *
  * @author Yossi Shaul
  */
@@ -51,7 +49,7 @@ public class ArtifactsDeployer {
 
     public void deploy() throws IOException {
         listener.getLogger().println("Deploying artifacts to " + artifactoryServer.getUrl());
-        DefaultHttpClient client = artifactoryServer.createHttpClient(
+        PreemptiveHttpClient client = artifactoryServer.createHttpClient(
                 artifactoryPublisher.getUsername(), artifactoryPublisher.getPassword());
         MavenAggregatedArtifactRecord mar2 = (MavenAggregatedArtifactRecord) mar;
         MavenModuleSetBuild moduleSetBuild = mar2.getBuild();
@@ -70,10 +68,10 @@ public class ArtifactsDeployer {
                 deployArtifact(client, mavenBuild, attachedArtifact);
             }
         }
-        client.getConnectionManager().shutdown();
+        client.shutdown();
     }
 
-    private void deployArtifact(DefaultHttpClient client, MavenBuild mavenBuild, MavenArtifact mavenArtifact)
+    private void deployArtifact(PreemptiveHttpClient client, MavenBuild mavenBuild, MavenArtifact mavenArtifact)
             throws IOException {
         String artifactPath = buildArtifactPath(mavenArtifact);
         StringBuilder deploymentPath = new StringBuilder();
@@ -118,7 +116,7 @@ public class ArtifactsDeployer {
     /**
      * Send the file to the server
      */
-    private void uploadFile(HttpClient client, File file, String uploadUrl) throws IOException {
+    void uploadFile(PreemptiveHttpClient client, File file, String uploadUrl) throws IOException {
         HttpPut httpPut = new HttpPut(uploadUrl);
         FileEntity fileEntity = new FileEntity(file, "binary/octet-stream");
         httpPut.setEntity(fileEntity);
