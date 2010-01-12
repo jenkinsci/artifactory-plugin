@@ -4,6 +4,7 @@ import hudson.util.Scrambler;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -41,7 +42,7 @@ public class ArtifactoryServer {
 
     @DataBoundConstructor
     public ArtifactoryServer(String url, String userName, String password, int timeout) {
-        this.url = url;
+        this.url = StringUtils.removeEnd(url, "/");
         this.userName = userName;
         this.password = Scrambler.scramble(password);
         this.timeout = timeout > 0 ? timeout : DEFAULT_CONNECTION_TIMEOUT;
