@@ -11,6 +11,7 @@ import hudson.model.CauseAction;
 import hudson.model.Hudson;
 import hudson.tasks.Fingerprinter;
 import net.sf.json.JSONObject;
+import net.sf.json.JsonConfig;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPut;
@@ -158,7 +159,7 @@ public class BuildInfoDeployer {
     private void sendBuildInfo(Build buildInfo) throws IOException {
         String restUrl = "api/build";
         String url = publisher.getArtifactoryName() + "/" + restUrl;
-        JSONObject buildInfoJson = JSONObject.fromObject(buildInfo);
+        JSONObject buildInfoJson = buildInfoToJsonObject(buildInfo);
         PreemptiveHttpClient httpClient =
                 publisher.getArtifactoryServer().createHttpClient(
                         publisher.getUsername(), publisher.getPassword());
@@ -174,5 +175,14 @@ public class BuildInfoDeployer {
         if (response.getStatusLine().getStatusCode() != HttpStatus.SC_NO_CONTENT) {
             throw new IOException("Failed to send build info: " + response.getStatusLine().getReasonPhrase());
         }
+    }
+
+    JSONObject buildInfoToJsonObject(Build buildInfo) {
+        JsonConfig jsonConfig = new JsonConfig();
+        // hudson 1.340 (or 1.339) changed the json object builder and added this public static final filed
+        // as a quick fix we exclude it explicitly
+        jsonConfig.setExcludes(new String[]{"STARTED_FORMAT"});
+        JSONObject buildInfoJson = JSONObject.fromObject(buildInfo, jsonConfig);
+        return buildInfoJson;
     }
 }
