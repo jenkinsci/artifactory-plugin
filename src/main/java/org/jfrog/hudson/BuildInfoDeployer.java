@@ -10,8 +10,6 @@ import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Hudson;
 import hudson.tasks.Fingerprinter;
-import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPut;
@@ -23,8 +21,13 @@ import org.artifactory.build.api.BuildType;
 import org.artifactory.build.api.builder.BuildInfoBuilder;
 import org.artifactory.build.api.builder.DependencyBuilder;
 import org.artifactory.build.api.builder.ModuleBuilder;
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.introspect.JacksonAnnotationIntrospector;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Map;
@@ -159,12 +162,12 @@ public class BuildInfoDeployer {
     private void sendBuildInfo(Build buildInfo) throws IOException {
         String restUrl = "api/build";
         String url = publisher.getArtifactoryName() + "/" + restUrl;
-        JSONObject buildInfoJson = buildInfoToJsonObject(buildInfo);
         PreemptiveHttpClient httpClient =
                 publisher.getArtifactoryServer().createHttpClient(
                         publisher.getUsername(), publisher.getPassword());
         HttpPut httpPut = new HttpPut(url);
-        StringEntity stringEntity = new StringEntity(buildInfoJson.toString());
+        String buildInfoJson = buildInfoToJsonString(buildInfo);
+        StringEntity stringEntity = new StringEntity(buildInfoJson);
         stringEntity.setContentType("application/vnd.org.jfrog.artifactory+json");
         httpPut.setEntity(stringEntity);
         listener.getLogger().println("Deploying build info to: " + url);
@@ -177,12 +180,17 @@ public class BuildInfoDeployer {
         }
     }
 
-    JSONObject buildInfoToJsonObject(Build buildInfo) {
-        JsonConfig jsonConfig = new JsonConfig();
-        // hudson 1.340 (or 1.339) changed the json object builder and added this public static final filed
-        // as a quick fix we exclude it explicitly
-        jsonConfig.setExcludes(new String[]{"STARTED_FORMAT"});
-        JSONObject buildInfoJson = JSONObject.fromObject(buildInfo, jsonConfig);
-        return buildInfoJson;
+    String buildInfoToJsonString(Build buildInfo) throws IOException {
+        JsonFactory jsonFactory = new JsonFactory();
+        StringWriter writer = new StringWriter();
+        JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(writer);
+        ObjectMapper mapper = new ObjectMapper(jsonFactory);
+        mapper.getSerializationConfig().setAnnotationIntrospector(new JacksonAnnotationIntrospector());
+        jsonGenerator.setCodec(mapper);
+        //jsonGenerator.useDefaultPrettyPrinter();
+
+        jsonGenerator.writeObject(buildInfo);
+        String result = writer.getBuffer().toString();
+        return result;
     }
 }
