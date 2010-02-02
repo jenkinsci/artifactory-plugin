@@ -18,6 +18,7 @@ import org.artifactory.build.api.Agent;
 import org.artifactory.build.api.Artifact;
 import org.artifactory.build.api.Build;
 import org.artifactory.build.api.BuildType;
+import org.artifactory.build.api.builder.ArtifactBuilder;
 import org.artifactory.build.api.builder.BuildInfoBuilder;
 import org.artifactory.build.api.builder.DependencyBuilder;
 import org.artifactory.build.api.builder.ModuleBuilder;
@@ -143,11 +144,11 @@ public class BuildInfoDeployer {
     }
 
     private Artifact toArtifact(MavenArtifact mavenArtifact, MavenBuild mavenBuild) {
-        Artifact artifact = new Artifact();
-        artifact.setName(mavenArtifact.canonicalName);
-        artifact.setType(mavenArtifact.type);
-        artifact.setMd5(getMd5(mavenArtifact.groupId, mavenArtifact.fileName, mavenBuild));
-        return artifact;
+        ArtifactBuilder artifactBuilder = new ArtifactBuilder()
+                .name(mavenArtifact.canonicalName)
+                .type(mavenArtifact.type)
+                .md5(getMd5(mavenArtifact.groupId, mavenArtifact.fileName, mavenBuild));
+        return artifactBuilder.build();
     }
 
     private String getMd5(String groupId, String fileName, MavenBuild mavenBuild) {
