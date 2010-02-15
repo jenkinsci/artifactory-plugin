@@ -19,6 +19,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -55,20 +56,30 @@ public class ArtifactsDeployer {
         MavenModuleSetBuild moduleSetBuild = mar2.getBuild();
         Map<MavenModule, MavenBuild> mavenBuildMap = moduleSetBuild.getModuleLastBuilds();
         for (Map.Entry<MavenModule, MavenBuild> mavenBuildEntry : mavenBuildMap.entrySet()) {
-            MavenBuild mavenBuild = mavenBuildEntry.getValue();
-            MavenArtifactRecord mar = mavenBuild.getAction(MavenArtifactRecord.class);
             listener.getLogger().println("Deploying artifacts of module: " + mavenBuildEntry.getKey().getName());
+            MavenBuild mavenBuild = mavenBuildEntry.getValue();
+            MavenArtifactRecord mar = getLatestMavenArtifactRecord(mavenBuild);
             MavenArtifact mavenArtifact = mar.mainArtifact;
+            // deploy main artifact
             deployArtifact(client, mavenBuild, mavenArtifact);
             if (!mar.isPOM()) {
+                // deploy the pom if the main artifact is not the pom
                 deployArtifact(client, mavenBuild, mar.pomArtifact);
             }
 
+            // deploy attached artifacts
             for (MavenArtifact attachedArtifact : mar.attachedArtifacts) {
                 deployArtifact(client, mavenBuild, attachedArtifact);
             }
         }
         client.shutdown();
+    }
+
+    private MavenArtifactRecord getLatestMavenArtifactRecord(MavenBuild mavenBuild) {
+        // one module may produce multiple MavenArtifactRecord entries, the last one contains all the info we need
+        // (previous ones might only contain partial information, eg, only main artifact)
+        List<MavenArtifactRecord> records = mavenBuild.getActions(MavenArtifactRecord.class);
+        return records.get(records.size() - 1);
     }
 
     private void deployArtifact(PreemptiveHttpClient client, MavenBuild mavenBuild, MavenArtifact mavenArtifact)
