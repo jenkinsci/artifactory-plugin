@@ -77,6 +77,7 @@ public class MavenDependenciesRecorder extends MavenReporter {
                 mavenDependency.classifier = dependency.getClassifier();
                 mavenDependency.scope = dependency.getScope();
                 mavenDependency.fileName = dependency.getFile().getName();
+                mavenDependency.type = dependency.getType();
                 dependencies.add(mavenDependency);
             }
         }
