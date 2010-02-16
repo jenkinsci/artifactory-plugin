@@ -13,13 +13,13 @@ import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.FileEntity;
+import org.jfrog.hudson.util.ActionableHelper;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -58,7 +58,7 @@ public class ArtifactsDeployer {
         for (Map.Entry<MavenModule, MavenBuild> mavenBuildEntry : mavenBuildMap.entrySet()) {
             listener.getLogger().println("Deploying artifacts of module: " + mavenBuildEntry.getKey().getName());
             MavenBuild mavenBuild = mavenBuildEntry.getValue();
-            MavenArtifactRecord mar = getLatestMavenArtifactRecord(mavenBuild);
+            MavenArtifactRecord mar = ActionableHelper.getLatestMavenArtifactRecord(mavenBuild);
             MavenArtifact mavenArtifact = mar.mainArtifact;
             // deploy main artifact
             deployArtifact(client, mavenBuild, mavenArtifact);
@@ -73,13 +73,6 @@ public class ArtifactsDeployer {
             }
         }
         client.shutdown();
-    }
-
-    private MavenArtifactRecord getLatestMavenArtifactRecord(MavenBuild mavenBuild) {
-        // one module may produce multiple MavenArtifactRecord entries, the last one contains all the info we need
-        // (previous ones might only contain partial information, eg, only main artifact)
-        List<MavenArtifactRecord> records = mavenBuild.getActions(MavenArtifactRecord.class);
-        return records.get(records.size() - 1);
     }
 
     private void deployArtifact(PreemptiveHttpClient client, MavenBuild mavenBuild, MavenArtifact mavenArtifact)

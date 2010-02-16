@@ -26,6 +26,7 @@ import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.introspect.JacksonAnnotationIntrospector;
+import org.jfrog.hudson.util.ActionableHelper;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -109,7 +110,7 @@ public class BuildInfoDeployer {
         for (Map.Entry<MavenModule, MavenBuild> moduleBuild : mavenBuildMap.entrySet()) {
             MavenModule mavenModule = moduleBuild.getKey();
             MavenBuild mavenBuild = moduleBuild.getValue();
-            MavenArtifactRecord mar = mavenBuild.getAction(MavenArtifactRecord.class);
+            MavenArtifactRecord mar = ActionableHelper.getLatestMavenArtifactRecord(mavenBuild);
             String moduleId = mavenModule.getName() + ":" + mavenModule.getVersion();
             ModuleBuilder moduleBuilder = new ModuleBuilder().id(moduleId);
 
