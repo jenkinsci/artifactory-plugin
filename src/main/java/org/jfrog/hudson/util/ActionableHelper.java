@@ -1,7 +1,9 @@
 package org.jfrog.hudson.util;
 
+import hudson.maven.AbstractMavenBuild;
 import hudson.maven.MavenBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
+import hudson.model.Action;
 
 import java.util.List;
 
@@ -11,9 +13,17 @@ import java.util.List;
 public class ActionableHelper {
 
     public static MavenArtifactRecord getLatestMavenArtifactRecord(MavenBuild mavenBuild) {
-        // one module may produce multiple MavenArtifactRecord entries, the last one contains all the info we need
+        return getLatestAction(mavenBuild, MavenArtifactRecord.class);
+    }
+
+    public static <T extends Action> T getLatestAction(AbstractMavenBuild mavenBuild, Class<T> actionClass) {
+        // one module may produce multiple action entries of the same type, the last one contains all the info we need
         // (previous ones might only contain partial information, eg, only main artifact)
-        List<MavenArtifactRecord> records = mavenBuild.getActions(MavenArtifactRecord.class);
-        return records.get(records.size() - 1);
+        List<T> records = mavenBuild.getActions(actionClass);
+        if (records == null || records.isEmpty()) {
+            return null;
+        } else {
+            return records.get(records.size() - 1);
+        }
     }
 }

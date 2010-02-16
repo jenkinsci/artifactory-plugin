@@ -78,7 +78,7 @@ public class BuildInfoDeployer {
         ArtifactoryServer server = publisher.getArtifactoryServer();
         infoBuilder.artifactoryPrincipal(server.getUserName());
 
-        CauseAction action = build.getAction(CauseAction.class);
+        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
         if (action != null) {
             for (Cause cause : action.getCauses()) {
                 if (cause instanceof Cause.UserCause) {
@@ -130,7 +130,8 @@ public class BuildInfoDeployer {
     }
 
     private void addDependencies(ModuleBuilder moduleBuilder, MavenBuild mavenBuild) {
-        MavenDependenciesRecord dependenciesRecord = mavenBuild.getAction(MavenDependenciesRecord.class);
+        MavenDependenciesRecord dependenciesRecord =
+                ActionableHelper.getLatestAction(mavenBuild, MavenDependenciesRecord.class);
         if (dependenciesRecord != null) {
             Set<MavenDependency> dependencies = dependenciesRecord.getDependencies();
             for (MavenDependency dependency : dependencies) {
@@ -154,7 +155,8 @@ public class BuildInfoDeployer {
 
     private String getMd5(String groupId, String fileName, MavenBuild mavenBuild) {
         String md5 = null;
-        Fingerprinter.FingerprintAction fingerprint = mavenBuild.getAction(Fingerprinter.FingerprintAction.class);
+        Fingerprinter.FingerprintAction fingerprint = ActionableHelper.getLatestAction(
+                mavenBuild, Fingerprinter.FingerprintAction.class);
         if (fingerprint != null) {
             md5 = fingerprint.getRecords().get(groupId + ":" + fileName);
         }
