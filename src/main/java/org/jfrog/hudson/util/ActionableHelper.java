@@ -2,8 +2,11 @@ package org.jfrog.hudson.util;
 
 import hudson.maven.AbstractMavenBuild;
 import hudson.maven.MavenBuild;
+import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.Action;
+import hudson.model.Cause;
+import hudson.model.CauseAction;
 
 import java.util.List;
 
@@ -25,5 +28,17 @@ public class ActionableHelper {
         } else {
             return records.get(records.size() - 1);
         }
+    }
+
+    public static Cause.UpstreamCause getUpstreamCause(MavenModuleSetBuild build) {
+        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
+        if (action != null) {
+            for (Cause cause : action.getCauses()) {
+                if (cause instanceof Cause.UpstreamCause) {
+                    return (Cause.UpstreamCause) cause;
+                }
+            }
+        }
+        return null;
     }
 }

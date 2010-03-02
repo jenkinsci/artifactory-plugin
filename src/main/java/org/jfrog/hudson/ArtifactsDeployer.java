@@ -8,6 +8,7 @@ import hudson.maven.reporters.MavenAggregatedArtifactRecord;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.BuildListener;
+import hudson.model.Cause;
 import org.artifactory.build.client.ArtifactoryBuildInfoClient;
 import org.artifactory.build.client.DeployDetails;
 import org.jfrog.hudson.util.ActionableHelper;
@@ -71,12 +72,21 @@ public class ArtifactsDeployer {
             throws IOException {
         String artifactPath = buildArtifactPath(mavenArtifact);
         File artifactFile = getArtifactFile(mavenBuild, mavenArtifact);
-        DeployDetails deployDetails = new DeployDetails.Builder()
+
+        DeployDetails.Builder builder = new DeployDetails.Builder()
                 .file(artifactFile)
                 .artifactPath(artifactPath)
                 .targetRepository(targetRepository)
                 .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
-                .addProperty("build.number", mavenModuleSetBuild.getNumber() + "").build();
+                .addProperty("build.number", mavenModuleSetBuild.getNumber() + "");
+
+        Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(mavenModuleSetBuild);
+        if (parent != null) {
+            builder.addProperty("build.parentName", parent.getUpstreamProject())
+                    .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
+        }
+
+        DeployDetails deployDetails = builder.build();
 
         String deploymentPath = artifactoryServer.getUrl() + "/" + targetRepository + "/" + artifactPath;
         listener.getLogger().println("Deploying artifact: " + deploymentPath);

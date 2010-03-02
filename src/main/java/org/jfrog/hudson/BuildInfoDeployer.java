@@ -80,6 +80,13 @@ public class BuildInfoDeployer {
             }
         }
 
+        Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
+        if (parent != null) {
+            String parentProject = parent.getUpstreamProject();
+            int buildNumber = parent.getUpstreamBuild();
+            infoBuilder.parentBuildId(parentProject + ":" + buildNumber);
+        }
+
         gatherModuleAndDependencyInfo(infoBuilder, build);
 
         gatherSysPropInfo(infoBuilder);
