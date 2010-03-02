@@ -10,10 +10,6 @@ import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Hudson;
 import hudson.tasks.Fingerprinter;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.StringEntity;
 import org.artifactory.build.api.Agent;
 import org.artifactory.build.api.Artifact;
 import org.artifactory.build.api.Build;
@@ -22,14 +18,10 @@ import org.artifactory.build.api.builder.ArtifactBuilder;
 import org.artifactory.build.api.builder.BuildInfoBuilder;
 import org.artifactory.build.api.builder.DependencyBuilder;
 import org.artifactory.build.api.builder.ModuleBuilder;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.introspect.JacksonAnnotationIntrospector;
+import org.artifactory.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.util.ActionableHelper;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Map;
@@ -42,25 +34,26 @@ import java.util.Set;
  */
 public class BuildInfoDeployer {
     private final ArtifactoryRedeployPublisher publisher;
+    private final ArtifactoryBuildInfoClient client;
     private final MavenModuleSetBuild build;
     private final BuildListener listener;
 
-    public BuildInfoDeployer(ArtifactoryRedeployPublisher publisher, MavenModuleSetBuild build,
-            BuildListener listener) {
+    public BuildInfoDeployer(ArtifactoryRedeployPublisher publisher, ArtifactoryBuildInfoClient client,
+            MavenModuleSetBuild build, BuildListener listener) {
         this.publisher = publisher;
+        this.client = client;
         this.build = build;
         this.listener = listener;
     }
 
     public void deploy() throws IOException {
         Build buildInfo = gatherBuildInfo(build);
-
-        sendBuildInfo(buildInfo);
+        listener.getLogger().println("Deploying build info ...");
+        client.sendBuildInfo(buildInfo);
     }
 
     private Build gatherBuildInfo(MavenModuleSetBuild build) {
-        BuildInfoBuilder infoBuilder = new BuildInfoBuilder()
-                .name(build.getParent().getDisplayName())
+        BuildInfoBuilder infoBuilder = new BuildInfoBuilder(build.getParent().getDisplayName())
                 .number(build.getNumber())
                 .type(BuildType.MAVEN)
                 .agent(new Agent("hudson", build.getHudsonVersion()));
@@ -116,7 +109,7 @@ public class BuildInfoDeployer {
 
             // add artifacts
             moduleBuilder.addArtifact(toArtifact(mar.mainArtifact, mavenBuild));
-            if (!mar.isPOM() && mar.pomArtifact != null) {
+            if (!mar.isPOM() && mar.pomArtifact != null && mar.pomArtifact != mar.mainArtifact) {
                 moduleBuilder.addArtifact(toArtifact(mar.pomArtifact, mavenBuild));
             }
             for (MavenArtifact attachedArtifact : mar.attachedArtifacts) {
@@ -161,40 +154,5 @@ public class BuildInfoDeployer {
             md5 = fingerprint.getRecords().get(groupId + ":" + fileName);
         }
         return md5;
-    }
-
-    private void sendBuildInfo(Build buildInfo) throws IOException {
-        String restUrl = "api/build";
-        String url = publisher.getArtifactoryName() + "/" + restUrl;
-        PreemptiveHttpClient httpClient =
-                publisher.getArtifactoryServer().createHttpClient(
-                        publisher.getUsername(), publisher.getPassword());
-        HttpPut httpPut = new HttpPut(url);
-        String buildInfoJson = buildInfoToJsonString(buildInfo);
-        StringEntity stringEntity = new StringEntity(buildInfoJson);
-        stringEntity.setContentType("application/vnd.org.jfrog.artifactory+json");
-        httpPut.setEntity(stringEntity);
-        listener.getLogger().println("Deploying build info to: " + url);
-        HttpResponse response = httpClient.execute(httpPut);
-        if (response.getEntity() != null) {
-            response.getEntity().consumeContent();
-        }
-        if (response.getStatusLine().getStatusCode() != HttpStatus.SC_NO_CONTENT) {
-            throw new IOException("Failed to send build info: " + response.getStatusLine().getReasonPhrase());
-        }
-    }
-
-    String buildInfoToJsonString(Build buildInfo) throws IOException {
-        JsonFactory jsonFactory = new JsonFactory();
-        StringWriter writer = new StringWriter();
-        JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(writer);
-        ObjectMapper mapper = new ObjectMapper(jsonFactory);
-        mapper.getSerializationConfig().setAnnotationIntrospector(new JacksonAnnotationIntrospector());
-        jsonGenerator.setCodec(mapper);
-        //jsonGenerator.useDefaultPrettyPrinter();
-
-        jsonGenerator.writeObject(buildInfo);
-        String result = writer.getBuffer().toString();
-        return result;
     }
 }

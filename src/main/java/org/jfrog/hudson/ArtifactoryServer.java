@@ -1,19 +1,13 @@
 package org.jfrog.hudson;
 
+import hudson.ProxyConfiguration;
+import hudson.model.Hudson;
 import hudson.util.Scrambler;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpGet;
+import org.artifactory.build.client.ArtifactoryBuildInfoClient;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,7 +20,6 @@ import java.util.logging.Logger;
 public class ArtifactoryServer {
     private static final Logger log = Logger.getLogger(ArtifactoryServer.class.getName());
 
-    private static final String LOCAL_REPOS_REST_RUL = "/api/repositories?repoType=local";
     private static final int DEFAULT_CONNECTION_TIMEOUT = 120000;    // 2 Minutes
 
     private final String url;
@@ -70,28 +63,8 @@ public class ArtifactoryServer {
 
     public List<String> getRepositoryKeys() {
         try {
-            PreemptiveHttpClient httpclient = createHttpClient(userName, getPassword());
-
-            String localReposUrl = url + LOCAL_REPOS_REST_RUL;
-            HttpGet httpget = new HttpGet(localReposUrl);
-            HttpResponse response = httpclient.execute(httpget);
-            if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-                log.warning("Failed to obtain list of repositories: " + response.getStatusLine());
-                repositories = Collections.emptyList();
-            } else {
-                HttpEntity entity = response.getEntity();
-                if (entity != null) {
-                    repositories = new ArrayList<String>();
-                    String result = IOUtils.toString(entity.getContent());
-                    log.fine("repositories result = " + result);
-                    JSONArray jsonArray = JSONArray.fromObject(result);
-                    for (Object o : jsonArray) {
-                        JSONObject jsonObject = (JSONObject) o;
-                        String repositoryKey = jsonObject.getString("key");
-                        repositories.add(repositoryKey);
-                    }
-                }
-            }
+            ArtifactoryBuildInfoClient client = createArtifactoryClient(userName, getPassword());
+            repositories = client.getLocalRepositoriesKeys();
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to obtain list of repositories: " + e.getMessage());
         }
@@ -99,7 +72,18 @@ public class ArtifactoryServer {
         return repositories;
     }
 
-    public PreemptiveHttpClient createHttpClient(String userName, String password) {
-        return new PreemptiveHttpClient(userName, password, timeout);
+    public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password) {
+        ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password);
+        client.setConnectionTimeout(timeout);
+
+        ProxyConfiguration proxyConfiguration = Hudson.getInstance().proxy;
+        if (proxyConfiguration != null) {
+            client.setProxyConfiguration(proxyConfiguration.name,
+                    proxyConfiguration.port,
+                    proxyConfiguration.getUserName(),
+                    proxyConfiguration.getPassword());
+        }
+
+        return client;
     }
 }

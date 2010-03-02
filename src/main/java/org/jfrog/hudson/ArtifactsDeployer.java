@@ -8,18 +8,13 @@ import hudson.maven.reporters.MavenAggregatedArtifactRecord;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.BuildListener;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.FileEntity;
+import org.artifactory.build.client.ArtifactoryBuildInfoClient;
+import org.artifactory.build.client.DeployDetails;
 import org.jfrog.hudson.util.ActionableHelper;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.Map;
 
 /**
@@ -32,15 +27,15 @@ public class ArtifactsDeployer {
 
     private final ArtifactoryServer artifactoryServer;
     private final String targetRepository;
-    private final ArtifactoryRedeployPublisher artifactoryPublisher;
+    private final ArtifactoryBuildInfoClient client;
     private final MavenModuleSetBuild mavenModuleSetBuild;
     private final MavenAbstractArtifactRecord mar;
     private final BuildListener listener;
 
 
-    public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher,
+    public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
             MavenModuleSetBuild mavenModuleSetBuild, MavenAbstractArtifactRecord mar, BuildListener listener) {
-        this.artifactoryPublisher = artifactoryPublisher;
+        this.client = client;
         this.mavenModuleSetBuild = mavenModuleSetBuild;
         this.mar = mar;
         this.listener = listener;
@@ -50,8 +45,6 @@ public class ArtifactsDeployer {
 
     public void deploy() throws IOException {
         listener.getLogger().println("Deploying artifacts to " + artifactoryServer.getUrl());
-        PreemptiveHttpClient client = artifactoryServer.createHttpClient(
-                artifactoryPublisher.getUsername(), artifactoryPublisher.getPassword());
         MavenAggregatedArtifactRecord mar2 = (MavenAggregatedArtifactRecord) mar;
         MavenModuleSetBuild moduleSetBuild = mar2.getBuild();
         Map<MavenModule, MavenBuild> mavenBuildMap = moduleSetBuild.getModuleLastBuilds();
@@ -61,35 +54,33 @@ public class ArtifactsDeployer {
             MavenArtifactRecord mar = ActionableHelper.getLatestMavenArtifactRecord(mavenBuild);
             MavenArtifact mavenArtifact = mar.mainArtifact;
             // deploy main artifact
-            deployArtifact(client, mavenBuild, mavenArtifact);
-            if (!mar.isPOM()) {
+            deployArtifact(mavenBuild, mavenArtifact);
+            if (!mar.isPOM() && mar.pomArtifact != null && mar.pomArtifact != mar.mainArtifact) {
                 // deploy the pom if the main artifact is not the pom
-                deployArtifact(client, mavenBuild, mar.pomArtifact);
+                deployArtifact(mavenBuild, mar.pomArtifact);
             }
 
             // deploy attached artifacts
             for (MavenArtifact attachedArtifact : mar.attachedArtifacts) {
-                deployArtifact(client, mavenBuild, attachedArtifact);
+                deployArtifact(mavenBuild, attachedArtifact);
             }
         }
-        client.shutdown();
     }
 
-    private void deployArtifact(PreemptiveHttpClient client, MavenBuild mavenBuild, MavenArtifact mavenArtifact)
+    private void deployArtifact(MavenBuild mavenBuild, MavenArtifact mavenArtifact)
             throws IOException {
         String artifactPath = buildArtifactPath(mavenArtifact);
-        StringBuilder deploymentPath = new StringBuilder();
-        deploymentPath.append(artifactoryServer.getUrl()).append("/").append(targetRepository)
-                .append("/").append(artifactPath)
-                .append(";build.name=").append(urlEncode(mavenModuleSetBuild.getParent().getDisplayName()))
-                .append(";build.number=").append(urlEncode(mavenModuleSetBuild.getNumber() + ""));
-        File mainArtifactFile = getArtifactFile(mavenBuild, mavenArtifact);
-        listener.getLogger().println("Deploying artifact: " + deploymentPath);
-        uploadFile(client, mainArtifactFile, deploymentPath.toString());
-    }
+        File artifactFile = getArtifactFile(mavenBuild, mavenArtifact);
+        DeployDetails deployDetails = new DeployDetails.Builder()
+                .file(artifactFile)
+                .artifactPath(artifactPath)
+                .targetRepository(targetRepository)
+                .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
+                .addProperty("build.number", mavenModuleSetBuild.getNumber() + "").build();
 
-    private String urlEncode(String value) throws UnsupportedEncodingException {
-        return URLEncoder.encode(value, "UTF-8");
+        String deploymentPath = artifactoryServer.getUrl() + "/" + targetRepository + "/" + artifactPath;
+        listener.getLogger().println("Deploying artifact: " + deploymentPath);
+        client.deployArtifact(deployDetails);
     }
 
     private String buildArtifactPath(MavenArtifact mavenArtifact) {
@@ -117,21 +108,4 @@ public class ArtifactsDeployer {
         return file;
     }
 
-    /**
-     * Send the file to the server
-     */
-    void uploadFile(PreemptiveHttpClient client, File file, String uploadUrl) throws IOException {
-        HttpPut httpPut = new HttpPut(uploadUrl);
-        FileEntity fileEntity = new FileEntity(file, "binary/octet-stream");
-        httpPut.setEntity(fileEntity);
-        HttpResponse response = client.execute(httpPut);
-        StatusLine statusLine = response.getStatusLine();
-        if (response.getEntity() != null) {
-            response.getEntity().consumeContent();
-        }
-
-        if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
-            throw new IOException("Failed to deploy file: " + statusLine.getReasonPhrase());
-        }
-    }
 }

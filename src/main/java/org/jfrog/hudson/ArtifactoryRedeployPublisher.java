@@ -16,6 +16,7 @@ import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
+import org.artifactory.build.client.ArtifactoryBuildInfoClient;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -93,17 +94,21 @@ public class ArtifactoryRedeployPublisher extends Recorder {
             return true;
         }
 
+        ArtifactoryServer server = getArtifactoryServer();
+        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(getUsername(), getPassword());
         MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
         try {
             if (deployArtifacts) {
-                new ArtifactsDeployer(this, mavenBuild, mar, listener).deploy();
+                new ArtifactsDeployer(this, client, mavenBuild, mar, listener).deploy();
             }
-            new BuildInfoDeployer(this, mavenBuild, listener).deploy();
+            new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
             // add the result action
             build.getActions().add(new BuildInfoResultAction(this, build));
             return true;
         } catch (Exception e) {
             e.printStackTrace(listener.error(e.getMessage()));
+        } finally {
+            client.shutdown();
         }
 
         // failed
