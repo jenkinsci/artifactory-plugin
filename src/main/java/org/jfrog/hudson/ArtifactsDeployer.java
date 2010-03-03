@@ -77,6 +77,7 @@ public class ArtifactsDeployer {
                 .file(artifactFile)
                 .artifactPath(artifactPath)
                 .targetRepository(targetRepository)
+                .md5(mavenArtifact.md5sum)
                 .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "");
 
