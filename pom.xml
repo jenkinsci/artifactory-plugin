@@ -39,7 +39,7 @@
         <dependency>
             <groupId>org.jfrog</groupId>
             <artifactId>build-info-client</artifactId>
-            <version>1.2.0-SNAPSHOT</version>
+            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
