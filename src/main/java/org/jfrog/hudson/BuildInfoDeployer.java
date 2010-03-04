@@ -146,8 +146,7 @@ public class BuildInfoDeployer {
     }
 
     private Artifact toArtifact(MavenArtifact mavenArtifact, MavenBuild mavenBuild) {
-        ArtifactBuilder artifactBuilder = new ArtifactBuilder()
-                .name(mavenArtifact.canonicalName)
+        ArtifactBuilder artifactBuilder = new ArtifactBuilder(mavenArtifact.canonicalName)
                 .type(mavenArtifact.type)
                 .md5(getMd5(mavenArtifact.groupId, mavenArtifact.fileName, mavenBuild));
         return artifactBuilder.build();
