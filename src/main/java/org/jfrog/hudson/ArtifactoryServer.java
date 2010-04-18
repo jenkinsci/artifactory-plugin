@@ -4,7 +4,7 @@ import hudson.ProxyConfiguration;
 import hudson.model.Hudson;
 import hudson.util.Scrambler;
 import org.apache.commons.lang.StringUtils;
-import org.artifactory.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -32,6 +32,8 @@ public class ArtifactoryServer {
      * List of repository keys, last time we checked. Copy on write semantics.
      */
     private transient volatile List<String> repositories;
+
+    private transient volatile List<String> virtualRepositories;
 
     @DataBoundConstructor
     public ArtifactoryServer(String url, String userName, String password, int timeout) {
@@ -71,6 +73,18 @@ public class ArtifactoryServer {
 
         return repositories;
     }
+
+    public List<String> getVirtualRepositoryKeys() {
+        try {
+            ArtifactoryBuildInfoClient client = createArtifactoryClient(userName, getPassword());
+            repositories = client.getVirtualRepositoryKeys();
+        } catch (IOException e) {
+            log.log(Level.WARNING, "Failed to obtain list of repositories: " + e.getMessage());
+        }
+
+        return repositories;
+    }
+
 
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password) {
         ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password);

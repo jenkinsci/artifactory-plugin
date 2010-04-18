@@ -8,10 +8,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class ServerDetails {
     public final String artifactoryName;
     public final String repositoryKey;
+    public final String downloadRepositoryKey;
 
     @DataBoundConstructor
-    public ServerDetails(String artifactoryName, String repositoryKey) {
+    public ServerDetails(String artifactoryName, String repositoryKey, String downloadRepositoryKey) {
         this.artifactoryName = artifactoryName;
         this.repositoryKey = repositoryKey;
+        this.downloadRepositoryKey = downloadRepositoryKey;
     }
 }

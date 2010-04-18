@@ -9,8 +9,8 @@ import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
-import org.artifactory.build.client.ArtifactoryBuildInfoClient;
-import org.artifactory.build.client.DeployDetails;
+import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.DeployDetails;
 import org.jfrog.hudson.util.ActionableHelper;
 
 import java.io.File;

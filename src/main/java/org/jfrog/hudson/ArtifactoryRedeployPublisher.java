@@ -16,7 +16,7 @@ import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
-import org.artifactory.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -103,7 +103,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
             }
             new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
             // add the result action
-            build.getActions().add(new BuildInfoResultAction(this, build));
+            build.getActions().add(new BuildInfoResultAction(details, build));
             return true;
         } catch (Exception e) {
             e.printStackTrace(listener.error(e.getMessage()));

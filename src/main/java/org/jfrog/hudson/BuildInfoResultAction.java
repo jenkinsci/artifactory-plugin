@@ -8,14 +8,15 @@ import hudson.model.Action;
  *
  * @author Yossi Shaul
  */
-class BuildInfoResultAction implements Action {
-    private ArtifactoryRedeployPublisher artifactoryRedeployPublisher;
+public class BuildInfoResultAction implements Action {
+    private ServerDetails serverDetails;
     private final AbstractBuild build;
 
-    public BuildInfoResultAction(ArtifactoryRedeployPublisher artifactoryRedeployPublisher, AbstractBuild build) {
-        this.artifactoryRedeployPublisher = artifactoryRedeployPublisher;
+    public BuildInfoResultAction(ServerDetails serverDetails, AbstractBuild build) {
+        this.serverDetails = serverDetails;
         this.build = build;
     }
+
 
     public String getIconFileName() {
         return "/plugin/artifactory/images/artifactory-icon.png";
@@ -26,7 +27,7 @@ class BuildInfoResultAction implements Action {
     }
 
     public String getUrlName() {
-        return artifactoryRedeployPublisher.getArtifactoryName() + "/webapp/builds/"
+        return serverDetails.artifactoryName + "/webapp/builds/"
                 + build.getParent().getDisplayName() + "/"
                 + build.getNumber();
     }

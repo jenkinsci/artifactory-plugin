@@ -1,9 +1,8 @@
 package org.jfrog.hudson.util;
 
-import hudson.maven.AbstractMavenBuild;
 import hudson.maven.MavenBuild;
-import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
+import hudson.model.AbstractBuild;
 import hudson.model.Action;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
@@ -19,7 +18,7 @@ public class ActionableHelper {
         return getLatestAction(mavenBuild, MavenArtifactRecord.class);
     }
 
-    public static <T extends Action> T getLatestAction(AbstractMavenBuild mavenBuild, Class<T> actionClass) {
+    public static <T extends Action> T getLatestAction(AbstractBuild mavenBuild, Class<T> actionClass) {
         // one module may produce multiple action entries of the same type, the last one contains all the info we need
         // (previous ones might only contain partial information, eg, only main artifact)
         List<T> records = mavenBuild.getActions(actionClass);
@@ -30,7 +29,7 @@ public class ActionableHelper {
         }
     }
 
-    public static Cause.UpstreamCause getUpstreamCause(MavenModuleSetBuild build) {
+    public static Cause.UpstreamCause getUpstreamCause(AbstractBuild build) {
         CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
         if (action != null) {
             for (Cause cause : action.getCauses()) {
