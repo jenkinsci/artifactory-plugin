@@ -128,13 +128,21 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
             build.setResult(Result.FAILURE);
         }
         final String initScriptPath = initScript.getAbsolutePath();
-        build.getActions().add(new BuildInfoResultAction(getDetails(), build));
-        build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 env.put("GRADLE_EXT_SWITCHES", "--init-script " + initScriptPath);
                 env.put("GRADLE_EXT_TASKS", "buildInfo");
+            }
+
+            @Override
+            public boolean tearDown(AbstractBuild build, BuildListener listener)
+                    throws IOException, InterruptedException {
+                if (build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
+                    build.getActions().add(new BuildInfoResultAction(getDetails(), build));
+                    return true;
+                }
+                return false;
             }
         };
     }

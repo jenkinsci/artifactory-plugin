@@ -50,7 +50,7 @@ public class GradleInitScriptWriter {
     private static final String NEW_LINE = "\n";
     private static final String QUOTE = "\"";
     private static String scriptRepoPath =
-            "/artifactoryinitplugin/artifactoryinitplugin/0.5-SNAPSHOT/artifactoryinitplugin-0.5-SNAPSHOT.gradle";
+            "org/jfrog/buildinfo/build-info-extractor-gradle/1.0-SNAPSHOT/artifactoryinitplugin-1.0-SNAPSHOT.gradle";
     private ArtifactoryGradleConfigurator gradleConfigurator;
 
     /**
