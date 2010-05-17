@@ -86,6 +86,10 @@ public class GradleInitScriptWriter {
         if (StringUtils.isNotBlank(buildUrl)) {
             addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_URL, buildUrl);
         }
+        String svnRevision = envVars.get("SVN_REVISION");
+        if (StringUtils.isNotBlank(svnRevision)) {
+            addProperty(stringBuilder, BuildInfoProperties.PROP_VCS_REVISION, svnRevision);
+        }
         addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_AGENT, "Hudson/" + build.getHudsonVersion());
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
         if (parent != null) {

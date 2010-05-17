@@ -7,6 +7,6 @@ addListener(new PropertyListener())
 class PropertyListener extends BuildAdapter implements BuildListener {
   def void settingsEvaluated(Settings settings) {
     Map<String, String> projProps = settings.getStartParameter().getProjectProperties()
-    projProps.putAll([$ {allHudsonProperties}])
+    projProps.putAll([${allHudsonProperties}])
   }
 }

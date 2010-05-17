@@ -54,7 +54,7 @@ public class BuildInfoDeployer {
 
     private Build gatherBuildInfo(MavenModuleSetBuild build) {
         BuildInfoBuilder infoBuilder = new BuildInfoBuilder(build.getParent().getDisplayName())
-                .number(build.getNumber())
+                .number(build.getNumber()+"")
                 .type(BuildType.MAVEN)
                 .agent(new Agent("hudson", build.getHudsonVersion()));
 
@@ -84,7 +84,7 @@ public class BuildInfoDeployer {
         if (parent != null) {
             String parentProject = parent.getUpstreamProject();
             int buildNumber = parent.getUpstreamBuild();
-            infoBuilder.parentBuildId(parentProject + ":" + buildNumber);
+            infoBuilder.parentNumber(parentProject + ":" + buildNumber);
         }
 
         gatherModuleAndDependencyInfo(infoBuilder, build);

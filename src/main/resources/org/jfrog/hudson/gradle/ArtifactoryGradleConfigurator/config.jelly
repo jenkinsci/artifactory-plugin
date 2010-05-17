@@ -27,32 +27,32 @@
     </f:dropdownList>
 
     <f:entry title="${%Deployer username}" field="username"
-             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-userName.html">
+             help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-userName.html">
         <f:textbox/>
     </f:entry>
 
     <f:entry title="${%Deployer password}" field="password"
-             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-password.html">
+             help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-password.html">
         <f:password/>
     </f:entry>
 
 
     <f:advanced>
         <f:entry field="deployArtifacts"
-                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployArtifacts.html">
+                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html">
             <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
             <label class="attach-previous">${%Activate Upload Archives}</label>
         </f:entry>
-        <f:entry field="deployMaven">
+        <f:entry field="deployMaven"  help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
             <f:checkbox default="false" checked="${instance.deployMaven}"/>
             <label class="attach-previous">${%Upload Maven Archive(s)}</label>
         </f:entry>
-        <f:entry field="deployIvy">
+        <f:entry field="deployIvy" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployIvy.html">
             <f:checkbox default="true" checked="${instance.deployIvy}"/>
             <label class="attach-previous">${%Upload Ivy Archive(s)}</label>
         </f:entry>
         <f:entry title="${%Remote Plugin location}" field="remotePluginLocation"
-                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-userName.html">
+                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-remotePluginLocation.html">
             <f:textbox/>
         </f:entry>
     </f:advanced>

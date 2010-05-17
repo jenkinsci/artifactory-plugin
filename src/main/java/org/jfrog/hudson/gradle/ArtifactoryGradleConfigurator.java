@@ -40,7 +40,6 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -112,15 +111,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
             build.setResult(Result.FAILURE);
         }
         GradleInitScriptWriter writer = new GradleInitScriptWriter(this, build.getEnvironment(listener), build);
-        File initScript = null;
-        try {
-            URI initScriptUri = build.getWorkspace().child("init-artifactory.gradle").toURI();
-            initScript = new File(initScriptUri);
-        } catch (Exception e) {
-            listener.getLogger().format("Could not generate new File %s for initialization", "init-artifactory.gradle")
-                    .println();
-            build.setResult(Result.FAILURE);
-        }
+        File initScript = new File(build.getArtifactsDir().getParent(), ("init-artifactory.gradle"));
         try {
             FileUtils.writeStringToFile(initScript, writer.generateInitScript(), "UTF-8");
         } catch (Exception e) {
@@ -138,7 +129,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
-                if (build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
+                Result result = build.getResult();
+                if (result == null) {
+                    return false;
+                }
+                if (result.isBetterOrEqualTo(Result.SUCCESS)) {
                     build.getActions().add(new BuildInfoResultAction(getDetails(), build));
                     return true;
                 }
