@@ -13,7 +13,7 @@ import hudson.tasks.Fingerprinter;
 import org.jfrog.build.api.Agent;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
-import org.jfrog.build.api.BuildType;
+import org.jfrog.build.api.BuildAgent;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
@@ -54,8 +54,8 @@ public class BuildInfoDeployer {
 
     private Build gatherBuildInfo(MavenModuleSetBuild build) {
         BuildInfoBuilder infoBuilder = new BuildInfoBuilder(build.getParent().getDisplayName())
-                .number(build.getNumber()+"")
-                .type(BuildType.MAVEN)
+                .number(build.getNumber() + "")
+                .buildAgent(new BuildAgent(build.getParent().getMaven().getName()))
                 .agent(new Agent("hudson", build.getHudsonVersion()));
 
         if (Hudson.getInstance().getRootUrl() != null) {
