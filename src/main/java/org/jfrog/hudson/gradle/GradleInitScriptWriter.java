@@ -96,15 +96,7 @@ public class GradleInitScriptWriter {
             addProperty(stringBuilder, BuildInfoProperties.PROP_PARENT_BUILD_NAME, parent.getUpstreamProject());
             addProperty(stringBuilder, BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parent.getUpstreamBuild() + "");
         }
-        // Write all the buildInfo properties.
-        Map<String, String> filteredBuildInfoKeys = Maps.filterKeys(envVars, new Predicate<String>() {
-            public boolean apply(String input) {
-                return input.startsWith(BuildInfoProperties.BUILD_INFO_PROP_PREFIX);
-            }
-        });
-        for (Map.Entry<String, String> entry : filteredBuildInfoKeys.entrySet()) {
-            addProperty(stringBuilder, entry.getKey(), entry.getValue());
-        }
+
         // Write all the deploy (matrix params) properties.
         Map<String, String> filteredMatrixParams = Maps.filterKeys(envVars, new Predicate<String>() {
             public boolean apply(String input) {
@@ -114,6 +106,20 @@ public class GradleInitScriptWriter {
         for (Map.Entry<String, String> entry : filteredMatrixParams.entrySet()) {
             addProperty(stringBuilder, entry.getKey(), entry.getValue());
         }
+
+        // add EnvVars
+        for (Map.Entry<String, String> entry : envVars.entrySet()) {
+            addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
+                    entry.getValue());
+        }
+
+        // add build variables
+        Map<String, String> buildVariables = build.getBuildVariables();
+        for (Map.Entry<String, String> entry : buildVariables.entrySet()) {
+            addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
+                    entry.getValue());
+        }
+
         return stringBuilder.toString();
     }
 

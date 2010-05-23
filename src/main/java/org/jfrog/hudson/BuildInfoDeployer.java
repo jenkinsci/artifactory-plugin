@@ -1,5 +1,6 @@
 package org.jfrog.hudson;
 
+import hudson.EnvVars;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
@@ -14,6 +15,7 @@ import org.jfrog.build.api.Agent;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildAgent;
+import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
@@ -46,13 +48,13 @@ public class BuildInfoDeployer {
         this.listener = listener;
     }
 
-    public void deploy() throws IOException {
+    public void deploy() throws IOException, InterruptedException {
         Build buildInfo = gatherBuildInfo(build);
         listener.getLogger().println("Deploying build info ...");
         client.sendBuildInfo(buildInfo);
     }
 
-    private Build gatherBuildInfo(MavenModuleSetBuild build) {
+    private Build gatherBuildInfo(MavenModuleSetBuild build) throws IOException, InterruptedException {
         BuildInfoBuilder infoBuilder = new BuildInfoBuilder(build.getParent().getDisplayName())
                 .number(build.getNumber() + "")
                 .buildAgent(new BuildAgent(build.getParent().getMaven().getName()))
@@ -88,9 +90,9 @@ public class BuildInfoDeployer {
         }
 
         gatherModuleAndDependencyInfo(infoBuilder, build);
-
         gatherSysPropInfo(infoBuilder);
-
+        addBuildInfoVariables(infoBuilder);
+        addEnvVars(infoBuilder);
         return infoBuilder.build();
     }
 
@@ -103,6 +105,22 @@ public class BuildInfoDeployer {
         infoBuilder.addProperty("java.vm.name", System.getProperty("java.vm.name"));
         infoBuilder.addProperty("java.vm.specification.name", System.getProperty("java.vm.specification.name"));
         infoBuilder.addProperty("java.vm.vendor", System.getProperty("java.vm.vendor"));
+    }
+
+    private void addBuildInfoVariables(BuildInfoBuilder infoBuilder) {
+        Map<String, String> buildVariables = build.getBuildVariables();
+        for (Map.Entry<String, String> entry : buildVariables.entrySet()) {
+            infoBuilder
+                    .addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(), entry.getValue());
+        }
+    }
+
+    private void addEnvVars(BuildInfoBuilder infoBuilder) throws IOException, InterruptedException {
+        EnvVars envVars = build.getEnvironment(listener);
+        for (Map.Entry<String, String> entry : envVars.entrySet()) {
+            infoBuilder
+                    .addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(), entry.getValue());
+        }
     }
 
     private void gatherModuleAndDependencyInfo(BuildInfoBuilder infoBuilder, MavenModuleSetBuild mavenModulesBuild) {
