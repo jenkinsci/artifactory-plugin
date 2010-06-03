@@ -10,7 +10,7 @@
     <artifactId>artifactory</artifactId>
     <version>1.0.8-SNAPSHOT</version>
     <packaging>hpi</packaging>
-    <name>Artifactory Plugin</name>
+    <name>Hudson Artifactory Plugin</name>
     <description>Integrates Artifactory to Hudson</description>
     <url>http://wiki.hudson-ci.org/display/HUDSON/Artifactory+Plugin</url>
 
@@ -39,12 +39,12 @@
         <dependency>
             <groupId>org.jfrog</groupId>
             <artifactId>build-info-client</artifactId>
-            <version>1.3.x-SNAPSHOT</version>
+            <version>1.4.x-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog</groupId>
             <artifactId>build-info-api</artifactId>
-            <version>1.3.x-SNAPSHOT</version>
+            <version>1.4.x-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
