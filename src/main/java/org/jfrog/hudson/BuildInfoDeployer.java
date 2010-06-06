@@ -16,6 +16,7 @@ import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildAgent;
 import org.jfrog.build.api.BuildInfoProperties;
+import org.jfrog.build.api.BuildType;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
@@ -58,7 +59,7 @@ public class BuildInfoDeployer {
         BuildInfoBuilder infoBuilder = new BuildInfoBuilder(build.getParent().getDisplayName())
                 .number(build.getNumber() + "")
                 .buildAgent(new BuildAgent(build.getParent().getMaven().getName()))
-                .agent(new Agent("hudson", build.getHudsonVersion()));
+                .agent(new Agent("hudson", build.getHudsonVersion())).type(BuildType.MAVEN);
 
         if (Hudson.getInstance().getRootUrl() != null) {
             infoBuilder.url(Hudson.getInstance().getRootUrl() + build.getUrl());
@@ -86,13 +87,14 @@ public class BuildInfoDeployer {
         if (parent != null) {
             String parentProject = parent.getUpstreamProject();
             int buildNumber = parent.getUpstreamBuild();
-            infoBuilder.parentNumber(parentProject + ":" + buildNumber);
+            infoBuilder.parentName(parentProject);
+            infoBuilder.parentNumber(buildNumber + "");
         }
 
         gatherModuleAndDependencyInfo(infoBuilder, build);
         gatherSysPropInfo(infoBuilder);
         addBuildInfoVariables(infoBuilder);
-        addEnvVars(infoBuilder);
+        //addEnvVars(infoBuilder);
         return infoBuilder.build();
     }
 
