@@ -124,6 +124,8 @@ public class GradleInitScriptWriter {
     }
 
     private void addProperty(StringBuilder stringBuilder, String key, String value) {
+        key = key.replace('\\', '/');
+        value = value.replace('\\', '/');
         stringBuilder.append(QUOTE).append(key).append(QUOTE).append(":").append(QUOTE).append(value).append(QUOTE)
                 .append(",").append(NEW_LINE);
     }
