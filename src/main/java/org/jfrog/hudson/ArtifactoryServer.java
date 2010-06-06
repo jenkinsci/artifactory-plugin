@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 public class ArtifactoryServer {
     private static final Logger log = Logger.getLogger(ArtifactoryServer.class.getName());
 
-    private static final int DEFAULT_CONNECTION_TIMEOUT = 120;    // 2 Minutes
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 300;    // 5 Minutes
 
     private final String url;
     private final String userName;

@@ -133,10 +133,6 @@ public class BuildInfoDeployer {
         }
     }
 
-    private void addEnvVars(BuildInfoBuilder infoBuilder) throws IOException, InterruptedException {
-
-    }
-
     private void gatherModuleAndDependencyInfo(BuildInfoBuilder infoBuilder, MavenModuleSetBuild mavenModulesBuild) {
         Map<MavenModule, MavenBuild> mavenBuildMap = mavenModulesBuild.getModuleLastBuilds();
         for (Map.Entry<MavenModule, MavenBuild> moduleBuild : mavenBuildMap.entrySet()) {
