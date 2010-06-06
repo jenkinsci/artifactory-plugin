@@ -1,5 +1,7 @@
 package org.jfrog.hudson;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
@@ -94,8 +96,20 @@ public class BuildInfoDeployer {
         gatherModuleAndDependencyInfo(infoBuilder, build);
         gatherSysPropInfo(infoBuilder);
         addBuildInfoVariables(infoBuilder);
+        EnvVars envVars = build.getEnvironment(listener);
         if (publisher.isIncludeEnvVars()) {
-            addEnvVars(infoBuilder);
+            for (Map.Entry<String, String> entry : envVars.entrySet()) {
+                infoBuilder
+                        .addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
+                                entry.getValue());
+            }
+        } else {
+            MapDifference<String, String> difference = Maps.difference(envVars, System.getenv());
+            Map<String, String> filteredEnvVars = difference.entriesOnlyOnLeft();
+            for (Map.Entry<String, String> entry : filteredEnvVars.entrySet()) {
+                infoBuilder.addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
+                        entry.getValue());
+            }
         }
         return infoBuilder.build();
     }
@@ -120,11 +134,7 @@ public class BuildInfoDeployer {
     }
 
     private void addEnvVars(BuildInfoBuilder infoBuilder) throws IOException, InterruptedException {
-        EnvVars envVars = build.getEnvironment(listener);
-        for (Map.Entry<String, String> entry : envVars.entrySet()) {
-            infoBuilder
-                    .addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(), entry.getValue());
-        }
+
     }
 
     private void gatherModuleAndDependencyInfo(BuildInfoBuilder infoBuilder, MavenModuleSetBuild mavenModulesBuild) {

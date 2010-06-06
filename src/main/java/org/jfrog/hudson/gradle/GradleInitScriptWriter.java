@@ -19,6 +19,7 @@
 package org.jfrog.hudson.gradle;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
@@ -110,6 +111,13 @@ public class GradleInitScriptWriter {
         // add EnvVars
         if (gradleConfigurator.includeEnvVars) {
             for (Map.Entry<String, String> entry : envVars.entrySet()) {
+                addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
+                        entry.getValue());
+            }
+        } else {
+            MapDifference<String, String> difference = Maps.difference(envVars, System.getenv());
+            Map<String, String> filteredEnvVars = difference.entriesOnlyOnLeft();
+            for (Map.Entry<String, String> entry : filteredEnvVars.entrySet()) {
                 addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
                         entry.getValue());
             }
