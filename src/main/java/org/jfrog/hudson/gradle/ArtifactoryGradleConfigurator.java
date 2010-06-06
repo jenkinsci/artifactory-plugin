@@ -19,7 +19,6 @@
 package org.jfrog.hudson.gradle;
 
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -122,11 +121,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
             listener.getLogger().println("Error occurred while writing Gradle Init Script");
             build.setResult(Result.FAILURE);
         }
-        final FilePath filePath = new FilePath(new File(initScript.getAbsolutePath()));
+        String filePath = initScript.getAbsolutePath();
+        filePath = filePath.replace('\\', '/');
+        final String finalFilePath = filePath;
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
-                env.put("GRADLE_EXT_SWITCHES", "--init-script " + filePath.getRemote());
+                env.put("GRADLE_EXT_SWITCHES", "--init-script " + finalFilePath);
                 env.put("GRADLE_EXT_TASKS", "buildInfo");
             }
 
