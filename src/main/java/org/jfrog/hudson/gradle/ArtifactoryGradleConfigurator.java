@@ -81,6 +81,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         return username;
     }
 
+
+    public String getRepositoryKey() {
+        return details != null ? details.repositoryKey : null;
+    }
+
+    public String getDownloadRepositoryKey() {
+        return details != null ? details.downloadRepositoryKey : null;
+    }
+
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
     }
