@@ -112,6 +112,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         }
         GradleInitScriptWriter writer = new GradleInitScriptWriter(this, build.getEnvironment(listener), build);
         File initScript = new File(build.getArtifactsDir().getParent(), ("init-artifactory.gradle"));
+        String path = initScript.getAbsolutePath();
+        path = path.replace('\\', '/');
+        initScript = new File(path);
         try {
             FileUtils.writeStringToFile(initScript, writer.generateInitScript(), "UTF-8");
         } catch (Exception e) {
