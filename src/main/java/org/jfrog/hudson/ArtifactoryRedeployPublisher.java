@@ -37,13 +37,15 @@ public class ArtifactoryRedeployPublisher extends Recorder {
     private final boolean deployArtifacts;
     private final String username;
     private final String scrambledPassword;
+    private final boolean includeEnvVars;
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details,
-            boolean deployArtifacts, String username, String password) {
+            boolean deployArtifacts, String username, String password, boolean includeEnvVars) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.username = username;
+        this.includeEnvVars = includeEnvVars;
         this.scrambledPassword = Scrambler.scramble(password);
 
         /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
@@ -55,6 +57,10 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     public boolean isDeployArtifacts() {
         return deployArtifacts;
+    }
+
+    public boolean isIncludeEnvVars() {
+        return includeEnvVars;
     }
 
     public String getUsername() {

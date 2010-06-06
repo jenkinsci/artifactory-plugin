@@ -108,9 +108,11 @@ public class GradleInitScriptWriter {
         }
 
         // add EnvVars
-        for (Map.Entry<String, String> entry : envVars.entrySet()) {
-            addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
-                    entry.getValue());
+        if (gradleConfigurator.includeEnvVars) {
+            for (Map.Entry<String, String> entry : envVars.entrySet()) {
+                addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
+                        entry.getValue());
+            }
         }
 
         // add build variables

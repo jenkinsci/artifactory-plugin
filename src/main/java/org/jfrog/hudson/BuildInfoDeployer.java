@@ -94,7 +94,9 @@ public class BuildInfoDeployer {
         gatherModuleAndDependencyInfo(infoBuilder, build);
         gatherSysPropInfo(infoBuilder);
         addBuildInfoVariables(infoBuilder);
-        //addEnvVars(infoBuilder);
+        if (publisher.isIncludeEnvVars()) {
+            addEnvVars(infoBuilder);
+        }
         return infoBuilder.build();
     }
 

@@ -43,7 +43,7 @@
             <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
             <label class="attach-previous">${%Activate Upload Archives}</label>
         </f:entry>
-        <f:entry field="deployMaven"  help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
+        <f:entry field="deployMaven" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
             <f:checkbox default="false" checked="${instance.deployMaven}"/>
             <label class="attach-previous">${%Upload Maven Archive(s)}</label>
         </f:entry>
@@ -51,6 +51,12 @@
             <f:checkbox default="true" checked="${instance.deployIvy}"/>
             <label class="attach-previous">${%Upload Ivy Archive(s)}</label>
         </f:entry>
+        <f:entry field="includeEnvVars"
+                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
+            <f:checkbox default="true" checked="${instance.includeEnvVars}"/>
+            <label class="attach-previous">${%Include Hudson Environment Variables}</label>
+        </f:entry>
+
         <f:entry title="${%Remote Plugin location}" field="remotePluginLocation"
                  help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-remotePluginLocation.html">
             <f:textbox/>

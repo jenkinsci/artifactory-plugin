@@ -59,17 +59,20 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     public final boolean deployMaven;
     public final boolean deployIvy;
     public final String remotePluginLocation;
+    public final boolean includeEnvVars;
 
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
-            boolean deployArtifacts, String username, String password, String remotePluginLocation) {
+            boolean deployArtifacts, String username, String password, String remotePluginLocation,
+            boolean includeEnvVars) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
         this.deployArtifacts = deployArtifacts;
         this.username = username;
         this.remotePluginLocation = remotePluginLocation;
+        this.includeEnvVars = includeEnvVars;
         this.scrambledPassword = Scrambler.scramble(password);
     }
 
@@ -81,6 +84,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         return username;
     }
 
+
+    public boolean isIncludeEnvVars() {
+        return includeEnvVars;
+    }
 
     public String getRepositoryKey() {
         return details != null ? details.repositoryKey : null;

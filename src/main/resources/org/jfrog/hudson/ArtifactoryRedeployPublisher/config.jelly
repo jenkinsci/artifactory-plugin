@@ -33,5 +33,10 @@
             <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
             <label class="attach-previous">${%Deploy maven artifacts}</label>
         </f:entry>
+        <f:entry field="includeEnvVars"
+                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
+            <f:checkbox default="true" checked="${instance.includeEnvVars}"/>
+            <label class="attach-previous">${%Include Hudson Environment Variables}</label>
+        </f:entry>
     </f:advanced>
 </j:jelly>
