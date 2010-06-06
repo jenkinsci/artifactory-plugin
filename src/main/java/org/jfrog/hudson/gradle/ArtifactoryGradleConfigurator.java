@@ -123,7 +123,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         }
         String filePath = initScript.getAbsolutePath();
         filePath = filePath.replace('\\', '/');
-        final String finalFilePath = filePath;
+        final String finalFilePath = "\"" + filePath + "\"";
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
