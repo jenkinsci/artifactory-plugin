@@ -9,12 +9,22 @@ import hudson.model.Action;
  * @author Yossi Shaul
  */
 public class BuildInfoResultAction implements Action {
-    private ArtifactoryRedeployPublisher artifactoryRedeployPublisher;
-    private final AbstractBuild build;
+
+    private final String url;
+
+    /**
+     * @deprecated Only here to keep compatibility with version 1.0.7 and below (part of the xstream de-serialization)
+     */
+    @Deprecated
+    private transient ArtifactoryRedeployPublisher artifactoryRedeployPublisher;
+    /**
+     * @deprecated Only here to keep compatibility with version 1.0.7 and below (part of the xstream de-serialization)
+     */
+    @Deprecated
+    private transient AbstractBuild build;
 
     public BuildInfoResultAction(ArtifactoryRedeployPublisher artifactoryRedeployPublisher, AbstractBuild build) {
-        this.artifactoryRedeployPublisher = artifactoryRedeployPublisher;
-        this.build = build;
+        url = generateUrl(artifactoryRedeployPublisher, build);
     }
 
     public String getIconFileName() {
@@ -26,6 +36,15 @@ public class BuildInfoResultAction implements Action {
     }
 
     public String getUrlName() {
+        // for backward compatibility if url is empty calculate it from the old structs
+        if (url == null && artifactoryRedeployPublisher != null && build != null) {
+            return generateUrl(artifactoryRedeployPublisher, build);
+        } else {
+            return url;
+        }
+    }
+
+    private String generateUrl(ArtifactoryRedeployPublisher artifactoryRedeployPublisher, AbstractBuild build) {
         return artifactoryRedeployPublisher.getArtifactoryName() + "/webapp/builds/"
                 + build.getParent().getDisplayName() + "/"
                 + build.getNumber();
