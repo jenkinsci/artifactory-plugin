@@ -51,7 +51,7 @@ public class GradleInitScriptWriter {
     private EnvVars envVars;
     private AbstractBuild build;
     private static final String NEW_LINE = "\n";
-    private static final String QUOTE = "\"";
+    private static final String QUOTE = "'";
     private static String scriptRepoPath =
             "org/jfrog/buildinfo/build-info-extractor-gradle/1.0-SNAPSHOT/artifactoryinitplugin-1.0-SNAPSHOT.gradle";
     private ArtifactoryGradleConfigurator gradleConfigurator;
@@ -133,8 +133,8 @@ public class GradleInitScriptWriter {
     }
 
     private void addProperty(StringBuilder stringBuilder, String key, String value) {
-        key = key.replace('\\', '/');
-        value = value.replace('\\', '/');
+        key = key.replace("\\", "\\\\");
+        value = value.replace("\\", "\\\\");
         value = value.replace('"', ' ');
         stringBuilder.append(QUOTE).append(key).append(QUOTE).append(":").append(QUOTE).append(value).append(QUOTE)
                 .append(",").append(NEW_LINE);
