@@ -8,6 +8,7 @@ import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -36,6 +37,7 @@ public class ArtifactoryBuilder extends Builder {
     // overrided for better type safety.
     // if your plugin doesn't really define any property on Descriptor,
     // you don't have to do this.
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
@@ -93,7 +95,12 @@ public class ArtifactoryBuilder extends Builder {
         @SuppressWarnings({"unchecked"})
         @Override
         public boolean configure(StaplerRequest req, JSONObject o) throws FormException {
-            artifactoryServers = req.bindParametersToList(ArtifactoryServer.class, "artifactory.");
+            Object servers = o.get("artifactoryServer");    // an array or single object
+            if (!JSONNull.getInstance().equals(servers)) {
+                artifactoryServers = req.bindJSONToList(ArtifactoryServer.class, servers);
+            } else {
+                artifactoryServers = null;
+            }
             save();
             return super.configure(req, o);
         }

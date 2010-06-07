@@ -4,6 +4,7 @@
         <f:entry title="Artifactory servers"
                  description="List of Artifactory servers that projects will want to deploy artifacts and build info to">
             <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}">
+                <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ArtifactoryServer"/>
                 <table width="100%">
                     <f:entry title="URL" help="/plugin/artifactory/help-url.html">
                         <f:textbox name="artifactory.url" value="${server.url}"/>
@@ -24,6 +25,10 @@
                     <f:advanced>
                         <f:entry title="Connection Timeout" help="/plugin/artifactory/help-timeout.html">
                             <f:textbox clazz="number" name="artifactory.timeout" value="${server.timeout}"/>
+                        </f:entry>
+                        <f:entry name="artifactory.bypassProxy" help="/plugin/artifactory/help-bypassproxy.html">
+                            <f:checkbox name="artifactory.bypassProxy" checked="${server.bypassProxy}"/>
+                            <label class="attach-previous">${%Bypass HTTP Proxy}</label>
                         </f:entry>
                     </f:advanced>
                     <f:entry title="">
