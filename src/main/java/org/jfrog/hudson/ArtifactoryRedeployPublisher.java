@@ -109,7 +109,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
             }
             new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
             // add the result action
-            build.getActions().add(new BuildInfoResultAction(details, build));
+            build.getActions().add(new BuildInfoResultAction(this, build));
             return true;
         } catch (Exception e) {
             e.printStackTrace(listener.error(e.getMessage()));

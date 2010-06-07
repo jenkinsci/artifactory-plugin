@@ -53,8 +53,8 @@
         </f:entry>
         <f:entry field="includeEnvVars"
                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
-            <f:checkbox default="true" checked="${instance.includeEnvVars}"/>
-            <label class="attach-previous">${%Include Hudson Environment Variables}</label>
+            <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
+            <label class="attach-previous">${%Include All Environment Variables}</label>
         </f:entry>
 
         <f:entry title="${%Remote Plugin location}" field="remotePluginLocation"

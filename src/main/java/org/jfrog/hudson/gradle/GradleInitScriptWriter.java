@@ -28,6 +28,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
+import org.jfrog.build.client.ClientIvyProperties;
+import org.jfrog.build.client.ClientMavenProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ServerDetails;
@@ -76,8 +78,9 @@ public class GradleInitScriptWriter {
         addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_REPOKEY, getServerDetails().repositoryKey);
         addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_USERNAME, gradleConfigurator.getUsername());
         addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_PASSWORD, gradleConfigurator.getPassword());
-        addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_IVY, Boolean.toString(gradleConfigurator.deployIvy));
-        addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_MAVEN,
+        addProperty(stringBuilder, ClientIvyProperties.PROP_PUBLISH_IVY,
+                Boolean.toString(gradleConfigurator.deployIvy));
+        addProperty(stringBuilder, ClientMavenProperties.PROP_PUBLISH_MAVEN,
                 Boolean.toString(gradleConfigurator.deployMaven));
         addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_ARTIFACT,
                 Boolean.toString(gradleConfigurator.isDeployArtifacts()));
@@ -109,20 +112,16 @@ public class GradleInitScriptWriter {
         }
 
         // add EnvVars
-        if (gradleConfigurator.includeEnvVars) {
-            for (Map.Entry<String, String> entry : envVars.entrySet()) {
-                addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
-                        entry.getValue());
-            }
-        } else {
-            MapDifference<String, String> difference = Maps.difference(envVars, System.getenv());
-            Map<String, String> filteredEnvVars = difference.entriesOnlyOnLeft();
-            for (Map.Entry<String, String> entry : filteredEnvVars.entrySet()) {
-                addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
-                        entry.getValue());
-            }
-        }
 
+        //Add only the hudson specific environment variables
+        MapDifference<String, String> difference = Maps.difference(envVars, System.getenv());
+        Map<String, String> filteredEnvVars = difference.entriesOnlyOnLeft();
+        for (Map.Entry<String, String> entry : filteredEnvVars.entrySet()) {
+            addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
+                    entry.getValue());
+        }
+        addProperty(stringBuilder, BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS,
+                String.valueOf(gradleConfigurator.includeEnvVars));
         // add build variables
         Map<String, String> buildVariables = build.getBuildVariables();
         for (Map.Entry<String, String> entry : buildVariables.entrySet()) {
