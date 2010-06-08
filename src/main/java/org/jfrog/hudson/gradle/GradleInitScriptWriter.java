@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
+import hudson.model.CauseAction;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
@@ -86,6 +87,16 @@ public class GradleInitScriptWriter {
                 Boolean.toString(gradleConfigurator.isDeployArtifacts()));
         addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
         addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
+        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
+        String principal = "";
+        if (action != null) {
+            for (Cause cause : action.getCauses()) {
+                if (cause instanceof Cause.UserCause) {
+                    principal = (((Cause.UserCause) cause).getUserName());
+                }
+            }
+        }
+        addProperty(stringBuilder, ClientProperties.PROP_PRINCIPAL, principal);
         String buildUrl = envVars.get("BUILD_URL");
         if (StringUtils.isNotBlank(buildUrl)) {
             addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_URL, buildUrl);
