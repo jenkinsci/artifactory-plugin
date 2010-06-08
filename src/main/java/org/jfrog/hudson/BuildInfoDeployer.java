@@ -13,6 +13,7 @@ import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Hudson;
 import hudson.tasks.Fingerprinter;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Agent;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
@@ -97,6 +98,10 @@ public class BuildInfoDeployer {
         gatherSysPropInfo(infoBuilder);
         addBuildInfoVariables(infoBuilder);
         EnvVars envVars = build.getEnvironment(listener);
+        String revision = envVars.get("SVN_REVISION");
+        if (StringUtils.isNotBlank(revision)) {
+            infoBuilder.vcsRevision(revision);
+        }
         if (publisher.isIncludeEnvVars()) {
             for (Map.Entry<String, String> entry : envVars.entrySet()) {
                 infoBuilder
