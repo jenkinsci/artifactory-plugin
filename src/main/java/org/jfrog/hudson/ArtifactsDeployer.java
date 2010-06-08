@@ -1,5 +1,6 @@
 package org.jfrog.hudson;
 
+import hudson.EnvVars;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
@@ -9,6 +10,8 @@ import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
+import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.hudson.util.ActionableHelper;
@@ -44,7 +47,7 @@ public class ArtifactsDeployer {
         this.targetRepository = artifactoryPublisher.getRepositoryKey();
     }
 
-    public void deploy() throws IOException {
+    public void deploy() throws IOException, InterruptedException {
         listener.getLogger().println("Deploying artifacts to " + artifactoryServer.getUrl());
         MavenAggregatedArtifactRecord mar2 = (MavenAggregatedArtifactRecord) mar;
         MavenModuleSetBuild moduleSetBuild = mar2.getBuild();
@@ -69,10 +72,9 @@ public class ArtifactsDeployer {
     }
 
     private void deployArtifact(MavenBuild mavenBuild, MavenArtifact mavenArtifact)
-            throws IOException {
+            throws IOException, InterruptedException {
         String artifactPath = buildArtifactPath(mavenArtifact);
         File artifactFile = getArtifactFile(mavenBuild, mavenArtifact);
-
         DeployDetails.Builder builder = new DeployDetails.Builder()
                 .file(artifactFile)
                 .artifactPath(artifactPath)
@@ -86,9 +88,12 @@ public class ArtifactsDeployer {
             builder.addProperty("build.parentName", parent.getUpstreamProject())
                     .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
         }
-
+        EnvVars envVars = mavenBuild.getEnvironment(listener);
+        String revision = envVars.get("SVN_REVISION");
+        if (StringUtils.isNotBlank(revision)) {
+            builder.addProperty(BuildInfoProperties.PROP_VCS_REVISION, revision);
+        }
         DeployDetails deployDetails = builder.build();
-
         String deploymentPath = artifactoryServer.getUrl() + "/" + targetRepository + "/" + artifactPath;
         listener.getLogger().println("Deploying artifact: " + deploymentPath);
         client.deployArtifact(deployDetails);
