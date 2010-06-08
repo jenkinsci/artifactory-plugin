@@ -60,7 +60,7 @@ public class BuildInfoDeployer {
     private Build gatherBuildInfo(MavenModuleSetBuild build) throws IOException, InterruptedException {
         BuildInfoBuilder infoBuilder = new BuildInfoBuilder(build.getParent().getDisplayName())
                 .number(build.getNumber() + "")
-                .buildAgent(new BuildAgent(build.getParent().getMaven().getName()))
+                .buildAgent(new BuildAgent("Maven", build.getParent().getMaven().getName()))
                 .agent(new Agent("hudson", build.getHudsonVersion())).type(BuildType.MAVEN);
 
         if (Hudson.getInstance().getRootUrl() != null) {
