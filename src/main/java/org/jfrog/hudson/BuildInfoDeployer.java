@@ -111,7 +111,12 @@ public class BuildInfoDeployer {
                         entry.getValue());
             }
         }
-        return infoBuilder.build();
+        Build buildInfo = infoBuilder.build();
+        // for backwards compatibility for Artifactory 2.2.3
+        if (parent != null) {
+            buildInfo.setParentBuildId(parent.getUpstreamProject());
+        }
+        return buildInfo;
     }
 
     private void gatherSysPropInfo(BuildInfoBuilder infoBuilder) {
