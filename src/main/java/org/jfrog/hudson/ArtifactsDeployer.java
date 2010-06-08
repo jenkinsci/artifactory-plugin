@@ -89,7 +89,7 @@ public class ArtifactsDeployer {
                     .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
         }
         EnvVars envVars = mavenBuild.getEnvironment(listener);
-        String revision = envVars.get("SVN_REVISION");
+        String revision = mavenModuleSetBuild.getEnvironment(listener).get("SVN_REVISION");
         if (StringUtils.isNotBlank(revision)) {
             builder.addProperty(BuildInfoProperties.PROP_VCS_REVISION, revision);
         }
