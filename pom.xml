@@ -7,7 +7,7 @@
     </parent>
 
     <artifactId>artifactory</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Hudson Artifactory Plugin</name>
     <description>Integrates Artifactory to Hudson</description>
@@ -82,10 +82,4 @@
             </pluginRepositories>
         </profile>
     </profiles>
-
-  <scm>
-    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/artifactory-1.1.0</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/artifactory-1.1.0</developerConnection>
-    <url>https://hudson.dev.java.net/source/browse/hudson/tags/artifactory-1.1.0</url>
-  </scm>
 </project>
