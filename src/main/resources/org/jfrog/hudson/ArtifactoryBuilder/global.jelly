@@ -6,7 +6,7 @@
             <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}">
                 <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ArtifactoryServer"/>
                 <table width="100%">
-                    <f:entry title="URL" help="/plugin/artifactory/help-url.html">
+                    <f:entry title="URL" help="/plugin/artifactory/help-url.html" field="url">
                         <f:textbox name="artifactory.url" value="${server.url}"/>
                     </f:entry>
                     <f:entry title="User Name"
