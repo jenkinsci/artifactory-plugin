@@ -88,7 +88,7 @@ public class ArtifactoryBuilder extends Builder {
             if (StringUtils.isBlank(value)) {
                 return FormValidation.error("Please set a valid Artifactory URL");
             }
-            String artifactoryUrl = StringUtils.removeEnd(value, "/") + "/webapp/simplebrowserroot.html";
+            String artifactoryUrl = StringUtils.stripEnd(value, "/") + "/webapp/simplebrowserroot.html";
             URL url;
             try {
                 url = new URL(artifactoryUrl);
