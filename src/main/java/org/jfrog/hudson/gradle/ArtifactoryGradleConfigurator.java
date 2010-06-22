@@ -60,13 +60,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     public final boolean deployMaven;
     public final boolean deployIvy;
     public final String remotePluginLocation;
+    public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
 
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
             boolean deployArtifacts, String username, String password, String remotePluginLocation,
-            boolean includeEnvVars) {
+            boolean includeEnvVars, boolean deployBuildInfo) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
@@ -74,6 +75,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         this.username = username;
         this.remotePluginLocation = remotePluginLocation;
         this.includeEnvVars = includeEnvVars;
+        this.deployBuildInfo = deployBuildInfo;
         this.scrambledPassword = Scrambler.scramble(password);
     }
 
@@ -85,6 +87,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         return username;
     }
 
+    public boolean isDeployBuildInfo() {
+        return deployBuildInfo;
+    }
 
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
@@ -159,7 +164,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
                     ArtifactoryRedeployPublisher publisher =
                             new ArtifactoryRedeployPublisher(getDetails(), deployArtifacts, username, getPassword(),
                                     includeEnvVars);
-                    build.getActions().add(new BuildInfoResultAction(publisher, build));
+                    if (isDeployBuildInfo()) {
+                        build.getActions().add(new BuildInfoResultAction(publisher, build));
+                    }
                     return true;
                 }
                 return false;

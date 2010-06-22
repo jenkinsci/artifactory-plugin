@@ -41,15 +41,20 @@
         <f:entry field="deployArtifacts"
                  help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html">
             <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
-            <label class="attach-previous">${%Activate Upload Archives}</label>
+            <label class="attach-previous">${%Publish Artifacts to Artifactory}</label>
+        </f:entry>
+        <f:entry field="deployBuildInfo"
+                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployBuildInfo.html">
+            <f:checkbox default="true" checked="${instance.deployBuildInfo}"/>
+            <label class="attach-previous">${%Publish Build Info}</label>
         </f:entry>
         <f:entry field="deployMaven" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
             <f:checkbox default="false" checked="${instance.deployMaven}"/>
-            <label class="attach-previous">${%Upload Maven Archive(s)}</label>
+            <label class="attach-previous">${%Publish Maven Descriptors (POMs)}</label>
         </f:entry>
         <f:entry field="deployIvy" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployIvy.html">
             <f:checkbox default="true" checked="${instance.deployIvy}"/>
-            <label class="attach-previous">${%Upload Ivy Archive(s)}</label>
+            <label class="attach-previous">${%Publish Ivy Descriptors (ivy.xml)}</label>
         </f:entry>
         <f:entry field="includeEnvVars"
                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">

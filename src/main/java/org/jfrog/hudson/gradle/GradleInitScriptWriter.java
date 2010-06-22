@@ -85,6 +85,8 @@ public class GradleInitScriptWriter {
                 Boolean.toString(gradleConfigurator.deployMaven));
         addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_ARTIFACT,
                 Boolean.toString(gradleConfigurator.isDeployArtifacts()));
+        addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_BUILD_INFO,
+                Boolean.toString(gradleConfigurator.deployBuildInfo));
         addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
         addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
         CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
