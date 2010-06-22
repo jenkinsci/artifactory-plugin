@@ -104,6 +104,9 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         ArtifactoryBuildInfoClient client = server.createArtifactoryClient(getUsername(), getPassword());
         MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
         try {
+            // get the version of artifactory, if it is an unsupported version, an UnsupportedOperationException
+            // will be thrown, and no deployment will commence.
+            client.getVersion();
             if (deployArtifacts) {
                 new ArtifactsDeployer(this, client, mavenBuild, mar, listener).deploy();
             }
