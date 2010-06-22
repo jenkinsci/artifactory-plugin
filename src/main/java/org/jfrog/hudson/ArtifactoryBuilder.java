@@ -2,6 +2,7 @@ package org.jfrog.hudson;
 
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.maven.MavenModuleSet;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -10,17 +11,13 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 
 /**
@@ -84,28 +81,17 @@ public class ArtifactoryBuilder extends Builder {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckUrl(@QueryParameter final String value) throws IOException, ServletException {
+        public FormValidation doCheckUrl(@QueryParameter final String value) throws ServletException {
             if (StringUtils.isBlank(value)) {
                 return FormValidation.error("Please set a valid Artifactory URL");
             }
-            String artifactoryUrl = StringUtils.stripEnd(value, "/") + "/webapp/simplebrowserroot.html";
-            URL url;
+            ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(value);
             try {
-                url = new URL(artifactoryUrl);
-            } catch (MalformedURLException e) {
-                return FormValidation.error("URL is malformed");
-            }
-            GetMethod getMethod = new GetMethod(url.toExternalForm());
-            HttpClient client = new HttpClient();
-            client.getHttpConnectionManager().getParams().setConnectionTimeout(5000);
-            int responseCode;
-            try {
-                responseCode = client.executeMethod(getMethod);
-            } catch (IOException e) {
+                client.getVersion();
+            } catch (UnsupportedOperationException uoe) {
+                return FormValidation.warning(uoe.getMessage());
+            } catch (Exception e) {
                 return FormValidation.error(e.getMessage());
-            }
-            if (responseCode != HttpStatus.SC_OK) {
-                return FormValidation.error(getMethod.getStatusText());
             }
             return FormValidation.ok();
         }
@@ -114,7 +100,8 @@ public class ArtifactoryBuilder extends Builder {
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
             // indicates that this builder can be used with all kinds of project types
-            return true;
+            return aClass == MavenModuleSet.class;
+
         }
 
         /**
