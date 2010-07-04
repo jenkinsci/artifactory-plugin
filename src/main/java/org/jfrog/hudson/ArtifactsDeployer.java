@@ -38,7 +38,8 @@ public class ArtifactsDeployer {
 
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
-            MavenModuleSetBuild mavenModuleSetBuild, MavenAbstractArtifactRecord mar, BuildListener listener) {
+                             MavenModuleSetBuild mavenModuleSetBuild, MavenAbstractArtifactRecord mar,
+                             BuildListener listener) {
         this.client = client;
         this.mavenModuleSetBuild = mavenModuleSetBuild;
         this.mar = mar;
@@ -102,14 +103,7 @@ public class ArtifactsDeployer {
     private String buildArtifactPath(MavenArtifact mavenArtifact) {
         String directoryPath =
                 mavenArtifact.groupId.replace('.', '/') + "/" + mavenArtifact.artifactId + "/" + mavenArtifact.version;
-
-        String fileExtension = mavenArtifact.canonicalName.substring(mavenArtifact.canonicalName.lastIndexOf('.') + 1);
-        String deployableFileName =
-                mavenArtifact.artifactId + "-" + mavenArtifact.version
-                        + (mavenArtifact.classifier != null ? "-" + mavenArtifact.classifier : "")
-                        + "." + fileExtension;
-
-        return directoryPath + "/" + deployableFileName;
+        return directoryPath + "/" + mavenArtifact.canonicalName;
     }
 
     /**
