@@ -87,7 +87,7 @@ public class ArtifactoryBuilder extends Builder {
             }
             ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(value);
             try {
-                client.getVersion();
+                client.verifyCompatibleArtifactoryVersion();
             } catch (UnsupportedOperationException uoe) {
                 return FormValidation.warning(uoe.getMessage());
             } catch (Exception e) {
