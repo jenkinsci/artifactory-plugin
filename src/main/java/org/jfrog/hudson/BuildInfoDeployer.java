@@ -12,6 +12,7 @@ import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.Fingerprinter;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Agent;
@@ -148,6 +149,11 @@ public class BuildInfoDeployer {
         for (Map.Entry<MavenModule, MavenBuild> moduleBuild : mavenBuildMap.entrySet()) {
             MavenModule mavenModule = moduleBuild.getKey();
             MavenBuild mavenBuild = moduleBuild.getValue();
+            Result result = mavenBuild.getResult();
+            if (Result.NOT_BUILT.equals(result)) {
+                // HAP-52 - the module build might be skipped if using incremental build
+                continue;
+            }
             MavenArtifactRecord mar = ActionableHelper.getLatestMavenArtifactRecord(mavenBuild);
             String moduleId = mavenModule.getName() + ":" + mavenModule.getVersion();
             ModuleBuilder moduleBuilder = new ModuleBuilder().id(moduleId);

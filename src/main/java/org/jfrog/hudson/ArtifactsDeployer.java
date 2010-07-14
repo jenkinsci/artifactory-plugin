@@ -10,6 +10,7 @@ import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
+import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
@@ -38,8 +39,8 @@ public class ArtifactsDeployer {
 
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
-                             MavenModuleSetBuild mavenModuleSetBuild, MavenAbstractArtifactRecord mar,
-                             BuildListener listener) {
+            MavenModuleSetBuild mavenModuleSetBuild, MavenAbstractArtifactRecord mar,
+            BuildListener listener) {
         this.client = client;
         this.mavenModuleSetBuild = mavenModuleSetBuild;
         this.mar = mar;
@@ -54,8 +55,15 @@ public class ArtifactsDeployer {
         MavenModuleSetBuild moduleSetBuild = mar2.getBuild();
         Map<MavenModule, MavenBuild> mavenBuildMap = moduleSetBuild.getModuleLastBuilds();
         for (Map.Entry<MavenModule, MavenBuild> mavenBuildEntry : mavenBuildMap.entrySet()) {
-            listener.getLogger().println("Deploying artifacts of module: " + mavenBuildEntry.getKey().getName());
             MavenBuild mavenBuild = mavenBuildEntry.getValue();
+            Result result = mavenBuild.getResult();
+            if (Result.NOT_BUILT.equals(result)) {
+                // HAP-52 - the module build might be skipped if using incremental build
+                listener.getLogger().println(
+                        "Module: '" + mavenBuildEntry.getKey().getName() + "' wasn't built. Skipping.");
+                continue;
+            }
+            listener.getLogger().println("Deploying artifacts of module: " + mavenBuildEntry.getKey().getName());
             MavenArtifactRecord mar = ActionableHelper.getLatestMavenArtifactRecord(mavenBuild);
             MavenArtifact mavenArtifact = mar.mainArtifact;
             // deploy main artifact
