@@ -30,6 +30,11 @@
         <url>http://www.jfrog.org</url>
     </organization>
 
+    <issueManagement>
+        <system>jira</system>
+        <url>http://issues.jfrog.org/jira/browse/HAP</url>
+    </issueManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.jvnet.hudson.main</groupId>
