@@ -29,8 +29,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
+import org.jfrog.build.client.ClientGradleProperties;
 import org.jfrog.build.client.ClientIvyProperties;
-import org.jfrog.build.client.ClientMavenProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ServerDetails;
@@ -81,7 +81,7 @@ public class GradleInitScriptWriter {
         addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_PASSWORD, gradleConfigurator.getPassword());
         addProperty(stringBuilder, ClientIvyProperties.PROP_PUBLISH_IVY,
                 Boolean.toString(gradleConfigurator.deployIvy));
-        addProperty(stringBuilder, ClientMavenProperties.PROP_PUBLISH_MAVEN,
+        addProperty(stringBuilder, ClientGradleProperties.PROP_PUBLISH_MAVEN,
                 Boolean.toString(gradleConfigurator.deployMaven));
         addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_ARTIFACT,
                 Boolean.toString(gradleConfigurator.isDeployArtifacts()));
@@ -98,7 +98,7 @@ public class GradleInitScriptWriter {
                 }
             }
         }
-        addProperty(stringBuilder, ClientProperties.PROP_PRINCIPAL, principal);
+        addProperty(stringBuilder, BuildInfoProperties.PROP_PRINCIPAL, principal);
         String buildUrl = envVars.get("BUILD_URL");
         if (StringUtils.isNotBlank(buildUrl)) {
             addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_URL, buildUrl);
@@ -107,7 +107,8 @@ public class GradleInitScriptWriter {
         if (StringUtils.isNotBlank(svnRevision)) {
             addProperty(stringBuilder, BuildInfoProperties.PROP_VCS_REVISION, svnRevision);
         }
-        addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_AGENT, "Hudson/" + build.getHudsonVersion());
+        addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_AGENT_NAME, "Hudson");
+        addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_AGENT_VERSION, build.getHudsonVersion());
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
         if (parent != null) {
             addProperty(stringBuilder, BuildInfoProperties.PROP_PARENT_BUILD_NAME, parent.getUpstreamProject());
@@ -117,7 +118,7 @@ public class GradleInitScriptWriter {
         // Write all the deploy (matrix params) properties.
         Map<String, String> filteredMatrixParams = Maps.filterKeys(envVars, new Predicate<String>() {
             public boolean apply(String input) {
-                return input.startsWith(BuildInfoConfigProperties.BUILD_INFO_DEPLOY_PROP_PREFIX);
+                return input.startsWith(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX);
             }
         });
         for (Map.Entry<String, String> entry : filteredMatrixParams.entrySet()) {
