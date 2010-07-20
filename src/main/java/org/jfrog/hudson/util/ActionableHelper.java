@@ -40,4 +40,17 @@ public class ActionableHelper {
         }
         return null;
     }
+
+    public static String getHudsonPrincipal(AbstractBuild build) {
+        CauseAction action = getLatestAction(build, CauseAction.class);
+        String principal = "";
+        if (action != null) {
+            for (Cause cause : action.getCauses()) {
+                if (cause instanceof Cause.UserCause) {
+                    principal = (((Cause.UserCause) cause).getUserName());
+                }
+            }
+        }
+        return principal;
+    }
 }

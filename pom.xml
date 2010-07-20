@@ -42,6 +42,12 @@
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.jvnet.hudson.plugins</groupId>
+            <artifactId>ivy</artifactId>
+            <version>1.8-SNAPSHOT</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-client</artifactId>
             <version>1.4.x-SNAPSHOT</version>
@@ -50,6 +56,11 @@
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-api</artifactId>
             <version>1.4.x-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-extractor-ivy</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
