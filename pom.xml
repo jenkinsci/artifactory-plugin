@@ -44,7 +44,7 @@
         <dependency>
             <groupId>org.jvnet.hudson.plugins</groupId>
             <artifactId>ivy</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>1.8</version>
             <optional>true</optional>
         </dependency>
         <dependency>
