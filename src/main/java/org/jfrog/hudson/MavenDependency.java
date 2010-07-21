@@ -6,7 +6,9 @@ import java.io.Serializable;
  * Captures information of a maven dependency.
  *
  * @author Yossi Shaul
+ * @deprecated All maven specific classes moved to org.jfrog.hudson.maven.
  */
+@Deprecated
 public class MavenDependency implements Serializable {
     public String id;
     public String groupId;

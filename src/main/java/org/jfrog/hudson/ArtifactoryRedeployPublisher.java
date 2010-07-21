@@ -25,9 +25,12 @@ import java.util.List;
 
 /**
  * {@link Publisher} for {@link hudson.maven.MavenModuleSetBuild} to deploy artifacts to Artifactory only after a build
- * is fully succeeded.
+ * is fully succeeded. `
  *
  * @author Yossi Shaul
+ *         <p/>
+ *         TODO [yl]: This class is used by Gradle as well - need to factor out the repository data object form here.
+ *         Currently this class fqn is hardcoded into thge configuration so that
  */
 public class ArtifactoryRedeployPublisher extends Recorder {
     /**

@@ -26,7 +26,9 @@ import java.util.Map;
  * Deploys artifacts to Artifactory.
  *
  * @author Yossi Shaul
+ * @deprecated All maven specific classes moved to org.jfrog.hudson.maven.
  */
+@Deprecated
 public class ArtifactsDeployer {
     public static boolean debug = Boolean.getBoolean(ArtifactsDeployer.class.getName() + ".debug");
 

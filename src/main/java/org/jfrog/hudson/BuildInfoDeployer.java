@@ -38,7 +38,9 @@ import java.util.Set;
  * Builds and deploys the build info.
  *
  * @author Yossi Shaul
+ * @deprecated All maven specific classes moved to org.jfrog.hudson.maven.
  */
+@Deprecated
 public class BuildInfoDeployer {
     private final ArtifactoryRedeployPublisher publisher;
     private final ArtifactoryBuildInfoClient client;

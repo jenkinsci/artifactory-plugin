@@ -9,7 +9,9 @@ import java.util.Set;
  * Records dependencies (including transitive) of a maven module.
  *
  * @author Yossi Shaul
+ * @deprecated All maven specific classes moved to org.jfrog.hudson.maven.
  */
+@Deprecated
 public class MavenDependenciesRecord implements Action {
     private final MavenBuild build;
     private final Set<MavenDependency> dependencies;

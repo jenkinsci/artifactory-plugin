@@ -1,6 +1,7 @@
 package org.jfrog.hudson.ivy;
 
 import com.google.common.collect.Maps;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
@@ -19,9 +20,7 @@ import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.config.ArtifactoryIvySettingsConfigurator;
 import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.util.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -36,6 +35,7 @@ import java.util.Map;
 /**
  * @author Tomer Cohen
  */
+@XStreamAlias("artifactory-ivy-config")
 public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     private ServerDetails details;
@@ -143,23 +143,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 targets.append("-listener ").append("org.jfrog.build.extractor.listener.ArtifactoryBuildListener")
                         .append(" ");
                 return targets.toString();
-            }
-
-            @Override
-            public boolean tearDown(AbstractBuild build, BuildListener listener)
-                    throws IOException, InterruptedException {
-                Result result = build.getResult();
-                if (result == null) {
-                    return false;
-                }
-                ArtifactoryRedeployPublisher publisher =
-                        new ArtifactoryRedeployPublisher(getDetails(), true, username, getPassword(),
-                                true);
-                if (result.isBetterOrEqualTo(Result.SUCCESS)) {
-                    build.getActions().add(new BuildInfoResultAction(publisher, build));
-                    return true;
-                }
-                return false;
             }
         };
     }

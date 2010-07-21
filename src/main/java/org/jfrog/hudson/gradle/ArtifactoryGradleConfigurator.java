@@ -18,6 +18,7 @@
 
 package org.jfrog.hudson.gradle;
 
+import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -52,6 +53,7 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
+@XStreamAlias("artifactory-gradle-config")
 public class ArtifactoryGradleConfigurator extends BuildWrapper {
     private ServerDetails details;
     private String username;
