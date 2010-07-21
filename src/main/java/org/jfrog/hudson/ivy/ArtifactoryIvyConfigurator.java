@@ -122,6 +122,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 StringBuilder extraAntOpts = new StringBuilder();
                 String path = agentLib.getAbsolutePath();
                 path = path.replace('\\', '/');
+                path = "\"" + path + "\"";
                 extraAntOpts.append("-javaagent:").append(path).append(" ");
                 return extraAntOpts.toString();
             }
@@ -137,6 +138,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 StringBuilder targets = new StringBuilder();
                 String path = agentFile.getParentFile().getAbsolutePath();
                 path = path.replace('\\', '/');
+                path = "\"" + path + "\"";
                 targets.append("-lib ").append(path).append(" ");
                 targets.append("-listener ").append("org.jfrog.build.extractor.listener.ArtifactoryBuildListener")
                         .append(" ");
