@@ -84,6 +84,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
         return details != null ? details.artifactoryName : null;
     }
 
+    public String getRepositoryKey() {
+        return details != null ? details.repositoryKey : null;
+    }
+
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
