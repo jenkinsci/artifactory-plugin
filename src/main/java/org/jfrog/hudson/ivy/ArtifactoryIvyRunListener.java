@@ -17,7 +17,6 @@
 package org.jfrog.hudson.ivy;
 
 import hudson.Extension;
-import hudson.ivy.IvyModuleSet;
 import hudson.ivy.IvyModuleSetBuild;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -42,12 +41,14 @@ public class ArtifactoryIvyRunListener extends RunListener<IvyModuleSetBuild> {
             return;
         }
         ArtifactoryIvyConfigurator artifactoryIvyConfigurator =
-                ((IvyModuleSet) run.getProject()).getBuildWrappersList().get(ArtifactoryIvyConfigurator.class);
-        ArtifactoryRedeployPublisher publisher =
-                new ArtifactoryRedeployPublisher(artifactoryIvyConfigurator.getDetails(), true,
-                        artifactoryIvyConfigurator.getUsername(), artifactoryIvyConfigurator.getPassword(), true);
-        if (result.isBetterOrEqualTo(Result.SUCCESS)) {
-            run.getActions().add(new BuildInfoResultAction(publisher, run));
+                run.getProject().getBuildWrappersList().get(ArtifactoryIvyConfigurator.class);
+        if (artifactoryIvyConfigurator.isDeployBuildInfo()) {
+            ArtifactoryRedeployPublisher publisher =
+                    new ArtifactoryRedeployPublisher(artifactoryIvyConfigurator.getDetails(), true,
+                            artifactoryIvyConfigurator.getUsername(), artifactoryIvyConfigurator.getPassword(), true);
+            if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+                run.getActions().add(new BuildInfoResultAction(publisher, run));
+            }
         }
     }
 }
