@@ -120,8 +120,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 env.putAll(envVars);
                 env.put(ClientProperties.PROP_CONTEXT_URL, artifactoryServer.getUrl());
                 env.put(ClientProperties.PROP_PUBLISH_REPOKEY, getRepositoryKey());
-                env.put(ClientProperties.PROP_PUBLISH_USERNAME, artifactoryServer.getUserName());
-                env.put(ClientProperties.PROP_PUBLISH_PASSWORD, artifactoryServer.getPassword());
+                env.put(ClientProperties.PROP_PUBLISH_USERNAME, getUsername());
+                env.put(ClientProperties.PROP_PUBLISH_PASSWORD, getPassword());
                 env.put(BuildInfoProperties.PROP_BUILD_AGENT_NAME, "Hudson");
                 env.put(BuildInfoProperties.PROP_BUILD_AGENT_VERSION, build.getHudsonVersion());
                 env.put(BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
