@@ -118,7 +118,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 }
                 env.putAll(envVars);
                 env.put(ClientProperties.PROP_CONTEXT_URL, artifactoryServer.getUrl());
-                env.put(ClientProperties.PROP_PUBLISH_REPOKEY, getDetails().repositoryKey);
+                env.put(ClientProperties.PROP_PUBLISH_REPOKEY, getRepositoryKey());
                 env.put(ClientProperties.PROP_PUBLISH_USERNAME, artifactoryServer.getUserName());
                 env.put(ClientProperties.PROP_PUBLISH_PASSWORD, artifactoryServer.getPassword());
                 env.put(BuildInfoProperties.PROP_BUILD_AGENT_NAME, "Hudson");
@@ -196,7 +196,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
         @Override
         public String getDisplayName() {
-            return "Deploy artifacts to Artifactory";
+            return "Publish to Artifactory";
+        }
+
+        @Override
+        public String getHelpFile() {
+            return "/plugin/artifactory/ivy/help-publish.html";
         }
 
         @Override

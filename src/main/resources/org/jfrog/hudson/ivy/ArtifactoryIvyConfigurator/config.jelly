@@ -7,7 +7,7 @@
                 <f:nested>
                     <input type="hidden" name="artifactoryName" value="${s.name}"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                    <f:entry title="${%Target Upload repository}">
+                    <f:entry title="${%Target repository}">
                         <select class="setting-input" name="repositoryKey">
                             <j:forEach var="r" items="${s.repositoryKeys}">
                                 <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
@@ -19,29 +19,29 @@
         </j:forEach>
     </f:dropdownList>
     <f:entry title="${%Deployer username}" field="username"
-             help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-userName.html">
+             help="/plugin/artifactory/ivy/help-userName.html">
         <f:textbox/>
     </f:entry>
 
     <f:entry title="${%Deployer password}" field="password"
-             help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-password.html">
+             help="/plugin/artifactory/ivy/help-password.html">
         <f:password/>
     </f:entry>
     <f:advanced>
         <f:entry field="deployArtifacts"
                  help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html">
             <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
-            <label class="attach-previous">${%Publish Artifacts to Artifactory}</label>
+            <label class="attach-previous">${%Publish artifacts to Artifactory}</label>
         </f:entry>
         <f:entry field="deployBuildInfo"
-                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployBuildInfo.html">
+                 help="/plugin/artifactory/ivy/help-deployBuildInfo.html">
             <f:checkbox default="true" checked="${instance.deployBuildInfo}"/>
-            <label class="attach-previous">${%Publish Build Info}</label>
+            <label class="attach-previous">${%Publish build info}</label>
         </f:entry>
         <f:entry field="includeEnvVars"
                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
             <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
-            <label class="attach-previous">${%Include All Environment Variables}</label>
+            <label class="attach-previous">${%Include all environment variables}</label>
         </f:entry>
     </f:advanced>
 
