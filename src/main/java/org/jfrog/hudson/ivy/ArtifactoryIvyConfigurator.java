@@ -24,6 +24,7 @@ import hudson.ivy.AntIvyBuildWrapper;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Cause;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.remoting.Which;
@@ -129,6 +130,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 env.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, String.valueOf(isIncludeEnvVars()));
                 env.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, String.valueOf(isDeployBuildInfo()));
                 env.put(ClientProperties.PROP_PUBLISH_ARTIFACT, String.valueOf(isDeployArtifacts()));
+                Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
+                if (parent != null) {
+                    env.put(BuildInfoProperties.PROP_PARENT_BUILD_NAME, parent.getUpstreamProject());
+                    env.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parent.getUpstreamBuild() + "");
+                }
             }
 
             @Override
