@@ -51,7 +51,7 @@ public class GradleInitScriptWriter {
     private static final String NEW_LINE = "\n";
     private static final String QUOTE = "'";
     private static String scriptRepoPath =
-            "org/jfrog/buildinfo/build-info-extractor-gradle/1.0.0/artifactoryinitplugin-1.0.0.gradle";
+            "org/jfrog/buildinfo/build-info-extractor-gradle/1.0.1/artifactoryinitplugin-1.0.1.gradle";
     private ArtifactoryGradleConfigurator gradleConfigurator;
 
     /**
