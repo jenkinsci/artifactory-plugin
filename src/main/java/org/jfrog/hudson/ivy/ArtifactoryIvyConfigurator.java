@@ -188,7 +188,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    @Extension
+    @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         public DescriptorImpl() {
             super(ArtifactoryIvyConfigurator.class);

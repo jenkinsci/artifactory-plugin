@@ -190,7 +190,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    @Extension
+    @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         public DescriptorImpl() {
             super(ArtifactoryGradleConfigurator.class);

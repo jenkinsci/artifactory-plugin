@@ -28,7 +28,7 @@ import org.jfrog.hudson.BuildInfoResultAction;
 /**
  * @author Tomer Cohen
  */
-@Extension
+@Extension(optional = true)
 public class ArtifactoryIvyRunListener extends RunListener<IvyModuleSetBuild> {
     public ArtifactoryIvyRunListener() {
         super(IvyModuleSetBuild.class);
@@ -37,18 +37,19 @@ public class ArtifactoryIvyRunListener extends RunListener<IvyModuleSetBuild> {
     @Override
     public void onCompleted(IvyModuleSetBuild run, TaskListener listener) {
         Result result = run.getResult();
-        if (result == null) {
+        if (result == null || result.isWorseThan(Result.SUCCESS)) {
             return;
         }
         ArtifactoryIvyConfigurator artifactoryIvyConfigurator =
                 run.getProject().getBuildWrappersList().get(ArtifactoryIvyConfigurator.class);
+        if (artifactoryIvyConfigurator == null) {
+            return;
+        }
         if (artifactoryIvyConfigurator.isDeployBuildInfo()) {
             ArtifactoryRedeployPublisher publisher =
                     new ArtifactoryRedeployPublisher(artifactoryIvyConfigurator.getDetails(), true,
                             artifactoryIvyConfigurator.getUsername(), artifactoryIvyConfigurator.getPassword(), true);
-            if (result.isBetterOrEqualTo(Result.SUCCESS)) {
-                run.getActions().add(new BuildInfoResultAction(publisher, run));
-            }
+            run.getActions().add(new BuildInfoResultAction(publisher, run));
         }
     }
 }
