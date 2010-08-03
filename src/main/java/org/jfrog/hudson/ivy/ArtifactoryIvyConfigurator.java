@@ -122,14 +122,18 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 env.put(ClientProperties.PROP_PUBLISH_REPOKEY, getRepositoryKey());
                 env.put(ClientProperties.PROP_PUBLISH_USERNAME, getUsername());
                 env.put(ClientProperties.PROP_PUBLISH_PASSWORD, getPassword());
-                env.put(BuildInfoProperties.PROP_BUILD_AGENT_NAME, "Hudson");
-                env.put(BuildInfoProperties.PROP_BUILD_AGENT_VERSION, build.getHudsonVersion());
+                env.put(BuildInfoProperties.PROP_AGENT_NAME, "Hudson");
+                env.put(BuildInfoProperties.PROP_AGENT_VERSION, build.getHudsonVersion());
                 env.put(BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
                 env.put(BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
                 env.put(BuildInfoProperties.PROP_PRINCIPAL, ActionableHelper.getHudsonPrincipal(build));
                 env.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, String.valueOf(isIncludeEnvVars()));
                 env.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, String.valueOf(isDeployBuildInfo()));
                 env.put(ClientProperties.PROP_PUBLISH_ARTIFACT, String.valueOf(isDeployArtifacts()));
+                if (Hudson.getInstance().getRootUrl() != null) {
+                    env.put(BuildInfoProperties.PROP_BUILD_URL, Hudson.getInstance().getRootUrl() + build.getUrl());
+
+                }
                 Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
                 if (parent != null) {
                     env.put(BuildInfoProperties.PROP_PARENT_BUILD_NAME, parent.getUpstreamProject());
