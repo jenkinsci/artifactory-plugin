@@ -28,6 +28,7 @@ import hudson.util.FormValidation;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -103,7 +104,7 @@ public class ArtifactoryBuilder extends Builder {
             if (StringUtils.isBlank(value)) {
                 return FormValidation.error("Please set a valid Artifactory URL");
             }
-            ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(value);
+            ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(value, new NullLog());
             try {
                 client.verifyCompatibleArtifactoryVersion();
             } catch (UnsupportedOperationException uoe) {

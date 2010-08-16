@@ -20,6 +20,7 @@ import hudson.ProxyConfiguration;
 import hudson.model.Hudson;
 import hudson.util.Scrambler;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -108,7 +109,7 @@ public class ArtifactoryServer {
     }
 
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password) {
-        ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password);
+        ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password, new NullLog());
         client.setConnectionTimeout(timeout);
 
         ProxyConfiguration proxyConfiguration = Hudson.getInstance().proxy;

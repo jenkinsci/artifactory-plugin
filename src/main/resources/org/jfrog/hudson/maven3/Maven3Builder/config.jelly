@@ -1,0 +1,51 @@
+<!--
+  ~ Copyright (C) 2010 JFrog Ltd.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+    <j:set var="mavens" value="${descriptor.mavenDescriptor.installations}"/>
+    <j:if test="${empty(mavens)}">
+        <!-- no maven installation is configured. this will be an error, so warn the user now -->
+        <f:entry title="${%Maven Version}">
+            <div class="error">
+                ${%maven.version.error.1}&lt;br>
+                ${%maven.version.error.2(rootURL)}
+            </div>
+        </f:entry>
+    </j:if>
+    <j:if test="${mavens.size() gt 1}">
+        <!-- display only if there's more than one maven installation -->
+        <f:entry title="${%Maven Version}">
+            <select class="setting-input" name="mavenName">
+                <j:forEach var="inst" items="${mavens}">
+                    <f:option selected="${inst.name==instance.mavenName}">${inst.name}</f:option>
+                </j:forEach>
+            </select>
+        </f:entry>
+    </j:if>
+    <f:entry title="${%Root POM}" field="rootPom" help="/plugin/maven-plugin/root-pom.html">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Goals and options}" field="goals" help="/plugin/maven-plugin/goals.html">
+        <f:textbox/>
+    </f:entry>
+    <f:advanced>
+        <f:entry title="MAVEN_OPTS" field="mavenOpts" help="/plugin/maven-plugin/maven-opts.html">
+            <f:expandableTextbox/>
+        </f:entry>
+    </f:advanced>
+</j:jelly>
