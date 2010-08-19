@@ -44,6 +44,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLDecoder;
 
 /**
  * Maven3 builder.
@@ -116,6 +117,12 @@ public class Maven3Builder extends Builder {
             throw new Run.RunnerAbortedException();
         }
 
+        StringBuilder mavenOptsBuilder = new StringBuilder();
+        String existingMavenOpts = env.get("MAVEN_OPTS");
+        if (StringUtils.isNotBlank(existingMavenOpts)) {
+            mavenOptsBuilder.append(existingMavenOpts);
+        }
+
         ArgumentListBuilder args = new ArgumentListBuilder();
 
         if (!launcher.isUnix()) {
@@ -143,16 +150,13 @@ public class Maven3Builder extends Builder {
         args.add("-classpath");
         //String cpSeparator = launcher.isUnix() ? ":" : ";";
 
-        args.add(new StringBuilder().append(classWorldsJar.getAbsolutePath()).toString());
-
-        // maven opts
-        args.addTokenized(getMavenOpts());
+        args.add(classWorldsJar.getAbsolutePath());
 
         String buildInfoPropertiesFile = env.get(BuildInfoConfigProperties.PROP_PROPS_FILE);
         boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
         if (artifactoryIntegration) {
-            args.add(new StringBuilder("-D").append(BuildInfoConfigProperties.PROP_PROPS_FILE + "=").append(
-                    buildInfoPropertiesFile).toString());
+            mavenOptsBuilder.append(" -D").append(BuildInfoConfigProperties.PROP_PROPS_FILE + "=").append(
+                    buildInfoPropertiesFile);
         }
 
         // maven home
@@ -164,7 +168,7 @@ public class Maven3Builder extends Builder {
             File libsDirectory = Which.jarFile(Maven3BuildInfoLogger.class).getParentFile();
             args.add("-Dm3plugin.lib=" + libsDirectory.getAbsolutePath());
             URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds.conf");
-            classworldsConf = new File(resource.getFile());
+            classworldsConf = new File(URLDecoder.decode(resource.getFile(), "utf-8"));
             if (!classworldsConf.exists()) {
                 listener.error(
                         "Unable to locate classworlds configuration file under " + classworldsConf.getAbsolutePath());
@@ -179,14 +183,20 @@ public class Maven3Builder extends Builder {
         // maven opts
         String mavenOpts = Util.replaceMacro(getMavenOpts(), build.getBuildVariableResolver());
         if (StringUtils.isNotBlank(mavenOpts)) {
-            args.add(mavenOpts);
+            mavenOptsBuilder.append(" ").append(mavenOpts);
         }
+
+        env.put("MAVEN_OPTS", mavenOptsBuilder.toString());
 
         // classworlds launcher main class
         args.add(CLASSWORLDS_LAUNCHER);
 
         // pom file to build
-        args.add("-f", getRootPom());
+        String rootPom = getRootPom();
+        if (StringUtils.isBlank(rootPom)) {
+            rootPom = "pom.xml";
+        }
+        args.add("-f", rootPom);
 
         // maven goals
         args.addTokenized(getGoals());
