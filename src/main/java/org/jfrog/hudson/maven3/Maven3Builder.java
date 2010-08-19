@@ -25,6 +25,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Hudson;
+import hudson.model.JDK;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.remoting.Which;
@@ -90,10 +91,22 @@ public class Maven3Builder extends Builder {
         EnvVars env = build.getEnvironment(listener);
         FilePath workDir = build.getModuleRoot();
         ArgumentListBuilder cmdLine = buildMavenCmdLine(build, launcher, listener, env);
+        StringBuilder javaPathBuilder = new StringBuilder();
+
+        JDK configuredJdk = build.getProject().getJDK();
+        if (configuredJdk != null) {
+            javaPathBuilder.append(build.getProject().getJDK().getBinDir().getCanonicalPath()).append(File.separator);
+        }
+        javaPathBuilder.append("java");
+        if (!launcher.isUnix()) {
+            javaPathBuilder.append(".exe");
+        }
         String[] cmds = cmdLine.toCommandArray();
         try {
             //listener.getLogger().println("Executing: " + cmdLine.toStringWithQuote());
-            int exitValue = launcher.launch().cmds(cmds).envs(env).stdout(listener).pwd(workDir).join();
+            int exitValue =
+                    launcher.launch().cmds(new File(javaPathBuilder.toString()), cmds).envs(env).stdout(listener)
+                            .pwd(workDir).join();
             boolean success = (exitValue == 0);
             build.setResult(success ? Result.SUCCESS : Result.FAILURE);
             return success;
@@ -117,21 +130,7 @@ public class Maven3Builder extends Builder {
             throw new Run.RunnerAbortedException();
         }
 
-        StringBuilder mavenOptsBuilder = new StringBuilder();
-        String existingMavenOpts = env.get("MAVEN_OPTS");
-        if (StringUtils.isNotBlank(existingMavenOpts)) {
-            mavenOptsBuilder.append(existingMavenOpts);
-        }
-
         ArgumentListBuilder args = new ArgumentListBuilder();
-
-        if (!launcher.isUnix()) {
-            args.add("cmd.exe", "/C");
-        }
-
-        // java
-        String java = build.getProject().getJDK() != null ? build.getProject().getJDK().getBinDir() + "/java" : "java";
-        args.add(new File(java).getAbsolutePath());
 
         File bootDir = new File(mvn.getHomeDir(), "boot");
         File[] candidates = bootDir.listFiles(new FilenameFilter() {
@@ -150,13 +149,16 @@ public class Maven3Builder extends Builder {
         args.add("-classpath");
         //String cpSeparator = launcher.isUnix() ? ":" : ";";
 
-        args.add(classWorldsJar.getAbsolutePath());
+        args.add(new StringBuilder().append(classWorldsJar.getCanonicalPath()).toString());
+
+        // maven opts
+        args.addTokenized(getMavenOpts());
 
         String buildInfoPropertiesFile = env.get(BuildInfoConfigProperties.PROP_PROPS_FILE);
         boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
         if (artifactoryIntegration) {
-            mavenOptsBuilder.append(" -D").append(BuildInfoConfigProperties.PROP_PROPS_FILE + "=").append(
-                    buildInfoPropertiesFile);
+            args.add(new StringBuilder("-D").append(BuildInfoConfigProperties.PROP_PROPS_FILE + "=").append(
+                    buildInfoPropertiesFile).toString());
         }
 
         // maven home
@@ -178,25 +180,22 @@ public class Maven3Builder extends Builder {
             classworldsConf = new File(mvn.getHome(), "bin/m2.conf");
         }
 
-        args.add("-Dclassworlds.conf=" + classworldsConf.getAbsolutePath());
+        args.add("-Dclassworlds.conf=" + classworldsConf.getCanonicalPath());
 
         // maven opts
         String mavenOpts = Util.replaceMacro(getMavenOpts(), build.getBuildVariableResolver());
         if (StringUtils.isNotBlank(mavenOpts)) {
-            mavenOptsBuilder.append(" ").append(mavenOpts);
+            args.add(mavenOpts);
         }
-
-        env.put("MAVEN_OPTS", mavenOptsBuilder.toString());
 
         // classworlds launcher main class
         args.add(CLASSWORLDS_LAUNCHER);
 
         // pom file to build
         String rootPom = getRootPom();
-        if (StringUtils.isBlank(rootPom)) {
-            rootPom = "pom.xml";
+        if (StringUtils.isNotBlank(rootPom)) {
+            args.add("-f", rootPom);
         }
-        args.add("-f", rootPom);
 
         // maven goals
         args.addTokenized(getGoals());
