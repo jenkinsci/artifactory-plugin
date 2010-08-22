@@ -16,6 +16,9 @@
 
 package org.jfrog.hudson.maven3;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
@@ -239,6 +242,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(isDeployArtifacts()));
         props.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.TRUE.toString());
         props.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, Boolean.toString(isIncludeEnvVars()));
+        addEnvVars(env, build, props);
+
 
         File tempPropsFile = File.createTempFile("buildInfo", "properties");
         FileOutputStream fileOutputStream = new FileOutputStream(tempPropsFile);
@@ -249,6 +254,52 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         }
 
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, tempPropsFile.getCanonicalPath());
+    }
+
+    private void addEnvVars(Map<String, String> env, AbstractBuild build, Properties props) {
+        // Write all the deploy (matrix params) properties.
+        Map<String, String> filteredEnvMatrixParams = Maps.filterKeys(env, new Predicate<String>() {
+            public boolean apply(String input) {
+                return input.startsWith(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX);
+            }
+        });
+        for (Map.Entry<String, String> entry : filteredEnvMatrixParams.entrySet()) {
+            props.put(entry.getKey(), entry.getValue());
+        }
+
+        //Add only the hudson specific environment variables
+        MapDifference<String, String> envDifference = Maps.difference(env, System.getenv());
+        Map<String, String> filteredEnvDifference = envDifference.entriesOnlyOnLeft();
+        for (Map.Entry<String, String> entry : filteredEnvDifference.entrySet()) {
+            props.put(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(), entry.getValue());
+        }
+
+        // add build variables
+        Map<String, String> buildVariables = build.getBuildVariables();
+        Map<String, String> filteredBuildVars = Maps.newHashMap();
+
+        filteredBuildVars.putAll(Maps.filterKeys(buildVariables, new Predicate<String>() {
+            public boolean apply(String input) {
+                return input.startsWith(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX);
+            }
+        }));
+        filteredBuildVars.putAll(Maps.filterKeys(buildVariables, new Predicate<String>() {
+            public boolean apply(String input) {
+                return input.startsWith(BuildInfoProperties.BUILD_INFO_PROP_PREFIX);
+            }
+        }));
+
+        for (Map.Entry<String, String> filteredBuildVar : filteredBuildVars.entrySet()) {
+            props.put(filteredBuildVar.getKey(), filteredBuildVar.getValue());
+        }
+
+        MapDifference<String, String> buildVarDifference = Maps.difference(buildVariables, filteredBuildVars);
+        Map<String, String> filteredBuildVarDifferences = buildVarDifference.entriesOnlyOnLeft();
+
+        for (Map.Entry<String, String> filteredBuildVarDifference : filteredBuildVarDifferences.entrySet()) {
+            props.put(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + filteredBuildVarDifference.getKey(),
+                    filteredBuildVarDifference.getValue());
+        }
     }
 
     @Extension(optional = true)
