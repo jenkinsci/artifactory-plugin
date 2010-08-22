@@ -21,12 +21,7 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.Scrambler;
@@ -64,7 +59,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, String username, String password, boolean deployArtifacts,
-            boolean deployBuildInfo, boolean includeEnvVars) {
+                                      boolean deployBuildInfo, boolean includeEnvVars) {
         this.details = details;
         this.username = username;
         this.password = Scrambler.scramble(password);
@@ -170,8 +165,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 path = path.replace('\\', '/');
                 path = "\"" + path + "\"";
                 targets.append("-lib ").append(path).append(" ");
-                targets.append("-listener ").append("org.jfrog.build.extractor.listener.ArtifactoryBuildListener")
-                        .append(" ");
                 return targets.toString();
             }
         };
