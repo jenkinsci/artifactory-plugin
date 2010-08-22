@@ -197,6 +197,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         String buildUrl = Hudson.getInstance().getRootUrl() + build.getUrl();
         props.put(BuildInfoProperties.PROP_BUILD_URL, buildUrl);
 
+        String userName = "unknown";
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
         if (parent != null) {
             String parentProject = parent.getUpstreamProject();
@@ -208,17 +209,19 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             props.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parentBuildName);
             props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX +
                     BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parentBuildName);
+            userName = "auto";
         }
 
         CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
         if (action != null) {
             for (Cause cause : action.getCauses()) {
                 if (cause instanceof Cause.UserCause) {
-                    String userName = ((Cause.UserCause) cause).getUserName();
-                    props.put(BuildInfoProperties.PROP_PRINCIPAL, userName);
+                    userName = ((Cause.UserCause) cause).getUserName();
                 }
             }
         }
+
+        props.put(BuildInfoProperties.PROP_PRINCIPAL, userName);
 
         props.put(BuildInfoProperties.PROP_AGENT_NAME, "Hudson");
         props.put(BuildInfoProperties.PROP_AGENT_VERSION, build.getHudsonVersion());
