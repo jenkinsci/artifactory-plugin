@@ -56,7 +56,7 @@ public class ArtifactoryBuilder extends Builder {
         return true;
     }
 
-    // overrided for better type safety.
+    // override for better type safety.
     // if your plugin doesn't really define any property on Descriptor,
     // you don't have to do this.
 
@@ -70,7 +70,7 @@ public class ArtifactoryBuilder extends Builder {
      * accessed from views.
      * <p/>
      * <p/>
-     * See <tt>views/hudson/plugins/hello_world/ArtifactoryBuilder/*.jelly</tt> for the actual HTML fragment for the
+     * See <tt>views/hudson/plugins/artifactory/ArtifactoryBuilder/*.jelly</tt> for the actual HTML fragment for the
      * configuration screen.
      */
     @Extension
