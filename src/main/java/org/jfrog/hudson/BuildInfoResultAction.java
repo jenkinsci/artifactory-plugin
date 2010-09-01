@@ -17,14 +17,14 @@
 package org.jfrog.hudson;
 
 import hudson.model.AbstractBuild;
-import hudson.model.Action;
+import hudson.model.BuildBadgeAction;
 
 /**
  * Result of the redeploy publisher. Currently only a link to Artifactory build info.
  *
  * @author Yossi Shaul
  */
-public class BuildInfoResultAction implements Action {
+public class BuildInfoResultAction implements BuildBadgeAction {
 
     private final String url;
 
