@@ -35,6 +35,8 @@ import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
+import org.jfrog.hudson.maven2.ArtifactsDeployer;
+import org.jfrog.hudson.maven2.BuildInfoDeployer;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson;
+package org.jfrog.hudson.maven2;
 
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
@@ -30,6 +30,8 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
+import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.File;
@@ -41,9 +43,7 @@ import java.util.Map;
  * Deploys artifacts to Artifactory.
  *
  * @author Yossi Shaul
- * @deprecated All maven specific classes moved to org.jfrog.hudson.maven.
  */
-@Deprecated
 public class ArtifactsDeployer {
     public static boolean debug = Boolean.getBoolean(ArtifactsDeployer.class.getName() + ".debug");
 

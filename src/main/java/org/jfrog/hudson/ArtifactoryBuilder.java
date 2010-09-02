@@ -39,9 +39,7 @@ import java.util.List;
 
 /**
  * @author Yossi Shaul
- * @deprecated All maven specific classes moved to org.jfrog.hudson.maven.
  */
-@Deprecated
 public class ArtifactoryBuilder extends Builder {
 
     @Override

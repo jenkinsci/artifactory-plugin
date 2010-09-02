@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson;
+package org.jfrog.hudson.maven2;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
@@ -42,6 +42,10 @@ import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.MavenDependenciesRecord;
+import org.jfrog.hudson.MavenDependency;
 import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.IOException;
@@ -54,9 +58,7 @@ import java.util.Set;
  * Builds and deploys the build info.
  *
  * @author Yossi Shaul
- * @deprecated All maven specific classes moved to org.jfrog.hudson.maven.
  */
-@Deprecated
 public class BuildInfoDeployer {
     private final ArtifactoryRedeployPublisher publisher;
     private final ArtifactoryBuildInfoClient client;

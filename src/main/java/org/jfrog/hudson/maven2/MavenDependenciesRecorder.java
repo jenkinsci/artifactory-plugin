@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson;
+package org.jfrog.hudson.maven2;
 
 import hudson.Extension;
 import hudson.maven.MavenBuild;
@@ -27,6 +27,8 @@ import hudson.maven.MojoInfo;
 import hudson.model.BuildListener;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.project.MavenProject;
+import org.jfrog.hudson.MavenDependenciesRecord;
+import org.jfrog.hudson.MavenDependency;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -36,9 +38,7 @@ import java.util.Set;
  * Records dependencies used during the build.
  *
  * @author Yossi Shaul
- * @deprecated All maven specific classes moved to org.jfrog.hudson.maven.
  */
-@Deprecated
 public class MavenDependenciesRecorder extends MavenReporter {
 
     /**
