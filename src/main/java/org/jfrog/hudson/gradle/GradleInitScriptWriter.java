@@ -45,12 +45,12 @@ import java.util.Map;
  * @author Tomer Cohen
  */
 public class GradleInitScriptWriter {
+    private static final String NEW_LINE = "\n";
+    private static final String QUOTE = "'";
 
     private EnvVars envVars;
     private AbstractBuild build;
-    private static final String NEW_LINE = "\n";
-    private static final String QUOTE = "'";
-    private static String scriptRepoPath =
+    private String scriptRepoPath =
             "org/jfrog/buildinfo/build-info-extractor-gradle/1.0.1/artifactoryinitplugin-1.0.1.gradle";
     private ArtifactoryGradleConfigurator gradleConfigurator;
 

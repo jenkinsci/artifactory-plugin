@@ -46,9 +46,6 @@ import java.util.List;
  * is fully succeeded. `
  *
  * @author Yossi Shaul
- *         <p/>
- *         TODO [yl]: This class is used by Gradle as well - need to factor out the repository data object form here.
- *         Currently this class fqn is hardcoded into thge configuration so that
  */
 public class ArtifactoryRedeployPublisher extends Recorder {
     /**
@@ -136,7 +133,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
             }
             new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
             // add the result action
-            build.getActions().add(new BuildInfoResultAction(this, build));
+            build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
             return true;
         } catch (Exception e) {
             e.printStackTrace(listener.error(e.getMessage()));

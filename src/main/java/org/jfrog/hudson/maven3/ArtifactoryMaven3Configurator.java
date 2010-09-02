@@ -43,7 +43,6 @@ import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.ServerDetails;
@@ -164,9 +163,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
                     return false;
                 }
                 if (result.isBetterOrEqualTo(Result.SUCCESS)) {
-                    ArtifactoryRedeployPublisher publisher = new ArtifactoryRedeployPublisher(getDetails(),
-                            deployArtifacts, username, getPassword(), includeEnvVars);
-                    build.getActions().add(new BuildInfoResultAction(publisher, build));
+                    build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
                     return true;
                 }
                 return false;

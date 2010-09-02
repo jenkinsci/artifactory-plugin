@@ -39,8 +39,8 @@ public class BuildInfoResultAction implements BuildBadgeAction {
     @Deprecated
     private transient AbstractBuild build;
 
-    public BuildInfoResultAction(ArtifactoryRedeployPublisher artifactoryRedeployPublisher, AbstractBuild build) {
-        url = generateUrl(artifactoryRedeployPublisher, build);
+    public BuildInfoResultAction(String artifactoryRootUrl, AbstractBuild build) {
+        url = generateUrl(artifactoryRootUrl, build);
     }
 
     public String getIconFileName() {
@@ -54,14 +54,14 @@ public class BuildInfoResultAction implements BuildBadgeAction {
     public String getUrlName() {
         // for backward compatibility if url is empty calculate it from the old structs
         if (url == null && artifactoryRedeployPublisher != null && build != null) {
-            return generateUrl(artifactoryRedeployPublisher, build);
+            return generateUrl(artifactoryRedeployPublisher.getArtifactoryName(), build);
         } else {
             return url;
         }
     }
 
-    private String generateUrl(ArtifactoryRedeployPublisher artifactoryRedeployPublisher, AbstractBuild build) {
-        return artifactoryRedeployPublisher.getArtifactoryName() + "/webapp/builds/"
+    private String generateUrl(String artifactoryRootUrl, AbstractBuild build) {
+        return artifactoryRootUrl + "/webapp/builds/"
                 + build.getParent().getDisplayName() + "/"
                 + build.getNumber();
     }

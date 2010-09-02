@@ -21,7 +21,6 @@ import hudson.ivy.IvyModuleSetBuild;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.BuildInfoResultAction;
 
 
@@ -46,10 +45,7 @@ public class ArtifactoryIvyRunListener extends RunListener<IvyModuleSetBuild> {
             return;
         }
         if (artifactoryIvyConfigurator.isDeployBuildInfo()) {
-            ArtifactoryRedeployPublisher publisher =
-                    new ArtifactoryRedeployPublisher(artifactoryIvyConfigurator.getDetails(), true,
-                            artifactoryIvyConfigurator.getUsername(), artifactoryIvyConfigurator.getPassword(), true);
-            run.getActions().add(new BuildInfoResultAction(publisher, run));
+            run.getActions().add(new BuildInfoResultAction(artifactoryIvyConfigurator.getArtifactoryName(), run));
         }
     }
 }

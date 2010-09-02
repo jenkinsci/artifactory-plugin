@@ -32,7 +32,6 @@ import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
 import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.ServerDetails;
@@ -169,11 +168,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
                     return false;
                 }
                 if (result.isBetterOrEqualTo(Result.SUCCESS)) {
-                    ArtifactoryRedeployPublisher publisher =
-                            new ArtifactoryRedeployPublisher(getDetails(), deployArtifacts, username, getPassword(),
-                                    includeEnvVars);
                     if (isDeployBuildInfo()) {
-                        build.getActions().add(new BuildInfoResultAction(publisher, build));
+                        build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
                     }
                     return true;
                 }
