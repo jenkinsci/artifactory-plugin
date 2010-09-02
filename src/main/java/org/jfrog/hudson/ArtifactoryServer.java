@@ -91,7 +91,7 @@ public class ArtifactoryServer {
             ArtifactoryBuildInfoClient client = createArtifactoryClient(userName, getPassword());
             repositories = client.getLocalRepositoriesKeys();
         } catch (IOException e) {
-            log.log(Level.WARNING, "Failed to obtain list of repositories: " + e.getMessage());
+            log.log(Level.WARNING, "Failed to obtain list of local repositories: " + e.getMessage());
         }
 
         return repositories;
@@ -100,12 +100,12 @@ public class ArtifactoryServer {
     public List<String> getVirtualRepositoryKeys() {
         try {
             ArtifactoryBuildInfoClient client = createArtifactoryClient(userName, getPassword());
-            repositories = client.getVirtualRepositoryKeys();
+            virtualRepositories = client.getVirtualRepositoryKeys();
         } catch (IOException e) {
-            log.log(Level.WARNING, "Failed to obtain list of repositories: " + e.getMessage());
+            log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
         }
 
-        return repositories;
+        return virtualRepositories;
     }
 
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password) {
