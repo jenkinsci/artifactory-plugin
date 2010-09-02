@@ -16,13 +16,14 @@
 
 package org.jfrog.hudson.gradle;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
@@ -151,7 +152,7 @@ public class GradleInitScriptWriter {
     public String generateInitScript() throws URISyntaxException, IOException {
         StringBuilder initScript = new StringBuilder();
         File template = new File(getClass().getResource("/initscriptemplate.gradle").toURI());
-        String templateAsString = FileUtils.readFileToString(template);
+        String templateAsString = Files.toString(template, Charsets.UTF_8);
         if (StringUtils.isNotBlank(gradleConfigurator.remotePluginLocation)) {
             scriptRepoPath = gradleConfigurator.remotePluginLocation;
         }

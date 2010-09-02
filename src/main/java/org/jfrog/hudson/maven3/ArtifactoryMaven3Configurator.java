@@ -19,6 +19,7 @@ package org.jfrog.hudson.maven3;
 import com.google.common.base.Predicate;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import com.google.common.io.Closeables;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
@@ -35,7 +36,6 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildInfoConfigProperties;
@@ -254,7 +254,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         try {
             props.store(fileOutputStream, null);
         } finally {
-            IOUtils.closeQuietly(fileOutputStream);
+            Closeables.closeQuietly(fileOutputStream);
         }
 
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, tempPropsFile.getCanonicalPath());

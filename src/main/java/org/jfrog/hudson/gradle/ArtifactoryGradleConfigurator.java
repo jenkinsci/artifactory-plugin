@@ -16,6 +16,8 @@
 
 package org.jfrog.hudson.gradle;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
@@ -30,7 +32,6 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
-import org.apache.commons.io.FileUtils;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
@@ -145,7 +146,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         path = path.replace('\\', '/');
         initScript = new File(path);
         try {
-            FileUtils.writeStringToFile(initScript, writer.generateInitScript(), "UTF-8");
+            Files.write(writer.generateInitScript(), initScript, Charsets.UTF_8);
         } catch (Exception e) {
             listener.getLogger().println("Error occurred while writing Gradle Init Script");
             build.setResult(Result.FAILURE);
