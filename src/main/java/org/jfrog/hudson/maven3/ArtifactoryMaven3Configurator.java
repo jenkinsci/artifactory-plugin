@@ -24,6 +24,7 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
@@ -46,7 +47,7 @@ import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.util.ActionableHelper;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -54,6 +55,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -116,6 +118,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             }
         }
         return null;
+    }
+
+    @Override
+    public Collection<? extends Action> getProjectActions(AbstractProject project) {
+        return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
     }
 
     @Override

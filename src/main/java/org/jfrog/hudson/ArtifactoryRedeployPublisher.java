@@ -23,6 +23,7 @@ import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.Hudson;
 import hudson.model.Result;
@@ -33,6 +34,7 @@ import hudson.tasks.Recorder;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -96,6 +98,11 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     public String getRepositoryKey() {
         return details != null ? details.repositoryKey : null;
+    }
+
+    @Override
+    public Action getProjectAction(AbstractProject<?, ?> project) {
+        return details != null ? new ArtifactoryProjectAction(details.artifactoryName, project) : null;
     }
 
     @Override

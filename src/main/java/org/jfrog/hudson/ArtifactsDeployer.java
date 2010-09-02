@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson;
 
-import hudson.EnvVars;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
@@ -31,7 +30,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
-import org.jfrog.hudson.util.ActionableHelper;
+import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -115,7 +114,6 @@ public class ArtifactsDeployer {
             builder.addProperty("build.parentName", parent.getUpstreamProject())
                     .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
         }
-        EnvVars envVars = mavenBuild.getEnvironment(listener);
         String revision = mavenModuleSetBuild.getEnvironment(listener).get("SVN_REVISION");
         if (StringUtils.isNotBlank(revision)) {
             builder.addProperty(BuildInfoProperties.PROP_VCS_REVISION, revision);

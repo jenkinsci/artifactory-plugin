@@ -21,7 +21,13 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.Scrambler;
@@ -34,12 +40,13 @@ import org.jfrog.build.config.ArtifactoryIvySettingsConfigurator;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.util.ActionableHelper;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -59,7 +66,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, String username, String password, boolean deployArtifacts,
-                                      boolean deployBuildInfo, boolean includeEnvVars) {
+            boolean deployBuildInfo, boolean includeEnvVars) {
         this.details = details;
         this.username = username;
         this.password = Scrambler.scramble(password);
@@ -98,6 +105,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     public String getRepositoryKey() {
         return details != null ? details.repositoryKey : null;
+    }
+
+    @Override
+    public Collection<? extends Action> getProjectActions(AbstractProject project) {
+        return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
     }
 
     @Override

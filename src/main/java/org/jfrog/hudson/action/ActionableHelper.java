@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.util;
+package org.jfrog.hudson.action;
 
+import com.google.common.collect.Lists;
 import hudson.maven.MavenBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
  * @author Yossi Shaul
  */
-public class ActionableHelper {
+public abstract class ActionableHelper {
 
     public static MavenArtifactRecord getLatestMavenArtifactRecord(MavenBuild mavenBuild) {
         return getLatestAction(mavenBuild, MavenArtifactRecord.class);
@@ -68,5 +71,24 @@ public class ActionableHelper {
             }
         }
         return principal;
+    }
+
+    /**
+     * Return list with {@link ArtifactoryProjectAction} if not already exists in project actions.
+     *
+     * @param artifactoryRootUrl The root URL of Artifactory server
+     * @param project            The hudson project
+     * @return Empty list or list with one {@link ArtifactoryProjectAction}
+     */
+    public static List<ArtifactoryProjectAction> getArtifactoryProjectAction(
+            String artifactoryRootUrl, AbstractProject project) {
+        if (artifactoryRootUrl == null) {
+            return Collections.emptyList();
+        }
+        if (project.getAction(ArtifactoryProjectAction.class) != null) {
+            // don't add if already exist (if multiple Artifactory builders are configured in free style)
+            return Collections.emptyList();
+        }
+        return Lists.newArrayList(new ArtifactoryProjectAction(artifactoryRootUrl, project));
     }
 }

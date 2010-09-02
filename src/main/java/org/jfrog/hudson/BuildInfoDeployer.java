@@ -42,7 +42,7 @@ import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.hudson.util.ActionableHelper;
+import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.IOException;
 import java.util.Arrays;

@@ -31,7 +31,7 @@ import org.jfrog.build.client.ClientIvyProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.util.ActionableHelper;
+import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.File;
 import java.io.IOException;

@@ -21,6 +21,7 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
@@ -35,11 +36,13 @@ import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -124,6 +127,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     }
 
     @Override
+    public Collection<? extends Action> getProjectActions(AbstractProject project) {
+        return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
+    }
+
+    @Override
     public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
         ArtifactoryServer artifactoryServer = getArtifactoryServer();
@@ -204,7 +212,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
 
         @Override
         public String getDisplayName() {
-            return "Use Gradle-Artifactory Plugin";
+            return "Gradle-Artifactory Integration";
         }
 
         @Override
