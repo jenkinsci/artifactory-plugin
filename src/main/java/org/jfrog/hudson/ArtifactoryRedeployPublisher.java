@@ -95,8 +95,20 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         return details != null ? details.artifactoryName : null;
     }
 
+    /**
+     * @return The release versions deployment repository.
+     */
     public String getRepositoryKey() {
         return details != null ? details.repositoryKey : null;
+    }
+
+    /**
+     * @return The snapshots deployment repository. If not defined the releases deployment repository will be returned
+     */
+    public String getSnapshotsRepositoryKey() {
+        return details != null ?
+                (details.snapshotsRepositoryKey != null ? details.snapshotsRepositoryKey : details.repositoryKey) :
+                null;
     }
 
     @Override

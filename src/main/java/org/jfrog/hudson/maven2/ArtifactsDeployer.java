@@ -48,7 +48,8 @@ public class ArtifactsDeployer {
     public static boolean debug = Boolean.getBoolean(ArtifactsDeployer.class.getName() + ".debug");
 
     private final ArtifactoryServer artifactoryServer;
-    private final String targetRepository;
+    private final String targetReleasesRepository;
+    private final String targetSnapshotsRepository;
     private final ArtifactoryBuildInfoClient client;
     private final MavenModuleSetBuild mavenModuleSetBuild;
     private final MavenAbstractArtifactRecord mar;
@@ -63,7 +64,8 @@ public class ArtifactsDeployer {
         this.mar = mar;
         this.listener = listener;
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
-        this.targetRepository = artifactoryPublisher.getRepositoryKey();
+        this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
+        this.targetSnapshotsRepository = artifactoryPublisher.getSnapshotsRepositoryKey();
     }
 
     public void deploy() throws IOException, InterruptedException {
@@ -104,7 +106,8 @@ public class ArtifactsDeployer {
         DeployDetails.Builder builder = new DeployDetails.Builder()
                 .file(artifactFile)
                 .artifactPath(artifactPath)
-                .targetRepository(targetRepository)
+                .targetRepository(targetReleasesRepository)
+                .targetSnapshotsRepository(targetSnapshotsRepository)
                 .md5(mavenArtifact.md5sum)
                 .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "");
@@ -119,9 +122,13 @@ public class ArtifactsDeployer {
             builder.addProperty(BuildInfoProperties.PROP_VCS_REVISION, revision);
         }
         DeployDetails deployDetails = builder.build();
-        String deploymentPath = artifactoryServer.getUrl() + "/" + targetRepository + "/" + artifactPath;
-        listener.getLogger().println("Deploying artifact: " + deploymentPath);
+        logDeploymentPath(deployDetails, artifactPath);
         client.deployArtifact(deployDetails);
+    }
+
+    private void logDeploymentPath(DeployDetails deployDetails, String artifactPath) {
+        String deploymentPath = artifactoryServer.getUrl() + "/" + deployDetails.getTargetRepository() + "/" + artifactPath;
+        listener.getLogger().println("Deploying artifact: " + deploymentPath);
     }
 
     private String buildArtifactPath(MavenArtifact mavenArtifact) {

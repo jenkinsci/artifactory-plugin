@@ -19,17 +19,32 @@ package org.jfrog.hudson;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
- * Represents a configured artifactory instance.
+ * Artifacts resolution and deployment configuration.
  */
 public class ServerDetails {
+    /**
+     * Artifactory server URL
+     */
     public final String artifactoryName;
+    /**
+     * Key of the repository to deploy release artifacts to
+     */
     public final String repositoryKey;
+    /**
+     * Key of the repository to deploy snapshot artifacts to. If not specified will use the repositoryKey
+     */
+    public final String snapshotsRepositoryKey;
+    /**
+     * Key of repository to use to download artifacts
+     */
     public final String downloadRepositoryKey;
 
     @DataBoundConstructor
-    public ServerDetails(String artifactoryName, String repositoryKey, String downloadRepositoryKey) {
+    public ServerDetails(String artifactoryName, String repositoryKey, String snapshotsRepositoryKey,
+            String downloadRepositoryKey) {
         this.artifactoryName = artifactoryName;
         this.repositoryKey = repositoryKey;
+        this.snapshotsRepositoryKey = snapshotsRepositoryKey != null ? snapshotsRepositoryKey : repositoryKey;
         this.downloadRepositoryKey = downloadRepositoryKey;
     }
 }
