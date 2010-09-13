@@ -236,6 +236,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         props.put(ClientProperties.PROP_CONTEXT_URL, selectedArtifactoryServer.getUrl());
         props.put(ClientProperties.PROP_TIMEOUT, Integer.toString(selectedArtifactoryServer.getTimeout()));
         props.put(ClientProperties.PROP_PUBLISH_REPOKEY, getDetails().repositoryKey);
+        props.put(ClientProperties.PROP_PUBLISH_SNAPSHOTS_REPOKEY, getDetails().snapshotsRepositoryKey);
 
         String deployerUsername = getUsername();
         if (StringUtils.isNotBlank(deployerUsername)) {

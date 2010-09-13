@@ -23,10 +23,19 @@
                 <f:nested>
                     <input type="hidden" name="artifactoryName" value="${s.name}"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                    <f:entry title="${%Target Upload repository}">
+                    <f:entry title="${%Target releases repository}"
+                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployReleases.html">
                         <select class="setting-input" name="repositoryKey">
                             <j:forEach var="r" items="${s.repositoryKeys}">
                                 <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
+                            </j:forEach>
+                        </select>
+                    </f:entry>
+                    <f:entry title="${%Target snapshots repository}"
+                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deploySnapshots.html">
+                        <select class="setting-input" name="snapshotsRepositoryKey">
+                            <j:forEach var="r" items="${s.repositoryKeys}">
+                                <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}</f:option>
                             </j:forEach>
                         </select>
                     </f:entry>
