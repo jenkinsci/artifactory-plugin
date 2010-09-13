@@ -54,18 +54,29 @@ public class ArtifactoryRedeployPublisher extends Recorder {
      * Repository URL and repository to deploy artifacts to.
      */
     private final ServerDetails details;
+    /**
+     * If checked (default) deploy maven artifacts
+     */
     private final boolean deployArtifacts;
     private final String username;
     private final String scrambledPassword;
+    /**
+     * Include environment variables in the generated build info
+     */
     private final boolean includeEnvVars;
+    /**
+     * Deploy even if the build is unstable (failed tests)
+     */
+    public final boolean evenIfUnstable;
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details,
-            boolean deployArtifacts, String username, String password, boolean includeEnvVars) {
+            boolean deployArtifacts, String username, String password, boolean includeEnvVars, boolean evenIfUnstable) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.username = username;
         this.includeEnvVars = includeEnvVars;
+        this.evenIfUnstable = evenIfUnstable;
         this.scrambledPassword = Scrambler.scramble(password);
 
         /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
@@ -73,10 +84,6 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         if (redeployPublisher != null) {
             descriptors.remove(redeployPublisher);
         }*/
-    }
-
-    public boolean isDeployArtifacts() {
-        return deployArtifacts;
     }
 
     public boolean isIncludeEnvVars() {
@@ -119,7 +126,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
-        if (build.getResult().isWorseThan(Result.SUCCESS)) {
+        if (build.getResult().isWorseThan(getTreshold())) {
             return true;    // build failed. Don't publish
         }
 
@@ -192,6 +199,14 @@ public class ArtifactoryRedeployPublisher extends Recorder {
             }
         }
         return null;
+    }
+
+    private Result getTreshold() {
+        if (evenIfUnstable) {
+            return Result.UNSTABLE;
+        } else {
+            return Result.SUCCESS;
+        }
     }
 
     @Extension

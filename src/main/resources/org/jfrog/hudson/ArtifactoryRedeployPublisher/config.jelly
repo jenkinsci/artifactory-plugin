@@ -42,6 +42,11 @@
             <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
             <label class="attach-previous">${%Deploy maven artifacts}</label>
         </f:entry>
+        <f:entry field="evenIfUnstable"
+                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-evenIfUnstable.html">
+            <f:checkbox default="false" checked="${instance.evenIfUnstable}"/>
+            <label class="attach-previous">${%Deploy even if the build is unstable}</label>
+        </f:entry>
         <f:entry field="includeEnvVars"
                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
             <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
