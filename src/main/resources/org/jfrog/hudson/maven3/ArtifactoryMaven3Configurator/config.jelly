@@ -58,7 +58,12 @@
         <f:entry field="deployArtifacts"
                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployArtifacts.html">
             <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
-            <label class="attach-previous">${%Publish Artifacts to Artifactory}</label>
+            <label class="attach-previous">${%Deploy Artifacts to Artifactory}</label>
+        </f:entry>
+        <f:entry field="deployBuildInfo"
+                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployBuildInfo.html">
+            <f:checkbox default="true" checked="${!instance.skipBuildInfoDeploy}"/>
+            <label class="attach-previous">${%Deploy Build Info to Artifactory}</label>
         </f:entry>
         <f:entry field="includeEnvVars"
                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">

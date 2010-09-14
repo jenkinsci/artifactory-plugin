@@ -64,29 +64,56 @@ import java.util.Properties;
  */
 @XStreamAlias("artifactory-maven3-config")
 public class ArtifactoryMaven3Configurator extends BuildWrapper {
-
+    /**
+     * Repository URL and repository to deploy artifacts to
+     */
     private final ServerDetails details;
     private final String username;
     private final String scrambledPassword;
+    /**
+     * If checked (default) deploy maven artifacts
+     */
     private final boolean deployArtifacts;
+    /**
+     * If true skip the deployment of the build info.
+     */
+    private final boolean skipBuildInfoDeploy;
+
+    /**
+     * Include environment variables in the generated build info
+     */
     private final boolean includeEnvVars;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, String username, String password,
-            boolean deployArtifacts, boolean includeEnvVars) {
+            boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars) {
         this.details = details;
         this.username = username;
+        this.skipBuildInfoDeploy = !deployBuildInfo;
         this.scrambledPassword = Scrambler.scramble(password);
         this.deployArtifacts = deployArtifacts;
         this.includeEnvVars = includeEnvVars;
     }
 
+    // NOTE: The following getters are used by jelly. Do not remove them
+
     public ServerDetails getDetails() {
         return details;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     public String getRepositoryKey() {
         return details != null ? details.repositoryKey : null;
+    }
+
+    /**
+     * @return The snapshots deployment repository. If not defined the releases deployment repository will be returned
+     */
+    @SuppressWarnings({"UnusedDeclaration"})
+    public String getSnapshotsRepositoryKey() {
+        return details != null ?
+                (details.snapshotsRepositoryKey != null ? details.snapshotsRepositoryKey : details.repositoryKey) :
+                null;
     }
 
     public String getArtifactoryName() {
@@ -103,6 +130,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     public boolean isDeployArtifacts() {
         return deployArtifacts;
+    }
+
+    public boolean isSkipBuildInfoDeploy() {
+        return skipBuildInfoDeploy;
     }
 
     public boolean isIncludeEnvVars() {
@@ -159,14 +190,13 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
                 Result result = build.getResult();
-                if (result == null) {
+                if (result == null || result.isWorseThan(Result.SUCCESS)) {
                     return false;
                 }
-                if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+                if (!skipBuildInfoDeploy) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
-                    return true;
                 }
-                return false;
+                return true;
             }
         };
     }
@@ -245,7 +275,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         }
 
         props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(isDeployArtifacts()));
-        props.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.TRUE.toString());
+        props.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.toString(!isSkipBuildInfoDeploy()));
         props.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, Boolean.toString(isIncludeEnvVars()));
         addEnvVars(env, build, props);
 

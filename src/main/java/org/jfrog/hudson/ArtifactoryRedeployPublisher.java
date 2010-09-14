@@ -51,13 +51,18 @@ import java.util.List;
  */
 public class ArtifactoryRedeployPublisher extends Recorder {
     /**
-     * Repository URL and repository to deploy artifacts to.
+     * Repository URL and repository to deploy artifacts to
      */
     private final ServerDetails details;
     /**
      * If checked (default) deploy maven artifacts
      */
     private final boolean deployArtifacts;
+    /**
+     * If true skip the deployment of the build info.
+     */
+    private final boolean skipBuildInfoDeploy;
+
     private final String username;
     private final String scrambledPassword;
     /**
@@ -67,23 +72,42 @@ public class ArtifactoryRedeployPublisher extends Recorder {
     /**
      * Deploy even if the build is unstable (failed tests)
      */
-    public final boolean evenIfUnstable;
+    private final boolean evenIfUnstable;
 
     @DataBoundConstructor
-    public ArtifactoryRedeployPublisher(ServerDetails details,
-            boolean deployArtifacts, String username, String password, boolean includeEnvVars, boolean evenIfUnstable) {
+    public ArtifactoryRedeployPublisher(ServerDetails details, String username, String password,
+            boolean deployArtifacts, boolean deployBuildInfo,
+            boolean includeEnvVars, boolean evenIfUnstable) {
         this.details = details;
-        this.deployArtifacts = deployArtifacts;
         this.username = username;
+        this.scrambledPassword = Scrambler.scramble(password);
+        this.deployArtifacts = deployArtifacts;
+        this.skipBuildInfoDeploy = !deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
         this.evenIfUnstable = evenIfUnstable;
-        this.scrambledPassword = Scrambler.scramble(password);
 
         /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
         Descriptor<Publisher> redeployPublisher = descriptors.find(RedeployPublisher.DescriptorImpl.class.getName());
         if (redeployPublisher != null) {
             descriptors.remove(redeployPublisher);
         }*/
+    }
+
+    // NOTE: The following getters are used by jelly. Do not remove them
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public boolean isDeployArtifacts() {
+        return deployArtifacts;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public boolean isSkipBuildInfoDeploy() {
+        return skipBuildInfoDeploy;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public boolean isEvenIfUnstable() {
+        return evenIfUnstable;
     }
 
     public boolean isIncludeEnvVars() {
@@ -152,9 +176,11 @@ public class ArtifactoryRedeployPublisher extends Recorder {
             if (deployArtifacts) {
                 new ArtifactsDeployer(this, client, mavenBuild, mar, listener).deploy();
             }
-            new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
-            // add the result action
-            build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
+            if (!skipBuildInfoDeploy) {
+                new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
+                // add the result action
+                build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
+            }
             return true;
         } catch (Exception e) {
             e.printStackTrace(listener.error(e.getMessage()));
