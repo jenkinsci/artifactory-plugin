@@ -98,11 +98,13 @@ public class BuildInfoDeployer {
         ArtifactoryServer server = publisher.getArtifactoryServer();
         infoBuilder.artifactoryPrincipal(server.getUserName());
 
+        String userCause = null;
         CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
         if (action != null) {
             for (Cause cause : action.getCauses()) {
                 if (cause instanceof Cause.UserCause) {
-                    infoBuilder.principal(((Cause.UserCause) cause).getUserName());
+                    userCause = ((Cause.UserCause) cause).getUserName();
+                    infoBuilder.principal(userCause);
                 }
             }
         }
@@ -113,6 +115,9 @@ public class BuildInfoDeployer {
             int buildNumber = parent.getUpstreamBuild();
             infoBuilder.parentName(parentProject);
             infoBuilder.parentNumber(buildNumber + "");
+            if (StringUtils.isBlank(userCause)) {
+                infoBuilder.principal("auto");
+            }
         }
 
         gatherModuleAndDependencyInfo(infoBuilder, build);
