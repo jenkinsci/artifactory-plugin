@@ -26,6 +26,7 @@ import hudson.Launcher;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.util.FormValidation;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -37,8 +38,11 @@ import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -366,6 +370,15 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             req.bindParameters(this, "maven3");
             save();
             return true;
+        }
+
+        public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
+            try {
+                new InternetAddress(value);
+                return FormValidation.ok();
+            } catch (AddressException e) {
+                return FormValidation.error(e.getMessage());
+            }
         }
 
         /**
