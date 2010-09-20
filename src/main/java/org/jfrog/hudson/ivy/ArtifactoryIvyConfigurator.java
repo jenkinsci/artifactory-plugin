@@ -21,17 +21,13 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.util.FormValidation;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.aspectj.weaver.loadtime.Agent;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
@@ -39,11 +35,15 @@ import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.config.ArtifactoryIvySettingsConfigurator;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.Notifications;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -63,16 +63,18 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
     private boolean deployArtifacts;
     private boolean deployBuildInfo;
     private boolean includeEnvVars;
+    private Notifications notifications;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, String username, String password, boolean deployArtifacts,
-            boolean deployBuildInfo, boolean includeEnvVars) {
+                                      boolean deployBuildInfo, boolean includeEnvVars, Notifications notifications) {
         this.details = details;
         this.username = username;
         this.password = Scrambler.scramble(password);
         this.deployArtifacts = deployArtifacts;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
+        this.notifications = notifications;
     }
 
     public ServerDetails getDetails() {
@@ -105,6 +107,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     public String getRepositoryKey() {
         return details != null ? details.repositoryKey : null;
+    }
+
+    public String getViolationRecipients() {
+        return notifications != null ? notifications.getViolationRecipients() : null;
     }
 
     @Override
@@ -145,6 +151,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 if (parent != null) {
                     env.put(BuildInfoProperties.PROP_PARENT_BUILD_NAME, parent.getUpstreamProject());
                     env.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parent.getUpstreamBuild() + "");
+                }
+                if (StringUtils.isNotBlank(getViolationRecipients())) {
+                    env.put(BuildInfoProperties.PROP_NOTIFICATION_RECIPIENTS, getViolationRecipients());
                 }
             }
 
@@ -224,6 +233,24 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
             req.bindParameters(this, "ivy");
             save();
             return true;
+        }
+
+        public FormValidation doCheckArtifactoryName(@QueryParameter String value) {
+            try {
+                new InternetAddress(value);
+                return FormValidation.ok();
+            } catch (AddressException e) {
+                return FormValidation.error(e.getMessage());
+            }
+        }
+
+        public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
+            try {
+                new InternetAddress(value);
+                return FormValidation.ok();
+            } catch (AddressException e) {
+                return FormValidation.error(e.getMessage());
+            }
         }
 
         /**

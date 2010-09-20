@@ -1,47 +1,5 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <!--    <script src="http://code.jquery.com/jquery.min.js" type="text/javascript"></script>
-    <script type="text/javascript">
-        jQuery('div').ajax({
-            dataType: 'json',
-            url: 'http://repo.jfrog.org/artifactory/api/version',
-            success: function(data, textStatus, xhr) {
-              alert('success - ' + data);
-            console.info(data);
-            },
-            error(xhr, textStatus, errorThrown) {
-                alert('error');
-            }
-
-
-        });
-    </script>-->
-    <f:dropdownList name="details" title="${%Artifactory server}">
-        <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
-            <f:dropdownListBlock value="${s.name}" title="${s.name}" selected="${s.name==instance.artifactoryName}">
-                <f:nested>
-                    <input type="hidden" name="artifactoryName" value="${s.name}" field="artifactoryName"/>
-                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                    <f:entry title="${%Target repository}">
-                        <select class="setting-input" name="repositoryKey">
-                            <j:forEach var="r" items="${s.repositoryKeys}">
-                                <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
-                            </j:forEach>
-                        </select>
-                    </f:entry>
-                </f:nested>
-            </f:dropdownListBlock>
-        </j:forEach>
-    </f:dropdownList>
-    <f:entry title="${%Deployer username}" field="username"
-             help="/plugin/artifactory/ivy/help-userName.html">
-        <f:textbox/>
-    </f:entry>
-
-    <f:entry title="${%Deployer password}" field="password"
-             help="/plugin/artifactory/ivy/help-password.html">
-        <f:password/>
-    </f:entry>
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt">
     <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
                      title="Publish build info" help="/plugin/artifactory/ivy/help-deployBuildInfo.html"
                      inline="true">

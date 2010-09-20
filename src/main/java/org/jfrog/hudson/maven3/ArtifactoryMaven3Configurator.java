@@ -23,15 +23,7 @@ import com.google.common.io.Closeables;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.CauseAction;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.Scrambler;
@@ -42,10 +34,7 @@ import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -69,6 +58,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
      */
     private final ServerDetails details;
     private final String username;
+    private final Notifications notifications;
     private final String scrambledPassword;
     /**
      * If checked (default) deploy maven artifacts
@@ -84,13 +74,17 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
      */
     private final boolean includeEnvVars;
 
+    private final boolean deployBuildInfo;
+
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, String username, String password,
-            boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars) {
+                                         boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars, Notifications notifications) {
         this.details = details;
         this.username = username;
         this.skipBuildInfoDeploy = !deployBuildInfo;
+        this.deployBuildInfo = deployBuildInfo;
         this.scrambledPassword = Scrambler.scramble(password);
+        this.notifications = notifications;
         this.deployArtifacts = deployArtifacts;
         this.includeEnvVars = includeEnvVars;
     }
@@ -99,6 +93,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public boolean isDeployBuildInfo() {
+        return deployBuildInfo;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -138,6 +136,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
+    }
+
+    public String getViolationRecipients() {
+        return notifications != null ? notifications.getViolationRecipients() : null;
     }
 
     public ArtifactoryServer getArtifactoryServer(String artifactoryServerName) {
@@ -207,7 +209,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     }
 
     private void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build, BuildListener listener,
-            ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
+                                         ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
 
         Properties props = new Properties();
 
@@ -274,6 +276,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             props.put(ClientProperties.PROP_PUBLISH_PASSWORD, getPassword());
         }
 
+        if (StringUtils.isNotBlank(getViolationRecipients())) {
+            props.put(BuildInfoProperties.PROP_NOTIFICATION_RECIPIENTS, getViolationRecipients());
+        }
+
         props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(isDeployArtifacts()));
         props.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.toString(!isSkipBuildInfoDeploy()));
         props.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, Boolean.toString(isIncludeEnvVars()));
@@ -289,6 +295,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         }
 
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, tempPropsFile.getCanonicalPath());
+
     }
 
     private void addEnvVars(Map<String, String> env, AbstractBuild build, Properties props) {

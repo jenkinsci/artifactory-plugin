@@ -24,19 +24,11 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.CauseAction;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.Fingerprinter;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.Agent;
-import org.jfrog.build.api.Artifact;
+import org.jfrog.build.api.*;
 import org.jfrog.build.api.Build;
-import org.jfrog.build.api.BuildAgent;
-import org.jfrog.build.api.BuildInfoProperties;
-import org.jfrog.build.api.BuildType;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
@@ -66,7 +58,7 @@ public class BuildInfoDeployer {
     private final BuildListener listener;
 
     public BuildInfoDeployer(ArtifactoryRedeployPublisher publisher, ArtifactoryBuildInfoClient client,
-            MavenModuleSetBuild build, BuildListener listener) {
+                             MavenModuleSetBuild build, BuildListener listener) {
         this.publisher = publisher;
         this.client = client;
         this.build = build;
@@ -141,6 +133,11 @@ public class BuildInfoDeployer {
                 infoBuilder.addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
                         entry.getValue());
             }
+        }
+        if (StringUtils.isNotBlank(publisher.getViolationRecipients())) {
+            Notifications notifications = new Notifications();
+            notifications.setLicenseViolationsRecipientsList(publisher.getViolationRecipients());
+            infoBuilder.notifications(notifications);
         }
         Build buildInfo = infoBuilder.build();
         // for backwards compatibility for Artifactory 2.2.3

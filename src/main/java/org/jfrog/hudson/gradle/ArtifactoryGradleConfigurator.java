@@ -21,25 +21,20 @@ import com.google.common.io.Files;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.util.FormValidation;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -65,12 +60,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     public final String remotePluginLocation;
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
+    private Notifications notifications;
 
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
-            boolean deployArtifacts, String username, String password, String remotePluginLocation,
-            boolean includeEnvVars, boolean deployBuildInfo) {
+                                         boolean deployArtifacts, String username, String password, String remotePluginLocation,
+                                         boolean includeEnvVars, boolean deployBuildInfo, Notifications notifications) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
@@ -79,6 +75,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         this.remotePluginLocation = remotePluginLocation;
         this.includeEnvVars = includeEnvVars;
         this.deployBuildInfo = deployBuildInfo;
+        this.notifications = notifications;
         this.scrambledPassword = Scrambler.scramble(password);
     }
 
@@ -88,6 +85,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
 
     public String getUsername() {
         return username;
+    }
+
+    public String getViolationRecipients() {
+        return notifications != null ? notifications.getViolationRecipients() : null;
     }
 
     public boolean isDeployBuildInfo() {
@@ -217,6 +218,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
             req.bindParameters(this, "gradle");
             save();
             return true;
+        }
+
+        public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
+            try {
+                new InternetAddress(value);
+                return FormValidation.ok();
+            } catch (AddressException e) {
+                return FormValidation.error(e.getMessage());
+            }
         }
 
         /**

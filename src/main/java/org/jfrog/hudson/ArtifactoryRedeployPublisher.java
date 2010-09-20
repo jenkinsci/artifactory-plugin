@@ -21,16 +21,12 @@ import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
+import hudson.util.FormValidation;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
@@ -38,8 +34,11 @@ import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.BuildInfoDeployer;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
 import java.io.IOException;
 import java.util.List;
 
@@ -51,40 +50,41 @@ import java.util.List;
  */
 public class ArtifactoryRedeployPublisher extends Recorder {
     /**
-     * Repository URL and repository to deploy artifacts to
+     * Repository URL and repository to deploy artifacts to.
      */
     private final ServerDetails details;
     /**
      * If checked (default) deploy maven artifacts
      */
     private final boolean deployArtifacts;
-    /**
-     * If true skip the deployment of the build info.
-     */
-    private final boolean skipBuildInfoDeploy;
-
     private final String username;
     private final String scrambledPassword;
     /**
      * Include environment variables in the generated build info
      */
     private final boolean includeEnvVars;
+    private final boolean skipBuildInfoDeploy;
+
     /**
      * Deploy even if the build is unstable (failed tests)
      */
-    private final boolean evenIfUnstable;
+    public final boolean evenIfUnstable;
+
+    private Notifications notifications;
 
     @DataBoundConstructor
-    public ArtifactoryRedeployPublisher(ServerDetails details, String username, String password,
-            boolean deployArtifacts, boolean deployBuildInfo,
-            boolean includeEnvVars, boolean evenIfUnstable) {
+    public ArtifactoryRedeployPublisher(ServerDetails details,
+                                        boolean deployArtifacts, Notifications notifications, String username, String password, boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable) {
         this.details = details;
         this.username = username;
-        this.scrambledPassword = Scrambler.scramble(password);
-        this.deployArtifacts = deployArtifacts;
-        this.skipBuildInfoDeploy = !deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
+        this.notifications = notifications;
+        this.deployArtifacts = deployArtifacts;
         this.evenIfUnstable = evenIfUnstable;
+        this.notifications = notifications;
+        this.skipBuildInfoDeploy = !deployBuildInfo;
+
+        this.scrambledPassword = Scrambler.scramble(password);
 
         /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
         Descriptor<Publisher> redeployPublisher = descriptors.find(RedeployPublisher.DescriptorImpl.class.getName());
@@ -116,6 +116,10 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     public String getUsername() {
         return username;
+    }
+
+    public String getViolationRecipients() {
+        return notifications != null ? notifications.getViolationRecipients() : null;
     }
 
     public String getPassword() {
@@ -254,6 +258,15 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         public String getDisplayName() {
             return "Deploy artifacts to Artifactory";
             //return Messages.RedeployPublisher_getDisplayName();
+        }
+
+        public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
+            try {
+                new InternetAddress(value);
+                return FormValidation.ok();
+            } catch (AddressException e) {
+                return FormValidation.error(e.getMessage());
+            }
         }
 
         /**

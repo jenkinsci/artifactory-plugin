@@ -22,6 +22,7 @@ import hudson.util.Scrambler;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -106,6 +107,17 @@ public class ArtifactoryServer {
         }
 
         return virtualRepositories;
+    }
+
+    public boolean isPowerPack() {
+        try {
+            ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, userName, getPassword(), new NullLog());
+            ArtifactoryHttpClient.Version version = client.getVersion();
+            return version.hasAddons();
+        } catch (IOException e) {
+            log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
+        }
+        return false;
     }
 
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password) {

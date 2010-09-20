@@ -14,7 +14,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jvnet.hudson.plugins</groupId>
@@ -73,22 +74,72 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-client</artifactId>
-            <version>1.4.4</version>
+            <version>1.4.x-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-api</artifactId>
-            <version>1.4.4</version>
+            <version>1.4.x-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-ivy</artifactId>
-            <version>1.0.1</version>
+            <version>1.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.ant</groupId>
+                    <artifactId>ant</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>groovy-all</artifactId>
+                    <groupId>org.codehaus.groovy</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.6.9</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-maven3</artifactId>
             <version>1.0.0-beta-3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-extractor-gradle</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.ant</groupId>
+                    <artifactId>ant</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>groovy-all</artifactId>
+                    <groupId>org.codehaus.groovy</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-all-minimal</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>gmaven-runtime-1.6</artifactId>
+                    <groupId>org.codehaus.groovy.maven.runtime</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.gradle</groupId>
+                    <artifactId>gradle-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.gradle</groupId>
+                    <artifactId>gradle-plugins</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.tonicsystems.jarjar</groupId>
+                    <artifactId>jarjar-plugin</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
@@ -106,22 +157,12 @@
             <version>1.5.1</version>
         </dependency>
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>5.13.1</version>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.0-beta-1</version>
-            </plugin>
-        </plugins>
-    </build>
 
     <profiles>
         <profile>
