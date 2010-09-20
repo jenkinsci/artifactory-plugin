@@ -38,19 +38,6 @@
     <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
                      title="Publish build info" help="/plugin/artifactory/ivy/help-deployBuildInfo.html"
                      inline="true">
-        <f:entry field="deployArtifacts"
-                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html">
-            <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
-            <label class="attach-previous">${%Publish Artifacts to Artifactory}</label>
-        </f:entry>
-        <f:entry field="deployMaven" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
-            <f:checkbox default="false" checked="${instance.deployMaven}"/>
-            <label class="attach-previous">${%Publish Maven Descriptors (POMs)}</label>
-        </f:entry>
-        <f:entry field="deployIvy" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployIvy.html">
-            <f:checkbox default="true" checked="${instance.deployIvy}"/>
-            <label class="attach-previous">${%Publish Ivy Descriptors (ivy.xml)}</label>
-        </f:entry>
         <f:entry field="includeEnvVars"
                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
             <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
@@ -63,5 +50,17 @@
                 <f:textbox value="${instance.violationRecipients}"/>
             </f:entry>
         </f:optionalBlock>
+    </f:optionalBlock>
+    <f:optionalBlock field="deployArtifacts"
+                     help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html" inline="true"
+                     checked="${instance.deployArtifacts}" title="Publish Artifacts to Artifactory">
+        <f:entry field="deployMaven" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
+            <f:checkbox default="false" checked="${instance.deployMaven}"/>
+            <label class="attach-previous">${%Publish Maven Descriptors (POMs)}</label>
+        </f:entry>
+        <f:entry field="deployIvy" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployIvy.html">
+            <f:checkbox default="true" checked="${instance.deployIvy}"/>
+            <label class="attach-previous">${%Publish Ivy Descriptors (ivy.xml)}</label>
+        </f:entry>
     </f:optionalBlock>
 </j:jelly>

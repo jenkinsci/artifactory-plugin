@@ -42,18 +42,13 @@
              help="/plugin/artifactory/ivy/help-password.html">
         <f:password/>
     </f:entry>
+    <f:optionalBlock field="deployArtifacts"
+                     help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html"
+                     title="Publish artifacts to Artifactory" checked="${instance.deployArtifacts}">
+    </f:optionalBlock>
     <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
                      title="Publish build info" help="/plugin/artifactory/ivy/help-deployBuildInfo.html"
                      inline="true">
-        <f:entry field="deployArtifacts"
-                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html">
-            <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
-            <label class="">${%Publish artifacts to Artifactory}</label>
-        </f:entry>
-        <!-- <f:entry field="deployBuildInfo" help="/plugin/artifactory/ivy/help-deployBuildInfo.html">
-            <f:checkbox checked="${instance.deployBuildInfo}" onclick="updateDeps(this)"/>
-            <label class="">${%Publish build info}</label>
-        </f:entry>-->
         <f:entry field="includeEnvVars"
                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
             <input type="checkbox" default="false" checked="${instance.includeEnvVars}" id="includeEnvVars"/>
