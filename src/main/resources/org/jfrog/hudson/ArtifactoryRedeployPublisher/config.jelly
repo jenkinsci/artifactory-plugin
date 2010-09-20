@@ -37,33 +37,30 @@
         <f:password/>
     </f:entry>
 
-
-    <f:entry field="deployBuildInfo"
-             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployBuildInfo.html">
-        <f:checkbox default="true" checked="${!instance.skipBuildInfoDeploy}"/>
-        <label class="attach-previous">${%Deploy Build Info to Artifactory}</label>
-    </f:entry>
-
-    <f:entry field="deployArtifacts"
-             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployArtifacts.html">
-        <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
-        <label class="attach-previous">${%Deploy maven artifacts}</label>
-    </f:entry>
-    <f:entry field="evenIfUnstable"
-             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-evenIfUnstable.html">
-        <f:checkbox default="false" checked="${instance.evenIfUnstable}"/>
-        <label class="attach-previous">${%Deploy even if the build is unstable}</label>
-    </f:entry>
-    <f:entry field="includeEnvVars"
-             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
-        <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
-        <label class="attach-previous">${%Include All Environment Variables}</label>
-    </f:entry>
-    <f:optionalBlock name="notifications" checked="${instance.violationRecipients != null}"
-                     title="Send license violation notifications to recipients (Requires Artifactory Pro)"
-                     help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html">
-        <f:entry title="${%Recipients}" field="violationRecipients">
-            <f:textbox value="${instance.violationRecipients}" checkMethod="post"/>
+    <f:optionalBlock field="deployArtifacts"
+                     help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployArtifacts.html"
+                     title="Deploy maven artifacts" inline="true" checked="${instance.deployArtifacts}">
+        <f:entry field="evenIfUnstable"
+                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-evenIfUnstable.html">
+            <f:checkbox default="false" checked="${instance.evenIfUnstable}"/>
+            <label class="attach-previous">${%Deploy even if the build is unstable}</label>
         </f:entry>
+    </f:optionalBlock>
+    <f:optionalBlock name="deployBuildInfo" checked="${!instance.skipBuildInfoDeploy}"
+                     title="Publish build info"
+                     help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployBuildInfo.html"
+                     inline="true">
+        <f:entry field="includeEnvVars"
+                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
+            <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
+            <label class="attach-previous">${%Include All Environment Variables}</label>
+        </f:entry>
+        <f:optionalBlock name="notifications" checked="${instance.violationRecipients != null}"
+                         title="Send license violation notifications to recipients (Requires Artifactory Pro)"
+                         help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html">
+            <f:entry title="${%Recipients}" field="violationRecipients">
+                <f:textbox value="${instance.violationRecipients}"/>
+            </f:entry>
+        </f:optionalBlock>
     </f:optionalBlock>
 </j:jelly>
