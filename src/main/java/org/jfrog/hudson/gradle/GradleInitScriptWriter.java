@@ -145,7 +145,9 @@ public class GradleInitScriptWriter {
         String templateAsString = IOUtils.toString(templateStream, Charsets.UTF_8.name());
         String str = templateAsString.replace("${allBuildInfoProperties}", addProperties());
         File pluginsDir = Which.jarFile(getClass().getResource("/initscripttemplate.gradle")).getParentFile();
-        str = str.replace("${pluginLibDir}", pluginsDir.getAbsolutePath());
+        String absolutePath = pluginsDir.getAbsolutePath();
+        absolutePath = absolutePath.replace("\\", "/");
+        str = str.replace("${pluginLibDir}", absolutePath);
         initScript.append(str);
         return initScript.toString();
     }
