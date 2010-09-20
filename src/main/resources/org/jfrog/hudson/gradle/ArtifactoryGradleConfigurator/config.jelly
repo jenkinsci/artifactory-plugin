@@ -1,6 +1,5 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-
     <f:dropdownList name="details" title="${%Artifactory server}">
         <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
             <f:dropdownListBlock value="${s.name}" title="${s.name}" selected="${s.name==instance.artifactoryName}">
@@ -10,7 +9,8 @@
                     <f:entry title="${%Resolution repository}">
                         <select class="setting-input" name="downloadRepositoryKey">
                             <j:forEach var="r" items="${s.virtualRepositoryKeys}">
-                                <f:option selected="${r==instance.downloadRepositoryKey}" value="${r}">${r}</f:option>
+                                <f:option selected="${r==instance.downloadRepositoryKey}" value="${r}">${r}
+                                </f:option>
                             </j:forEach>
                         </select>
                     </f:entry>
@@ -35,32 +35,46 @@
              help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-password.html">
         <f:password/>
     </f:entry>
-    <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
-                     title="Publish build info" help="/plugin/artifactory/ivy/help-deployBuildInfo.html"
-                     inline="true">
-        <f:entry field="includeEnvVars"
-                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
-            <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
-            <label class="attach-previous">${%Include All Environment Variables}</label>
-        </f:entry>
-        <f:optionalBlock name="notifications" checked="${instance.violationRecipients != null}"
-                         title="Send license violation notifications to recipients (Requires Artifactory Pro)"
-                         help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html">
-            <f:entry title="${%Recipients}" field="violationRecipients">
-                <f:textbox value="${instance.violationRecipients}"/>
-            </f:entry>
-        </f:optionalBlock>
-    </f:optionalBlock>
-    <f:optionalBlock field="deployArtifacts"
-                     help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html" inline="true"
-                     checked="${instance.deployArtifacts}" title="Publish Artifacts to Artifactory">
-        <f:entry field="deployMaven" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
-            <f:checkbox default="false" checked="${instance.deployMaven}"/>
-            <label class="attach-previous">${%Publish Maven Descriptors (POMs)}</label>
-        </f:entry>
-        <f:entry field="deployIvy" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployIvy.html">
-            <f:checkbox default="true" checked="${instance.deployIvy}"/>
-            <label class="attach-previous">${%Publish Ivy Descriptors (ivy.xml)}</label>
-        </f:entry>
-    </f:optionalBlock>
+    <f:block>
+        <table style="width:100%">
+            <f:optionalBlock field="deployArtifacts"
+                             help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html"
+                             inline="true"
+                             checked="${instance.deployArtifacts}" title="Publish Artifacts to Artifactory">
+                <f:entry field="deployMaven"
+                         help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
+                    <f:checkbox default="false" checked="${instance.deployMaven}"/>
+                    <label class="attach-previous">${%Publish Maven Descriptors (POMs)}</label>
+                </f:entry>
+                <f:entry field="deployIvy" help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployIvy.html">
+                    <f:checkbox default="true" checked="${instance.deployIvy}"/>
+                    <label class="attach-previous">${%Publish Ivy Descriptors (ivy.xml)}</label>
+                </f:entry>
+            </f:optionalBlock>
+        </table>
+        <f:block>
+            <table style="width:100%">
+                <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
+                                 title="Publish build info" help="/plugin/artifactory/ivy/help-deployBuildInfo.html"
+                                 inline="true">
+                    <f:entry field="includeEnvVars"
+                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
+                        <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
+                        <label class="attach-previous">${%Include All Environment Variables}</label>
+                    </f:entry>
+                    <f:block>
+                        <table style="width:100%">
+                            <f:optionalBlock name="notifications" checked="${instance.violationRecipients != null}"
+                                             title="Send license violation notifications to recipients (Requires Artifactory Pro)"
+                                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html">
+                                <f:entry title="${%Recipients}" field="violationRecipients">
+                                    <f:textbox value="${instance.violationRecipients}"/>
+                                </f:entry>
+                            </f:optionalBlock>
+                        </table>
+                    </f:block>
+                </f:optionalBlock>
+            </table>
+        </f:block>
+    </f:block>
 </j:jelly>
