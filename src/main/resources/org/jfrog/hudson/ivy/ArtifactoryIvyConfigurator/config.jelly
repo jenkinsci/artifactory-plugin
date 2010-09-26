@@ -44,9 +44,10 @@
     </f:entry>
     <f:block>
         <table style="width:100%">
-            <f:optionalBlock field="deployArtifacts"
+            <f:optionalBlock name="deployArtifacts"
                              help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html"
-                             title="Publish artifacts to Artifactory" checked="${instance.deployArtifacts}">
+                             title="Publish artifacts to Artifactory" checked="${instance.deployArtifacts}"
+                             inline="true">
             </f:optionalBlock>
         </table>
     </f:block>
