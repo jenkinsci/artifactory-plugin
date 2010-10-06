@@ -27,7 +27,10 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.Scrambler;
 import net.sf.json.JSONObject;
-import org.jfrog.hudson.*;
+import org.jfrog.hudson.ArtifactoryBuilder;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoResultAction;
+import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -60,13 +63,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     public final String remotePluginLocation;
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
-    private Notifications notifications;
+    private final boolean runChecks;
+    private final String violationRecipients;
 
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
                                          boolean deployArtifacts, String username, String password, String remotePluginLocation,
-                                         boolean includeEnvVars, boolean deployBuildInfo, Notifications notifications) {
+                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
@@ -75,7 +79,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         this.remotePluginLocation = remotePluginLocation;
         this.includeEnvVars = includeEnvVars;
         this.deployBuildInfo = deployBuildInfo;
-        this.notifications = notifications;
+        this.runChecks = runChecks;
+        this.violationRecipients = violationRecipients;
         this.scrambledPassword = Scrambler.scramble(password);
     }
 
@@ -88,7 +93,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     }
 
     public String getViolationRecipients() {
-        return notifications != null ? notifications.getViolationRecipients() : null;
+        return violationRecipients;
+    }
+
+    public boolean isRunChecks() {
+        return runChecks;
     }
 
     public boolean isDeployBuildInfo() {

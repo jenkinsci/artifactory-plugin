@@ -35,7 +35,10 @@ import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
-import org.jfrog.hudson.*;
+import org.jfrog.hudson.ArtifactoryBuilder;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoResultAction;
+import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -62,7 +65,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
      */
     private final ServerDetails details;
     private final String username;
-    private final Notifications notifications;
     private final String scrambledPassword;
     /**
      * If checked (default) deploy maven artifacts
@@ -80,15 +82,21 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     private final boolean deployBuildInfo;
 
+    private final boolean runChecks;
+
+    private final String violationRecipients;
+
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, String username, String password,
-                                         boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars, Notifications notifications) {
+                                         boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
+                                         boolean runChecks, String violationRecipients) {
         this.details = details;
         this.username = username;
+        this.runChecks = runChecks;
+        this.violationRecipients = violationRecipients;
         this.skipBuildInfoDeploy = !deployBuildInfo;
         this.deployBuildInfo = deployBuildInfo;
         this.scrambledPassword = Scrambler.scramble(password);
-        this.notifications = notifications;
         this.deployArtifacts = deployArtifacts;
         this.includeEnvVars = includeEnvVars;
     }
@@ -143,7 +151,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     }
 
     public String getViolationRecipients() {
-        return notifications != null ? notifications.getViolationRecipients() : null;
+        return violationRecipients;
+    }
+
+    public boolean isRunChecks() {
+        return runChecks;
     }
 
     public ArtifactoryServer getArtifactoryServer(String artifactoryServerName) {
@@ -279,11 +291,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             props.put(ClientProperties.PROP_PUBLISH_USERNAME, deployerUsername);
             props.put(ClientProperties.PROP_PUBLISH_PASSWORD, getPassword());
         }
-
-        if (StringUtils.isNotBlank(getViolationRecipients())) {
-            props.put(BuildInfoProperties.PROP_NOTIFICATION_RECIPIENTS, getViolationRecipients());
+        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, isRunChecks());
+        if (isRunChecks()) {
+            if (StringUtils.isNotBlank(getViolationRecipients())) {
+                props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
+            }
         }
-
         props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(isDeployArtifacts()));
         props.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.toString(!isSkipBuildInfoDeploy()));
         props.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, Boolean.toString(isIncludeEnvVars()));

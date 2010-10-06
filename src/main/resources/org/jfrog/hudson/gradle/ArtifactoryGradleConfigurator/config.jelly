@@ -64,10 +64,13 @@
                     </f:entry>
                     <f:block>
                         <table style="width:100%">
-                            <f:optionalBlock name="notifications" checked="${instance.violationRecipients != null}"
-                                             title="Send license violation notifications to recipients (Requires Artifactory Pro)"
-                                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html">
-                                <f:entry title="${%Recipients}" field="violationRecipients">
+                            <f:optionalBlock name="runChecks"
+                                             checked="${instance.runChecks}" default="false"
+                                             title="Run License Checks (Requires Pro)"
+                                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html"
+                                             inline="true">
+                                <f:entry title="${%Send License Violation Notifications to The Following: }"
+                                         field="violationRecipients">
                                     <f:textbox value="${instance.violationRecipients}"/>
                                 </f:entry>
                             </f:optionalBlock>

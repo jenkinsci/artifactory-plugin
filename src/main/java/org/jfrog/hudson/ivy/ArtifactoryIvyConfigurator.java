@@ -35,7 +35,6 @@ import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.config.ArtifactoryIvySettingsConfigurator;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.Notifications;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -63,18 +62,21 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
     private boolean deployArtifacts;
     private boolean deployBuildInfo;
     private boolean includeEnvVars;
-    private Notifications notifications;
+    private boolean runChecks;
+    private String violationRecipients;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, String username, String password, boolean deployArtifacts,
-                                      boolean deployBuildInfo, boolean includeEnvVars, Notifications notifications) {
+                                      boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
+                                      String violationRecipients) {
         this.details = details;
         this.username = username;
         this.password = Scrambler.scramble(password);
         this.deployArtifacts = deployArtifacts;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
-        this.notifications = notifications;
+        this.runChecks = runChecks;
+        this.violationRecipients = violationRecipients;
     }
 
     public ServerDetails getDetails() {
@@ -83,6 +85,14 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     public String getPassword() {
         return Scrambler.descramble(password);
+    }
+
+    public boolean isRunChecks() {
+        return runChecks;
+    }
+
+    public void setRunChecks(boolean runChecks) {
+        this.runChecks = runChecks;
     }
 
     public String getUsername() {
@@ -109,8 +119,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
         return details != null ? details.repositoryKey : null;
     }
 
+    public void setViolationRecipients(String violationRecipients) {
+        this.violationRecipients = violationRecipients;
+    }
+
     public String getViolationRecipients() {
-        return notifications != null ? notifications.getViolationRecipients() : null;
+        return violationRecipients;
     }
 
     @Override
@@ -152,8 +166,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                     env.put(BuildInfoProperties.PROP_PARENT_BUILD_NAME, parent.getUpstreamProject());
                     env.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parent.getUpstreamBuild() + "");
                 }
+                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, String.valueOf(isRunChecks()));
                 if (StringUtils.isNotBlank(getViolationRecipients())) {
-                    env.put(BuildInfoProperties.PROP_NOTIFICATION_RECIPIENTS, getViolationRecipients());
+                    env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
                 }
             }
 

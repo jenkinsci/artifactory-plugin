@@ -134,11 +134,11 @@ public class BuildInfoDeployer {
                         entry.getValue());
             }
         }
-        if (StringUtils.isNotBlank(publisher.getViolationRecipients())) {
-            Notifications notifications = new Notifications();
-            notifications.setLicenseViolationsRecipientsList(publisher.getViolationRecipients());
-            infoBuilder.notifications(notifications);
+        LicenseControl licenseControl = new LicenseControl(publisher.isRunChecks());
+        if (StringUtils.isNotBlank(publisher.getViolationRecipients()) && publisher.isRunChecks()) {
+            licenseControl.setLicenseViolationsRecipientsList(publisher.getViolationRecipients());
         }
+        infoBuilder.licenseControl(licenseControl);
         Build buildInfo = infoBuilder.build();
         // for backwards compatibility for Artifactory 2.2.3
         if (parent != null) {

@@ -61,11 +61,13 @@
                     <input type="checkbox" default="false" checked="${instance.includeEnvVars}" id="includeEnvVars"/>
                     <label class="">${%Include all environment variables}</label>
                 </f:entry>
-                <f:optionalBlock name="notifications"
-                                 checked="${instance.violationRecipients != null}"
+                <f:optionalBlock name="runChecks"
+                                 checked="${instance.runChecks}" default="false"
                                  title="Send license violation notifications to recipients (Requires Artifactory Pro)"
-                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html">
-                    <f:entry title="${%Recipients}" field="violationRecipients">
+                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html"
+                                 inline="true">
+                    <f:entry title="${%Send License Violation Notifications to The Following: }"
+                             field="violationRecipients">
                         <f:textbox value="${instance.violationRecipients}"/>
                     </f:entry>
                 </f:optionalBlock>

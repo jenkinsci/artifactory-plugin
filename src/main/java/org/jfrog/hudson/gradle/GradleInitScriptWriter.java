@@ -83,8 +83,9 @@ public class GradleInitScriptWriter {
         ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.toString(gradleConfigurator.deployBuildInfo));
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
+        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, String.valueOf(gradleConfigurator.isRunChecks()));
         if (StringUtils.isNotBlank(gradleConfigurator.getViolationRecipients())) {
-            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_NOTIFICATION_RECIPIENTS, gradleConfigurator.getViolationRecipients());
+            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, gradleConfigurator.getViolationRecipients());
         }
         String principal = ActionableHelper.getHudsonPrincipal(build);
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PRINCIPAL, principal);
