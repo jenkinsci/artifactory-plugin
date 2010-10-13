@@ -291,7 +291,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             props.put(ClientProperties.PROP_PUBLISH_USERNAME, deployerUsername);
             props.put(ClientProperties.PROP_PUBLISH_PASSWORD, getPassword());
         }
-        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, isRunChecks());
+        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, Boolean.toString(isRunChecks()));
         if (isRunChecks()) {
             if (StringUtils.isNotBlank(getViolationRecipients())) {
                 props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
