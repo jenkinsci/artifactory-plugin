@@ -237,7 +237,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
         String buildNumber = build.getNumber() + "";
         props.put(BuildInfoProperties.PROP_BUILD_NUMBER, buildNumber);
-        props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + "build.number", buildName);
+        props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + "build.number", buildNumber);
 
         props.put(BuildInfoProperties.PROP_BUILD_STARTED,
                 new SimpleDateFormat(Build.STARTED_FORMAT).format(build.getTimestamp().getTime()));
@@ -260,10 +260,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX +
                     BuildInfoProperties.PROP_PARENT_BUILD_NAME, parentProject);
 
-            String parentBuildName = parent.getUpstreamBuild() + "";
-            props.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parentBuildName);
+            String parentBuildNumber = parent.getUpstreamBuild() + "";
+            props.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parentBuildNumber);
             props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX +
-                    BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parentBuildName);
+                    BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parentBuildNumber);
             userName = "auto";
         }
 
