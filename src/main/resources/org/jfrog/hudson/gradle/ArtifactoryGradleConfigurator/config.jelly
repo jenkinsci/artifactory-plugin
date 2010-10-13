@@ -45,12 +45,12 @@
                     <f:entry field="deployMaven"
                              help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
                         <f:checkbox default="false" checked="${instance.deployMaven}"/>
-                        <label class="attach-previous">${%Publish Maven Descriptors (POMs)}</label>
+                        <label class="attach-previous">${%Publish Maven descriptors (POMs)}</label>
                     </f:entry>
                     <f:entry field="deployIvy"
                              help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployIvy.html">
                         <f:checkbox default="true" checked="${instance.deployIvy}"/>
-                        <label class="attach-previous">${%Publish Ivy Descriptors (ivy.xml)}</label>
+                        <label class="attach-previous">${%Publish Ivy descriptors (ivy.xml)}</label>
                     </f:entry>
                 </f:optionalBlock>
             </table>
@@ -62,7 +62,7 @@
                         <f:entry field="includeEnvVars"
                                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
                             <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
-                            <label class="attach-previous">${%Include All Environment Variables}</label>
+                            <label class="attach-previous">${%Include all environment variables}</label>
                         </f:entry>
                         <f:block>
                             <table style="width:100%">
@@ -71,10 +71,10 @@
                                                  title="Run License Checks (Requires Pro)"
                                                  inline="true"
                                                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-runChecks.html">
-                                    <f:entry title="${%Send License Violation Notifications to The Following: }"
+                                    <f:entry title="${%Send license violation notifications to: }"
                                              field="violationRecipients"
                                              help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html"
-                                             description="Whitespace-separated list of recipient addresses.">
+                                             description="Comma-separated list of recipient addresses.">
                                         <f:textbox value="${instance.violationRecipients}"/>
                                     </f:entry>
                                 </f:optionalBlock>

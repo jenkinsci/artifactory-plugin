@@ -59,7 +59,7 @@
             <table style="width:100%">
                 <f:optionalBlock field="deployArtifacts"
                                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployArtifacts.html"
-                                 title="Deploy Artifacts to Artifactory" inline="true"
+                                 title="Deploy artifacts to Artifactory" inline="true"
                                  checked="${instance.deployArtifacts}">
                 </f:optionalBlock>
             </table>
@@ -72,7 +72,7 @@
                     <f:entry field="includeEnvVars"
                              help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
                         <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
-                        <label class="attach-previous">${%Include All Environment Variables}</label>
+                        <label class="attach-previous">${%Include all environment variables}</label>
                     </f:entry>
                     <f:optionalBlock name="runChecks"
                                      checked="${instance.runChecks}" default="false"
@@ -82,7 +82,7 @@
                         <f:entry title="${%Send license violation notifications to: }"
                                  field="violationRecipients"
                                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html"
-                                 description="Whitespace-separated list of recipient addresses.">
+                                 description="Comma-separated list of recipient addresses.">
                             <f:textbox value="${instance.violationRecipients}"/>
                         </f:entry>
                     </f:optionalBlock>
