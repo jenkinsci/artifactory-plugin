@@ -64,10 +64,11 @@
                 <f:optionalBlock name="runChecks"
                                  checked="${instance.runChecks}" default="false"
                                  title="Send license violation notifications to recipients (Requires Artifactory Pro)"
-                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html"
-                                 inline="true">
+                                 inline="true"
+                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-runChecks.html">
                     <f:entry title="${%Send License Violation Notifications to The Following: }"
-                             field="violationRecipients">
+                             field="violationRecipients"
+                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html">
                         <f:textbox value="${instance.violationRecipients}"/>
                     </f:entry>
                 </f:optionalBlock>
