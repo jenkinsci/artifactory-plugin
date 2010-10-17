@@ -26,6 +26,13 @@ import org.jfrog.hudson.BuildInfoResultAction;
 
 
 /**
+ * A build listener which takes care of Ivy builds.
+ * This class extends a {@link hudson.model.listeners.RunListener} with a generic type of {@link hudson.model.AbstractBuild}
+ * and not {@link hudson.ivy.IvyModuleSetBuild} since Hudson's classloader tries to load initialize the class by
+ * reflection and is failing on {@link LinkageError} which is handled by Hudson by printing out the stacktrace
+ * to the log.
+ * However, if not using it during construction time and checking at runtime, the exception seems to disappear.
+ *
  * @author Tomer Cohen
  */
 @Extension(optional = true)
