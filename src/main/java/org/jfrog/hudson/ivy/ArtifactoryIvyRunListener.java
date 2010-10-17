@@ -43,7 +43,7 @@ public class ArtifactoryIvyRunListener extends RunListener<AbstractBuild> {
 
     @Override
     public void onCompleted(AbstractBuild run, TaskListener listener) {
-        if (run instanceof IvyModuleSetBuild) {
+        if ("hudson.ivy.IvyModuleSetBuild".equals(run.getClass().getName())) {
             IvyModuleSetBuild ivyRun = (IvyModuleSetBuild) run;
             Result result = ivyRun.getResult();
             if (result == null || result.isWorseThan(Result.SUCCESS)) {
