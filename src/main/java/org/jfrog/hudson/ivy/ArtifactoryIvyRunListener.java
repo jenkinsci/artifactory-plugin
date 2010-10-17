@@ -18,6 +18,7 @@ package org.jfrog.hudson.ivy;
 
 import hudson.Extension;
 import hudson.ivy.IvyModuleSetBuild;
+import hudson.model.AbstractBuild;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
@@ -28,24 +29,27 @@ import org.jfrog.hudson.BuildInfoResultAction;
  * @author Tomer Cohen
  */
 @Extension(optional = true)
-public class ArtifactoryIvyRunListener extends RunListener<IvyModuleSetBuild> {
+public class ArtifactoryIvyRunListener extends RunListener<AbstractBuild> {
     public ArtifactoryIvyRunListener() {
-        super(IvyModuleSetBuild.class);
+        super(AbstractBuild.class);
     }
 
     @Override
-    public void onCompleted(IvyModuleSetBuild run, TaskListener listener) {
-        Result result = run.getResult();
-        if (result == null || result.isWorseThan(Result.SUCCESS)) {
-            return;
-        }
-        ArtifactoryIvyConfigurator artifactoryIvyConfigurator =
-                run.getProject().getBuildWrappersList().get(ArtifactoryIvyConfigurator.class);
-        if (artifactoryIvyConfigurator == null) {
-            return;
-        }
-        if (artifactoryIvyConfigurator.isDeployBuildInfo()) {
-            run.getActions().add(new BuildInfoResultAction(artifactoryIvyConfigurator.getArtifactoryName(), run));
+    public void onCompleted(AbstractBuild run, TaskListener listener) {
+        if (run instanceof IvyModuleSetBuild) {
+            IvyModuleSetBuild ivyRun = (IvyModuleSetBuild) run;
+            Result result = ivyRun.getResult();
+            if (result == null || result.isWorseThan(Result.SUCCESS)) {
+                return;
+            }
+            ArtifactoryIvyConfigurator artifactoryIvyConfigurator =
+                    ivyRun.getProject().getBuildWrappersList().get(ArtifactoryIvyConfigurator.class);
+            if (artifactoryIvyConfigurator == null) {
+                return;
+            }
+            if (artifactoryIvyConfigurator.isDeployBuildInfo()) {
+                run.getActions().add(new BuildInfoResultAction(artifactoryIvyConfigurator.getArtifactoryName(), run));
+            }
         }
     }
 }
