@@ -21,7 +21,12 @@ import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -33,12 +38,11 @@ import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.BuildInfoDeployer;
+import org.jfrog.hudson.util.FormValidations;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
 import java.io.IOException;
 import java.util.List;
 
@@ -77,9 +81,9 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details,
-                                        boolean deployArtifacts, String username, String password,
-                                        boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable,
-                                        boolean runChecks, String violationRecipients) {
+            boolean deployArtifacts, String username, String password,
+            boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable,
+            boolean runChecks, String violationRecipients) {
         this.details = details;
         this.username = username;
         this.includeEnvVars = includeEnvVars;
@@ -270,12 +274,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         }
 
         public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
-            try {
-                new InternetAddress(value);
-                return FormValidation.ok();
-            } catch (AddressException e) {
-                return FormValidation.error(e.getMessage());
-            }
+            return FormValidations.validateEmails(value);
         }
 
         /**

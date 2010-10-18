@@ -69,7 +69,7 @@
                         <f:entry title="${%Send license violation notifications to: }"
                                  field="violationRecipients"
                                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html"
-                                 description="Comma-separated list of recipient addresses.">
+                                 description="Space-separated list of recipient addresses.">
                             <f:textbox value="${instance.violationRecipients}"/>
                         </f:entry>
                     </f:optionalBlock>

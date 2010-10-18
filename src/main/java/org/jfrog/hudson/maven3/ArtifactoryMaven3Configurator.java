@@ -23,7 +23,15 @@ import com.google.common.io.Closeables;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.CauseAction;
+import hudson.model.FreeStyleProject;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -40,12 +48,11 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.FormValidations;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -88,8 +95,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, String username, String password,
-                                         boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
-                                         boolean runChecks, String violationRecipients) {
+            boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
+            boolean runChecks, String violationRecipients) {
         this.details = details;
         this.username = username;
         this.runChecks = runChecks;
@@ -225,7 +232,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     }
 
     private void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build, BuildListener listener,
-                                         ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
+            ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
 
         Properties props = new Properties();
 
@@ -386,12 +393,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         }
 
         public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
-            try {
-                new InternetAddress(value);
-                return FormValidation.ok();
-            } catch (AddressException e) {
-                return FormValidation.error(e.getMessage());
-            }
+            return FormValidations.validateEmails(value);
         }
 
         /**

@@ -21,7 +21,13 @@ import com.google.common.io.Files;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.FreeStyleProject;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -32,12 +38,11 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.FormValidations;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -66,11 +71,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     private final boolean runChecks;
     private final String violationRecipients;
 
-
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
-                                         boolean deployArtifacts, String username, String password, String remotePluginLocation,
-                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients) {
+            boolean deployArtifacts, String username, String password, String remotePluginLocation,
+            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
@@ -230,12 +234,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         }
 
         public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
-            try {
-                new InternetAddress(value);
-                return FormValidation.ok();
-            } catch (AddressException e) {
-                return FormValidation.error(e.getMessage());
-            }
+            return FormValidations.validateEmails(value);
         }
 
         /**
