@@ -75,12 +75,14 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     private final boolean includePublishArtifacts;
 
+    private final String scopes;
+
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details,
                                         boolean deployArtifacts, String username, String password,
                                         boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable,
-                                        boolean runChecks, String violationRecipients, boolean includePublishArtifacts) {
+                                        boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes) {
         this.details = details;
         this.username = username;
         this.includeEnvVars = includeEnvVars;
@@ -89,6 +91,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
+        this.scopes = scopes;
         this.skipBuildInfoDeploy = !deployBuildInfo;
 
         this.scrambledPassword = Scrambler.scramble(password);
@@ -127,6 +130,10 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     public boolean isRunChecks() {
         return runChecks;
+    }
+
+    public String getScopes() {
+        return scopes;
     }
 
     public String getUsername() {

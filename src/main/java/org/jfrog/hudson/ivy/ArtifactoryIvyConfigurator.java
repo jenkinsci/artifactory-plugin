@@ -64,11 +64,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
     private boolean runChecks;
     private String violationRecipients;
     private boolean includePublishArtifacts;
+    private String scopes;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, String username, String password, boolean deployArtifacts,
                                       boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
-                                      String violationRecipients, boolean includePublishArtifacts) {
+                                      String violationRecipients, boolean includePublishArtifacts, String scopes) {
         this.details = details;
         this.username = username;
         this.password = Scrambler.scramble(password);
@@ -78,6 +79,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
+        this.scopes = scopes;
     }
 
     public ServerDetails getDetails() {
@@ -98,6 +100,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     public boolean isRunChecks() {
         return runChecks;
+    }
+
+    public String getScopes() {
+        return scopes;
     }
 
     public void setRunChecks(boolean runChecks) {
@@ -179,6 +185,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS, String.valueOf(isIncludePublishArtifacts()));
                 if (StringUtils.isNotBlank(getViolationRecipients())) {
                     env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
+                }
+                if (StringUtils.isNotBlank(getScopes())) {
+                    env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
                 }
             }
 

@@ -87,6 +87,9 @@ public class GradleInitScriptWriter {
         if (StringUtils.isNotBlank(gradleConfigurator.getViolationRecipients())) {
             ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, gradleConfigurator.getViolationRecipients());
         }
+        if (StringUtils.isNotBlank(gradleConfigurator.getScopes())) {
+            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, gradleConfigurator.getScopes());
+        }
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS, String.valueOf(gradleConfigurator.isIncludePublishArtifacts()));
         String principal = ActionableHelper.getHudsonPrincipal(build);
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PRINCIPAL, principal);

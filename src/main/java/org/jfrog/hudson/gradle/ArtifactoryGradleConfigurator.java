@@ -65,11 +65,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     private final boolean runChecks;
     private final String violationRecipients;
     private final boolean includePublishArtifacts;
+    private final String scopes;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
                                          boolean deployArtifacts, String username, String password, String remotePluginLocation,
-                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients, boolean includePublishArtifacts) {
+                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
@@ -81,6 +82,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
+        this.scopes = scopes;
         this.scrambledPassword = Scrambler.scramble(password);
     }
 
@@ -106,6 +108,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
 
     public boolean isDeployBuildInfo() {
         return deployBuildInfo;
+    }
+
+    public String getScopes() {
+        return scopes;
     }
 
     public boolean isIncludeEnvVars() {

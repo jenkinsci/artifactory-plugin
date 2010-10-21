@@ -85,6 +85,12 @@
                                  description="Space-separated list of recipient addresses.">
                             <f:textbox value="${instance.violationRecipients}"/>
                         </f:entry>
+                        <f:entry title="${%Limit checks to the following scopes: }"
+                                 help="/plugin/artifactory/maven3/help-scopes.html"
+                                 field="scopes"
+                                 description="Space-separated list of scopes.">
+                            <f:textbox value="${instance.scopes}"/>
+                        </f:entry>
                         <f:entry field="includePublishArtifacts"
                                  help="/plugin/artifactory/maven3/help-includePublishArtifacts.html">
                             <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>

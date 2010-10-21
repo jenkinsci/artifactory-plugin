@@ -87,15 +87,18 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     private final boolean includePublishArtifacts;
 
+    private final String scopes;
+
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, String username, String password,
                                          boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
-                                         boolean runChecks, String violationRecipients, boolean includePublishArtifacts) {
+                                         boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes) {
         this.details = details;
         this.username = username;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
+        this.scopes = scopes;
         this.skipBuildInfoDeploy = !deployBuildInfo;
         this.deployBuildInfo = deployBuildInfo;
         this.scrambledPassword = Scrambler.scramble(password);
@@ -150,6 +153,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     public boolean isSkipBuildInfoDeploy() {
         return skipBuildInfoDeploy;
+    }
+
+    public String getScopes() {
+        return scopes;
     }
 
     public boolean isIncludeEnvVars() {
@@ -302,6 +309,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         if (isRunChecks()) {
             if (StringUtils.isNotBlank(getViolationRecipients())) {
                 props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
+            }
+            if (StringUtils.isNotBlank(getScopes())) {
+                props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
             }
         }
         props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(isDeployArtifacts()));
