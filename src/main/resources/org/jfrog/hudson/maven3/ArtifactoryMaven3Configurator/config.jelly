@@ -85,6 +85,11 @@
                                  description="Space-separated list of recipient addresses.">
                             <f:textbox value="${instance.violationRecipients}"/>
                         </f:entry>
+                        <f:entry field="includePublishArtifacts"
+                                 help="/plugin/artifactory/maven3/help-includePublishArtifacts.html">
+                            <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
+                            <label class="attach-previous">${%Include Published Artifacts}</label>
+                        </f:entry>
                     </f:optionalBlock>
                 </f:optionalBlock>
             </table>

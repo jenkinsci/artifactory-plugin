@@ -21,12 +21,7 @@ import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -78,12 +73,14 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     private final String violationRecipients;
 
+    private final boolean includePublishArtifacts;
+
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details,
-            boolean deployArtifacts, String username, String password,
-            boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable,
-            boolean runChecks, String violationRecipients) {
+                                        boolean deployArtifacts, String username, String password,
+                                        boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable,
+                                        boolean runChecks, String violationRecipients, boolean includePublishArtifacts) {
         this.details = details;
         this.username = username;
         this.includeEnvVars = includeEnvVars;
@@ -91,6 +88,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         this.evenIfUnstable = evenIfUnstable;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
+        this.includePublishArtifacts = includePublishArtifacts;
         this.skipBuildInfoDeploy = !deployBuildInfo;
 
         this.scrambledPassword = Scrambler.scramble(password);
@@ -117,6 +115,10 @@ public class ArtifactoryRedeployPublisher extends Recorder {
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean isEvenIfUnstable() {
         return evenIfUnstable;
+    }
+
+    public boolean isIncludePublishArtifacts() {
+        return includePublishArtifacts;
     }
 
     public boolean isIncludeEnvVars() {

@@ -21,13 +21,7 @@ import com.google.common.io.Files;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -70,11 +64,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     public final boolean includeEnvVars;
     private final boolean runChecks;
     private final String violationRecipients;
+    private final boolean includePublishArtifacts;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
-            boolean deployArtifacts, String username, String password, String remotePluginLocation,
-            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients) {
+                                         boolean deployArtifacts, String username, String password, String remotePluginLocation,
+                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients, boolean includePublishArtifacts) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
@@ -85,6 +80,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         this.deployBuildInfo = deployBuildInfo;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
+        this.includePublishArtifacts = includePublishArtifacts;
         this.scrambledPassword = Scrambler.scramble(password);
     }
 
@@ -102,6 +98,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
 
     public boolean isRunChecks() {
         return runChecks;
+    }
+
+    public boolean isIncludePublishArtifacts() {
+        return includePublishArtifacts;
     }
 
     public boolean isDeployBuildInfo() {

@@ -21,13 +21,7 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -69,11 +63,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
     private boolean includeEnvVars;
     private boolean runChecks;
     private String violationRecipients;
+    private boolean includePublishArtifacts;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, String username, String password, boolean deployArtifacts,
-            boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
-            String violationRecipients) {
+                                      boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
+                                      String violationRecipients, boolean includePublishArtifacts) {
         this.details = details;
         this.username = username;
         this.password = Scrambler.scramble(password);
@@ -82,10 +77,19 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
         this.includeEnvVars = includeEnvVars;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
+        this.includePublishArtifacts = includePublishArtifacts;
     }
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public boolean isIncludePublishArtifacts() {
+        return includePublishArtifacts;
+    }
+
+    public void setIncludePublishArtifacts(boolean includePublishArtifacts) {
+        this.includePublishArtifacts = includePublishArtifacts;
     }
 
     public String getPassword() {
@@ -172,6 +176,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                     env.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parent.getUpstreamBuild() + "");
                 }
                 env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, String.valueOf(isRunChecks()));
+                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS, String.valueOf(isIncludePublishArtifacts()));
                 if (StringUtils.isNotBlank(getViolationRecipients())) {
                     env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
                 }

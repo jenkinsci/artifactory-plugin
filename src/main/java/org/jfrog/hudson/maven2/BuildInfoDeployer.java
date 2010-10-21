@@ -138,6 +138,7 @@ public class BuildInfoDeployer {
         if (StringUtils.isNotBlank(publisher.getViolationRecipients()) && publisher.isRunChecks()) {
             licenseControl.setLicenseViolationsRecipientsList(publisher.getViolationRecipients());
         }
+        licenseControl.setIncludePublishedArtifacts(publisher.isIncludePublishArtifacts());
         infoBuilder.licenseControl(licenseControl);
         Build buildInfo = infoBuilder.build();
         // for backwards compatibility for Artifactory 2.2.3
