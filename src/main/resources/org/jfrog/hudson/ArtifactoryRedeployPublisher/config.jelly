@@ -39,14 +39,19 @@
         </f:entry>
         <f:block>
             <table style="width:100%">
+                <f:optionalBlock field="evenIfUnstable"
+                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-evenIfUnstable.html"
+                                 title="Deploy even if the build is unstable">
+                </f:optionalBlock>
+            </table>
+        </f:block>
+        <f:block>
+            <table style="width:100%">
                 <f:optionalBlock field="deployArtifacts"
                                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployArtifacts.html"
-                                 title="Deploy maven artifacts" inline="true" checked="${instance.deployArtifacts}">
-                    <f:entry field="evenIfUnstable"
-                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-evenIfUnstable.html">
-                        <f:checkbox default="false" checked="${instance.evenIfUnstable}"/>
-                        <label class="attach-previous">${%Deploy even if the build is unstable}</label>
-                    </f:entry>
+                                 title="Deploy maven artifacts"
+                                 checked="${!instance.deployArtifacts}"
+                                 inline="true">
                 </f:optionalBlock>
             </table>
         </f:block>

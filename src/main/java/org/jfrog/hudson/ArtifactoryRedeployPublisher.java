@@ -107,7 +107,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean isDeployArtifacts() {
-        return deployArtifacts;
+        return !deployArtifacts;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
