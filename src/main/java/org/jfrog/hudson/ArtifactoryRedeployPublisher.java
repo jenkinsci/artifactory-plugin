@@ -16,6 +16,8 @@
 
 package org.jfrog.hudson;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
@@ -38,6 +40,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 
@@ -179,6 +182,10 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         if (build.getResult().isWorseThan(getTreshold())) {
             return true;    // build failed. Don't publish
         }
+        if (isBuildFromM2ReleasePlugin(build)) {
+            listener.getLogger().append("M2 Release build, not uploading artifacts to Artifactory. ");
+            return true;
+        }
 
         if (getArtifactoryServer() == null) {
             listener.getLogger().format("No Artifactory server configured for %s. " +
@@ -217,6 +224,15 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         // failed
         build.setResult(Result.FAILURE);
         return true;
+    }
+
+    private boolean isBuildFromM2ReleasePlugin(AbstractBuild build) {
+        List<Cause> causes = build.getCauses();
+        return !causes.isEmpty() && Iterables.any(causes, new Predicate<Cause>() {
+            public boolean apply(@Nonnull Cause input) {
+                return "org.jvnet.hudson.plugins.m2release.ReleaseCause".equals(input.getClass().getName());
+            }
+        });
     }
 
     private void verifySupportedArtifactoryVersion(ArtifactoryBuildInfoClient client) throws Exception {
