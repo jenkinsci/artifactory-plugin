@@ -41,7 +41,8 @@
             <table style="width:100%">
                 <f:optionalBlock field="evenIfUnstable"
                                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-evenIfUnstable.html"
-                                 title="Deploy even if the build is unstable">
+                                 title="Deploy even if the build is unstable"
+                                 inline="true">
                 </f:optionalBlock>
             </table>
         </f:block>
