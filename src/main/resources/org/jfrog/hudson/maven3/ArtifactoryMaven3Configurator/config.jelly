@@ -60,13 +60,13 @@
                 <f:optionalBlock field="deployArtifacts"
                                  help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployArtifacts.html"
                                  title="Deploy artifacts to Artifactory" inline="true"
-                                 checked="${instance.deployArtifacts}">
+                                 checked="${!instance.deployArtifacts}">
                 </f:optionalBlock>
             </table>
         </f:block>
         <f:block>
             <table style="width:100%">
-                <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
+                <f:optionalBlock name="deployBuildInfo" checked="${!instance.deployBuildInfo}"
                                  title="Publish build info" help="/plugin/artifactory/ivy/help-deployBuildInfo.html"
                                  inline="true">
                     <f:entry field="includeEnvVars"

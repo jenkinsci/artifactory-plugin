@@ -117,7 +117,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     }
 
     public boolean isDeployBuildInfo() {
-        return deployBuildInfo;
+        return !deployBuildInfo;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -156,7 +156,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     }
 
     public boolean isDeployArtifacts() {
-        return deployArtifacts;
+        return !deployArtifacts;
     }
 
     public boolean isSkipBuildInfoDeploy() {
@@ -323,7 +323,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
                 props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
             }
         }
-        props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(isDeployArtifacts()));
+        props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(deployArtifacts));
         props.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.toString(!isSkipBuildInfoDeploy()));
         props.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, Boolean.toString(isIncludeEnvVars()));
         addEnvVars(env, build, props);
