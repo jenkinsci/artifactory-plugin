@@ -28,27 +28,27 @@
         </f:dropdownList>
 
         <f:entry title="${%Deployer username}" field="username"
-                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-userName.html">
+                 help="/plugin/artifactory/help/common/help-userName.html">
             <f:textbox/>
         </f:entry>
 
         <f:entry title="${%Deployer password}" field="password"
-                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-password.html">
+                 help="/plugin/artifactory/help/common/help-password.html">
             <f:password/>
         </f:entry>
         <f:block>
             <table style="width:100%">
                 <f:optionalBlock field="deployArtifacts"
-                                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html"
+                                 help="/plugin/artifactory/help/common/help-deployArtifacts.html"
                                  inline="true"
                                  checked="${instance.deployArtifacts}" title="Publish Artifacts to Artifactory">
                     <f:entry field="deployMaven"
-                             help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployMaven.html">
+                             help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployMaven.html">
                         <f:checkbox default="false" checked="${instance.deployMaven}"/>
                         <label class="attach-previous">${%Publish Maven descriptors (POMs)}</label>
                     </f:entry>
                     <f:entry field="deployIvy"
-                             help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployIvy.html">
+                             help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployIvy.html">
                         <f:checkbox default="true" checked="${instance.deployIvy}"/>
                         <label class="attach-previous">${%Publish Ivy descriptors (ivy.xml)}</label>
                     </f:entry>
@@ -57,10 +57,11 @@
             <f:block>
                 <table style="width:100%">
                     <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
-                                     title="Publish build info" help="/plugin/artifactory/ivy/help-deployBuildInfo.html"
+                                     title="Publish build info"
+                                     help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
                                      inline="true">
                         <f:entry field="includeEnvVars"
-                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
+                                 help="/plugin/artifactory/help/common/help-includeEnvVars.html">
                             <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
                             <label class="attach-previous">${%Include all environment variables}</label>
                         </f:entry>
@@ -70,26 +71,26 @@
                                                  checked="${instance.runChecks}" default="false"
                                                  title="Run License Checks (requires Pro)"
                                                  inline="true"
-                                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-runChecks.html">
+                                                 help="/plugin/artifactory/help/common/help-runChecks.html">
                                     <f:entry title="${%Send license violation notifications to: }"
                                              field="violationRecipients"
-                                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html"
+                                             help="/plugin/artifactory/help/common/help-sendViolationNotification.html"
                                              description="Space-separated list of recipient addresses.">
                                         <f:textbox value="${instance.violationRecipients}"/>
                                     </f:entry>
                                     <f:entry title="${%Limit checks to the following scopes: }"
-                                             help="/plugin/artifactory/gradle/help-scopes.html"
+                                             help="/plugin/artifactory/help/common/help-scopes.html"
                                              field="scopes"
                                              description="Space-separated list of scopes.">
                                         <f:textbox value="${instance.scopes}"/>
                                     </f:entry>
                                     <f:entry field="includePublishArtifacts"
-                                             help="/plugin/artifactory/gradle/help-includePublishArtifacts.html">
+                                             help="/plugin/artifactory/help/common/help-includePublishArtifacts.html">
                                         <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
                                         <label class="attach-previous">${%Include Published Artifacts}</label>
                                     </f:entry>
                                     <f:entry field="licenseAutoDiscovery"
-                                             help="/plugin/artifactory/gradle/help-licenseAutoDiscovery.html">
+                                             help="/plugin/artifactory/help/common/help-licenseAutoDiscovery.html">
                                         <f:checkbox default="false" checked="${!instance.licenseAutoDiscovery}"/>
                                         <label class="attach-previous">${%Disable automatic license discovery}</label>
                                     </f:entry>

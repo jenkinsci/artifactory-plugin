@@ -1,10 +1,10 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt">
     <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
-                     title="Publish build info" help="/plugin/artifactory/ivy/help-deployBuildInfo.html"
+                     title="Publish build info" help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
                      inline="true">
         <f:entry field="deployArtifacts"
-                 help="/plugin/artifactory/ArtifactoryGradleConfigurator/help-deployArtifacts.html">
+                 help="/plugin/artifactory/help/common/help-deployArtifacts.html">
             <f:checkbox default="true" checked="${instance.deployArtifacts}"/>
             <label class="">${%Publish artifacts to Artifactory}</label>
         </f:entry>
@@ -13,14 +13,14 @@
             <label class="">${%Publish build info}</label>
         </f:entry>-->
         <f:entry field="includeEnvVars"
-                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
+                 help="/plugin/artifactory/help/common/help-includeEnvVars.html">
             <input type="checkbox" default="false" checked="${instance.includeEnvVars}" id="includeEnvVars"/>
             <label class="">${%Include all environment variables}</label>
         </f:entry>
         <f:optionalBlock name="notifications"
                          checked="${instance.violationRecipients != null}"
                          title="Send license violation notifications to recipients (Requires Artifactory Pro)"
-                         help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html">
+                         help="/plugin/artifactory/help/common/help-sendViolationNotification.html">
             <f:entry title="${%Recipients}" field="violationRecipients">
                 <f:textbox value="${instance.violationRecipients}"/>
             </f:entry>
