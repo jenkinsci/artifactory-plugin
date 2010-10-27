@@ -90,7 +90,7 @@
                                     </f:entry>
                                     <f:entry field="licenseAutoDiscovery"
                                              help="/plugin/artifactory/gradle/help-licenseAutoDiscovery.html">
-                                        <f:checkbox default="false" checked="${instance.licenseAutoDiscovery}"/>
+                                        <f:checkbox default="false" checked="${!instance.licenseAutoDiscovery}"/>
                                         <label class="attach-previous">${%Disable automatic license discovery}</label>
                                     </f:entry>
                                 </f:optionalBlock>
