@@ -66,11 +66,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     private final String violationRecipients;
     private final boolean includePublishArtifacts;
     private final String scopes;
+    private final boolean licenseAutoDiscovery;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
                                          boolean deployArtifacts, String username, String password, String remotePluginLocation,
-                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes) {
+                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
@@ -83,6 +84,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
+        this.licenseAutoDiscovery = !licenseAutoDiscovery;
         this.scrambledPassword = Scrambler.scramble(password);
     }
 
@@ -108,6 +110,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
 
     public boolean isDeployBuildInfo() {
         return deployBuildInfo;
+    }
+
+    public boolean isLicenseAutoDiscovery() {
+        return licenseAutoDiscovery;
     }
 
     public String getScopes() {

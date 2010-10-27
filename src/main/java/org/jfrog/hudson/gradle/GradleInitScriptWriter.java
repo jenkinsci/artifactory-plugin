@@ -91,6 +91,7 @@ public class GradleInitScriptWriter {
             ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, gradleConfigurator.getScopes());
         }
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS, String.valueOf(gradleConfigurator.isIncludePublishArtifacts()));
+        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER, String.valueOf(gradleConfigurator.isIncludePublishArtifacts()));
         String principal = ActionableHelper.getHudsonPrincipal(build);
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PRINCIPAL, principal);
         String buildUrl = envVars.get("BUILD_URL");

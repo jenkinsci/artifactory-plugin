@@ -89,16 +89,20 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     private final String scopes;
 
+    private final boolean licenseAutoDiscovery;
+
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, String username, String password,
                                          boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
-                                         boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes) {
+                                         boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+                                         String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
         this.username = username;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
+        this.licenseAutoDiscovery = !licenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
         this.deployBuildInfo = deployBuildInfo;
         this.scrambledPassword = Scrambler.scramble(password);
@@ -133,6 +137,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         return details != null ?
                 (details.snapshotsRepositoryKey != null ? details.snapshotsRepositoryKey : details.repositoryKey) :
                 null;
+    }
+
+    public boolean isLicenseAutoDiscovery() {
+        return licenseAutoDiscovery;
     }
 
     public String getArtifactoryName() {
@@ -306,6 +314,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         }
         props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, Boolean.toString(isRunChecks()));
         props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS, Boolean.toString(isIncludePublishArtifacts()));
+        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER, Boolean.toString(isLicenseAutoDiscovery()));
         if (isRunChecks()) {
             if (StringUtils.isNotBlank(getViolationRecipients())) {
                 props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());

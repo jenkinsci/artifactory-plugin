@@ -144,6 +144,7 @@ public class BuildInfoDeployer {
             }
         }
         licenseControl.setIncludePublishedArtifacts(publisher.isIncludePublishArtifacts());
+        licenseControl.setAutoDiscover(publisher.isLicenseAutoDiscovery());
         infoBuilder.licenseControl(licenseControl);
         Build buildInfo = infoBuilder.build();
         // for backwards compatibility for Artifactory 2.2.3

@@ -80,12 +80,14 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     private final String scopes;
 
+    private final boolean licenseAutoDiscovery;
+
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details,
                                         boolean deployArtifacts, String username, String password,
                                         boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable,
-                                        boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes) {
+                                        boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
         this.username = username;
         this.includeEnvVars = includeEnvVars;
@@ -95,8 +97,8 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
+        this.licenseAutoDiscovery = !licenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
-
         this.scrambledPassword = Scrambler.scramble(password);
 
         /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
@@ -129,6 +131,10 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
+    }
+
+    public boolean isLicenseAutoDiscovery() {
+        return licenseAutoDiscovery;
     }
 
     public boolean isRunChecks() {
