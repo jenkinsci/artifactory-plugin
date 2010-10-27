@@ -17,11 +17,16 @@
 package org.jfrog.hudson.ivy;
 
 import com.google.common.collect.Maps;
-import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -52,7 +57,6 @@ import java.util.Map;
 /**
  * @author Tomer Cohen
  */
-@XStreamAlias("artifactory-ivy-config")
 public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     private ServerDetails details;
@@ -69,8 +73,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, String username, String password, boolean deployArtifacts,
-                                      boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
-                                      String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
+            boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
+            String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
         this.username = username;
         this.password = Scrambler.scramble(password);
@@ -192,8 +196,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                     env.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parent.getUpstreamBuild() + "");
                 }
                 env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, String.valueOf(isRunChecks()));
-                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER, String.valueOf(isLicenseAutoDiscovery()));
-                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS, String.valueOf(isIncludePublishArtifacts()));
+                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER,
+                        String.valueOf(isLicenseAutoDiscovery()));
+                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS,
+                        String.valueOf(isIncludePublishArtifacts()));
                 if (StringUtils.isNotBlank(getViolationRecipients())) {
                     env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
                 }

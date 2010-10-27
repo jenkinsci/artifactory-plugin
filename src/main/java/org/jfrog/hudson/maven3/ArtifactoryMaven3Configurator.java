@@ -20,10 +20,17 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
-import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.CauseAction;
+import hudson.model.FreeStyleProject;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -57,7 +64,6 @@ import java.util.Properties;
 /**
  * @author Noam Y. Tenne
  */
-@XStreamAlias("artifactory-maven3-config")
 public class ArtifactoryMaven3Configurator extends BuildWrapper {
     /**
      * Repository URL and repository to deploy artifacts to
@@ -93,9 +99,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, String username, String password,
-                                         boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
-                                         boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-                                         String scopes, boolean licenseAutoDiscovery) {
+            boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
+            boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+            String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
         this.username = username;
         this.runChecks = runChecks;
@@ -246,7 +252,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     }
 
     private void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build, BuildListener listener,
-                                         ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
+            ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
 
         Properties props = new Properties();
 
@@ -313,7 +319,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             props.put(ClientProperties.PROP_PUBLISH_PASSWORD, getPassword());
         }
         props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, Boolean.toString(isRunChecks()));
-        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS, Boolean.toString(isIncludePublishArtifacts()));
+        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS,
+                Boolean.toString(isIncludePublishArtifacts()));
         props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER, Boolean.toString(isLicenseAutoDiscovery()));
         if (isRunChecks()) {
             if (StringUtils.isNotBlank(getViolationRecipients())) {

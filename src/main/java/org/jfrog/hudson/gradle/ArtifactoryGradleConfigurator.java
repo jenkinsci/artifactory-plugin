@@ -18,10 +18,15 @@ package org.jfrog.hudson.gradle;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.FreeStyleProject;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -51,7 +56,6 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-@XStreamAlias("artifactory-gradle-config")
 public class ArtifactoryGradleConfigurator extends BuildWrapper {
     private ServerDetails details;
     private String username;
@@ -70,8 +74,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
-                                         boolean deployArtifacts, String username, String password, String remotePluginLocation,
-                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
+            boolean deployArtifacts, String username, String password, String remotePluginLocation,
+            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
+            boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
