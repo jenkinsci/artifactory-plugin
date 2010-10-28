@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.jvnet.hudson.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.358</version>
+        <version>1.362</version>
     </parent>
 
     <artifactId>artifactory</artifactId>
