@@ -16,17 +16,14 @@
 
 package org.jfrog.hudson;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -43,6 +40,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 
@@ -78,12 +76,18 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     private final String violationRecipients;
 
+    private final boolean includePublishArtifacts;
+
+    private final String scopes;
+
+    private final boolean licenseAutoDiscovery;
+
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details,
-            boolean deployArtifacts, String username, String password,
-            boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable,
-            boolean runChecks, String violationRecipients) {
+                                        boolean deployArtifacts, String username, String password,
+                                        boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable,
+                                        boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
         this.username = username;
         this.includeEnvVars = includeEnvVars;
@@ -91,8 +95,10 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         this.evenIfUnstable = evenIfUnstable;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
+        this.includePublishArtifacts = includePublishArtifacts;
+        this.scopes = scopes;
+        this.licenseAutoDiscovery = !licenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
-
         this.scrambledPassword = Scrambler.scramble(password);
 
         /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
@@ -106,7 +112,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean isDeployArtifacts() {
-        return deployArtifacts;
+        return !deployArtifacts;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -119,12 +125,24 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         return evenIfUnstable;
     }
 
+    public boolean isIncludePublishArtifacts() {
+        return includePublishArtifacts;
+    }
+
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
     }
 
+    public boolean isLicenseAutoDiscovery() {
+        return licenseAutoDiscovery;
+    }
+
     public boolean isRunChecks() {
         return runChecks;
+    }
+
+    public String getScopes() {
+        return scopes;
     }
 
     public String getUsername() {
@@ -170,6 +188,10 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         if (build.getResult().isWorseThan(getTreshold())) {
             return true;    // build failed. Don't publish
         }
+        if (isBuildFromM2ReleasePlugin(build)) {
+            listener.getLogger().append("M2 Release build, not uploading artifacts to Artifactory. ");
+            return true;
+        }
 
         if (getArtifactoryServer() == null) {
             listener.getLogger().format("No Artifactory server configured for %s. " +
@@ -208,6 +230,15 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         // failed
         build.setResult(Result.FAILURE);
         return true;
+    }
+
+    private boolean isBuildFromM2ReleasePlugin(AbstractBuild build) {
+        List<Cause> causes = build.getCauses();
+        return !causes.isEmpty() && Iterables.any(causes, new Predicate<Cause>() {
+            public boolean apply(@Nonnull Cause input) {
+                return "org.jvnet.hudson.plugins.m2release.ReleaseCause".equals(input.getClass().getName());
+            }
+        });
     }
 
     private void verifySupportedArtifactoryVersion(ArtifactoryBuildInfoClient client) throws Exception {
