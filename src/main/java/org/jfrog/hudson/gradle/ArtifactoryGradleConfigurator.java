@@ -18,6 +18,7 @@ package org.jfrog.hudson.gradle;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -56,6 +57,7 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
+@XStreamAlias("artifactory-gradle-config")
 public class ArtifactoryGradleConfigurator extends BuildWrapper {
     private ServerDetails details;
     private String username;
@@ -68,15 +70,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     public final boolean includeEnvVars;
     private final boolean runChecks;
     private final String violationRecipients;
-    private final boolean includePublishArtifacts;
-    private final String scopes;
-    private final boolean licenseAutoDiscovery;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
             boolean deployArtifacts, String username, String password, String remotePluginLocation,
-            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
-            boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
+            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients) {
         this.details = details;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
@@ -87,9 +85,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         this.deployBuildInfo = deployBuildInfo;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
-        this.includePublishArtifacts = includePublishArtifacts;
-        this.scopes = scopes;
-        this.licenseAutoDiscovery = !licenseAutoDiscovery;
         this.scrambledPassword = Scrambler.scramble(password);
     }
 
@@ -109,20 +104,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         return runChecks;
     }
 
-    public boolean isIncludePublishArtifacts() {
-        return includePublishArtifacts;
-    }
-
     public boolean isDeployBuildInfo() {
         return deployBuildInfo;
-    }
-
-    public boolean isLicenseAutoDiscovery() {
-        return licenseAutoDiscovery;
-    }
-
-    public String getScopes() {
-        return scopes;
     }
 
     public boolean isIncludeEnvVars() {

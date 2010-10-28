@@ -20,6 +20,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -64,6 +65,7 @@ import java.util.Properties;
 /**
  * @author Noam Y. Tenne
  */
+@XStreamAlias("artifactory-maven3-config")
 public class ArtifactoryMaven3Configurator extends BuildWrapper {
     /**
      * Repository URL and repository to deploy artifacts to
@@ -91,24 +93,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     private final String violationRecipients;
 
-    private final boolean includePublishArtifacts;
-
-    private final String scopes;
-
-    private final boolean licenseAutoDiscovery;
-
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, String username, String password,
             boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
-            boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-            String scopes, boolean licenseAutoDiscovery) {
+            boolean runChecks, String violationRecipients) {
         this.details = details;
         this.username = username;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
-        this.includePublishArtifacts = includePublishArtifacts;
-        this.scopes = scopes;
-        this.licenseAutoDiscovery = !licenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
         this.deployBuildInfo = deployBuildInfo;
         this.scrambledPassword = Scrambler.scramble(password);
@@ -123,16 +115,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     }
 
     public boolean isDeployBuildInfo() {
-        return !deployBuildInfo;
+        return deployBuildInfo;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
     public String getRepositoryKey() {
         return details != null ? details.repositoryKey : null;
-    }
-
-    public boolean isIncludePublishArtifacts() {
-        return includePublishArtifacts;
     }
 
     /**
@@ -143,10 +131,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         return details != null ?
                 (details.snapshotsRepositoryKey != null ? details.snapshotsRepositoryKey : details.repositoryKey) :
                 null;
-    }
-
-    public boolean isLicenseAutoDiscovery() {
-        return licenseAutoDiscovery;
     }
 
     public String getArtifactoryName() {
@@ -162,15 +146,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     }
 
     public boolean isDeployArtifacts() {
-        return !deployArtifacts;
+        return deployArtifacts;
     }
 
     public boolean isSkipBuildInfoDeploy() {
         return skipBuildInfoDeploy;
-    }
-
-    public String getScopes() {
-        return scopes;
     }
 
     public boolean isIncludeEnvVars() {
@@ -319,18 +299,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             props.put(ClientProperties.PROP_PUBLISH_PASSWORD, getPassword());
         }
         props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, Boolean.toString(isRunChecks()));
-        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS,
-                Boolean.toString(isIncludePublishArtifacts()));
-        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER, Boolean.toString(isLicenseAutoDiscovery()));
         if (isRunChecks()) {
             if (StringUtils.isNotBlank(getViolationRecipients())) {
                 props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
             }
-            if (StringUtils.isNotBlank(getScopes())) {
-                props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
-            }
         }
-        props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(deployArtifacts));
+        props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(isDeployArtifacts()));
         props.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.toString(!isSkipBuildInfoDeploy()));
         props.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, Boolean.toString(isIncludeEnvVars()));
         addEnvVars(env, build, props);

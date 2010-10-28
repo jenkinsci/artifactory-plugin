@@ -17,6 +17,7 @@
 package org.jfrog.hudson.ivy;
 
 import com.google.common.collect.Maps;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
@@ -57,6 +58,7 @@ import java.util.Map;
 /**
  * @author Tomer Cohen
  */
+@XStreamAlias("artifactory-ivy-config")
 public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     private ServerDetails details;
@@ -67,14 +69,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
     private boolean includeEnvVars;
     private boolean runChecks;
     private String violationRecipients;
-    private boolean includePublishArtifacts;
-    private String scopes;
-    private boolean licenseAutoDiscovery;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, String username, String password, boolean deployArtifacts,
             boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
-            String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
+            String violationRecipients) {
         this.details = details;
         this.username = username;
         this.password = Scrambler.scramble(password);
@@ -83,21 +82,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
         this.includeEnvVars = includeEnvVars;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
-        this.includePublishArtifacts = includePublishArtifacts;
-        this.scopes = scopes;
-        this.licenseAutoDiscovery = !licenseAutoDiscovery;
     }
 
     public ServerDetails getDetails() {
         return details;
-    }
-
-    public boolean isIncludePublishArtifacts() {
-        return includePublishArtifacts;
-    }
-
-    public void setIncludePublishArtifacts(boolean includePublishArtifacts) {
-        this.includePublishArtifacts = includePublishArtifacts;
     }
 
     public String getPassword() {
@@ -106,18 +94,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     public boolean isRunChecks() {
         return runChecks;
-    }
-
-    public boolean isLicenseAutoDiscovery() {
-        return licenseAutoDiscovery;
-    }
-
-    public void setLicenseAutoDiscovery(boolean licenseAutoDiscovery) {
-        this.licenseAutoDiscovery = licenseAutoDiscovery;
-    }
-
-    public String getScopes() {
-        return scopes;
     }
 
     public void setRunChecks(boolean runChecks) {
@@ -196,15 +172,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                     env.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parent.getUpstreamBuild() + "");
                 }
                 env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, String.valueOf(isRunChecks()));
-                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER,
-                        String.valueOf(isLicenseAutoDiscovery()));
-                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS,
-                        String.valueOf(isIncludePublishArtifacts()));
                 if (StringUtils.isNotBlank(getViolationRecipients())) {
                     env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
-                }
-                if (StringUtils.isNotBlank(getScopes())) {
-                    env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
                 }
             }
 

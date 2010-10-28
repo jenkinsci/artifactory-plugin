@@ -24,7 +24,7 @@
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Target releases repository}"
-                                 help="/plugin/artifactory/help/common/help-deployReleases.html">
+                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployReleases.html">
                             <select class="setting-input" name="repositoryKey">
                                 <j:forEach var="r" items="${s.repositoryKeys}">
                                     <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
@@ -32,7 +32,7 @@
                             </select>
                         </f:entry>
                         <f:entry title="${%Target snapshots repository}"
-                                 help="/plugin/artifactory/help/common/help-deploySnapshots.html">
+                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deploySnapshots.html">
                             <select class="setting-input" name="snapshotsRepositoryKey">
                                 <j:forEach var="r" items="${s.repositoryKeys}">
                                     <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
@@ -46,32 +46,31 @@
         </f:dropdownList>
 
         <f:entry title="${%Deployer username}" field="username"
-                 help="/plugin/artifactory/help/common/help-userName.html">
+                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-userName.html">
             <f:textbox/>
         </f:entry>
 
         <f:entry title="${%Deployer password}" field="password"
-                 help="/plugin/artifactory/help/common/help-password.html">
+                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-password.html">
             <f:password/>
         </f:entry>
 
         <f:block>
             <table style="width:100%">
                 <f:optionalBlock field="deployArtifacts"
-                                 help="/plugin/artifactory/help/common/help-deployArtifacts.html"
+                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-deployArtifacts.html"
                                  title="Deploy artifacts to Artifactory" inline="true"
-                                 checked="${!instance.deployArtifacts}">
+                                 checked="${instance.deployArtifacts}">
                 </f:optionalBlock>
             </table>
         </f:block>
         <f:block>
             <table style="width:100%">
-                <f:optionalBlock name="deployBuildInfo" checked="${!instance.deployBuildInfo}"
-                                 title="Publish build info"
-                                 help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
+                <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
+                                 title="Publish build info" help="/plugin/artifactory/ivy/help-deployBuildInfo.html"
                                  inline="true">
                     <f:entry field="includeEnvVars"
-                             help="/plugin/artifactory/help/common/help-includeEnvVars.html">
+                             help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-includeEnvVars.html">
                         <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
                         <label class="attach-previous">${%Include all environment variables}</label>
                     </f:entry>
@@ -79,28 +78,12 @@
                                      checked="${instance.runChecks}" default="false"
                                      title="Run license checks (requires Pro)"
                                      inline="true"
-                                     help="/plugin/artifactory/help/common/help-runChecks.html">
+                                     help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-runChecks.html">
                         <f:entry title="${%Send license violation notifications to: }"
                                  field="violationRecipients"
-                                 help="/plugin/artifactory/help/common/help-sendViolationNotification.html"
+                                 help="/plugin/artifactory/ArtifactoryRedeployPublisher/help-sendViolationNotification.html"
                                  description="Space-separated list of recipient addresses.">
                             <f:textbox value="${instance.violationRecipients}"/>
-                        </f:entry>
-                        <f:entry title="${%Limit checks to the following scopes: }"
-                                 help="/plugin/artifactory/help/common/help-scopes.html"
-                                 field="scopes"
-                                 description="Space-separated list of scopes.">
-                            <f:textbox value="${instance.scopes}"/>
-                        </f:entry>
-                        <f:entry field="includePublishArtifacts"
-                                 help="/plugin/artifactory/help/common/help-includePublishArtifacts.html">
-                            <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
-                            <label class="attach-previous">${%Include Published Artifacts}</label>
-                        </f:entry>
-                        <f:entry field="licenseAutoDiscovery"
-                                 help="/plugin/artifactory/help/common/help-licenseAutoDiscovery.html">
-                            <f:checkbox default="false" checked="${!instance.licenseAutoDiscovery}"/>
-                            <label class="attach-previous">${%Disable automatic license discovery}</label>
                         </f:entry>
                     </f:optionalBlock>
                 </f:optionalBlock>

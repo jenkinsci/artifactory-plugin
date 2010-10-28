@@ -6,29 +6,27 @@
             <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}">
                 <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ArtifactoryServer"/>
                 <table width="100%">
-                    <f:entry title="URL" help="/plugin/artifactory/help/ArtifactoryBuilder/help-url.html" field="url">
+                    <f:entry title="URL" help="/plugin/artifactory/help-url.html" field="url">
                         <f:textbox name="artifactory.url" value="${server.url}"/>
                     </f:entry>
                     <f:entry title="User Name"
-                             help="/plugin/artifactory/help/ArtifactoryBuilder/help-userName.html"
+                             help="/plugin/artifactory/help-userName.html"
                              description="If anonymous user is enabled in Artifactory server, you can leave the username/password empty">
                         <f:textbox name="artifactory.userName" value="${server.userName}"
                                    description="User with admin privileges"
                                    checkMethod="post"/>
                     </f:entry>
-                    <f:entry title="Password" help="/plugin/artifactory/help/ArtifactoryBuilder/help-password.html">
+                    <f:entry title="Password" help="/plugin/artifactory/help-password.html">
                         <input class="setting-input" name="artifactory.password"
                                type="password" value="${server.password}"
                                onchange="Form.findMatchingInput(this,'artifactory.userName').onchange()"/>
                     </f:entry>
 
                     <f:advanced>
-                        <f:entry title="Connection Timeout"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-timeout.html">
+                        <f:entry title="Connection Timeout" help="/plugin/artifactory/help-timeout.html">
                             <f:textbox clazz="number" name="artifactory.timeout" value="${server.timeout}"/>
                         </f:entry>
-                        <f:entry name="artifactory.bypassProxy"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-bypassproxy.html">
+                        <f:entry name="artifactory.bypassProxy" help="/plugin/artifactory/help-bypassproxy.html">
                             <f:checkbox name="artifactory.bypassProxy" checked="${server.bypassProxy}"/>
                             <label class="attach-previous">${%Bypass HTTP Proxy}</label>
                         </f:entry>

@@ -135,16 +135,9 @@ public class BuildInfoDeployer {
             }
         }
         LicenseControl licenseControl = new LicenseControl(publisher.isRunChecks());
-        if (publisher.isRunChecks()) {
-            if (StringUtils.isNotBlank(publisher.getViolationRecipients())) {
-                licenseControl.setLicenseViolationsRecipientsList(publisher.getViolationRecipients());
-            }
-            if (StringUtils.isNotBlank(publisher.getScopes())) {
-                licenseControl.setScopesList(publisher.getScopes());
-            }
+        if (StringUtils.isNotBlank(publisher.getViolationRecipients()) && publisher.isRunChecks()) {
+            licenseControl.setLicenseViolationsRecipientsList(publisher.getViolationRecipients());
         }
-        licenseControl.setIncludePublishedArtifacts(publisher.isIncludePublishArtifacts());
-        licenseControl.setAutoDiscover(publisher.isLicenseAutoDiscovery());
         infoBuilder.licenseControl(licenseControl);
         Build buildInfo = infoBuilder.build();
         // for backwards compatibility for Artifactory 2.2.3
