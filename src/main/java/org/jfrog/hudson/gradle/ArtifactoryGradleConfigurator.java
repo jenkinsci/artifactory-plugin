@@ -30,14 +30,17 @@ import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
-import hudson.util.Scrambler;
+import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
+import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
+import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -56,11 +59,10 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-public class ArtifactoryGradleConfigurator extends BuildWrapper {
+public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider {
     private ServerDetails details;
-    private String username;
-    private String scrambledPassword;
     private boolean deployArtifacts;
+    private final Credentials overridingDeployerCredentials;
     public final boolean deployMaven;
     public final boolean deployIvy;
     public final String remotePluginLocation;
@@ -73,15 +75,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
     private final boolean licenseAutoDiscovery;
 
     @DataBoundConstructor
-    public ArtifactoryGradleConfigurator(ServerDetails details, boolean deployMaven, boolean deployIvy,
-            boolean deployArtifacts, String username, String password, String remotePluginLocation,
+    public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
+            boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
+        this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
         this.deployArtifacts = deployArtifacts;
-        this.username = username;
         this.remotePluginLocation = remotePluginLocation;
         this.includeEnvVars = includeEnvVars;
         this.deployBuildInfo = deployBuildInfo;
@@ -90,15 +92,18 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
         this.licenseAutoDiscovery = !licenseAutoDiscovery;
-        this.scrambledPassword = Scrambler.scramble(password);
     }
 
     public ServerDetails getDetails() {
         return details;
     }
 
-    public String getUsername() {
-        return username;
+    public boolean isOverridingDefaultDeployer() {
+        return (getOverridingDeployerCredentials() != null);
+    }
+
+    public Credentials getOverridingDeployerCredentials() {
+        return overridingDeployerCredentials;
     }
 
     public String getViolationRecipients() {
@@ -139,10 +144,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
 
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
-    }
-
-    public String getPassword() {
-        return Scrambler.descramble(scrambledPassword);
     }
 
     public boolean isDeployArtifacts() {
@@ -265,4 +266,25 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper {
             return descriptor.getArtifactoryServers();
         }
     }
+
+    /**
+     * Convert any remaining local credential variables to a credentials object
+     */
+    public static final class ConverterImpl extends OverridingDeployerCredentialsConverter {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
+        }
+    }
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String username;
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String scrambledPassword;
 }

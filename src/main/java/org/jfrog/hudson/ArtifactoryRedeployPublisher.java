@@ -23,19 +23,28 @@ import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
-import hudson.util.Scrambler;
+import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.BuildInfoDeployer;
+import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
+import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -50,7 +59,7 @@ import java.util.List;
  *
  * @author Yossi Shaul
  */
-public class ArtifactoryRedeployPublisher extends Recorder {
+public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOverrider {
     /**
      * Repository URL and repository to deploy artifacts to.
      */
@@ -59,8 +68,7 @@ public class ArtifactoryRedeployPublisher extends Recorder {
      * If checked (default) deploy maven artifacts
      */
     private final boolean deployArtifacts;
-    private final String username;
-    private final String scrambledPassword;
+    private final Credentials overridingDeployerCredentials;
     /**
      * Include environment variables in the generated build info
      */
@@ -84,12 +92,12 @@ public class ArtifactoryRedeployPublisher extends Recorder {
 
 
     @DataBoundConstructor
-    public ArtifactoryRedeployPublisher(ServerDetails details,
-                                        boolean deployArtifacts, String username, String password,
-                                        boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable,
-                                        boolean runChecks, String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
+    public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
+            Credentials overridingDeployerCredentials, boolean includeEnvVars, boolean deployBuildInfo,
+            boolean evenIfUnstable, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+            String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
-        this.username = username;
+        this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.includeEnvVars = includeEnvVars;
         this.deployArtifacts = deployArtifacts;
         this.evenIfUnstable = evenIfUnstable;
@@ -99,7 +107,6 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         this.scopes = scopes;
         this.licenseAutoDiscovery = !licenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
-        this.scrambledPassword = Scrambler.scramble(password);
 
         /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
         Descriptor<Publisher> redeployPublisher = descriptors.find(RedeployPublisher.DescriptorImpl.class.getName());
@@ -113,6 +120,14 @@ public class ArtifactoryRedeployPublisher extends Recorder {
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean isDeployArtifacts() {
         return !deployArtifacts;
+    }
+
+    public boolean isOverridingDefaultDeployer() {
+        return (getOverridingDeployerCredentials() != null);
+    }
+
+    public Credentials getOverridingDeployerCredentials() {
+        return overridingDeployerCredentials;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -145,16 +160,8 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         return scopes;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
     public String getViolationRecipients() {
         return violationRecipients;
-    }
-
-    public String getPassword() {
-        return Scrambler.descramble(scrambledPassword);
     }
 
     public String getArtifactoryName() {
@@ -208,7 +215,9 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         }
 
         ArtifactoryServer server = getArtifactoryServer();
-        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(getUsername(), getPassword());
+        Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(this, server);
+        ArtifactoryBuildInfoClient client =
+                server.createArtifactoryClient(preferredDeployer.getUsername(), preferredDeployer.getPassword());
         MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
         try {
             verifySupportedArtifactoryVersion(client);
@@ -320,4 +329,24 @@ public class ArtifactoryRedeployPublisher extends Recorder {
         }
     }
 
+    /**
+     * Convert any remaining local credential variables to a credentials object
+     */
+    public static final class ConverterImpl extends OverridingDeployerCredentialsConverter {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
+        }
+    }
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String username;
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String scrambledPassword;
 }

@@ -30,7 +30,7 @@ import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
-import hudson.util.Scrambler;
+import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.aspectj.weaver.loadtime.Agent;
@@ -40,9 +40,13 @@ import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.config.ArtifactoryIvySettingsConfigurator;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
+import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -57,11 +61,10 @@ import java.util.Map;
 /**
  * @author Tomer Cohen
  */
-public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
+public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements DeployerOverrider {
 
     private ServerDetails details;
-    private String username;
-    private String password;
+    private final Credentials overridingDeployerCredentials;
     private boolean deployArtifacts;
     private boolean deployBuildInfo;
     private boolean includeEnvVars;
@@ -72,12 +75,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
     private boolean licenseAutoDiscovery;
 
     @DataBoundConstructor
-    public ArtifactoryIvyConfigurator(ServerDetails details, String username, String password, boolean deployArtifacts,
-            boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
+    public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
+            boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
             String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
-        this.username = username;
-        this.password = Scrambler.scramble(password);
+        this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
@@ -92,16 +94,20 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
         return details;
     }
 
+    public boolean isOverridingDefaultDeployer() {
+        return (getOverridingDeployerCredentials() != null);
+    }
+
+    public Credentials getOverridingDeployerCredentials() {
+        return overridingDeployerCredentials;
+    }
+
     public boolean isIncludePublishArtifacts() {
         return includePublishArtifacts;
     }
 
     public void setIncludePublishArtifacts(boolean includePublishArtifacts) {
         this.includePublishArtifacts = includePublishArtifacts;
-    }
-
-    public String getPassword() {
-        return Scrambler.descramble(password);
     }
 
     public boolean isRunChecks() {
@@ -122,10 +128,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
 
     public void setRunChecks(boolean runChecks) {
         this.runChecks = runChecks;
-    }
-
-    public String getUsername() {
-        return username;
     }
 
     public boolean isDeployArtifacts() {
@@ -176,8 +178,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
                 env.putAll(envVars);
                 env.put(ClientProperties.PROP_CONTEXT_URL, artifactoryServer.getUrl());
                 env.put(ClientProperties.PROP_PUBLISH_REPOKEY, getRepositoryKey());
-                env.put(ClientProperties.PROP_PUBLISH_USERNAME, getUsername());
-                env.put(ClientProperties.PROP_PUBLISH_PASSWORD, getPassword());
+
+                Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(ArtifactoryIvyConfigurator.this,
+                        artifactoryServer);
+                env.put(ClientProperties.PROP_PUBLISH_USERNAME, preferredDeployer.getUsername());
+                env.put(ClientProperties.PROP_PUBLISH_PASSWORD, preferredDeployer.getPassword());
                 env.put(BuildInfoProperties.PROP_AGENT_NAME, "Hudson");
                 env.put(BuildInfoProperties.PROP_AGENT_VERSION, build.getHudsonVersion());
                 env.put(BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
@@ -305,4 +310,25 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper {
             return descriptor.getArtifactoryServers();
         }
     }
+
+    /**
+     * Convert any remaining local credential variables to a credentials object
+     */
+    public static final class ConverterImpl extends OverridingDeployerCredentialsConverter {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
+        }
+    }
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String username;
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String password;
 }

@@ -16,13 +16,16 @@
 
 package org.jfrog.hudson;
 
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.ProxyConfiguration;
 import hudson.model.Hudson;
 import hudson.util.Scrambler;
+import hudson.util.XStream2;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryHttpClient;
+import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -41,8 +44,10 @@ public class ArtifactoryServer {
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;    // 5 Minutes
 
     private final String url;
-    private final String userName;
-    private final String password;    // base64 scrambled password
+
+    private final Credentials deployerCredentials;
+    private Credentials resolverCredentials;
+
     // Network timeout in milliseconds to use both for connection establishment and for unanswered requests
     private int timeout = DEFAULT_CONNECTION_TIMEOUT;
     private boolean bypassProxy;
@@ -55,10 +60,11 @@ public class ArtifactoryServer {
     private transient volatile List<String> virtualRepositories;
 
     @DataBoundConstructor
-    public ArtifactoryServer(String url, String userName, String password, int timeout, boolean bypassProxy) {
+    public ArtifactoryServer(String url, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
+            boolean bypassProxy) {
         this.url = StringUtils.removeEnd(url, "/");
-        this.userName = userName;
-        this.password = Scrambler.scramble(password);
+        this.deployerCredentials = deployerCredentials;
+        this.resolverCredentials = resolverCredentials;
         this.timeout = timeout > 0 ? timeout : DEFAULT_CONNECTION_TIMEOUT;
         this.bypassProxy = bypassProxy;
     }
@@ -71,12 +77,12 @@ public class ArtifactoryServer {
         return url;
     }
 
-    public String getUserName() {
-        return userName;
+    public Credentials getDeployerCredentials() {
+        return deployerCredentials;
     }
 
-    public String getPassword() {
-        return Scrambler.descramble(password);
+    public Credentials getResolverCredentials() {
+        return resolverCredentials;
     }
 
     public int getTimeout() {
@@ -88,8 +94,12 @@ public class ArtifactoryServer {
     }
 
     public List<String> getRepositoryKeys() {
+
+        Credentials resolvingCredentials = getResolvingCredentials();
+
         try {
-            ArtifactoryBuildInfoClient client = createArtifactoryClient(userName, getPassword());
+            ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                    resolvingCredentials.getPassword());
             repositories = client.getLocalRepositoriesKeys();
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to obtain list of local repositories: " + e.getMessage());
@@ -99,8 +109,12 @@ public class ArtifactoryServer {
     }
 
     public List<String> getVirtualRepositoryKeys() {
+
+        Credentials resolvingCredentials = getResolvingCredentials();
+
         try {
-            ArtifactoryBuildInfoClient client = createArtifactoryClient(userName, getPassword());
+            ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                    resolvingCredentials.getPassword());
             virtualRepositories = client.getVirtualRepositoryKeys();
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
@@ -110,8 +124,12 @@ public class ArtifactoryServer {
     }
 
     public boolean isPowerPack() {
+
+        Credentials resolvingCredentials = getResolvingCredentials();
+
         try {
-            ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, userName, getPassword(), new NullLog());
+            ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, resolvingCredentials.getUsername(),
+                    resolvingCredentials.getPassword(), new NullLog());
             ArtifactoryHttpClient.Version version = client.getVersion();
             return version.hasAddons();
         } catch (IOException e) {
@@ -134,4 +152,51 @@ public class ArtifactoryServer {
 
         return client;
     }
+
+    /**
+     * When upgrading from an older version, a user might have resolver credentials as local variables. This converter
+     * Will check for existing old resolver credentials and "move" them to a credentials object instead
+     */
+    public static final class ConverterImpl extends XStream2.PassthruConverter<ArtifactoryServer> {
+
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
+        }
+
+        @Override
+        protected void callback(ArtifactoryServer server, UnmarshallingContext context) {
+            if (StringUtils.isNotBlank(server.userName) && (server.resolverCredentials == null)) {
+                server.resolverCredentials = new Credentials(server.userName, Scrambler.descramble(server.password));
+            }
+        }
+    }
+
+    /**
+     * Decides what are the preferred credentials to use for resolving the repo keys of the server
+     *
+     * @return Preferred credentials for repo resolving
+     */
+    public Credentials getResolvingCredentials() {
+        if (getResolverCredentials() != null) {
+            return getResolverCredentials();
+        }
+
+        if (getDeployerCredentials() != null) {
+            return getDeployerCredentials();
+        }
+
+        return new Credentials(null, null);
+    }
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String userName;
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String password;    // base64 scrambled password
 }

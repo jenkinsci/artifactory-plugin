@@ -9,18 +9,35 @@
                     <f:entry title="URL" help="/plugin/artifactory/help/ArtifactoryBuilder/help-url.html" field="url">
                         <f:textbox name="artifactory.url" value="${server.url}"/>
                     </f:entry>
-                    <f:entry title="User Name"
-                             help="/plugin/artifactory/help/ArtifactoryBuilder/help-userName.html"
-                             description="If anonymous user is enabled in Artifactory server, you can leave the username/password empty">
-                        <f:textbox name="artifactory.userName" value="${server.userName}"
-                                   description="User with admin privileges"
-                                   checkMethod="post"/>
-                    </f:entry>
-                    <f:entry title="Password" help="/plugin/artifactory/help/ArtifactoryBuilder/help-password.html">
-                        <input class="setting-input" name="artifactory.password"
-                               type="password" value="${server.password}"
-                               onchange="Form.findMatchingInput(this,'artifactory.userName').onchange()"/>
-                    </f:entry>
+
+                    <j:set var="deployerCredentials" value="${server.deployerCredentials}"/>
+                    <f:section title="Default Deployer Credentials" name="deployerCredentials">
+                        <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
+                        <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
+                                 field="username">
+                            <f:textbox value="${deployerCredentials.username}"/>
+                        </f:entry>
+                        <f:entry title="Password" help="/plugin/artifactory/help/common/help-deployerPassword.html"
+                                 field="password">
+                            <f:password value="${deployerCredentials.password}"/>
+                        </f:entry>
+                    </f:section>
+
+                    <j:set var="resolverCredentials" value="${server.resolverCredentials}"/>
+                    <f:optionalBlock name="resolverCredentials" checked="${resolverCredentials != null}"
+                                     title="Use Different Resolver Credentials"
+                                     help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverCredentials.html">
+                        <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
+                        <f:entry title="User Name"
+                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverUserName.html"
+                                 field="username">
+                            <f:textbox value="${resolverCredentials.username}"/>
+                        </f:entry>
+                        <f:entry title="Password" field="password"
+                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverPassword.html">
+                            <f:password value="${resolverCredentials.password}"/>
+                        </f:entry>
+                    </f:optionalBlock>
 
                     <f:advanced>
                         <f:entry title="Connection Timeout"

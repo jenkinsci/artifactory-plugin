@@ -34,7 +34,7 @@ import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
-import hudson.util.Scrambler;
+import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Build;
@@ -45,9 +45,13 @@ import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
+import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
+import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -64,13 +68,12 @@ import java.util.Properties;
 /**
  * @author Noam Y. Tenne
  */
-public class ArtifactoryMaven3Configurator extends BuildWrapper {
+public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider {
     /**
      * Repository URL and repository to deploy artifacts to
      */
     private final ServerDetails details;
-    private final String username;
-    private final String scrambledPassword;
+    private final Credentials overridingDeployerCredentials;
     /**
      * If checked (default) deploy maven artifacts
      */
@@ -86,7 +89,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     private final boolean includeEnvVars;
 
     private final boolean deployBuildInfo;
-
     private final boolean runChecks;
 
     private final String violationRecipients;
@@ -98,12 +100,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
     private final boolean licenseAutoDiscovery;
 
     @DataBoundConstructor
-    public ArtifactoryMaven3Configurator(ServerDetails details, String username, String password,
+    public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
             boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
             boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
             String scopes, boolean licenseAutoDiscovery) {
         this.details = details;
-        this.username = username;
+        this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
@@ -111,7 +113,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         this.licenseAutoDiscovery = !licenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
         this.deployBuildInfo = deployBuildInfo;
-        this.scrambledPassword = Scrambler.scramble(password);
         this.deployArtifacts = deployArtifacts;
         this.includeEnvVars = includeEnvVars;
     }
@@ -120,6 +121,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public boolean isOverridingDefaultDeployer() {
+        return (getOverridingDeployerCredentials() != null);
+    }
+
+    public Credentials getOverridingDeployerCredentials() {
+        return overridingDeployerCredentials;
     }
 
     public boolean isDeployBuildInfo() {
@@ -151,14 +160,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
 
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return Scrambler.descramble(scrambledPassword);
     }
 
     public boolean isDeployArtifacts() {
@@ -313,10 +314,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
         props.put(ClientProperties.PROP_PUBLISH_REPOKEY, getDetails().repositoryKey);
         props.put(ClientProperties.PROP_PUBLISH_SNAPSHOTS_REPOKEY, getDetails().snapshotsRepositoryKey);
 
-        String deployerUsername = getUsername();
-        if (StringUtils.isNotBlank(deployerUsername)) {
-            props.put(ClientProperties.PROP_PUBLISH_USERNAME, deployerUsername);
-            props.put(ClientProperties.PROP_PUBLISH_PASSWORD, getPassword());
+        Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(this, selectedArtifactoryServer);
+        if (StringUtils.isNotBlank(preferredDeployer.getUsername())) {
+            props.put(ClientProperties.PROP_PUBLISH_USERNAME, preferredDeployer.getUsername());
+            props.put(ClientProperties.PROP_PUBLISH_PASSWORD, preferredDeployer.getPassword());
         }
         props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, Boolean.toString(isRunChecks()));
         props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS,
@@ -433,4 +434,25 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper {
             return descriptor.getArtifactoryServers();
         }
     }
+
+    /**
+     * Convert any remaining local credential variables to a credentials object
+     */
+    public static final class ConverterImpl extends OverridingDeployerCredentialsConverter {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
+        }
+    }
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String username;
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String scrambledPassword;
 }

@@ -44,17 +44,24 @@
                 </f:dropdownListBlock>
             </j:forEach>
         </f:dropdownList>
-
-        <f:entry title="${%Deployer username}" field="username"
-                 help="/plugin/artifactory/help/common/help-userName.html">
-            <f:textbox/>
-        </f:entry>
-
-        <f:entry title="${%Deployer password}" field="password"
-                 help="/plugin/artifactory/help/common/help-password.html">
-            <f:password/>
-        </f:entry>
-
+        <f:block>
+            <table style="width:100%">
+                <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
+                <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
+                                 title="Override Default Deployer Credentials"
+                                 help="/plugin/artifactory/help/common/help-overridingDeployerCredentials.html">
+                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
+                    <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
+                             field="username">
+                        <f:textbox value="${overridingDeployerCredentials.username}"/>
+                    </f:entry>
+                    <f:entry title="Password" field="password"
+                             help="/plugin/artifactory/help/common/help-deployerPassword.html">
+                        <f:password value="${overridingDeployerCredentials.password}"/>
+                    </f:entry>
+                </f:optionalBlock>
+            </table>
+        </f:block>
         <f:block>
             <table style="width:100%">
                 <f:optionalBlock field="deployArtifacts"
@@ -76,7 +83,7 @@
                         <label class="attach-previous">${%Include all environment variables}</label>
                     </f:entry>
                     <f:optionalBlock name="runChecks"
-                                     checked="${instance.runChecks}" default="false"
+                                     checked="${instance.runChecks}"
                                      title="Run license checks (requires Pro)"
                                      inline="true"
                                      help="/plugin/artifactory/help/common/help-runChecks.html">

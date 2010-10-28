@@ -35,6 +35,8 @@ import org.jfrog.build.client.ClientProperties;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.Credentials;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,7 +61,8 @@ public class GradleInitScriptWriter {
      * @param gradleConfigurator
      * @param build
      */
-    public GradleInitScriptWriter(ArtifactoryGradleConfigurator gradleConfigurator, EnvVars envVars, AbstractBuild build) {
+    public GradleInitScriptWriter(ArtifactoryGradleConfigurator gradleConfigurator, EnvVars envVars,
+            AbstractBuild build) {
         this.gradleConfigurator = gradleConfigurator;
         this.envVars = envVars;
         this.build = build;
@@ -68,30 +71,47 @@ public class GradleInitScriptWriter {
     private String addProperties() {
         StringBuilder stringBuilder = new StringBuilder();
         String key = ClientProperties.PROP_CONTEXT_URL;
-        String value = getArtifactoryServer().getUrl();
+        ArtifactoryServer artifactoryServer = getArtifactoryServer();
+        String value = artifactoryServer.getUrl();
         ArtifactoryPluginUtils.addProperty(stringBuilder, key, value);
-        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_RESOLVE_REPOKEY, getServerDetails().downloadRepositoryKey);
-        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_REPOKEY, getServerDetails().repositoryKey);
-        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_USERNAME, gradleConfigurator.getUsername());
-        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_PASSWORD, gradleConfigurator.getPassword());
+        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_RESOLVE_REPOKEY,
+                getServerDetails().downloadRepositoryKey);
+        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_REPOKEY,
+                getServerDetails().repositoryKey);
+
+        Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(gradleConfigurator, artifactoryServer);
+        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_USERNAME,
+                preferredDeployer.getUsername());
+        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_PASSWORD,
+                preferredDeployer.getPassword());
         ArtifactoryPluginUtils.addProperty(stringBuilder, ClientIvyProperties.PROP_PUBLISH_IVY,
                 Boolean.toString(gradleConfigurator.deployIvy));
         ArtifactoryPluginUtils.addProperty(stringBuilder, ClientGradleProperties.PROP_PUBLISH_MAVEN,
                 Boolean.toString(gradleConfigurator.deployMaven));
         ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_ARTIFACT,
                 Boolean.toString(gradleConfigurator.isDeployArtifacts()));
-        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.toString(gradleConfigurator.deployBuildInfo));
-        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
-        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
-        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, String.valueOf(gradleConfigurator.isRunChecks()));
+        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_BUILD_INFO,
+                Boolean.toString(gradleConfigurator.deployBuildInfo));
+        ArtifactoryPluginUtils
+                .addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
+        ArtifactoryPluginUtils
+                .addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
+        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS,
+                String.valueOf(gradleConfigurator.isRunChecks()));
         if (StringUtils.isNotBlank(gradleConfigurator.getViolationRecipients())) {
-            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, gradleConfigurator.getViolationRecipients());
+            ArtifactoryPluginUtils
+                    .addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS,
+                            gradleConfigurator.getViolationRecipients());
         }
         if (StringUtils.isNotBlank(gradleConfigurator.getScopes())) {
-            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, gradleConfigurator.getScopes());
+            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES,
+                    gradleConfigurator.getScopes());
         }
-        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS, String.valueOf(gradleConfigurator.isIncludePublishArtifacts()));
-        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER, String.valueOf(gradleConfigurator.isIncludePublishArtifacts()));
+        ArtifactoryPluginUtils
+                .addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS,
+                        String.valueOf(gradleConfigurator.isIncludePublishArtifacts()));
+        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER,
+                String.valueOf(gradleConfigurator.isIncludePublishArtifacts()));
         String principal = ActionableHelper.getHudsonPrincipal(build);
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PRINCIPAL, principal);
         String buildUrl = envVars.get("BUILD_URL");
@@ -103,11 +123,14 @@ public class GradleInitScriptWriter {
             ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_VCS_REVISION, svnRevision);
         }
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_AGENT_NAME, "Hudson");
-        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_AGENT_VERSION, build.getHudsonVersion());
+        ArtifactoryPluginUtils
+                .addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_AGENT_VERSION, build.getHudsonVersion());
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
         if (parent != null) {
-            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PARENT_BUILD_NAME, parent.getUpstreamProject());
-            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parent.getUpstreamBuild() + "");
+            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PARENT_BUILD_NAME,
+                    parent.getUpstreamProject());
+            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PARENT_BUILD_NUMBER,
+                    parent.getUpstreamBuild() + "");
         }
 
         // Write all the deploy (matrix params) properties.
@@ -126,16 +149,18 @@ public class GradleInitScriptWriter {
         MapDifference<String, String> difference = Maps.difference(envVars, System.getenv());
         Map<String, String> filteredEnvVars = difference.entriesOnlyOnLeft();
         for (Map.Entry<String, String> entry : filteredEnvVars.entrySet()) {
-            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
-                    entry.getValue());
+            ArtifactoryPluginUtils
+                    .addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
+                            entry.getValue());
         }
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS,
                 String.valueOf(gradleConfigurator.includeEnvVars));
         // add build variables
         Map<String, String> buildVariables = build.getBuildVariables();
         for (Map.Entry<String, String> entry : buildVariables.entrySet()) {
-            ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
-                    entry.getValue());
+            ArtifactoryPluginUtils
+                    .addProperty(stringBuilder, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
+                            entry.getValue());
         }
         return stringBuilder.toString();
     }

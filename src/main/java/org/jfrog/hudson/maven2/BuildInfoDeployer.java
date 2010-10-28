@@ -24,11 +24,20 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
-import hudson.model.*;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.CauseAction;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.Fingerprinter;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.*;
+import org.jfrog.build.api.Agent;
+import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
+import org.jfrog.build.api.BuildAgent;
+import org.jfrog.build.api.BuildInfoProperties;
+import org.jfrog.build.api.BuildType;
+import org.jfrog.build.api.LicenseControl;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
@@ -58,7 +67,7 @@ public class BuildInfoDeployer {
     private final BuildListener listener;
 
     public BuildInfoDeployer(ArtifactoryRedeployPublisher publisher, ArtifactoryBuildInfoClient client,
-                             MavenModuleSetBuild build, BuildListener listener) {
+            MavenModuleSetBuild build, BuildListener listener) {
         this.publisher = publisher;
         this.client = client;
         this.build = build;
@@ -88,7 +97,11 @@ public class BuildInfoDeployer {
         infoBuilder.durationMillis(duration);
 
         ArtifactoryServer server = publisher.getArtifactoryServer();
-        infoBuilder.artifactoryPrincipal(server.getUserName());
+        String artifactoryPrincipal = server.getResolvingCredentials().getUsername();
+        if (StringUtils.isBlank(artifactoryPrincipal)) {
+            artifactoryPrincipal = "";
+        }
+        infoBuilder.artifactoryPrincipal(artifactoryPrincipal);
 
         String userCause = null;
         CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);

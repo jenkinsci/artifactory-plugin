@@ -99,11 +99,24 @@ public class ArtifactoryBuilder extends Builder {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckUrl(@QueryParameter final String value) throws ServletException {
+        /**
+         * Most chances this validation won't work, since there no proper way to explicitly request either deployer or
+         * resolver credentials from the global config form, so we can't check if we should use resolver or deployer
+         * credentials when testing the connection to the server
+         */
+        public FormValidation doCheckUrl(@QueryParameter final String value,
+                @QueryParameter final String username,
+                @QueryParameter final String password) throws ServletException {
             if (StringUtils.isBlank(value)) {
                 return FormValidation.error("Please set a valid Artifactory URL");
             }
-            ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(value, new NullLog());
+
+            ArtifactoryBuildInfoClient client;
+            if (StringUtils.isNotBlank(username)) {
+                client = new ArtifactoryBuildInfoClient(value, username, password, new NullLog());
+            } else {
+                client = new ArtifactoryBuildInfoClient(value, new NullLog());
+            }
             try {
                 ArtifactoryHttpClient.Version version = client.verifyCompatibleArtifactoryVersion();
             } catch (UnsupportedOperationException uoe) {
@@ -114,12 +127,10 @@ public class ArtifactoryBuilder extends Builder {
             return FormValidation.ok();
         }
 
-
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
             // indicates that this builder can be used with all kinds of project types
             return aClass == MavenModuleSet.class;
-
         }
 
         /**
