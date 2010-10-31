@@ -97,9 +97,9 @@
                             <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
                             <label class="attach-previous">${%Include Published Artifacts}</label>
                         </f:entry>
-                        <f:entry field="licenseAutoDiscovery"
+                        <f:entry field="disableLicenseAutoDiscovery"
                                  help="/plugin/artifactory/help/common/help-licenseAutoDiscovery.html">
-                            <f:checkbox default="false" checked="${!instance.licenseAutoDiscovery}"/>
+                            <f:checkbox default="false" checked="${instance.disableLicenseAutoDiscovery}"/>
                             <label class="attach-previous">${%Disable automatic license discovery}</label>
                         </f:entry>
                     </f:optionalBlock>

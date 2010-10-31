@@ -22,15 +22,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.CauseAction;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -42,11 +34,7 @@ import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
@@ -97,20 +85,22 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     private final String scopes;
 
-    private final boolean licenseAutoDiscovery;
+    private boolean licenseAutoDiscovery;
+    private boolean disableLicenseAutoDiscovery;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
-            boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-            String scopes, boolean licenseAutoDiscovery) {
+                                         boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
+                                         boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+                                         String scopes, boolean disableLicenseAutoDiscovery) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
-        this.licenseAutoDiscovery = !licenseAutoDiscovery;
+        this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
+        this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
         this.deployBuildInfo = deployBuildInfo;
         this.deployArtifacts = deployArtifacts;
@@ -156,6 +146,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public boolean isLicenseAutoDiscovery() {
         return licenseAutoDiscovery;
+    }
+
+    public boolean isDisableLicenseAutoDiscovery() {
+        return disableLicenseAutoDiscovery;
     }
 
     public String getArtifactoryName() {
@@ -253,7 +247,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     private void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build, BuildListener listener,
-            ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
+                                         ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
 
         Properties props = new Properties();
 

@@ -20,13 +20,7 @@ import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -73,11 +67,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private boolean includePublishArtifacts;
     private String scopes;
     private boolean licenseAutoDiscovery;
+    private boolean disableLicenseAutoDiscovery;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
-            String violationRecipients, boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
+                                      boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
+                                      String violationRecipients, boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -87,7 +82,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
-        this.licenseAutoDiscovery = !licenseAutoDiscovery;
+        this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
+        this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
     public ServerDetails getDetails() {
@@ -114,8 +110,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return runChecks;
     }
 
-    public boolean isLicenseAutoDiscovery() {
-        return licenseAutoDiscovery;
+    public boolean isDisableLicenseAutoDiscovery() {
+        return disableLicenseAutoDiscovery;
     }
 
     public void setLicenseAutoDiscovery(boolean licenseAutoDiscovery) {
@@ -202,7 +198,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 }
                 env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, String.valueOf(isRunChecks()));
                 env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER,
-                        String.valueOf(isLicenseAutoDiscovery()));
+                        String.valueOf(licenseAutoDiscovery));
                 env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS,
                         String.valueOf(isIncludePublishArtifacts()));
                 if (StringUtils.isNotBlank(getViolationRecipients())) {

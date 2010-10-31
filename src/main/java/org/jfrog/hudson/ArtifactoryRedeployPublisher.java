@@ -23,13 +23,7 @@ import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -89,13 +83,14 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final String scopes;
 
     private final boolean licenseAutoDiscovery;
+    private final boolean disableLicenseAutoDiscovery;
 
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
-            Credentials overridingDeployerCredentials, boolean includeEnvVars, boolean deployBuildInfo,
-            boolean evenIfUnstable, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-            String scopes, boolean licenseAutoDiscovery) {
+                                        Credentials overridingDeployerCredentials, boolean includeEnvVars, boolean deployBuildInfo,
+                                        boolean evenIfUnstable, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+                                        String scopes, boolean disableLicenseAutoDiscovery) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.includeEnvVars = includeEnvVars;
@@ -105,7 +100,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
-        this.licenseAutoDiscovery = !licenseAutoDiscovery;
+        this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
+        this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
 
         /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
@@ -146,6 +142,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
+    }
+
+    public boolean isDisableLicenseAutoDiscovery() {
+        return disableLicenseAutoDiscovery;
     }
 
     public boolean isLicenseAutoDiscovery() {

@@ -20,23 +20,13 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
@@ -73,12 +63,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean includePublishArtifacts;
     private final String scopes;
     private final boolean licenseAutoDiscovery;
+    private final boolean disableLicenseAutoDiscovery;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
-            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
-            boolean includePublishArtifacts, String scopes, boolean licenseAutoDiscovery) {
+                                         boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
+                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
+                                         boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -91,7 +82,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
-        this.licenseAutoDiscovery = !licenseAutoDiscovery;
+        this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
+        this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
     public ServerDetails getDetails() {
@@ -124,6 +116,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public boolean isLicenseAutoDiscovery() {
         return licenseAutoDiscovery;
+    }
+
+    public boolean isDisableLicenseAutoDiscovery() {
+        return disableLicenseAutoDiscovery;
     }
 
     public String getScopes() {
