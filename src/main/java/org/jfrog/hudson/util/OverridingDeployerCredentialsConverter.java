@@ -17,6 +17,7 @@
 package org.jfrog.hudson.util;
 
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import hudson.util.Scrambler;
 import hudson.util.XStream2;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.DeployerOverrider;
@@ -60,14 +61,12 @@ public class OverridingDeployerCredentialsConverter<T extends DeployerOverrider>
                 oldPasswordField.setAccessible(true);
                 Object oldPasswordValue = oldPasswordField.get(deployerOverrider);
                 if ((oldPasswordValue != null) && StringUtils.isNotBlank(((String) oldPasswordValue))) {
-                    oldPassword = (String) oldPasswordValue;
+                    oldPassword = Scrambler.descramble((String) oldPasswordValue);
                 }
 
-                Field overridingCredentialsField =
-                        overriderClass.getDeclaredField("overridingDeployerCredentials");
+                Field overridingCredentialsField = overriderClass.getDeclaredField("overridingDeployerCredentials");
                 overridingCredentialsField.setAccessible(true);
-                overridingCredentialsField.set(deployerOverrider,
-                        new Credentials(oldUsername, oldPassword));
+                overridingCredentialsField.set(deployerOverrider, new Credentials(oldUsername, oldPassword));
             }
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(getConvertionErrorMessage(deployerOverrider), e);
