@@ -4,8 +4,8 @@ import com.google.common.base.Strings;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utility class for form validations.
@@ -13,6 +13,11 @@ import javax.mail.internet.InternetAddress;
  * @author Yossi Shaul
  */
 public abstract class FormValidations {
+
+    private static final Pattern VALID_EMAIL_PATTERN = Pattern.compile(
+            "^[_A-Za-z0-9-]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*((\\.[A-Za-z]{2,}){1}$)",
+            Pattern.CASE_INSENSITIVE);
+
     /**
      * Validates a space separated list of emails.
      *
@@ -42,11 +47,11 @@ public abstract class FormValidations {
         if (Strings.isNullOrEmpty(address)) {
             return FormValidation.ok();
         }
-        try {
-            new InternetAddress(address);
+        Matcher matcher = VALID_EMAIL_PATTERN.matcher(address);
+        if (matcher.matches()) {
             return FormValidation.ok();
-        } catch (AddressException e) {
-            return FormValidation.error(e.getMessage());
+        } else {
+            return FormValidation.error("Email address is invalid");
         }
     }
 }
