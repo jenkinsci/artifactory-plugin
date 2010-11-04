@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson;
 
+import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.ProxyConfiguration;
 import hudson.model.Hudson;
@@ -29,6 +30,8 @@ import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -61,7 +64,7 @@ public class ArtifactoryServer {
 
     @DataBoundConstructor
     public ArtifactoryServer(String url, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
-            boolean bypassProxy) {
+                             boolean bypassProxy) {
         this.url = StringUtils.removeEnd(url, "/");
         this.deployerCredentials = deployerCredentials;
         this.resolverCredentials = resolverCredentials;
@@ -94,9 +97,7 @@ public class ArtifactoryServer {
     }
 
     public List<String> getRepositoryKeys() {
-
         Credentials resolvingCredentials = getResolvingCredentials();
-
         try {
             ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
                     resolvingCredentials.getPassword());
@@ -104,8 +105,36 @@ public class ArtifactoryServer {
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to obtain list of local repositories: " + e.getMessage());
         }
-
         return repositories;
+    }
+
+    public List<String> getReleaseRepositoryKeysFirst() {
+        List<String> repositoryKeys = getRepositoryKeys();
+        if (repositoryKeys == null || repositoryKeys.isEmpty()) {
+            return Lists.newArrayList();
+        }
+        Collections.sort(repositoryKeys, new RepositoryComparator());
+        return repositoryKeys;
+    }
+
+    public List<String> getSnapshotRepositoryKeysFirst() {
+        List<String> repositoryKeys = getRepositoryKeys();
+        if (repositoryKeys == null || repositoryKeys.isEmpty()) {
+            return Lists.newArrayList();
+        }
+        Collections.sort(repositoryKeys, Collections.reverseOrder(new RepositoryComparator()));
+        return repositoryKeys;
+    }
+
+    private static class RepositoryComparator implements Comparator<String> {
+
+        public int compare(String o1, String o2) {
+            if (o1.contains("snapshot") && !o2.contains("snapshot")) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
     }
 
     public List<String> getVirtualRepositoryKeys() {
