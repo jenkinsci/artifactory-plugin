@@ -23,7 +23,13 @@ import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -62,6 +68,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      * If checked (default) deploy maven artifacts
      */
     private final boolean deployArtifacts;
+    private final String deployedArtifactIncludePattern;
+    private final String deployedArtifactExcludePattern;
     private final Credentials overridingDeployerCredentials;
     /**
      * Include environment variables in the generated build info
@@ -88,13 +96,16 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
-                                        Credentials overridingDeployerCredentials, boolean includeEnvVars, boolean deployBuildInfo,
-                                        boolean evenIfUnstable, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-                                        String scopes, boolean disableLicenseAutoDiscovery) {
+            String deployedArtifactIncludePattern, String deployedArtifactExcludePattern,
+            Credentials overridingDeployerCredentials, boolean includeEnvVars, boolean deployBuildInfo,
+            boolean evenIfUnstable, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+            String scopes, boolean disableLicenseAutoDiscovery) {
         this.details = details;
+        this.deployArtifacts = deployArtifacts;
+        this.deployedArtifactIncludePattern = deployedArtifactIncludePattern;
+        this.deployedArtifactExcludePattern = deployedArtifactExcludePattern;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.includeEnvVars = includeEnvVars;
-        this.deployArtifacts = deployArtifacts;
         this.evenIfUnstable = evenIfUnstable;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
@@ -116,6 +127,16 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean isDeployArtifacts() {
         return !deployArtifacts;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public String getDeployedArtifactIncludePattern() {
+        return deployedArtifactIncludePattern;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public String getDeployedArtifactExcludePattern() {
+        return deployedArtifactExcludePattern;
     }
 
     public boolean isOverridingDefaultDeployer() {

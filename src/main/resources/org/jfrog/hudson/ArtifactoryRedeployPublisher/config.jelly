@@ -62,6 +62,16 @@
                                  title="Deploy maven artifacts"
                                  checked="${!instance.deployArtifacts}"
                                  inline="true">
+                    <f:entry title="Deployed Artifact Include Pattern"
+                             field="deployedArtifactIncludePattern"
+                             help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
+                        <f:textbox value="${instance.deployedArtifactIncludePattern}"/>
+                    </f:entry>
+                    <f:entry title="Deployed Artifact Exclude Pattern"
+                             field="deployedArtifactExcludePattern"
+                             help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
+                        <f:textbox value="${instance.deployedArtifactExcludePattern}"/>
+                    </f:entry>
                 </f:optionalBlock>
             </table>
         </f:block>

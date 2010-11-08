@@ -27,6 +27,7 @@ import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tools.ant.types.selectors.SelectorUtils;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
@@ -45,7 +46,6 @@ import java.util.Map;
  * @author Yossi Shaul
  */
 public class ArtifactsDeployer {
-    public static boolean debug = Boolean.getBoolean(ArtifactsDeployer.class.getName() + ".debug");
 
     private final ArtifactoryServer artifactoryServer;
     private final String targetReleasesRepository;
@@ -54,7 +54,8 @@ public class ArtifactsDeployer {
     private final MavenModuleSetBuild mavenModuleSetBuild;
     private final MavenAbstractArtifactRecord mar;
     private final BuildListener listener;
-
+    private final String[] includePatterns;
+    private final String[] excludePatterns;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
             MavenModuleSetBuild mavenModuleSetBuild, MavenAbstractArtifactRecord mar,
@@ -66,6 +67,8 @@ public class ArtifactsDeployer {
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
         this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
         this.targetSnapshotsRepository = artifactoryPublisher.getSnapshotsRepositoryKey();
+        includePatterns = splitPattern(artifactoryPublisher.getDeployedArtifactIncludePattern());
+        excludePatterns = splitPattern(artifactoryPublisher.getDeployedArtifactExcludePattern());
     }
 
     public void deploy() throws IOException, InterruptedException {
@@ -73,6 +76,7 @@ public class ArtifactsDeployer {
         MavenAggregatedArtifactRecord mar2 = (MavenAggregatedArtifactRecord) mar;
         MavenModuleSetBuild moduleSetBuild = mar2.getBuild();
         Map<MavenModule, MavenBuild> mavenBuildMap = moduleSetBuild.getModuleLastBuilds();
+
         for (Map.Entry<MavenModule, MavenBuild> mavenBuildEntry : mavenBuildMap.entrySet()) {
             MavenBuild mavenBuild = mavenBuildEntry.getValue();
             Result result = mavenBuild.getResult();
@@ -85,6 +89,7 @@ public class ArtifactsDeployer {
             listener.getLogger().println("Deploying artifacts of module: " + mavenBuildEntry.getKey().getName());
             MavenArtifactRecord mar = ActionableHelper.getLatestMavenArtifactRecord(mavenBuild);
             MavenArtifact mavenArtifact = mar.mainArtifact;
+
             // deploy main artifact
             deployArtifact(mavenBuild, mavenArtifact);
             if (!mar.isPOM() && mar.pomArtifact != null && mar.pomArtifact != mar.mainArtifact) {
@@ -103,6 +108,19 @@ public class ArtifactsDeployer {
             throws IOException, InterruptedException {
         String artifactPath = buildArtifactPath(mavenArtifact);
         File artifactFile = getArtifactFile(mavenBuild, mavenArtifact);
+
+        if ((includePatterns.length > 0) && !pathPatternMatches(artifactPath, includePatterns)) {
+            listener.getLogger().println("Skipping the deployment of '" + artifactPath +
+                    "' due to the defined include pattern.");
+            return;
+        }
+
+        if ((excludePatterns.length > 0) && pathPatternMatches(artifactPath, excludePatterns)) {
+            listener.getLogger().println("Skipping the deployment of '" + artifactPath +
+                    "' due to the defined exclude pattern.");
+            return;
+        }
+
         DeployDetails.Builder builder = new DeployDetails.Builder()
                 .file(artifactFile)
                 .artifactPath(artifactPath)
@@ -126,13 +144,14 @@ public class ArtifactsDeployer {
     }
 
     private void logDeploymentPath(DeployDetails deployDetails, String artifactPath) {
-        String deploymentPath = artifactoryServer.getUrl() + "/" + deployDetails.getTargetRepository() + "/" + artifactPath;
+        String deploymentPath =
+                artifactoryServer.getUrl() + "/" + deployDetails.getTargetRepository() + "/" + artifactPath;
         listener.getLogger().println("Deploying artifact: " + deploymentPath);
     }
 
     /**
-     * @return Return the target deployment repository. Either the releases repository (default) or snapshots if
-     *         defined and the deployed file is a snapshot.
+     * @return Return the target deployment repository. Either the releases repository (default) or snapshots if defined
+     *         and the deployed file is a snapshot.
      */
     public String getTargetRepository(String filePath) {
         if (targetSnapshotsRepository != null && filePath.contains("-SNAPSHOT")) {
@@ -159,4 +178,34 @@ public class ArtifactsDeployer {
         return file;
     }
 
+    /**
+     * Splits the given pattern chain by spaces
+     *
+     * @param patternChain Pattern chain to split
+     * @return String array
+     */
+    private String[] splitPattern(String patternChain) {
+        if (StringUtils.isBlank(patternChain)) {
+            return new String[]{};
+        }
+
+        return StringUtils.split(patternChain, ", ");
+    }
+
+    /**
+     * Indicates whether the given path matches any pattern in the given array
+     *
+     * @param path     Path to match
+     * @param patterns Pattern array to test
+     * @return True if the pattern array contains a match for the given path
+     */
+    private boolean pathPatternMatches(String path, String[] patterns) {
+        for (String pattern : patterns) {
+            if (StringUtils.isNotBlank(pattern) && SelectorUtils.match(pattern, path)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
