@@ -28,6 +28,7 @@
                 </f:dropdownListBlock>
             </j:forEach>
         </f:dropdownList>
+
         <f:block>
             <table style="width:100%">
                 <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
@@ -62,19 +63,24 @@
                                  title="Deploy maven artifacts"
                                  checked="${!instance.deployArtifacts}"
                                  inline="true">
-                    <f:entry title="Deployed Artifact Include Pattern"
-                             field="deployedArtifactIncludePattern"
-                             help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
-                        <f:textbox value="${instance.deployedArtifactIncludePattern}"/>
-                    </f:entry>
-                    <f:entry title="Deployed Artifact Exclude Pattern"
-                             field="deployedArtifactExcludePattern"
-                             help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
-                        <f:textbox value="${instance.deployedArtifactExcludePattern}"/>
-                    </f:entry>
                 </f:optionalBlock>
             </table>
         </f:block>
+
+        <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
+        <f:section title="${%Artifact deployment patterns}" name="artifactDeploymentPatterns">
+            <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.IncludesExcludes"/>
+            <f:entry title="Include Patterns" field="includePatterns"
+                     help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
+                <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
+            </f:entry>
+            <f:entry title="Exclude Patterns"
+                     field="excludePatterns"
+                     help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
+                <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
+            </f:entry>
+        </f:section>
+
         <f:block>
             <table style="width:100%">
                 <f:optionalBlock name="deployBuildInfo" checked="${!instance.skipBuildInfoDeploy}"

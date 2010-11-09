@@ -27,13 +27,15 @@ import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tools.ant.types.selectors.SelectorUtils;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
+import org.jfrog.build.client.IncludeExcludePatterns;
+import org.jfrog.build.client.PatternMatcher;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.IncludesExcludes;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -54,8 +56,7 @@ public class ArtifactsDeployer {
     private final MavenModuleSetBuild mavenModuleSetBuild;
     private final MavenAbstractArtifactRecord mar;
     private final BuildListener listener;
-    private final String[] includePatterns;
-    private final String[] excludePatterns;
+    private final IncludeExcludePatterns patterns;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
             MavenModuleSetBuild mavenModuleSetBuild, MavenAbstractArtifactRecord mar,
@@ -67,8 +68,12 @@ public class ArtifactsDeployer {
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
         this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
         this.targetSnapshotsRepository = artifactoryPublisher.getSnapshotsRepositoryKey();
-        includePatterns = splitPattern(artifactoryPublisher.getDeployedArtifactIncludePattern());
-        excludePatterns = splitPattern(artifactoryPublisher.getDeployedArtifactExcludePattern());
+        IncludesExcludes patterns = artifactoryPublisher.getArtifactDeploymentPatterns();
+        if (patterns != null) {
+            this.patterns = new IncludeExcludePatterns(patterns.getIncludePatterns(), patterns.getExcludePatterns());
+        } else {
+            this.patterns = IncludeExcludePatterns.EMPTY;
+        }
     }
 
     public void deploy() throws IOException, InterruptedException {
@@ -107,19 +112,14 @@ public class ArtifactsDeployer {
     private void deployArtifact(MavenBuild mavenBuild, MavenArtifact mavenArtifact)
             throws IOException, InterruptedException {
         String artifactPath = buildArtifactPath(mavenArtifact);
+
+        if (PatternMatcher.pathConflicts(artifactPath, patterns)) {
+            listener.getLogger().println("Skipping the deployment of '" + artifactPath +
+                    "' due to the defined include-exclude patterns.");
+            return;
+        }
+
         File artifactFile = getArtifactFile(mavenBuild, mavenArtifact);
-
-        if ((includePatterns.length > 0) && !pathPatternMatches(artifactPath, includePatterns)) {
-            listener.getLogger().println("Skipping the deployment of '" + artifactPath +
-                    "' due to the defined include pattern.");
-            return;
-        }
-
-        if ((excludePatterns.length > 0) && pathPatternMatches(artifactPath, excludePatterns)) {
-            listener.getLogger().println("Skipping the deployment of '" + artifactPath +
-                    "' due to the defined exclude pattern.");
-            return;
-        }
 
         DeployDetails.Builder builder = new DeployDetails.Builder()
                 .file(artifactFile)
@@ -176,36 +176,5 @@ public class ArtifactsDeployer {
             throw new FileNotFoundException("Archived artifact is missing: " + file);
         }
         return file;
-    }
-
-    /**
-     * Splits the given pattern chain by spaces
-     *
-     * @param patternChain Pattern chain to split
-     * @return String array
-     */
-    private String[] splitPattern(String patternChain) {
-        if (StringUtils.isBlank(patternChain)) {
-            return new String[]{};
-        }
-
-        return StringUtils.split(patternChain, ", ");
-    }
-
-    /**
-     * Indicates whether the given path matches any pattern in the given array
-     *
-     * @param path     Path to match
-     * @param patterns Pattern array to test
-     * @return True if the pattern array contains a match for the given path
-     */
-    private boolean pathPatternMatches(String path, String[] patterns) {
-        for (String pattern : patterns) {
-            if (StringUtils.isNotBlank(pattern) && SelectorUtils.match(pattern, path)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
