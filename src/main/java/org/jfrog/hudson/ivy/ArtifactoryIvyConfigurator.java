@@ -20,7 +20,13 @@ import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -40,6 +46,7 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
+import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -60,6 +67,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private ServerDetails details;
     private final Credentials overridingDeployerCredentials;
     private boolean deployArtifacts;
+    private final IncludesExcludes artifactDeploymentPatterns;
     private boolean deployBuildInfo;
     private boolean includeEnvVars;
     private boolean runChecks;
@@ -71,11 +79,13 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-                                      boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars, boolean runChecks,
-                                      String violationRecipients, boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery) {
+            boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
+            boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+            String scopes, boolean disableLicenseAutoDiscovery) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
+        this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
         this.runChecks = runChecks;
@@ -128,6 +138,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     public boolean isDeployArtifacts() {
         return deployArtifacts;
+    }
+
+    public IncludesExcludes getArtifactDeploymentPatterns() {
+        return artifactDeploymentPatterns;
     }
 
     public boolean isDeployBuildInfo() {
@@ -187,6 +201,20 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 env.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, String.valueOf(isIncludeEnvVars()));
                 env.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, String.valueOf(isDeployBuildInfo()));
                 env.put(ClientProperties.PROP_PUBLISH_ARTIFACT, String.valueOf(isDeployArtifacts()));
+
+                IncludesExcludes deploymentPatterns = getArtifactDeploymentPatterns();
+                if (deploymentPatterns != null) {
+                    String includePatterns = deploymentPatterns.getIncludePatterns();
+                    if (StringUtils.isNotBlank(includePatterns)) {
+                        env.put(ClientProperties.PROP_PUBLISH_ARTIFACT_INCLUDE_PATTERNS, includePatterns);
+                    }
+
+                    String excludePatterns = deploymentPatterns.getExcludePatterns();
+                    if (StringUtils.isNotBlank(excludePatterns)) {
+                        env.put(ClientProperties.PROP_PUBLISH_ARTIFACT_EXCLUDE_PATTERNS, excludePatterns);
+                    }
+                }
+
                 if (Hudson.getInstance().getRootUrl() != null) {
                     env.put(BuildInfoProperties.PROP_BUILD_URL, Hudson.getInstance().getRootUrl() + build.getUrl());
 

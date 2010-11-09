@@ -50,7 +50,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 
@@ -258,7 +257,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private boolean isBuildFromM2ReleasePlugin(AbstractBuild build) {
         List<Cause> causes = build.getCauses();
         return !causes.isEmpty() && Iterables.any(causes, new Predicate<Cause>() {
-            public boolean apply(@Nonnull Cause input) {
+            public boolean apply(Cause input) {
                 return "org.jvnet.hudson.plugins.m2release.ReleaseCause".equals(input.getClass().getName());
             }
         });

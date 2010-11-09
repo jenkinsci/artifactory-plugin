@@ -22,7 +22,15 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.CauseAction;
+import hudson.model.FreeStyleProject;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -34,11 +42,16 @@ import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
-import org.jfrog.hudson.*;
+import org.jfrog.hudson.ArtifactoryBuilder;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoResultAction;
+import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
+import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -66,6 +79,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
      * If checked (default) deploy maven artifacts
      */
     private final boolean deployArtifacts;
+    private final IncludesExcludes artifactDeploymentPatterns;
     /**
      * If true skip the deployment of the build info.
      */
@@ -90,11 +104,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
-                                         boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
-                                         boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-                                         String scopes, boolean disableLicenseAutoDiscovery) {
+            IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts, boolean deployBuildInfo,
+            boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+            String scopes, boolean disableLicenseAutoDiscovery) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
+        this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
@@ -119,6 +134,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
+    }
+
+    public boolean isDeployArtifacts() {
+        return !deployArtifacts;
+    }
+
+    public IncludesExcludes getArtifactDeploymentPatterns() {
+        return artifactDeploymentPatterns;
     }
 
     public boolean isDeployBuildInfo() {
@@ -154,10 +177,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
-    }
-
-    public boolean isDeployArtifacts() {
-        return !deployArtifacts;
     }
 
     public boolean isSkipBuildInfoDeploy() {
@@ -247,7 +266,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     private void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build, BuildListener listener,
-                                         ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
+            ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
 
         Properties props = new Properties();
 
@@ -326,6 +345,20 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             }
         }
         props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(deployArtifacts));
+
+        IncludesExcludes deploymentPatterns = getArtifactDeploymentPatterns();
+        if (deploymentPatterns != null) {
+            String includePatterns = deploymentPatterns.getIncludePatterns();
+            if (StringUtils.isNotBlank(includePatterns)) {
+                props.put(ClientProperties.PROP_PUBLISH_ARTIFACT_INCLUDE_PATTERNS, includePatterns);
+            }
+
+            String excludePatterns = deploymentPatterns.getExcludePatterns();
+            if (StringUtils.isNotBlank(excludePatterns)) {
+                props.put(ClientProperties.PROP_PUBLISH_ARTIFACT_EXCLUDE_PATTERNS, excludePatterns);
+            }
+        }
+
         props.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.toString(!isSkipBuildInfoDeploy()));
         props.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, Boolean.toString(isIncludeEnvVars()));
         addEnvVars(env, build, props);
