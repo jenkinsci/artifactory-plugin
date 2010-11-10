@@ -29,6 +29,7 @@ import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.tasks.LogRotator;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
@@ -234,6 +235,16 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 }
                 if (StringUtils.isNotBlank(getScopes())) {
                     env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
+                }
+                LogRotator rotator = build.getProject().getLogRotator();
+                if (rotator != null) {
+                    int numToKeep = rotator.getNumToKeep();
+                    if (numToKeep > -1) {
+                        env.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS, String.valueOf(numToKeep));
+                    } else if (rotator.getDaysToKeep() > -1) {
+                        env.put(BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
+                                String.valueOf(rotator.getDaysToKeep()));
+                    }
                 }
             }
 

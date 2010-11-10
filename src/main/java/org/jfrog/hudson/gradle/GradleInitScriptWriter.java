@@ -24,6 +24,7 @@ import hudson.EnvVars;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
 import hudson.remoting.Which;
+import hudson.tasks.LogRotator;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.ArtifactoryPluginUtils;
@@ -62,7 +63,7 @@ public class GradleInitScriptWriter {
      * @param build
      */
     public GradleInitScriptWriter(ArtifactoryGradleConfigurator gradleConfigurator, EnvVars envVars,
-                                  AbstractBuild build) {
+            AbstractBuild build) {
         this.gradleConfigurator = gradleConfigurator;
         this.envVars = envVars;
         this.build = build;
@@ -112,6 +113,19 @@ public class GradleInitScriptWriter {
                         String.valueOf(gradleConfigurator.isIncludePublishArtifacts()));
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER,
                 String.valueOf(gradleConfigurator.isLicenseAutoDiscovery()));
+
+        LogRotator rotator = build.getProject().getLogRotator();
+        if (rotator != null) {
+            int numToKeep = rotator.getNumToKeep();
+            if (numToKeep > -1) {
+                ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_RETENTION_DAYS,
+                        String.valueOf(String.valueOf(numToKeep)));
+            } else if (rotator.getDaysToKeep() > -1) {
+                ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
+                        String.valueOf(String.valueOf(rotator.getDaysToKeep())));
+            }
+        }
+
         String principal = ActionableHelper.getHudsonPrincipal(build);
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PRINCIPAL, principal);
         String buildUrl = envVars.get("BUILD_URL");

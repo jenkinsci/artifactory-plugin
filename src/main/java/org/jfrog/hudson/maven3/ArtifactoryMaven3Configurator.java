@@ -33,6 +33,7 @@ import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.tasks.LogRotator;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
@@ -114,7 +115,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
-        this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
         this.deployBuildInfo = deployBuildInfo;
@@ -342,6 +342,16 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             }
             if (StringUtils.isNotBlank(getScopes())) {
                 props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
+            }
+        }
+        LogRotator rotator = build.getProject().getLogRotator();
+        if (rotator != null) {
+            int numToKeep = rotator.getNumToKeep();
+            if (numToKeep > -1) {
+                props.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS, String.valueOf(numToKeep));
+            } else if (rotator.getDaysToKeep() > -1) {
+                props.put(BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
+                        String.valueOf(rotator.getDaysToKeep()));
             }
         }
         props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(deployArtifacts));
