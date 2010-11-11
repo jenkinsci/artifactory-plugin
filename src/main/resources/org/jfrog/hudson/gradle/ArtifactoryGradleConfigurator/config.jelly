@@ -57,11 +57,46 @@
                     </f:entry>
                     <f:entry field="deployIvy"
                              help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployIvy.html">
-                        <f:checkbox default="true" checked="${instance.deployIvy}"/>
+                        <f:checkbox default="false" checked="${instance.deployIvy}"/>
                         <label class="attach-previous">${%Publish Ivy descriptors (ivy.xml)}</label>
                     </f:entry>
+
+                    <f:block>
+                        <table style="width:100%">
+                            <f:optionalBlock field="notM2Compatible" negative="true"
+                                             help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-m2Compatible.html"
+                                             inline="true" checked="${!instance.notM2Compatible}"
+                                             title="Maven 2 compatible">
+                                <f:entry title="Ivy pattern for publishing" field="ivyPattern"
+                                         help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployIvy.html">
+                                    <f:textbox value="${instance.ivyPattern}"/>
+                                </f:entry>
+                                <f:entry title="Artifact pattern for publishing" field="artifactPattern"
+                                         help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployIvy.html">
+                                    <f:textbox value="${instance.artifactPattern}"/>
+                                </f:entry>
+                            </f:optionalBlock>
+                        </table>
+                    </f:block>
                 </f:optionalBlock>
             </table>
+            <f:block>
+                <table style="width:100%">
+                    <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
+                    <f:section title="${%Artifact deployment patterns}" name="artifactDeploymentPatterns">
+                        <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.IncludesExcludes"/>
+                        <f:entry title="Include Patterns" field="includePatterns"
+                                 help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
+                            <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
+                        </f:entry>
+                        <f:entry title="Exclude Patterns"
+                                 field="excludePatterns"
+                                 help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
+                            <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
+                        </f:entry>
+                    </f:section>
+                </table>
+            </f:block>
             <f:block>
                 <table style="width:100%">
                     <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"

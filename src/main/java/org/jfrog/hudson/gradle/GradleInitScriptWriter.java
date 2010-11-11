@@ -38,6 +38,7 @@ import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.IncludesExcludes;
 
 import java.io.File;
 import java.io.IOException;
@@ -97,6 +98,16 @@ public class GradleInitScriptWriter {
                 .addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
         ArtifactoryPluginUtils
                 .addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
+        if (StringUtils.isNotBlank(gradleConfigurator.getArtifactPattern()) && gradleConfigurator.isNotM2Compatible()) {
+            ArtifactoryPluginUtils.addProperty(stringBuilder, ClientIvyProperties.PROP_IVY_ARTIFACT_PATTERN,
+                    gradleConfigurator.getArtifactPattern());
+        }
+        ArtifactoryPluginUtils.addProperty(stringBuilder, ClientIvyProperties.PROP_M2_COMPATIBLE,
+                String.valueOf(gradleConfigurator.isM2Compatible()));
+        if (StringUtils.isNotBlank(gradleConfigurator.getIvyPattern()) && gradleConfigurator.isNotM2Compatible()) {
+            ArtifactoryPluginUtils.addProperty(stringBuilder, ClientIvyProperties.PROP_IVY_IVY_PATTERN,
+                    gradleConfigurator.getIvyPattern());
+        }
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS,
                 String.valueOf(gradleConfigurator.isRunChecks()));
         if (StringUtils.isNotBlank(gradleConfigurator.getViolationRecipients())) {
@@ -113,6 +124,22 @@ public class GradleInitScriptWriter {
                         String.valueOf(gradleConfigurator.isIncludePublishArtifacts()));
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER,
                 String.valueOf(gradleConfigurator.isLicenseAutoDiscovery()));
+
+        IncludesExcludes deploymentPatterns = gradleConfigurator.getArtifactDeploymentPatterns();
+        if (deploymentPatterns != null) {
+            String includePatterns = deploymentPatterns.getIncludePatterns();
+            if (StringUtils.isNotBlank(includePatterns)) {
+                ArtifactoryPluginUtils.addProperty(stringBuilder,
+                        ClientProperties.PROP_PUBLISH_ARTIFACT_INCLUDE_PATTERNS,
+                        includePatterns);
+            }
+            String excludePatterns = deploymentPatterns.getExcludePatterns();
+            if (StringUtils.isNotBlank(excludePatterns)) {
+                ArtifactoryPluginUtils
+                        .addProperty(stringBuilder, ClientProperties.PROP_PUBLISH_ARTIFACT_EXCLUDE_PATTERNS,
+                                excludePatterns);
+            }
+        }
 
         LogRotator rotator = build.getProject().getLogRotator();
         if (rotator != null) {

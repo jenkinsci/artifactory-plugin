@@ -20,16 +20,27 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.FreeStyleProject;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
-import org.jfrog.hudson.*;
+import org.jfrog.hudson.ArtifactoryBuilder;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoResultAction;
+import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
+import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -64,12 +75,18 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final String scopes;
     private final boolean licenseAutoDiscovery;
     private final boolean disableLicenseAutoDiscovery;
+    private final String ivyPattern;
+    private final String artifactPattern;
+    private final boolean notM2Compatible;
+    private final IncludesExcludes artifactDeploymentPatterns;
+
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-                                         boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
-                                         boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
-                                         boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery) {
+            boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
+            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
+            boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
+            String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -83,6 +100,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
+        this.ivyPattern = ivyPattern;
+        this.artifactPattern = artifactPattern;
+        this.notM2Compatible = notM2Compatible;
+        this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
@@ -100,6 +121,18 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public String getViolationRecipients() {
         return violationRecipients;
+    }
+
+    public String getArtifactPattern() {
+        return artifactPattern;
+    }
+
+    public String getIvyPattern() {
+        return ivyPattern;
+    }
+
+    public IncludesExcludes getArtifactDeploymentPatterns() {
+        return artifactDeploymentPatterns;
     }
 
     public boolean isRunChecks() {
@@ -152,6 +185,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public boolean isDeployIvy() {
         return deployIvy;
+    }
+
+    public boolean isNotM2Compatible() {
+        return notM2Compatible;
+    }
+
+    public boolean isM2Compatible() {
+        return !notM2Compatible;
     }
 
     @Override

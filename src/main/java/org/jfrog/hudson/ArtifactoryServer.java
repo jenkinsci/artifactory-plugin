@@ -64,7 +64,7 @@ public class ArtifactoryServer {
 
     @DataBoundConstructor
     public ArtifactoryServer(String url, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
-                             boolean bypassProxy) {
+            boolean bypassProxy) {
         this.url = StringUtils.removeEnd(url, "/");
         this.deployerCredentials = deployerCredentials;
         this.resolverCredentials = resolverCredentials;
@@ -138,7 +138,6 @@ public class ArtifactoryServer {
     }
 
     public List<String> getVirtualRepositoryKeys() {
-
         Credentials resolvingCredentials = getResolvingCredentials();
 
         try {
@@ -148,7 +147,7 @@ public class ArtifactoryServer {
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
         }
-
+        virtualRepositories.add(0, "");
         return virtualRepositories;
     }
 
