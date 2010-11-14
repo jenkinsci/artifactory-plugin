@@ -124,7 +124,7 @@ public class ArtifactsDeployer {
         DeployDetails.Builder builder = new DeployDetails.Builder()
                 .file(artifactFile)
                 .artifactPath(artifactPath)
-                .targetRepository(getTargetRepository(artifactFile.getPath()))
+                .targetRepository(getTargetRepository(mavenArtifact.version))
                 .md5(mavenArtifact.md5sum)
                 .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "");
@@ -151,10 +151,10 @@ public class ArtifactsDeployer {
 
     /**
      * @return Return the target deployment repository. Either the releases repository (default) or snapshots if defined
-     *         and the deployed file is a snapshot.
+     *         and the deployed version is a snapshot.
      */
-    public String getTargetRepository(String filePath) {
-        if (targetSnapshotsRepository != null && filePath.contains("-SNAPSHOT")) {
+    public String getTargetRepository(String version) {
+        if (targetSnapshotsRepository != null && version.endsWith("SNAPSHOT")) {
             return targetSnapshotsRepository;
         }
         return targetReleasesRepository;
