@@ -21,8 +21,10 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import hudson.EnvVars;
+import hudson.ProxyConfiguration;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
+import hudson.model.Hudson;
 import hudson.remoting.Which;
 import hudson.tasks.LogRotator;
 import org.apache.commons.io.IOUtils;
@@ -125,6 +127,16 @@ public class GradleInitScriptWriter {
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER,
                 String.valueOf(gradleConfigurator.isLicenseAutoDiscovery()));
 
+        ProxyConfiguration proxy = Hudson.getInstance().proxy;
+        if (!getArtifactoryServer().isBypassProxy() && proxy != null) {
+            ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PROXY_HOST, proxy.name);
+            ArtifactoryPluginUtils.addProperty(stringBuilder, ClientProperties.PROP_PROXY_HOST,
+                    String.valueOf(proxy.port));
+            ArtifactoryPluginUtils
+                    .addProperty(stringBuilder, ClientProperties.PROP_PROXY_USERNAME, proxy.getUserName());
+            ArtifactoryPluginUtils
+                    .addProperty(stringBuilder, ClientProperties.PROP_PROXY_PASSWORD, proxy.getPassword());
+        }
         IncludesExcludes deploymentPatterns = gradleConfigurator.getArtifactDeploymentPatterns();
         if (deploymentPatterns != null) {
             String includePatterns = deploymentPatterns.getIncludePatterns();
