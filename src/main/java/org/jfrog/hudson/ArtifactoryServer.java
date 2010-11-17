@@ -139,13 +139,13 @@ public class ArtifactoryServer {
 
     public List<String> getVirtualRepositoryKeys() {
         Credentials resolvingCredentials = getResolvingCredentials();
-
         try {
             ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
                     resolvingCredentials.getPassword());
             virtualRepositories = client.getVirtualRepositoryKeys();
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
+            return Lists.newArrayList();
         }
         virtualRepositories.add(0, "");
         return virtualRepositories;
