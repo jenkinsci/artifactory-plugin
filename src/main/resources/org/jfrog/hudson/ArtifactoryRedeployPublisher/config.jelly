@@ -33,7 +33,7 @@
             <table style="width:100%">
                 <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
                 <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
-                                 title="Override Default Deployer Credentials"
+                                 title="Override default deployer credentials"
                                  help="/plugin/artifactory/help/common/help-overridingDeployerCredentials.html">
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
                     <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
@@ -63,30 +63,24 @@
                                  title="Deploy maven artifacts"
                                  checked="${!instance.deployArtifacts}"
                                  inline="true">
+                    <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
+                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.IncludesExcludes"/>
+                    <f:entry title="Include patterns" field="includePatterns"
+                             help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
+                        <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
+                    </f:entry>
+                    <f:entry title="Exclude patterns"
+                             field="excludePatterns"
+                             help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
+                        <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
+                    </f:entry>
                 </f:optionalBlock>
             </table>
         </f:block>
         <f:block>
             <table style="width:100%">
-                <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
-                <f:section title="${%Artifact deployment patterns}" name="artifactDeploymentPatterns">
-                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.IncludesExcludes"/>
-                    <f:entry title="Include Patterns" field="includePatterns"
-                             help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
-                        <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
-                    </f:entry>
-                    <f:entry title="Exclude Patterns"
-                             field="excludePatterns"
-                             help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
-                        <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
-                    </f:entry>
-                </f:section>
-            </table>
-        </f:block>
-        <f:block>
-            <table style="width:100%">
                 <f:optionalBlock name="deployBuildInfo" checked="${!instance.skipBuildInfoDeploy}"
-                                 title="Publish build info"
+                                 title="Capture and publish build info"
                                  help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
                                  inline="true">
                     <f:entry field="includeEnvVars" help="/plugin/artifactory/help/common/help-includeEnvVars.html">
@@ -95,7 +89,7 @@
                     </f:entry>
                     <f:optionalBlock name="runChecks"
                                      checked="${instance.runChecks}"
-                                     title="Run License Checks (requires Pro)"
+                                     title="Run license checks (requires Pro)"
                                      inline="true"
                                      help="/plugin/artifactory/help/common/help-runChecks.html">
                         <f:entry title="${%Send license violation notifications to: }"
@@ -113,7 +107,7 @@
                         <f:entry field="includePublishArtifacts"
                                  help="/plugin/artifactory/help/common/help-includePublishArtifacts.html">
                             <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
-                            <label class="attach-previous">${%Include Published Artifacts}</label>
+                            <label class="attach-previous">${%Include published artifacts}</label>
                         </f:entry>
                         <f:entry field="disableLicenseAutoDiscovery"
                                  help="/plugin/artifactory/help/common/help-licenseAutoDiscovery.html">
