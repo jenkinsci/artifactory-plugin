@@ -43,54 +43,55 @@
                     </f:entry>
                 </f:optionalBlock>
             </table>
+        </f:block>
 
-            <f:block>
-                <table style="width:100%">
-                    <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
-                                     title="Capture and publish build info"
-                                     help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
-                                     inline="true">
-                        <f:entry field="includeEnvVars"
-                                 help="/plugin/artifactory/help/common/help-includeEnvVars.html">
-                            <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
-                            <label class="attach-previous">${%Include all environment variables}</label>
-                        </f:entry>
-                        <f:block>
-                            <table style="width:100%">
-                                <f:optionalBlock name="runChecks"
-                                                 checked="${instance.runChecks}"
-                                                 title="Run license checks (requires Pro)"
-                                                 inline="true"
-                                                 help="/plugin/artifactory/help/common/help-runChecks.html">
-                                    <f:entry title="${%Send license violation notifications to: }"
-                                             field="violationRecipients"
-                                             help="/plugin/artifactory/help/common/help-sendViolationNotification.html"
-                                             description="Space-separated list of recipient addresses.">
-                                        <f:textbox value="${instance.violationRecipients}"/>
-                                    </f:entry>
-                                    <f:entry title="${%Limit checks to the following scopes: }"
-                                             help="/plugin/artifactory/help/common/help-scopes.html"
-                                             field="scopes"
-                                             description="Space-separated list of scopes.">
-                                        <f:textbox value="${instance.scopes}"/>
-                                    </f:entry>
-                                    <f:entry field="includePublishArtifacts"
-                                             help="/plugin/artifactory/help/common/help-includePublishArtifacts.html">
-                                        <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
-                                        <label class="attach-previous">${%Include published artifacts}</label>
-                                    </f:entry>
-                                    <f:entry field="disableLicenseAutoDiscovery"
-                                             help="/plugin/artifactory/help/common/help-licenseAutoDiscovery.html">
-                                        <f:checkbox default="false" checked="${instance.disableLicenseAutoDiscovery}"/>
-                                        <label class="attach-previous">${%Disable automatic license discovery}</label>
-                                    </f:entry>
-                                </f:optionalBlock>
-                            </table>
-                        </f:block>
-                    </f:optionalBlock>
-                </table>
-            </f:block>
-
+        <f:block>
+            <table style="width:100%">
+                <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
+                                 title="Capture and publish build info"
+                                 help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
+                                 inline="true">
+                    <f:entry field="includeEnvVars"
+                             help="/plugin/artifactory/help/common/help-includeEnvVars.html">
+                        <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
+                        <label class="attach-previous">${%Include all environment variables}</label>
+                    </f:entry>
+                    <f:block>
+                        <table style="width:100%">
+                            <f:optionalBlock name="runChecks"
+                                             checked="${instance.runChecks}"
+                                             title="Run license checks (requires Pro)"
+                                             inline="true"
+                                             help="/plugin/artifactory/help/common/help-runChecks.html">
+                                <f:entry title="${%Send license violation notifications to: }"
+                                         field="violationRecipients"
+                                         help="/plugin/artifactory/help/common/help-sendViolationNotification.html"
+                                         description="Space-separated list of recipient addresses.">
+                                    <f:textbox value="${instance.violationRecipients}"/>
+                                </f:entry>
+                                <f:entry title="${%Limit checks to the following scopes: }"
+                                         help="/plugin/artifactory/help/common/help-scopes.html"
+                                         field="scopes"
+                                         description="Space-separated list of scopes.">
+                                    <f:textbox value="${instance.scopes}"/>
+                                </f:entry>
+                                <f:entry field="includePublishArtifacts"
+                                         help="/plugin/artifactory/help/common/help-includePublishArtifacts.html">
+                                    <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
+                                    <label class="attach-previous">${%Include published artifacts}</label>
+                                </f:entry>
+                                <f:entry field="disableLicenseAutoDiscovery"
+                                         help="/plugin/artifactory/help/common/help-licenseAutoDiscovery.html">
+                                    <f:checkbox default="false" checked="${instance.disableLicenseAutoDiscovery}"/>
+                                    <label class="attach-previous">${%Disable automatic license discovery}</label>
+                                </f:entry>
+                            </f:optionalBlock>
+                        </table>
+                    </f:block>
+                </f:optionalBlock>
+            </table>
+        </f:block>
+        <f:block>
             <table style="width:100%">
                 <f:optionalBlock field="deployArtifacts"
                                  help="/plugin/artifactory/help/common/help-deployArtifacts.html"
