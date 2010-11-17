@@ -68,24 +68,26 @@
                                  help="/plugin/artifactory/help/common/help-deployArtifacts.html"
                                  title="Deploy artifacts to Artifactory" inline="true"
                                  checked="${!instance.deployArtifacts}">
-
+                    <f:block>
+                        <table style="width:100%">
+                            <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
+                            <f:section name="artifactDeploymentPatterns">
+                                <input type="hidden" name="stapler-class"
+                                       value="org.jfrog.hudson.util.IncludesExcludes"/>
+                                <f:entry title="Include Patterns" field="includePatterns"
+                                         help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
+                                    <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
+                                </f:entry>
+                                <f:entry title="Exclude Patterns"
+                                         field="excludePatterns"
+                                         help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
+                                    <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
+                                </f:entry>
+                            </f:section>
+                        </table>
+                    </f:block>
                 </f:optionalBlock>
             </table>
-            <f:block>
-                <table style="width:100%">
-                    <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
-                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.IncludesExcludes"/>
-                    <f:entry title="Include Patterns" field="includePatterns"
-                             help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
-                        <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
-                    </f:entry>
-                    <f:entry title="Exclude Patterns"
-                             field="excludePatterns"
-                             help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
-                        <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
-                    </f:entry>
-                </table>
-            </f:block>
         </f:block>
         <f:block>
             <table style="width:100%">
