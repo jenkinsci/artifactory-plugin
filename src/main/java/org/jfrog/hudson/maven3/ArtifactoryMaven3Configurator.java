@@ -346,10 +346,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         }
         LogRotator rotator = build.getProject().getLogRotator();
         if (rotator != null) {
-            int numToKeep = rotator.getNumToKeep();
-            if (numToKeep > -1) {
-                props.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS, String.valueOf(numToKeep));
-            } else if (rotator.getDaysToKeep() > -1) {
+            if (rotator.getNumToKeep() > -1) {
+                props.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS, String.valueOf(rotator.getNumToKeep()));
+            }
+            if (rotator.getDaysToKeep() > -1) {
                 props.put(BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
                         String.valueOf(rotator.getDaysToKeep()));
             }

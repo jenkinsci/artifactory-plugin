@@ -30,7 +30,6 @@ import hudson.model.CauseAction;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.Fingerprinter;
-import hudson.tasks.LogRotator;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Agent;
 import org.jfrog.build.api.Artifact;
@@ -50,11 +49,11 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.MavenDependenciesRecord;
 import org.jfrog.hudson.MavenDependency;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.BuildRetentionFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
@@ -162,18 +161,7 @@ public class BuildInfoDeployer {
         licenseControl.setIncludePublishedArtifacts(publisher.isIncludePublishArtifacts());
         licenseControl.setAutoDiscover(publisher.isLicenseAutoDiscovery());
         infoBuilder.licenseControl(licenseControl);
-        BuildRetention buildRetention = new BuildRetention();
-        LogRotator rotator = build.getProject().getLogRotator();
-        if (rotator != null) {
-            int numToKeep = rotator.getNumToKeep();
-            if (numToKeep > -1) {
-                buildRetention.setCount(numToKeep);
-            } else if (rotator.getDaysToKeep() > -1) {
-                Calendar calendar = Calendar.getInstance();
-                calendar.roll(Calendar.DAY_OF_MONTH, -rotator.getDaysToKeep());
-                buildRetention.setMinimumBuildDate(new Date(calendar.getTimeInMillis()));
-            }
-        }
+        BuildRetention buildRetention = BuildRetentionFactory.createBuildRetention(build);
         infoBuilder.buildRetention(buildRetention);
         Build buildInfo = infoBuilder.build();
         // for backwards compatibility for Artifactory 2.2.3
