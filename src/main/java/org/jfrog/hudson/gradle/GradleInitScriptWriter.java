@@ -21,6 +21,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
@@ -41,6 +42,7 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.IncludesExcludes;
+import org.jfrog.hudson.util.PluginDependencyHelper;
 
 import java.io.File;
 import java.io.IOException;
@@ -223,15 +225,18 @@ public class GradleInitScriptWriter {
      *
      * @return The generated script.
      */
-    public String generateInitScript() throws URISyntaxException, IOException {
+    public String generateInitScript() throws URISyntaxException, IOException, InterruptedException {
         StringBuilder initScript = new StringBuilder();
         InputStream templateStream = getClass().getResourceAsStream("/initscripttemplate.gradle");
         String templateAsString = IOUtils.toString(templateStream, Charsets.UTF_8.name());
         String str = templateAsString.replace("${allBuildInfoProperties}", addProperties());
-        File pluginsDir = Which.jarFile(getClass().getResource("/initscripttemplate.gradle")).getParentFile();
-        String absolutePath = pluginsDir.getAbsolutePath();
-        absolutePath = absolutePath.replace("\\", "/");
-        str = str.replace("${pluginLibDir}", absolutePath);
+
+        File localGradleExtractorJar = Which.jarFile(getClass().getResource("/initscripttemplate.gradle"));
+        FilePath dependencyDir = PluginDependencyHelper.getActualDependencyDirectory(build, localGradleExtractorJar);
+
+        String absoluteDependencyDirPath = dependencyDir.getRemote();
+        absoluteDependencyDirPath = absoluteDependencyDirPath.replace("\\", "/");
+        str = str.replace("${pluginLibDir}", absoluteDependencyDirPath);
         initScript.append(str);
         return initScript.toString();
     }

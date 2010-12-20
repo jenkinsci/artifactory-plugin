@@ -24,28 +24,37 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Computer;
 import hudson.model.Hudson;
 import hudson.model.JDK;
+import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
+import hudson.remoting.VirtualChannel;
 import hudson.remoting.Which;
+import hudson.slaves.NodeProperty;
+import hudson.slaves.NodePropertyDescriptor;
+import hudson.slaves.SlaveComputer;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.tasks.Maven;
 import hudson.tools.ToolInstallation;
+import hudson.tools.ToolLocationNodeProperty;
 import hudson.util.ArgumentListBuilder;
+import hudson.util.DescribableList;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.extractor.maven.Maven3BuildInfoLogger;
+import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.List;
 
 /**
  * Maven3 builder.
@@ -90,7 +99,7 @@ public class Maven3Builder extends Builder {
             throws InterruptedException, IOException {
         EnvVars env = build.getEnvironment(listener);
         FilePath workDir = build.getModuleRoot();
-        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, launcher, listener, env);
+        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env);
         StringBuilder javaPathBuilder = new StringBuilder();
 
         JDK configuredJdk = build.getProject().getJDK();
@@ -118,38 +127,32 @@ public class Maven3Builder extends Builder {
         }
     }
 
-    private ArgumentListBuilder buildMavenCmdLine(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener,
+    private ArgumentListBuilder buildMavenCmdLine(AbstractBuild<?, ?> build, BuildListener listener,
             EnvVars env) throws IOException, InterruptedException {
-        Maven.MavenInstallation mvn = getMavenInstallation();
-        if (mvn == null) {
-            listener.error("Maven version is not configured for this project. Can't determine which Maven to run");
-            throw new Run.RunnerAbortedException();
-        }
-        if (mvn.getHome() == null) {
-            listener.error("Maven '%s' doesn't have its home set", mvn.getName());
+
+        FilePath mavenHome = getMavenHomeDir(build, listener, env);
+
+        if (!mavenHome.exists()) {
+            listener.error("Couldn't find Maven home: " + mavenHome.getRemote());
             throw new Run.RunnerAbortedException();
         }
 
         ArgumentListBuilder args = new ArgumentListBuilder();
 
-        File bootDir = new File(mvn.getHomeDir(), "boot");
-        File[] candidates = bootDir.listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.startsWith("plexus-classworlds");
-            }
-        });
-        if (candidates == null || candidates.length == 0) {
-            listener.error("Couldn't find classworlds jar under " + bootDir.getAbsolutePath());
+        FilePath mavenBootDir = new FilePath(mavenHome, "boot");
+        FilePath[] classworldsCandidates = mavenBootDir.list("plexus-classworlds*.jar");
+        if (classworldsCandidates == null || classworldsCandidates.length == 0) {
+            listener.error("Couldn't find classworlds jar under " + mavenBootDir.getRemote());
             throw new Run.RunnerAbortedException();
         }
 
-        File classWorldsJar = candidates[0];
+        FilePath classWorldsJar = classworldsCandidates[0];
 
         // classpath
         args.add("-classpath");
         //String cpSeparator = launcher.isUnix() ? ":" : ";";
 
-        args.add(new StringBuilder().append(classWorldsJar.getCanonicalPath()).toString());
+        args.add(new StringBuilder().append(classWorldsJar.getRemote()).toString());
 
         // maven opts
         args.addTokenized(getMavenOpts());
@@ -162,25 +165,42 @@ public class Maven3Builder extends Builder {
         }
 
         // maven home
-        args.add("-Dmaven.home=" + mvn.getHome());
+        args.add("-Dmaven.home=" + mavenHome.getRemote());
 
-        File classworldsConf;
+        String classworldsConfPath;
         if (artifactoryIntegration) {
+
             // use the classworlds conf packaged with this plugin and resolve the extractor libs
-            File libsDirectory = Which.jarFile(Maven3BuildInfoLogger.class).getParentFile();
-            args.add("-Dm3plugin.lib=" + libsDirectory.getAbsolutePath());
-            URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds.conf");
-            classworldsConf = new File(URLDecoder.decode(resource.getFile(), "utf-8"));
-            if (!classworldsConf.exists()) {
-                listener.error(
-                        "Unable to locate classworlds configuration file under " + classworldsConf.getAbsolutePath());
+            File maven3ExtractorJar = Which.jarFile(Maven3BuildInfoLogger.class);
+            FilePath actualDependencyDirectory =
+                    PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
+
+            args.add("-Dm3plugin.lib=" + actualDependencyDirectory.getRemote());
+
+            URL classworldsResource =
+                    getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds.conf");
+
+            File classworldsConfFile = new File(URLDecoder.decode(classworldsResource.getFile(), "utf-8"));
+            if (!classworldsConfFile.exists()) {
+                listener.error("Unable to locate classworlds configuration file under " +
+                        classworldsConfFile.getAbsolutePath());
                 throw new Run.RunnerAbortedException();
             }
+
+            //If we are on a remote slave, make a temp copy of the customized classworlds conf
+            if (Computer.currentComputer() instanceof SlaveComputer) {
+
+                FilePath remoteClassworlds = build.getWorkspace().createTextTempFile("classworlds", "conf", "", false);
+                remoteClassworlds.copyFrom(classworldsResource);
+                classworldsConfPath = remoteClassworlds.getRemote();
+            } else {
+                classworldsConfPath = classworldsConfFile.getCanonicalPath();
+            }
         } else {
-            classworldsConf = new File(mvn.getHome(), "bin/m2.conf");
+            classworldsConfPath = new FilePath(mavenHome, "bin/m2.conf").getRemote();
         }
 
-        args.add("-Dclassworlds.conf=" + classworldsConf.getCanonicalPath());
+        args.add("-Dclassworlds.conf=" + classworldsConfPath);
 
         // maven opts
         String mavenOpts = Util.replaceMacro(getMavenOpts(), build.getBuildVariableResolver());
@@ -201,6 +221,73 @@ public class Maven3Builder extends Builder {
         args.addTokenized(getGoals());
 
         return args;
+    }
+
+    private FilePath getMavenHomeDir(AbstractBuild<?, ?> build, BuildListener listener, EnvVars env) {
+        Computer computer = Computer.currentComputer();
+        VirtualChannel virtualChannel = computer.getChannel();
+
+        String mavenHome = null;
+
+        //Check for a node defined tool if we are on a slave
+        if (computer instanceof SlaveComputer) {
+            mavenHome = getNodeDefinedMavenHome(build);
+        }
+
+        //Either we are on the master or that no node tool was defined
+        if (StringUtils.isBlank(mavenHome)) {
+            mavenHome = getJobDefinedMavenInstallation(listener, virtualChannel);
+        }
+
+        //Try to find the home via the env vars
+        if (StringUtils.isBlank(mavenHome)) {
+            mavenHome = getEnvDefinedMavenHome(env);
+        }
+        return new FilePath(virtualChannel, mavenHome);
+    }
+
+    private String getNodeDefinedMavenHome(AbstractBuild<?, ?> build) {
+        Node currentNode = build.getBuiltOn();
+        DescribableList<NodeProperty<?>, NodePropertyDescriptor> properties = currentNode.getNodeProperties();
+        ToolLocationNodeProperty toolLocation = properties.get(ToolLocationNodeProperty.class);
+        if (toolLocation != null) {
+
+            List<ToolLocationNodeProperty.ToolLocation> locations = toolLocation.getLocations();
+            if (locations != null) {
+                for (ToolLocationNodeProperty.ToolLocation location : locations) {
+                    if (location.getType().isSubTypeOf(Maven.MavenInstallation.class)) {
+                        String installationHome = location.getHome();
+                        if (StringUtils.isNotBlank(installationHome)) {
+                            return installationHome;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private String getEnvDefinedMavenHome(EnvVars env) {
+        String mavenHome = env.get("MAVEN_HOME");
+        if (StringUtils.isNotBlank(mavenHome)) {
+            return mavenHome;
+        }
+
+        return env.get("M2_HOME");
+    }
+
+    private String getJobDefinedMavenInstallation(BuildListener listener, VirtualChannel channel) {
+        Maven.MavenInstallation mvn = getMavenInstallation();
+        if (mvn == null) {
+            listener.error("Maven version is not configured for this project. Can't determine which Maven to run");
+            throw new Run.RunnerAbortedException();
+        }
+        String mvnHome = mvn.getHome();
+        if (mvnHome == null) {
+            listener.error("Maven '%s' doesn't have its home set", mvn.getName());
+            throw new Run.RunnerAbortedException();
+        }
+        return mvnHome;
     }
 
     public Maven.MavenInstallation getMavenInstallation() {

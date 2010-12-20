@@ -21,6 +21,7 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -58,9 +59,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.List;
@@ -235,7 +235,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             public void buildEnvVars(Map<String, String> env) {
 
                 try {
-                    addBuilderInfoArguments(env, build, listener, artifactoryServer);
+                    addBuilderInfoArguments(env, build, artifactoryServer);
                 } catch (Exception e) {
                     listener.getLogger().
                             format("Failed to collect Artifactory Build Info to properties file: %s", e.getMessage()).
@@ -265,7 +265,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    private void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build, BuildListener listener,
+    private void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build,
             ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
 
         Properties props = new Properties();
@@ -373,17 +373,18 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         props.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, Boolean.toString(isIncludeEnvVars()));
         addEnvVars(env, build, props);
 
-
-        File tempPropsFile = File.createTempFile("buildInfo", "properties");
-        FileOutputStream fileOutputStream = new FileOutputStream(tempPropsFile);
+        String propFilePath;
+        OutputStream fileOutputStream = null;
         try {
+            FilePath tempFile = build.getWorkspace().createTextTempFile("buildInfo", "properties", "", false);
+            fileOutputStream = tempFile.write();
             props.store(fileOutputStream, null);
+            propFilePath = tempFile.getRemote();
         } finally {
             Closeables.closeQuietly(fileOutputStream);
         }
 
-        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, tempPropsFile.getCanonicalPath());
-
+        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propFilePath);
     }
 
     private void addEnvVars(Map<String, String> env, AbstractBuild build, Properties props) {

@@ -16,9 +16,8 @@
 
 package org.jfrog.hudson.gradle;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -46,7 +45,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -210,23 +208,25 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             build.setResult(Result.FAILURE);
         }
         GradleInitScriptWriter writer = new GradleInitScriptWriter(this, build.getEnvironment(listener), build);
-        File initScript = new File(build.getArtifactsDir().getParent(), ("init-artifactory.gradle"));
-        String path = initScript.getAbsolutePath();
-        path = path.replace('\\', '/');
-        initScript = new File(path);
+
+        FilePath workspace = build.getWorkspace();
+        FilePath initScript;
         try {
-            Files.write(writer.generateInitScript(), initScript, Charsets.UTF_8);
+            initScript = workspace.createTextTempFile("init-artifactory", "gradle", writer.generateInitScript(), false);
         } catch (Exception e) {
-            listener.getLogger().println("Error occurred while writing Gradle Init Script");
+            listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
             build.setResult(Result.FAILURE);
+            return new Environment() {
+            };
         }
-        String filePath = initScript.getAbsolutePath();
-        filePath = filePath.replace('\\', '/');
-        final String finalFilePath = "\"" + filePath + "\"";
+
+        String initScriptPath = initScript.getRemote();
+        initScriptPath = initScriptPath.replace('\\', '/');
+        final String finalInitScriptPath = "\"" + initScriptPath + "\"";
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
-                env.put("GRADLE_EXT_SWITCHES", "--init-script " + finalFilePath);
+                env.put("GRADLE_EXT_SWITCHES", "--init-script " + finalInitScriptPath);
                 env.put("GRADLE_EXT_TASKS", "buildInfo");
             }
 

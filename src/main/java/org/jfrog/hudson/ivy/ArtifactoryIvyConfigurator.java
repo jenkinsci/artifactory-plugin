@@ -18,6 +18,7 @@ package org.jfrog.hudson.ivy;
 
 import com.google.common.collect.Maps;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
 import hudson.model.AbstractBuild;
@@ -49,6 +50,7 @@ import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
+import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -179,6 +181,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             throws IOException, InterruptedException {
         final ArtifactoryServer artifactoryServer = getArtifactoryServer();
         build.setResult(Result.SUCCESS);
+
+        File localDependencyFile = Which.jarFile(ArtifactoryIvySettingsConfigurator.class);
+        final FilePath actualDependencyDir =
+                PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
+
         return new AntIvyBuilderEnvironment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
@@ -257,26 +264,21 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                     throw new RuntimeException(e);
                 }
                 StringBuilder extraAntOpts = new StringBuilder();
-                String path = agentLib.getAbsolutePath();
-                path = path.replace('\\', '/');
-                path = "\"" + path + "\"";
-                extraAntOpts.append("-javaagent:").append(path).append(" ");
+
+                String actualAgentLibPath = actualDependencyDir.child(agentLib.getName()).getRemote();
+                actualAgentLibPath = actualAgentLibPath.replace('\\', '/');
+                actualAgentLibPath = "\"" + actualAgentLibPath + "\"";
+                extraAntOpts.append("-javaagent:").append(actualAgentLibPath).append(" ");
                 return extraAntOpts.toString();
             }
 
             @Override
             public String getAdditionalArgs() {
-                final File agentFile;
-                try {
-                    agentFile = Which.jarFile(ArtifactoryIvySettingsConfigurator.class);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
                 StringBuilder targets = new StringBuilder();
-                String path = agentFile.getParentFile().getAbsolutePath();
-                path = path.replace('\\', '/');
-                path = "\"" + path + "\"";
-                targets.append("-lib ").append(path).append(" ");
+                String actualDependencyDirPath = actualDependencyDir.getRemote();
+                actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
+                actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
+                targets.append("-lib ").append(actualDependencyDirPath).append(" ");
                 return targets.toString();
             }
         };
