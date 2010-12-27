@@ -10,7 +10,8 @@
                         <f:entry title="${%Resolution repository}">
                             <select class="setting-input" name="downloadRepositoryKey">
                                 <j:forEach var="r" items="${s.virtualRepositoryKeys}">
-                                    <f:option selected="${r==instance.downloadRepositoryKey}" value="${r}">${r}
+                                    <f:option selected="${r.displayName==instance.downloadRepositoryKey}"
+                                              value="${r.value}">${r.displayName}
                                     </f:option>
                                 </j:forEach>
                             </select>

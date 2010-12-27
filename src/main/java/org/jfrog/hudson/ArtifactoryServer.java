@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.ProxyConfiguration;
@@ -29,6 +30,7 @@ import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
@@ -60,7 +62,7 @@ public class ArtifactoryServer {
      */
     private transient volatile List<String> repositories;
 
-    private transient volatile List<String> virtualRepositories;
+    private transient volatile List<VirtualRepository> virtualRepositories;
 
     @DataBoundConstructor
     public ArtifactoryServer(String url, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
@@ -137,17 +139,22 @@ public class ArtifactoryServer {
         }
     }
 
-    public List<String> getVirtualRepositoryKeys() {
+    public List<VirtualRepository> getVirtualRepositoryKeys() {
         Credentials resolvingCredentials = getResolvingCredentials();
         try {
             ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
                     resolvingCredentials.getPassword());
-            virtualRepositories = client.getVirtualRepositoryKeys();
+            List<String> keys = client.getVirtualRepositoryKeys();
+            virtualRepositories = Lists.newArrayList(Lists.transform(keys, new Function<String, VirtualRepository>() {
+                public VirtualRepository apply(@Nullable String from) {
+                    return new VirtualRepository(from, from);
+                }
+            }));
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
             return Lists.newArrayList();
         }
-        virtualRepositories.add(0, "");
+        virtualRepositories.add(0, new VirtualRepository("--- Don't resolve from Artifactory ---", ""));
         return virtualRepositories;
     }
 
