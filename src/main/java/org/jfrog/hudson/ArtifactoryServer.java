@@ -154,7 +154,8 @@ public class ArtifactoryServer {
             return Lists.newArrayList();
         }
         virtualRepositories
-                .add(0, new VirtualRepository("- To use Artifactory for resolution select a virtual repository -", ""));
+                .add(0, new VirtualRepository("-- To use Artifactory for resolution select a virtual repository --",
+                        ""));
         return virtualRepositories;
     }
 
