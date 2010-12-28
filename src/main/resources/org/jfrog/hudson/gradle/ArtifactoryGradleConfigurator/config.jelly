@@ -113,7 +113,7 @@
                             <f:optionalBlock field="notM2Compatible" negative="true"
                                              help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-m2Compatible.html"
                                              inline="true" checked="${!instance.notM2Compatible}"
-                                             title="Use Maven 2 compatible patterns">
+                                             title="Use Maven compatible patterns">
                                 <f:entry title="Ivy pattern" field="ivyPattern"
                                          help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-ivyPattern.html">
                                     <f:textbox value="${instance.ivyPattern}"
