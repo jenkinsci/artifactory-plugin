@@ -30,7 +30,6 @@ import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
@@ -146,7 +145,7 @@ public class ArtifactoryServer {
                     resolvingCredentials.getPassword());
             List<String> keys = client.getVirtualRepositoryKeys();
             virtualRepositories = Lists.newArrayList(Lists.transform(keys, new Function<String, VirtualRepository>() {
-                public VirtualRepository apply(@Nullable String from) {
+                public VirtualRepository apply(String from) {
                     return new VirtualRepository(from, from);
                 }
             }));
@@ -154,7 +153,8 @@ public class ArtifactoryServer {
             log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
             return Lists.newArrayList();
         }
-        virtualRepositories.add(0, new VirtualRepository("--- Don't resolve from Artifactory ---", ""));
+        virtualRepositories
+                .add(0, new VirtualRepository("- To use Artifactory for resolution select a virtual repository -", ""));
         return virtualRepositories;
     }
 
