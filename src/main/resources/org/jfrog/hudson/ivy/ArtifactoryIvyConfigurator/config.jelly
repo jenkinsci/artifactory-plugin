@@ -60,6 +60,25 @@
                                  inline="true">
                     <f:block>
                         <table style="width:100%">
+                            <f:optionalBlock field="notM2Compatible" negative="true"
+                                             help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-m2Compatible.html"
+                                             inline="true" checked="${!instance.notM2Compatible}"
+                                             title="Use Maven compatible patterns">
+                                <f:entry title="Ivy pattern" field="ivyPattern"
+                                         help="/plugin/artifactory/help/common/help-ivyPattern.html">
+                                    <f:textbox value="${instance.ivyPattern}"
+                                               default="[organisation]/[module]/ivy-[revision].xml"/>
+                                </f:entry>
+                                <f:entry title="Artifact pattern" field="artifactPattern"
+                                         help="/plugin/artifactory/help/common/help-artifactPattern.html">
+                                    <f:textbox value="${instance.artifactPattern}"
+                                               default="[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier]).[ext]"/>
+                                </f:entry>
+                            </f:optionalBlock>
+                        </table>
+                    </f:block>
+                    <f:block>
+                        <table style="width:100%">
                             <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
                             <f:section name="artifactDeploymentPatterns">
                                 <input type="hidden" name="stapler-class"
@@ -103,10 +122,10 @@
                                  description="Space-separated list of recipient addresses.">
                             <f:textbox value="${instance.violationRecipients}"/>
                         </f:entry>
-                        <f:entry title="${%Limit checks to the following scopes: }"
+                        <f:entry title="${%Limit checks to the following configurations: }"
                                  help="/plugin/artifactory/help/common/help-scopes.html"
                                  field="scopes"
-                                 description="Space-separated list of scopes.">
+                                 description="Space-separated list of configurations.">
                             <f:textbox value="${instance.scopes}"/>
                         </f:entry>
                         <f:entry field="includePublishArtifacts"

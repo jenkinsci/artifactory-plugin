@@ -38,6 +38,7 @@ import org.apache.commons.lang.StringUtils;
 import org.aspectj.weaver.loadtime.Agent;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
+import org.jfrog.build.client.ClientIvyProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.config.ArtifactoryIvySettingsConfigurator;
 import org.jfrog.hudson.ArtifactoryBuilder;
@@ -79,12 +80,16 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private String scopes;
     private boolean licenseAutoDiscovery;
     private boolean disableLicenseAutoDiscovery;
+    private boolean notM2Compatible;
+    private String ivyPattern;
+    private String artifactPattern;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
             boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
             boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-            String scopes, boolean disableLicenseAutoDiscovery) {
+            String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
+            String artifactPattern) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -96,6 +101,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
+        this.notM2Compatible = notM2Compatible;
+        this.ivyPattern = ivyPattern;
+        this.artifactPattern = artifactPattern;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
@@ -109,6 +117,34 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
+    }
+
+    public boolean isNotM2Compatible() {
+        return notM2Compatible;
+    }
+
+    public void setNotM2Compatible(boolean notM2Compatible) {
+        this.notM2Compatible = notM2Compatible;
+    }
+
+    public String getArtifactPattern() {
+        return artifactPattern;
+    }
+
+    public void setArtifactPattern(String artifactPattern) {
+        this.artifactPattern = artifactPattern;
+    }
+
+    public String getIvyPattern() {
+        return ivyPattern;
+    }
+
+    public void setIvyPattern(String ivyPattern) {
+        this.ivyPattern = ivyPattern;
+    }
+
+    public boolean isM2Compatible() {
+        return !notM2Compatible;
     }
 
     public boolean isIncludePublishArtifacts() {
@@ -209,6 +245,13 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 env.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, String.valueOf(isIncludeEnvVars()));
                 env.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, String.valueOf(isDeployBuildInfo()));
                 env.put(ClientProperties.PROP_PUBLISH_ARTIFACT, String.valueOf(isDeployArtifacts()));
+                env.put(ClientIvyProperties.PROP_M2_COMPATIBLE, String.valueOf(isM2Compatible()));
+                if (StringUtils.isNotBlank(getIvyPattern()) && isNotM2Compatible()) {
+                    env.put(ClientIvyProperties.PROP_IVY_IVY_PATTERN, normalizeString(getIvyPattern()));
+                }
+                if (StringUtils.isNotBlank(getArtifactPattern()) && isNotM2Compatible()) {
+                    env.put(ClientIvyProperties.PROP_IVY_ARTIFACT_PATTERN, normalizeString(getArtifactPattern()));
+                }
 
                 IncludesExcludes deploymentPatterns = getArtifactDeploymentPatterns();
                 if (deploymentPatterns != null) {
@@ -253,6 +296,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                                 String.valueOf(rotator.getDaysToKeep()));
                     }
                 }
+            }
+
+            private String normalizeString(String text) {
+                text = StringUtils.removeStart(text, "\"");
+                return StringUtils.removeEnd(text, "\"");
             }
 
             @Override

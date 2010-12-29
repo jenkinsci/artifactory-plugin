@@ -115,12 +115,12 @@
                                              inline="true" checked="${!instance.notM2Compatible}"
                                              title="Use Maven compatible patterns">
                                 <f:entry title="Ivy pattern" field="ivyPattern"
-                                         help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-ivyPattern.html">
+                                         help="/plugin/artifactory/help/common/help-ivyPattern.html">
                                     <f:textbox value="${instance.ivyPattern}"
                                                default="[organisation]/[module]/ivy-[revision].xml"/>
                                 </f:entry>
                                 <f:entry title="Artifact pattern" field="artifactPattern"
-                                         help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-artifactPattern.html">
+                                         help="/plugin/artifactory/help/common/help-artifactPattern.html">
                                     <f:textbox value="${instance.artifactPattern}"
                                                default="[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier]).[ext]"/>
                                 </f:entry>
