@@ -127,7 +127,9 @@ public class ArtifactsDeployer {
                 .targetRepository(getTargetRepository(mavenArtifact.version))
                 .md5(mavenArtifact.md5sum)
                 .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
-                .addProperty("build.number", mavenModuleSetBuild.getNumber() + "");
+                .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
+                .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
+
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(mavenModuleSetBuild);
         if (parent != null) {

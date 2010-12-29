@@ -63,6 +63,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -280,8 +281,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         props.put(BuildInfoProperties.PROP_BUILD_NUMBER, buildNumber);
         props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + "build.number", buildNumber);
 
+        Date buildStartDate = build.getTimestamp().getTime();
         props.put(BuildInfoProperties.PROP_BUILD_STARTED,
-                new SimpleDateFormat(Build.STARTED_FORMAT).format(build.getTimestamp().getTime()));
+                new SimpleDateFormat(Build.STARTED_FORMAT).format(buildStartDate));
+
+        props.put(BuildInfoProperties.PROP_BUILD_TIMESTAMP, buildStartDate.getTime());
+        props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + "build.timestamp", buildStartDate.getTime());
 
         String vcsRevision = env.get("SVN_REVISION");
         if (StringUtils.isNotBlank(vcsRevision)) {
