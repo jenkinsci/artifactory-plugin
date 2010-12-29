@@ -286,7 +286,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 new SimpleDateFormat(Build.STARTED_FORMAT).format(buildStartDate));
 
         props.put(BuildInfoProperties.PROP_BUILD_TIMESTAMP, buildStartDate.getTime());
-        props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + "build.timestamp", buildStartDate.getTime());
+        props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + "build.timestamp",
+                String.valueOf(buildStartDate.getTime()));
 
         String vcsRevision = env.get("SVN_REVISION");
         if (StringUtils.isNotBlank(vcsRevision)) {
