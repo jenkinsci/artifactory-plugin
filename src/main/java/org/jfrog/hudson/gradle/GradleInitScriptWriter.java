@@ -169,7 +169,7 @@ public class GradleInitScriptWriter {
 
         String principal = ActionableHelper.getHudsonPrincipal(build);
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_PRINCIPAL, principal);
-        String buildUrl = envVars.get("BUILD_URL");
+        String buildUrl = ActionableHelper.getBuildUrl(build);
         if (StringUtils.isNotBlank(buildUrl)) {
             ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_URL, buildUrl);
         }

@@ -26,6 +26,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
+import hudson.model.CauseAction;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.remoting.Which;
@@ -241,7 +242,16 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 env.put(BuildInfoProperties.PROP_AGENT_VERSION, build.getHudsonVersion());
                 env.put(BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
                 env.put(BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
-                env.put(BuildInfoProperties.PROP_PRINCIPAL, ActionableHelper.getHudsonPrincipal(build));
+                String principal = "auto";
+                CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
+                if (action != null) {
+                    for (Cause cause : action.getCauses()) {
+                        if (cause instanceof Cause.UserCause) {
+                            principal = ((Cause.UserCause) cause).getUserName();
+                        }
+                    }
+                }
+                env.put(BuildInfoProperties.PROP_PRINCIPAL, principal);
                 env.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, String.valueOf(isIncludeEnvVars()));
                 env.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, String.valueOf(isDeployBuildInfo()));
                 env.put(ClientProperties.PROP_PUBLISH_ARTIFACT, String.valueOf(isDeployArtifacts()));
@@ -265,10 +275,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                         env.put(ClientProperties.PROP_PUBLISH_ARTIFACT_EXCLUDE_PATTERNS, excludePatterns);
                     }
                 }
-
-                if (Hudson.getInstance().getRootUrl() != null) {
-                    env.put(BuildInfoProperties.PROP_BUILD_URL, Hudson.getInstance().getRootUrl() + build.getUrl());
-
+                String buildUrl = ActionableHelper.getBuildUrl(build);
+                if (StringUtils.isNotBlank(buildUrl)) {
+                    env.put(BuildInfoProperties.PROP_BUILD_URL, buildUrl);
                 }
                 Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
                 if (parent != null) {

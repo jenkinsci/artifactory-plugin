@@ -27,7 +27,6 @@ import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
-import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.Fingerprinter;
 import org.apache.commons.lang.StringUtils;
@@ -88,8 +87,9 @@ public class BuildInfoDeployer {
                 .buildAgent(new BuildAgent("Maven", build.getParent().getMaven().getName()))
                 .agent(new Agent("hudson", build.getHudsonVersion())).type(BuildType.MAVEN);
 
-        if (Hudson.getInstance().getRootUrl() != null) {
-            infoBuilder.url(Hudson.getInstance().getRootUrl() + build.getUrl());
+        String buildUrl = ActionableHelper.getBuildUrl(build);
+        if (StringUtils.isNotBlank(buildUrl)) {
+            infoBuilder.url(buildUrl);
         }
 
         Calendar startedTimestamp = build.getTimestamp();

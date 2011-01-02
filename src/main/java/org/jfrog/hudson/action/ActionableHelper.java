@@ -24,6 +24,8 @@ import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
+import hudson.model.Hudson;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -58,6 +60,14 @@ public abstract class ActionableHelper {
             }
         }
         return null;
+    }
+
+    public static String getBuildUrl(AbstractBuild build) {
+        String root = Hudson.getInstance().getRootUrl();
+        if (StringUtils.isBlank(root)) {
+            return "";
+        }
+        return root + build.getUrl();
     }
 
     public static String getHudsonPrincipal(AbstractBuild build) {

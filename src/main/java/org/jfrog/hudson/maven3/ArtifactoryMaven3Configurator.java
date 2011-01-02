@@ -296,8 +296,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                     BuildInfoProperties.PROP_VCS_REVISION, vcsRevision);
         }
 
-        String buildUrl = Hudson.getInstance().getRootUrl() + build.getUrl();
-        props.put(BuildInfoProperties.PROP_BUILD_URL, buildUrl);
+        String buildUrl = ActionableHelper.getBuildUrl(build);
+        if (StringUtils.isNotBlank(buildUrl)) {
+            props.put(BuildInfoProperties.PROP_BUILD_URL, buildUrl);
+        }
 
         String userName = "unknown";
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
