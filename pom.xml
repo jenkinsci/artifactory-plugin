@@ -24,7 +24,7 @@
     </parent>
 
     <artifactId>artifactory</artifactId>
-    <version>1.3.7-SNAPSHOT</version>
+    <version>1.4.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Hudson Artifactory Plugin</name>
     <description>Integrates Artifactory to Hudson</description>
