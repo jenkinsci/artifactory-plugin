@@ -30,6 +30,10 @@
     <description>Integrates Artifactory to Hudson</description>
     <url>http://wiki.hudson-ci.org/display/HUDSON/Artifactory+Plugin</url>
 
+    <properties>
+        <buildinfo.version>1.4.x-SNAPSHOT</buildinfo.version>
+    </properties>
+
     <developers>
         <developer>
             <id>yossis</id>
@@ -73,13 +77,18 @@
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
-            <artifactId>build-info-client</artifactId>
-            <version>1.4.9</version>
+            <artifactId>build-info-api</artifactId>
+            <version>${buildinfo.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
-            <artifactId>build-info-api</artifactId>
-            <version>1.4.9</version>
+            <artifactId>build-info-client</artifactId>
+            <version>${buildinfo.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-extractor</artifactId>
+            <version>${buildinfo.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
@@ -109,7 +118,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-gradle</artifactId>
-            <version>1.1.0</version>
+            <version>1.1.x-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.ant</groupId>
