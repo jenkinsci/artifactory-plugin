@@ -102,13 +102,13 @@ public class GradleInitScriptWriter {
                 .addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
         ArtifactoryPluginUtils
                 .addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
-        if (StringUtils.isNotBlank(gradleConfigurator.getArtifactPattern()) && gradleConfigurator.isNotM2Compatible()) {
+        if (StringUtils.isNotBlank(gradleConfigurator.getArtifactPattern())) {
             ArtifactoryPluginUtils.addProperty(stringBuilder, ClientIvyProperties.PROP_IVY_ARTIFACT_PATTERN,
                     gradleConfigurator.getArtifactPattern());
         }
         ArtifactoryPluginUtils.addProperty(stringBuilder, ClientIvyProperties.PROP_M2_COMPATIBLE,
                 String.valueOf(gradleConfigurator.isM2Compatible()));
-        if (StringUtils.isNotBlank(gradleConfigurator.getIvyPattern()) && gradleConfigurator.isNotM2Compatible()) {
+        if (StringUtils.isNotBlank(gradleConfigurator.getIvyPattern())) {
             ArtifactoryPluginUtils.addProperty(stringBuilder, ClientIvyProperties.PROP_IVY_IVY_PATTERN,
                     gradleConfigurator.getIvyPattern());
         }

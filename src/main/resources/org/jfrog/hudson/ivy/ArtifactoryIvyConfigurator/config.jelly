@@ -61,22 +61,23 @@
                     <f:block>
                         <table style="width:100%">
                             <f:optionalBlock field="notM2Compatible" negative="true"
-                                             help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-m2Compatible.html"
+                                             help="/plugin/artifactory/help/common/help-m2Compatible.html"
                                              inline="true" checked="${!instance.notM2Compatible}"
                                              title="Use Maven compatible patterns">
-                                <f:entry title="Ivy pattern" field="ivyPattern"
-                                         help="/plugin/artifactory/help/common/help-ivyPattern.html">
-                                    <f:textbox value="${instance.ivyPattern}"
-                                               default="[organisation]/[module]/ivy-[revision].xml"/>
-                                </f:entry>
-                                <f:entry title="Artifact pattern" field="artifactPattern"
-                                         help="/plugin/artifactory/help/common/help-artifactPattern.html">
-                                    <f:textbox value="${instance.artifactPattern}"
-                                               default="[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier]).[ext]"/>
-                                </f:entry>
+
                             </f:optionalBlock>
                         </table>
                     </f:block>
+                    <f:entry title="Ivy pattern" field="ivyPattern"
+                             help="/plugin/artifactory/help/common/help-ivyPattern.html">
+                        <f:textbox value="${instance.ivyPattern}"
+                                   default="[organisation]/[module]/ivy-[revision].xml"/>
+                    </f:entry>
+                    <f:entry title="Artifact pattern" field="artifactPattern"
+                             help="/plugin/artifactory/help/common/help-artifactPattern.html">
+                        <f:textbox value="${instance.artifactPattern}"
+                                   default="[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier]).[ext]"/>
+                    </f:entry>
                     <f:block>
                         <table style="width:100%">
                             <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
@@ -95,7 +96,6 @@
                             </f:section>
                         </table>
                     </f:block>
-
                 </f:optionalBlock>
             </table>
         </f:block>

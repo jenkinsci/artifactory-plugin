@@ -256,10 +256,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 env.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, String.valueOf(isDeployBuildInfo()));
                 env.put(ClientProperties.PROP_PUBLISH_ARTIFACT, String.valueOf(isDeployArtifacts()));
                 env.put(ClientIvyProperties.PROP_M2_COMPATIBLE, String.valueOf(isM2Compatible()));
-                if (StringUtils.isNotBlank(getIvyPattern()) && isNotM2Compatible()) {
+                if (StringUtils.isNotBlank(getIvyPattern())) {
                     env.put(ClientIvyProperties.PROP_IVY_IVY_PATTERN, normalizeString(getIvyPattern()));
                 }
-                if (StringUtils.isNotBlank(getArtifactPattern()) && isNotM2Compatible()) {
+                if (StringUtils.isNotBlank(getArtifactPattern())) {
                     env.put(ClientIvyProperties.PROP_IVY_ARTIFACT_PATTERN, normalizeString(getArtifactPattern()));
                 }
 
