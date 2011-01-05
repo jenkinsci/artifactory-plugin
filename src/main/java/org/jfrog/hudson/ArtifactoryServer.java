@@ -105,6 +105,7 @@ public class ArtifactoryServer {
             repositories = client.getLocalRepositoriesKeys();
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to obtain list of local repositories: " + e.getMessage());
+            return Lists.newArrayList();
         }
         return repositories;
     }
