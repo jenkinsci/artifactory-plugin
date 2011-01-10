@@ -23,7 +23,7 @@
     </parent>
 
     <artifactId>artifactory</artifactId>
-    <version>1.4.1-SNAPSHOT</version>
+    <version>1.4.1</version>
     <packaging>hpi</packaging>
     <name>Hudson Artifactory Plugin</name>
     <description>Integrates Artifactory to Hudson</description>
@@ -184,9 +184,9 @@
       </build>
 
     <scm>
-      <connection>scm:svn:https://guest@svn.java.net/svn/hudson~svn/trunk/hudson/plugins/artifactory</connection>
-      <developerConnection>scm:svn:https://svn.java.net/svn/hudson~svn/trunk/hudson/plugins/artifactory</developerConnection>
-      <url>https://hudson.dev.java.net/source/browse/hudson/trunk/hudson/plugins/artifactory</url>
+      <connection>scm:svn:https://guest@svn.java.net/svn/hudson~svn/tags/artifactory-1.4.1</connection>
+      <developerConnection>scm:svn:https://svn.java.net/svn/hudson~svn/tags/artifactory-1.4.1</developerConnection>
+      <url>https://hudson.dev.java.net/source/browse/hudson/tags/artifactory-1.4.1</url>
   </scm>
 
     <profiles>
