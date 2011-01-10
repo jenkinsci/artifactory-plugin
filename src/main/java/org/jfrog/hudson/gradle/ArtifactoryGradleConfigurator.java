@@ -77,6 +77,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final String artifactPattern;
     private final boolean notM2Compatible;
     private final IncludesExcludes artifactDeploymentPatterns;
+    private final boolean discardOldBuilds;
 
 
     @DataBoundConstructor
@@ -84,7 +85,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
-            String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns) {
+            String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
+            boolean discardOldBuilds) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -102,11 +104,16 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.artifactPattern = artifactPattern;
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
+        this.discardOldBuilds = discardOldBuilds;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public boolean isDiscardOldBuilds() {
+        return discardOldBuilds;
     }
 
     public boolean isOverridingDefaultDeployer() {

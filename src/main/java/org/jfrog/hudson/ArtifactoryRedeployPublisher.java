@@ -91,6 +91,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     private final boolean licenseAutoDiscovery;
     private final boolean disableLicenseAutoDiscovery;
+    private final boolean discardOldBuilds;
 
 
     @DataBoundConstructor
@@ -98,7 +99,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
             boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
             String violationRecipients, boolean includePublishArtifacts, String scopes,
-            boolean disableLicenseAutoDiscovery) {
+            boolean disableLicenseAutoDiscovery, boolean discardOldBuilds) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -110,6 +111,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
+        this.discardOldBuilds = discardOldBuilds;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
 
@@ -129,6 +131,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public IncludesExcludes getArtifactDeploymentPatterns() {
         return artifactDeploymentPatterns;
+    }
+
+    public boolean isDiscardOldBuilds() {
+        return discardOldBuilds;
     }
 
     public boolean isOverridingDefaultDeployer() {

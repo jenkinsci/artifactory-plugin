@@ -161,8 +161,10 @@ public class BuildInfoDeployer {
         licenseControl.setIncludePublishedArtifacts(publisher.isIncludePublishArtifacts());
         licenseControl.setAutoDiscover(publisher.isLicenseAutoDiscovery());
         infoBuilder.licenseControl(licenseControl);
-        BuildRetention buildRetention = BuildRetentionFactory.createBuildRetention(build);
-        infoBuilder.buildRetention(buildRetention);
+        if (publisher.isDiscardOldBuilds()) {
+            BuildRetention buildRetention = BuildRetentionFactory.createBuildRetention(build);
+            infoBuilder.buildRetention(buildRetention);
+        }
         Build buildInfo = infoBuilder.build();
         // for backwards compatibility for Artifactory 2.2.3
         if (parent != null) {

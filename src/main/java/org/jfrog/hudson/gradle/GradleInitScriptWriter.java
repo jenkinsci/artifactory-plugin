@@ -154,16 +154,18 @@ public class GradleInitScriptWriter {
                                 excludePatterns);
             }
         }
-
-        LogRotator rotator = build.getProject().getLogRotator();
-        if (rotator != null) {
-            if (rotator.getNumToKeep() > -1) {
-                ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_RETENTION_DAYS,
-                        String.valueOf(String.valueOf(rotator.getNumToKeep())));
-            }
-            if (rotator.getDaysToKeep() > -1) {
-                ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
-                        String.valueOf(String.valueOf(rotator.getDaysToKeep())));
+        if (gradleConfigurator.isDiscardOldBuilds()) {
+            LogRotator rotator = build.getProject().getLogRotator();
+            if (rotator != null) {
+                if (rotator.getNumToKeep() > -1) {
+                    ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_RETENTION_DAYS,
+                            String.valueOf(String.valueOf(rotator.getNumToKeep())));
+                }
+                if (rotator.getDaysToKeep() > -1) {
+                    ArtifactoryPluginUtils
+                            .addProperty(stringBuilder, BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
+                                    String.valueOf(String.valueOf(rotator.getDaysToKeep())));
+                }
             }
         }
 

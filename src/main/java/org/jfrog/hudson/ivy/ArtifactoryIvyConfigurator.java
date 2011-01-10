@@ -81,6 +81,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private String scopes;
     private boolean licenseAutoDiscovery;
     private boolean disableLicenseAutoDiscovery;
+    private boolean discardOldBuilds;
     private boolean notM2Compatible;
     private String ivyPattern;
     private String artifactPattern;
@@ -90,7 +91,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
             boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
             String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
-            String artifactPattern) {
+            String artifactPattern, boolean discardOldBuilds) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -105,6 +106,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.notM2Compatible = notM2Compatible;
         this.ivyPattern = ivyPattern;
         this.artifactPattern = artifactPattern;
+        this.discardOldBuilds = discardOldBuilds;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
@@ -126,6 +128,14 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     public void setNotM2Compatible(boolean notM2Compatible) {
         this.notM2Compatible = notM2Compatible;
+    }
+
+    public boolean isDiscardOldBuilds() {
+        return discardOldBuilds;
+    }
+
+    public void setDiscardOldBuilds(boolean discardOldBuilds) {
+        this.discardOldBuilds = discardOldBuilds;
     }
 
     public String getArtifactPattern() {
@@ -295,14 +305,17 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 if (StringUtils.isNotBlank(getScopes())) {
                     env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
                 }
-                LogRotator rotator = build.getProject().getLogRotator();
-                if (rotator != null) {
-                    if (rotator.getNumToKeep() > -1) {
-                        env.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS, String.valueOf(rotator.getNumToKeep()));
-                    }
-                    if (rotator.getDaysToKeep() > -1) {
-                        env.put(BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
-                                String.valueOf(rotator.getDaysToKeep()));
+                if (isDiscardOldBuilds()) {
+                    LogRotator rotator = build.getProject().getLogRotator();
+                    if (rotator != null) {
+                        if (rotator.getNumToKeep() > -1) {
+                            env.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS,
+                                    String.valueOf(rotator.getNumToKeep()));
+                        }
+                        if (rotator.getDaysToKeep() > -1) {
+                            env.put(BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
+                                    String.valueOf(rotator.getDaysToKeep()));
+                        }
                     }
                 }
             }

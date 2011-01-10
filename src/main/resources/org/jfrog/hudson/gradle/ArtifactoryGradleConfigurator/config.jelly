@@ -89,6 +89,12 @@
                             </f:optionalBlock>
                         </table>
                     </f:block>
+                    <f:optionalBlock name="discardOldBuilds"
+                                     checked="${instance.discardOldBuilds}"
+                                     title="Discard Old Builds from Artifactory (Requires Artifactory Pro)"
+                                     inline="true"
+                                     help="/plugin/artifactory/help/common/help-discardBuilds.html">
+                    </f:optionalBlock>
                 </f:optionalBlock>
             </table>
         </f:block>

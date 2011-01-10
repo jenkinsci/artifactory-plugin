@@ -103,12 +103,13 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     private boolean licenseAutoDiscovery;
     private boolean disableLicenseAutoDiscovery;
+    private final boolean discardOldBuilds;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
             IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts, boolean deployBuildInfo,
             boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-            String scopes, boolean disableLicenseAutoDiscovery) {
+            String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -116,6 +117,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
+        this.discardOldBuilds = discardOldBuilds;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
         this.deployBuildInfo = deployBuildInfo;
@@ -127,6 +129,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public boolean isDiscardOldBuilds() {
+        return discardOldBuilds;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -352,14 +358,16 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
             }
         }
-        LogRotator rotator = build.getProject().getLogRotator();
-        if (rotator != null) {
-            if (rotator.getNumToKeep() > -1) {
-                props.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS, String.valueOf(rotator.getNumToKeep()));
-            }
-            if (rotator.getDaysToKeep() > -1) {
-                props.put(BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
-                        String.valueOf(rotator.getDaysToKeep()));
+        if (isDiscardOldBuilds()) {
+            LogRotator rotator = build.getProject().getLogRotator();
+            if (rotator != null) {
+                if (rotator.getNumToKeep() > -1) {
+                    props.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS, String.valueOf(rotator.getNumToKeep()));
+                }
+                if (rotator.getDaysToKeep() > -1) {
+                    props.put(BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
+                            String.valueOf(rotator.getDaysToKeep()));
+                }
             }
         }
         props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(deployArtifacts));
