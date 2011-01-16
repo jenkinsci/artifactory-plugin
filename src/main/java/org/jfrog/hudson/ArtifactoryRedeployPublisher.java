@@ -18,8 +18,10 @@ package org.jfrog.hudson;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.maven.MavenBuild;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
@@ -226,8 +228,15 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
-        MavenAbstractArtifactRecord mar = getAction(build);
-        if (mar == null) {
+        if (!(build instanceof MavenModuleSetBuild)) {
+            listener.getLogger().format("Non maven build type: %s", build.getClass()).println();
+            build.setResult(Result.FAILURE);
+            return true;
+        }
+
+        MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
+        List<MavenAbstractArtifactRecord> mars = getArtifactRecordActions(mavenBuild);
+        if (mars.isEmpty()) {
             listener.getLogger().println("No artifacts are recorded. Is this a Maven project?");
             build.setResult(Result.FAILURE);
             return true;
@@ -237,11 +246,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(this, server);
         ArtifactoryBuildInfoClient client =
                 server.createArtifactoryClient(preferredDeployer.getUsername(), preferredDeployer.getPassword());
-        MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
         try {
             verifySupportedArtifactoryVersion(client);
             if (deployArtifacts) {
-                new ArtifactsDeployer(this, client, mavenBuild, mar, listener).deploy();
+                new ArtifactsDeployer(this, client, mavenBuild, listener).deploy();
             }
             if (!skipBuildInfoDeploy) {
                 new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
@@ -275,13 +283,15 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         client.verifyCompatibleArtifactoryVersion();
     }
 
-    /**
-     * Obtains the {@link MavenAbstractArtifactRecord} that we'll work on.
-     * <p/>
-     * This allows promoted-builds plugin to reuse the code for delayed deployment.
-     */
-    protected MavenAbstractArtifactRecord getAction(AbstractBuild<?, ?> build) {
-        return build.getAction(MavenAbstractArtifactRecord.class);
+    protected List<MavenAbstractArtifactRecord> getArtifactRecordActions(MavenModuleSetBuild build) {
+        List<MavenAbstractArtifactRecord> actions = Lists.newArrayList();
+        for (MavenBuild moduleBuild : build.getModuleLastBuilds().values()) {
+            MavenAbstractArtifactRecord action = moduleBuild.getAction(MavenAbstractArtifactRecord.class);
+            if (action != null) {
+                actions.add(action);
+            }
+        }
+        return actions;
     }
 
     public BuildStepMonitor getRequiredMonitorService() {

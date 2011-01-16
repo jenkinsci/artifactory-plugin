@@ -19,8 +19,6 @@ package org.jfrog.hudson.maven2;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
-import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.maven.reporters.MavenAggregatedArtifactRecord;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.BuildListener;
@@ -54,16 +52,13 @@ public class ArtifactsDeployer {
     private final String targetSnapshotsRepository;
     private final ArtifactoryBuildInfoClient client;
     private final MavenModuleSetBuild mavenModuleSetBuild;
-    private final MavenAbstractArtifactRecord mar;
     private final BuildListener listener;
     private final IncludeExcludePatterns patterns;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
-            MavenModuleSetBuild mavenModuleSetBuild, MavenAbstractArtifactRecord mar,
-            BuildListener listener) {
+            MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) {
         this.client = client;
         this.mavenModuleSetBuild = mavenModuleSetBuild;
-        this.mar = mar;
         this.listener = listener;
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
         this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
@@ -78,9 +73,7 @@ public class ArtifactsDeployer {
 
     public void deploy() throws IOException, InterruptedException {
         listener.getLogger().println("Deploying artifacts to " + artifactoryServer.getUrl());
-        MavenAggregatedArtifactRecord mar2 = (MavenAggregatedArtifactRecord) mar;
-        MavenModuleSetBuild moduleSetBuild = mar2.getBuild();
-        Map<MavenModule, MavenBuild> mavenBuildMap = moduleSetBuild.getModuleLastBuilds();
+        Map<MavenModule, MavenBuild> mavenBuildMap = mavenModuleSetBuild.getModuleLastBuilds();
 
         for (Map.Entry<MavenModule, MavenBuild> mavenBuildEntry : mavenBuildMap.entrySet()) {
             MavenBuild mavenBuild = mavenBuildEntry.getValue();
