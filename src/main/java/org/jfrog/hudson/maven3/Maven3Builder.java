@@ -60,7 +60,9 @@ import java.util.List;
  * Maven3 builder.
  *
  * @author Yossi Shaul
+ * @deprecated Hudson 1.392 added native support for maven 3
  */
+@Deprecated
 public class Maven3Builder extends Builder {
 
     public static final String CLASSWORLDS_LAUNCHER = "org.codehaus.plexus.classworlds.launcher.Launcher";

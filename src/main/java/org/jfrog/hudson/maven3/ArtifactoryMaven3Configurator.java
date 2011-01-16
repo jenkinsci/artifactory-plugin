@@ -70,7 +70,9 @@ import java.util.Properties;
 
 /**
  * @author Noam Y. Tenne
+ * @deprecated Hudson 1.392 added native support for maven 3
  */
+@Deprecated
 public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider {
     /**
      * Repository URL and repository to deploy artifacts to
