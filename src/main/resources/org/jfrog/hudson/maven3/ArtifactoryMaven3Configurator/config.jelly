@@ -17,6 +17,11 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:section title="${%Artifactory Configuration}">
+        <f:entry title="${%Deprecation}">
+            <div class="warning">
+                This feature is deprecated. Hudson v1.392 supports Maven 3 natively.
+            </div>
+        </f:entry>
         <f:dropdownList name="details" title="${%Artifactory server}">
             <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
                 <f:dropdownListBlock value="${s.name}" title="${s.name}" selected="${s.name==instance.artifactoryName}">

@@ -465,7 +465,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         @Override
         public String getDisplayName() {
-            return "Maven3-Artifactory Integration";
+            return "Maven3-Artifactory Integration (deprecated)";
         }
 
         @Override
