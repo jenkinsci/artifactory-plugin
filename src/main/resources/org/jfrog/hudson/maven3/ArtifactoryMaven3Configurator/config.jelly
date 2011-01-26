@@ -19,7 +19,7 @@
     <f:section title="${%Artifactory Configuration}">
         <f:entry title="${%Deprecation}">
             <div class="warning">
-                This feature is deprecated. Hudson v1.392 supports Maven 3 natively.
+                This feature is deprecated. Please use a Maven 2/3 project (available in Hudson v1.392 and above).
             </div>
         </f:entry>
         <f:dropdownList name="details" title="${%Artifactory server}">

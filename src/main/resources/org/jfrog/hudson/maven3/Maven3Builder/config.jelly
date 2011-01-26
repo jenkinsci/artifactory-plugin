@@ -18,7 +18,7 @@
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:entry title="${%Deprecation}">
         <div class="warning">
-            This feature is deprecated. Hudson v1.392 supports Maven 3 natively.
+            This feature is deprecated. Please use a Maven 2/3 project (available in Hudson v1.392 and above).
         </div>
     </f:entry>
 
