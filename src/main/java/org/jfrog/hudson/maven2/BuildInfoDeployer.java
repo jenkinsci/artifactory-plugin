@@ -208,12 +208,12 @@ public class BuildInfoDeployer {
             ModuleBuilder moduleBuilder = new ModuleBuilder().id(moduleId);
 
             // add artifacts
-            moduleBuilder.addArtifact(toArtifact(mar.mainArtifact, mavenBuild));
+            moduleBuilder.addArtifact(toArtifact(mar.mainArtifact));
             if (!mar.isPOM() && mar.pomArtifact != null && mar.pomArtifact != mar.mainArtifact) {
-                moduleBuilder.addArtifact(toArtifact(mar.pomArtifact, mavenBuild));
+                moduleBuilder.addArtifact(toArtifact(mar.pomArtifact));
             }
             for (MavenArtifact attachedArtifact : mar.attachedArtifacts) {
-                moduleBuilder.addArtifact(toArtifact(attachedArtifact, mavenBuild));
+                moduleBuilder.addArtifact(toArtifact(attachedArtifact));
             }
 
             addDependencies(moduleBuilder, mavenBuild);
@@ -238,10 +238,9 @@ public class BuildInfoDeployer {
         }
     }
 
-    private Artifact toArtifact(MavenArtifact mavenArtifact, MavenBuild mavenBuild) {
+    private Artifact toArtifact(MavenArtifact mavenArtifact) {
         ArtifactBuilder artifactBuilder = new ArtifactBuilder(mavenArtifact.canonicalName)
-                .type(mavenArtifact.type)
-                .md5(getMd5(mavenArtifact.groupId, mavenArtifact.fileName, mavenBuild));
+                .type(mavenArtifact.type).md5(mavenArtifact.md5sum);
         return artifactBuilder.build();
     }
 
