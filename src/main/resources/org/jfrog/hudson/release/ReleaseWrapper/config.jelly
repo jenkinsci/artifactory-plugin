@@ -1,0 +1,11 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry field="baseTagUrl" title="VCS tags URL"
+             help="/plugin/artifactory/help/release/ReleaseWrapper/help-tagBaseUrl.html">
+        <f:textbox name="baseTagUrl" value="${instance.baseTagUrl}"/>
+    </f:entry>
+    <f:entry title="Alternative Maven goals and options"
+             help="/plugin/artifactory/help/release/ReleaseWrapper/help-alternativeGoals.html">
+        <f:textbox name="alternativeGoals" value="${instance.alternativeGoals}"/>
+    </f:entry>
+</j:jelly>

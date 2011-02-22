@@ -253,8 +253,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             }
             if (!skipBuildInfoDeploy) {
                 new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
-                // add the result action
-                build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
+                // add the result action (prefer always the same index)
+                build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
             }
             return true;
         } catch (Exception e) {

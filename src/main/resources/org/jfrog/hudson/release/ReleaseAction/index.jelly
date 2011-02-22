@@ -1,0 +1,30 @@
+<!-- displays a form to choose the next release and development version and re-schedules a build -->
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <l:layout>
+        <!--<st:include it="${it.project}" page="sidepanel.jelly" />-->
+        <l:main-panel>
+            <f:form method="post" action="submit">
+                <f:section title="Release to Artifactory">
+                    <f:entry title="Last built version"
+                             help="/plugin/artifactory/help/release/ReleaseAction/help-currentVersion.html">
+                        ${it.currentVersion}
+                    </f:entry>
+                    <f:entry field="releaseVersion" title="Release version"
+                             help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
+                        <f:textbox name="releaseVersion" value="${it.calculateReleaseVersion()}"/>
+                    </f:entry>
+                    <f:entry field="releaseVersion" title="Next development version"
+                             help="/plugin/artifactory/help/release/ReleaseAction/help-nextVersion.html">
+                        <f:textbox name="nextVersion" value="${it.calculateNextVersion()}"/>
+                    </f:entry>
+                    <tr>
+                        <td colspan="3">
+                            <f:submit value="${%Build and Release to Artifactory}"/>
+                        </td>
+                    </tr>
+                </f:section>
+            </f:form>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

@@ -14,16 +14,17 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jvnet.hudson.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.362</version>
+        <version>1.395</version>
     </parent>
 
     <artifactId>artifactory</artifactId>
-    <version>1.4.3-SNAPSHOT</version>
+    <version>1.5.0-RM-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Hudson Artifactory Plugin</name>
     <description>Integrates Artifactory to Hudson</description>
@@ -67,6 +68,11 @@
             <groupId>org.jvnet.hudson.main</groupId>
             <artifactId>maven-plugin</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jvnet.hudson.plugins</groupId>
+            <artifactId>subversion</artifactId>
+            <version>1.8</version>
         </dependency>
         <dependency>
             <groupId>org.jvnet.hudson.plugins</groupId>
@@ -165,28 +171,33 @@
             <version>1.5.1</version>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.1</version>
+            <groupId>org.jdom</groupId>
+            <artifactId>jdom</artifactId>
+            <version>1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>5.14.6</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-          <plugin>
-            <artifactId>maven-release-plugin</artifactId>
-            <configuration>
-              <goals>deploy</goals>
-            </configuration>
-          </plugin>
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <goals>deploy</goals>
+                </configuration>
+            </plugin>
         </plugins>
-      </build>
+    </build>
 
     <scm>
-      <connection>scm:git:git://github.com/jenkinsci/artifactory-plugin.git</connection>
-      <developerConnection>scm:git:git@github.com:jenkinsci/artifactory-plugin.git</developerConnection>
-  </scm>
+        <connection>scm:git:git://github.com/jenkinsci/artifactory-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:jenkinsci/artifactory-plugin.git</developerConnection>
+    </scm>
 
     <profiles>
         <profile>
@@ -207,11 +218,11 @@
         </profile>
     </profiles>
 
-<distributionManagement>
-    <repository>
-      <id>maven.jenkins-ci.org</id>
-      <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
-    </repository>
-  </distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>maven.jenkins-ci.org</id>
+            <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
+        </repository>
+    </distributionManagement>
 
 </project>
