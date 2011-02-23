@@ -1,0 +1,46 @@
+<!-- displays a form to choose the repository to stage the build to -->
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <l:layout>
+        <l:main-panel>
+            <f:form method="post" action="submit">
+                <f:section title="Stage Build">
+                    <f:entry title="${%Target status}" field="targetStatus"
+                             help="/plugin/artifactory/help/release/StageBuildAction/help-stagingRepository.html">
+                        <select class="setting-input" name="targetStatus">
+                            <j:forEach var="r" items="${it.targetStatuses}">
+                                <f:option selected="${r==it.nextLogicalStatus}" value="${r}">${r}</f:option>
+                            </j:forEach>
+                        </select>
+                    </f:entry>
+                    <f:entry title="${%Target staging repository}" field="repositoryKey"
+                             help="/plugin/artifactory/help/release/StageBuildAction/help-stagingRepository.html">
+                        <select class="setting-input" name="repositoryKey">
+                            <j:forEach var="r" items="${it.repositoryKeys}">
+                                <f:option selected="${r==it.lastPromotionRepository}" value="${r}">${r}</f:option>
+                            </j:forEach>
+                        </select>
+                    </f:entry>
+                    <f:entry title="${%Comment}" field="comment">
+                        <f:textarea name="comment"/>
+                    </f:entry>
+                    <f:entry field="useCopy"
+                             help="/plugin/artifactory/help/release/StageBuildAction/help-useCopy.html">
+                        <f:checkbox default="false" name="useCopy"/>
+                        <label class="attach-previous">${%Use copy}</label>
+                    </f:entry>
+                    <f:entry field="includeDependencies"
+                             help="/plugin/artifactory/help/release/StageBuildAction/help-includeDependencies.html">
+                        <f:checkbox default="false" name="includeDependencies"/>
+                        <label class="attach-previous">${%Include dependencies}</label>
+                    </f:entry>
+                    <tr>
+                        <td colspan="3">
+                            <f:submit value="${%Stage}"/>
+                        </td>
+                    </tr>
+                </f:section>
+            </f:form>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

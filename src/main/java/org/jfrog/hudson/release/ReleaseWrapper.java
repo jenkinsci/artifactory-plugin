@@ -87,7 +87,7 @@ public class ReleaseWrapper extends BuildWrapper {
     public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
 
-        final ReleaseBadgeAction releaseBadge = build.getAction(ReleaseBadgeAction.class);
+        final ReleaseMarkerAction releaseBadge = build.getAction(ReleaseMarkerAction.class);
         if (releaseBadge == null) {
             // this is a normal non release build, continue with normal environment
             return new Environment() {
@@ -155,7 +155,7 @@ public class ReleaseWrapper extends BuildWrapper {
         };
     }
 
-    private String buildTagUrl(ReleaseBadgeAction releaseBadge, MavenModule rootModule) {
+    private String buildTagUrl(ReleaseMarkerAction releaseBadge, MavenModule rootModule) {
         StringBuilder sb = new StringBuilder(baseTagUrl);
         if (!baseTagUrl.endsWith("/")) {
             sb.append("/");
@@ -250,13 +250,15 @@ public class ReleaseWrapper extends BuildWrapper {
             }
 
             MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) run;
-            ReleaseBadgeAction releaseBadge = mavenBuild.getAction(ReleaseBadgeAction.class);
+            ReleaseMarkerAction releaseBadge = mavenBuild.getAction(ReleaseMarkerAction.class);
             if (releaseBadge == null) {
                 return;
             }
 
             Result result = mavenBuild.getResult();
             if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+                // add a stage action
+                mavenBuild.addAction(new StageBuildAction(mavenBuild));
                 return;
             }
 

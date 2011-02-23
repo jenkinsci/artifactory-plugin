@@ -130,11 +130,12 @@ public class ReleaseAction implements Action {
     /**
      * Form submission is calling this method
      */
+    @SuppressWarnings({"UnusedDeclaration"})
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         req.bindParameters(this);
 
         // schedule release build
-        if (project.scheduleBuild(0, new Cause.UserCause(), new ReleaseBadgeAction(releaseVersion, nextVersion))) {
+        if (project.scheduleBuild(0, new Cause.UserCause(), new ReleaseMarkerAction(releaseVersion, nextVersion))) {
             // redirect to the project page
             resp.sendRedirect(project.getAbsoluteUrl());
         }

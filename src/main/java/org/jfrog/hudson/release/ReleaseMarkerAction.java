@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,16 @@
 
 package org.jfrog.hudson.release;
 
-import hudson.model.BuildBadgeAction;
+import hudson.model.Action;
 
 /**
- * This badge action marks the build as a release build. The release wrapper takes the release and next version string
- * from this badge.
+ * This (transient) action marks the build as a release build. When this action exists as part of the project, the
+ * release wrapper takes the release and next version string from this badge.
  *
  * @author Yossi Shaul
  */
-public class ReleaseBadgeAction implements BuildBadgeAction {
+public class ReleaseMarkerAction implements Action {
+
     private transient final String releaseVersion;
     private transient final String nextVersion;
 
@@ -33,7 +34,7 @@ public class ReleaseBadgeAction implements BuildBadgeAction {
      */
     private transient String tagUrl;
 
-    public ReleaseBadgeAction(String releaseVersion, String nextVersion) {
+    public ReleaseMarkerAction(String releaseVersion, String nextVersion) {
         this.releaseVersion = releaseVersion;
         this.nextVersion = nextVersion;
     }
@@ -58,11 +59,11 @@ public class ReleaseBadgeAction implements BuildBadgeAction {
     }
 
     public String getIconFileName() {
-        return "/plugin/artifactory/images/artifactory-release.png";
+        return null;
     }
 
     public String getDisplayName() {
-        return "Artifactory Release";
+        return "Artifactory Release Marker";
     }
 
     public String getUrlName() {
