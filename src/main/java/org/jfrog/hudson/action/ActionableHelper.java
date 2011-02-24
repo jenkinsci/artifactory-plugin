@@ -102,6 +102,18 @@ public abstract class ActionableHelper {
         return null;
     }
 
+    public static Cause.UserCause getUserCause(AbstractBuild build) {
+        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
+        if (action != null) {
+            for (Cause cause : action.getCauses()) {
+                if (cause instanceof Cause.UserCause) {
+                    return (Cause.UserCause) cause;
+                }
+            }
+        }
+        return null;
+    }
+
     public static String getBuildUrl(AbstractBuild build) {
         String root = Hudson.getInstance().getRootUrl();
         if (StringUtils.isBlank(root)) {

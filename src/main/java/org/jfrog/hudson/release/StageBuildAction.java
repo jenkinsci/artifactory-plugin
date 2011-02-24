@@ -19,12 +19,21 @@ package org.jfrog.hudson.release;
 import com.google.common.collect.Lists;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildBadgeAction;
+import hudson.model.Cause;
 import hudson.model.TaskAction;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
 import hudson.security.ACL;
 import hudson.security.Permission;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.StagingSettings;
+import org.jfrog.build.client.StagingSettingsBuilder;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -35,6 +44,7 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
@@ -174,21 +184,82 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
                 ArtifactoryServer server = artifactoryPublisher.getArtifactoryServer();
 
                 Credentials deployer = CredentialResolver.getPreferredDeployer(artifactoryPublisher, server);
-                client = server.createArtifactoryClient(deployer.getUsername(),
-                        deployer.getPassword());
+                client = server.createArtifactoryClient(deployer.getUsername(), deployer.getPassword());
 
-                //client.promoteBuild(build, repositoryKey);
-                Thread.sleep(2000);
+                Cause.UserCause userCause = ActionableHelper.getUserCause(build);
+                String username = null;
+                if (userCause != null) {
+                    username = userCause.getUserName();
+                }
+
+                // do a dry run first
+                StagingSettingsBuilder dryBuilder = new StagingSettingsBuilder(
+                        build.getParent().getDisplayName(),
+                        build.getNumber() + "", repositoryKey)
+                        .includeDependencies(includeDependencies)
+                        .promotionComment(comment)
+                        .promotionStatus(targetStatus)
+                        .move(!useCopy)
+                        .ciUser(username)
+                        .dryRun(true);
+                StagingSettings dry = dryBuilder.build();
+                listener.getLogger().println("Performing dry run staging (no changes are made during dry run) ...");
+                HttpResponse dryResponse = client.stageBuild(dry);
+                if (checkSuccess(dryResponse, true, listener)) {
+                    listener.getLogger().println("Dry run finished successfully.\nPerforming staging ...");
+                    StagingSettingsBuilder wet = new StagingSettingsBuilder(dryBuilder).dryRun(false);
+                    HttpResponse wetResponse = client.stageBuild(wet.build());
+                    if (checkSuccess(wetResponse, false, listener)) {
+                        listener.getLogger().println("Staging completed successfully!");
+                    }
+                }
 
                 build.save();
                 workerThread = null;
             } catch (Throwable e) {
-                e.printStackTrace(listener.fatalError(e.getMessage()));
+                e.printStackTrace(listener.error(e.getMessage()));
             } finally {
                 if (client != null) {
                     client.shutdown();
                 }
             }
+        }
+
+        private boolean checkSuccess(HttpResponse response, boolean dryRun, TaskListener listener) {
+            StatusLine status = response.getStatusLine();
+            if (status.getStatusCode() != 200) {
+                if (dryRun) {
+                    listener.error("Staging failed during dry run (no change in Artifactory was done): " + status);
+                } else {
+                    listener.error("Staging failed. View Artifactory logs for more details: " + status);
+                }
+                return false;
+            }
+
+            boolean failed = false;
+            try {
+                HttpEntity entity = response.getEntity();
+                InputStream is = entity.getContent();
+                String content = IOUtils.toString(is, "UTF-8");
+                JSONObject json = JSONObject.fromObject(content);
+                JSONArray messages = json.getJSONArray("messages");
+                for (Object messageObj : messages) {
+                    JSONObject messageJson = (JSONObject) messageObj;
+                    String level = messageJson.getString("level");
+                    String message = messageJson.getString("message");
+                    // TODO: we don't want to fail if no items were moved/copied. find a way to support it
+                    if ((level.equals("WARNING") || level.equals("ERROR")) &&
+                            !message.startsWith("No items were")) {
+                        listener.error("Received " + level + ": " + message);
+                        failed = true;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace(listener.error("Failed parsing staging response:"));
+                failed = true;
+            }
+
+            return !failed;
         }
     }
 }
