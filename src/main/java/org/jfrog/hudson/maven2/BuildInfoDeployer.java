@@ -42,12 +42,15 @@ import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
+import org.jfrog.build.api.builder.StatusBuilder;
+import org.jfrog.build.api.release.Status;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.MavenDependenciesRecord;
 import org.jfrog.hudson.MavenDependency;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildRetentionFactory;
 
 import java.io.IOException;
@@ -166,6 +169,17 @@ public class BuildInfoDeployer {
             buildRetention = BuildRetentionFactory.createBuildRetention(build);
         }
         infoBuilder.buildRetention(buildRetention);
+
+        // add staging status if it is a release build
+        ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
+        if (release != null) {
+            infoBuilder.addStatus(new StatusBuilder(Status.STAGED)
+                    .timestampDate(startedTimestamp.getTime())
+                    .comment(release.getStagingComment())
+                    .repository(release.getStagingRepositoryKey())
+                    .user(userCause).build());
+        }
+
         Build buildInfo = infoBuilder.build();
         // for backwards compatibility for Artifactory 2.2.3
         if (parent != null) {

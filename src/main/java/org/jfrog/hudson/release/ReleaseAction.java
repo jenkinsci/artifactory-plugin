@@ -99,6 +99,14 @@ public class ReleaseAction implements Action {
         return project.getModules();
     }
 
+    public String getStagingComment() {
+        return stagingComment;
+    }
+
+    public String getStagingRepositoryKey() {
+        return stagingRepositoryKey;
+    }
+
     public String latestVersioningSelection() {
         return VERSIONING.GLOBAL.name();
     }

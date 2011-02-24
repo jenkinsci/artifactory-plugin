@@ -31,7 +31,7 @@
     <url>http://wiki.hudson-ci.org/display/HUDSON/Artifactory+Plugin</url>
 
     <properties>
-        <buildinfo.version>1.4.10</buildinfo.version>
+        <buildinfo.version>1.4.x-SNAPSHOT</buildinfo.version>
     </properties>
 
     <developers>
