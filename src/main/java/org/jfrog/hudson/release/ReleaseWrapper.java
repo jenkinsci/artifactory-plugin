@@ -275,10 +275,13 @@ public class ReleaseWrapper extends BuildWrapper {
             }
 
             MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) run;
-            ReleaseMarkerAction releaseBadge = mavenBuild.getAction(ReleaseMarkerAction.class);
-            if (releaseBadge == null) {
+            ReleaseAction releaseAction = mavenBuild.getAction(ReleaseAction.class);
+            if (releaseAction == null) {
                 return;
             }
+
+            // remove the release action from the build. the stage action is the point of interaction for successful builds
+            mavenBuild.getActions().remove(releaseAction);
 
             Result result = mavenBuild.getResult();
             if (result.isBetterOrEqualTo(Result.SUCCESS)) {
@@ -291,11 +294,9 @@ public class ReleaseWrapper extends BuildWrapper {
             //run.getActions().remove(releaseBadge);
             SubversionManager svn = new SubversionManager(mavenBuild, listener);
             svn.safeRevertWorkingCopy();
-            if (releaseBadge.getTagUrl() != null) {
-                svn.safeRevertTag(releaseBadge.getTagUrl(),
-                        "Reverting release tag for version " + releaseBadge.getReleaseVersion());
+            if (releaseAction.tagCreated) {
+                svn.safeRevertTag(releaseAction.tagUrl, "Reverting vcs tag: " + releaseAction.tagUrl);
             }
         }
     }
-
 }
