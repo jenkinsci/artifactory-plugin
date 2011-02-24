@@ -17,7 +17,6 @@
 package org.jfrog.hudson.release;
 
 import com.google.common.collect.Maps;
-import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -29,14 +28,19 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.Descriptor;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import hudson.scm.SubversionSCM;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.tasks.Publisher;
+import hudson.util.DescribableList;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.ServerDetails;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -87,36 +91,46 @@ public class ReleaseWrapper extends BuildWrapper {
     public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
 
-        final ReleaseMarkerAction releaseBadge = build.getAction(ReleaseMarkerAction.class);
-        if (releaseBadge == null) {
+        final ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
+        if (releaseAction == null) {
             // this is a normal non release build, continue with normal environment
             return new Environment() {
             };
         }
 
-        if (StringUtils.isBlank(baseTagUrl)) {
-            throw new AbortException("Base tags URL not configured. Please check your configuration.");
-        }
+        log(listener, "Release build triggered");
 
-        if (StringUtils.isBlank(releaseBadge.getReleaseVersion()) || StringUtils.isBlank(
-                releaseBadge.getNextVersion())) {
-            throw new AbortException("Release and development versions are mandatory");
-        }
-
-        // change the version
         final MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
-        final MavenModuleSet mavenModuleSet = mavenBuild.getProject();
-        final MavenModule rootModule = mavenModuleSet.getRootModule();
-        log(listener, String.format("Changing POMs from version %s to %s%n",
-                rootModule.getVersion(), releaseBadge.getReleaseVersion()));
-        final String tagUrl = buildTagUrl(releaseBadge, rootModule);
-        changeVersions(mavenBuild, releaseBadge.getReleaseVersion(), tagUrl);
+        if (!releaseAction.versioning.equals(ReleaseAction.VERSIONING.NONE)) {
+            // change to release version
+            String vcsUrl = releaseAction.createVcsTag ? getBaseTagUrl() : null;
+            changeVersions(mavenBuild, releaseAction, true, vcsUrl);
+        }
 
+        final MavenModuleSet mavenModuleSet = mavenBuild.getProject();
         final String originalGoals = mavenModuleSet.getGoals();
         if (!StringUtils.isBlank(alternativeGoals)) {
             debuggingLogger.fine("Using alternative goals and settings: " + alternativeGoals);
             mavenModuleSet.setGoals(alternativeGoals);
         }
+
+        // change the target repository in the redeploy publisher if configured differently
+        DescribableList<Publisher, Descriptor<Publisher>> publishers = mavenModuleSet.getPublishers();
+        String publisherRepositoryKey = null;
+        for (Publisher publisher : publishers) {
+            if (publisher instanceof ArtifactoryRedeployPublisher) {
+                publisherRepositoryKey = ((ArtifactoryRedeployPublisher) publisher).getRepositoryKey();
+                if (!releaseAction.stagingRepositoryKey.equals(publisherRepositoryKey)) {
+                    ServerDetails details = ((ArtifactoryRedeployPublisher) publisher).getDetails();
+                    if (details != null) {
+                        details.repositoryKey = releaseAction.releaseVersion;
+                    }
+                }
+                break;
+            }
+        }
+        final String publisherRepositoryKeyToRestore =
+                releaseAction.stagingRepositoryKey.equals(publisherRepositoryKey) ? null : publisherRepositoryKey;
 
         return new Environment() {
             @Override
@@ -127,44 +141,53 @@ public class ReleaseWrapper extends BuildWrapper {
                     mavenModuleSet.setGoals(originalGoals);
                 }
 
+                // if we changed the publisher target repository set it back to the original
+                if (!StringUtils.isBlank(publisherRepositoryKeyToRestore)) {
+                    DescribableList<Publisher, Descriptor<Publisher>> publishers = mavenModuleSet.getPublishers();
+                    for (Publisher publisher : publishers) {
+                        if (publisher instanceof ArtifactoryRedeployPublisher) {
+                            ServerDetails details = ((ArtifactoryRedeployPublisher) publisher).getDetails();
+                            if (details != null) {
+                                details.repositoryKey = publisherRepositoryKeyToRestore;
+                            }
+                            break;
+                        }
+                    }
+                }
+
                 SubversionManager svn = new SubversionManager(build, listener);
                 if (build.getResult().isWorseThan(Result.SUCCESS)) {
                     // revert will happen by the listener
                     return true;
                 }
 
-                // create subversion tag
-                try {
-                    svn.createTag(tagUrl, "Creating release tag for version " + releaseBadge.getReleaseVersion());
-                    releaseBadge.setTagUrl(tagUrl);
-                } catch (IOException e) {
-                    // revert working copy and re-throw the original exception
-                    svn.safeRevertWorkingCopy();
-                    throw e;
+                if (releaseAction.createVcsTag) {
+                    // create subversion tag
+                    try {
+                        svn.createTag(releaseAction.tagUrl, releaseAction.tagComment);
+                        releaseAction.tagCreated = true;
+                    } catch (IOException e) {
+                        // revert working copy and re-throw the original exception
+                        svn.safeRevertWorkingCopy();
+                        throw e;
+                    }
                 }
 
-                // change poms versions to next development version
-                log(listener, "Changing POMs to next development version: " + releaseBadge.getNextVersion());
-                String scmUrl = svn.getLocation().remote;
-                changeVersions(mavenBuild, releaseBadge.getNextVersion(), scmUrl);
+                if (!releaseAction.versioning.equals(ReleaseAction.VERSIONING.NONE)) {
+                    // change poms versions to next development version
+                    String scmUrl = releaseAction.createVcsTag ? svn.getLocation().remote : null;
+                    changeVersions(mavenBuild, releaseAction, false, scmUrl);
+                }
 
-                svn.commitWorkingCopy("Committing next development version: " + releaseBadge.getNextVersion());
+                svn.commitWorkingCopy("Committing next development version");
 
                 return true;
             }
         };
     }
 
-    private String buildTagUrl(ReleaseMarkerAction releaseBadge, MavenModule rootModule) {
-        StringBuilder sb = new StringBuilder(baseTagUrl);
-        if (!baseTagUrl.endsWith("/")) {
-            sb.append("/");
-        }
-        sb.append(rootModule.getModuleName().artifactId).append("-").append(releaseBadge.getReleaseVersion());
-        return sb.toString();
-    }
-
-    private void changeVersions(MavenModuleSetBuild mavenBuild, String newVersion, String scmUrl)
+    private void changeVersions(MavenModuleSetBuild mavenBuild, ReleaseAction release, boolean releaseVersion,
+            String scmUrl)
             throws IOException, InterruptedException {
         FilePath moduleRoot = mavenBuild.getModuleRoot();
         // get the active modules only
@@ -179,6 +202,8 @@ public class ReleaseWrapper extends BuildWrapper {
             String relativePath = mavenModule.getRelativePath();
             String pomRelativePath = StringUtils.isBlank(relativePath) ? "pom.xml" : relativePath + "/pom.xml";
             FilePath pomPath = new FilePath(moduleRoot, pomRelativePath);
+            String newVersion = releaseVersion ? release.getReleaseVersionFor(mavenModule.getModuleName()) :
+                    release.getNextVersionFor(mavenModule.getModuleName());
             debuggingLogger.fine("Changing version of pom: " + pomPath);
             pomPath.act(new PomTransformer(modulesByName, newVersion, scmUrl));
         }

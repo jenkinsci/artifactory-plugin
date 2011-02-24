@@ -65,6 +65,9 @@ public class PomTransformer implements FilePath.FileCallable<Object> {
         if (!pomFile.exists()) {
             throw new AbortException("Couldn't find pom file: " + pomFile);
         }
+        if (StringUtils.isBlank(newVersion)) {
+            throw new AbortException("No version specified for pom file: " + pomFile);
+        }
 
         SAXBuilder saxBuilder = createSaxBuilder();
         Document document;
@@ -87,7 +90,9 @@ public class PomTransformer implements FilePath.FileCallable<Object> {
 
         changeDependencyVersions(rootElement, ns);
 
-        changeScm(rootElement, ns);
+        if (scmUrl != null) {
+            changeScm(rootElement, ns);
+        }
 
         if (modified) {
             FileWriter fileWriter = new FileWriter(pomFile);

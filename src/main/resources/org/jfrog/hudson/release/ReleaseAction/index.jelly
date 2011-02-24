@@ -1,22 +1,75 @@
 <!-- displays a form to choose the next release and development version and re-schedules a build -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <l:layout>
-        <!--<st:include it="${it.project}" page="sidepanel.jelly" />-->
+    <l:layout title="">
         <l:main-panel>
-            <f:form method="post" action="submit">
+            <f:form method="post" action="submit" name="form">
                 <f:section title="Release to Artifactory">
                     <f:entry title="Last built version"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-currentVersion.html">
                         ${it.currentVersion}
                     </f:entry>
-                    <f:entry field="releaseVersion" title="Release version"
-                             help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
-                        <f:textbox name="releaseVersion" value="${it.calculateReleaseVersion()}"/>
+
+                    <f:entry title="Select how to change model versions">
+                        <f:radioBlock name="versioning" value="GLOBAL" title="One version for all modules"
+                                      checked="${'GLOBAL' == it.latestVersioningSelection()}"
+                                      help="/plugin/artifactory/help/release/ReleaseAction/help-versioningGlobal.html">
+                            <f:entry field="releaseVersion" title="Release version"
+                                     help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
+                                <f:textbox name="releaseVersion" value="${it.calculateReleaseVersion()}"/>
+                            </f:entry>
+                            <f:entry field="releaseVersion" title="Next development version"
+                                     help="/plugin/artifactory/help/release/ReleaseAction/help-nextVersion.html">
+                                <f:textbox name="nextVersion" value="${it.calculateNextVersion()}"/>
+                            </f:entry>
+                        </f:radioBlock>
+                        <f:radioBlock name="versioning" value="PER_MODULE" title="Version per module"
+                                      checked="${'PER_MODULE' == it.latestVersioningSelection()}"
+                                      help="/plugin/artifactory/help/release/ReleaseAction/help-versioningPerModule.html">
+                            <j:forEach var="module" items="${it.modules}">
+                                <f:section title="${module.moduleName}">
+                                    <f:entry title="Release version"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
+                                        <f:textbox name="release.${module.moduleName}"
+                                                   value="${it.calculateReleaseVersion(module.version)}"/>
+                                    </f:entry>
+                                    <f:entry title="Next development version"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
+                                        <f:textbox name="next.${module.moduleName}"
+                                                   value="${it.calculateNextVersion(module.version)}"/>
+                                    </f:entry>
+                                </f:section>
+                            </j:forEach>
+                        </f:radioBlock>
+                        <f:radioBlock name="versioning" value="NONE" title="Don't change the versions"
+                                      checked="${'NONE' == it.latestVersioningSelection()}"
+                                      help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
+                        </f:radioBlock>
                     </f:entry>
-                    <f:entry field="releaseVersion" title="Next development version"
-                             help="/plugin/artifactory/help/release/ReleaseAction/help-nextVersion.html">
-                        <f:textbox name="nextVersion" value="${it.calculateNextVersion()}"/>
+                    <f:optionalBlock field="createVcsTag" name="createVcsTag"
+                                     help="/plugin/artifactory/help/release/ReleaseAction/help-createVcsTag.html"
+                                     title="Create VCS tag"
+                                     checked="${null != it.defaultTagUrl}"
+                                     inline="true">
+                        <f:entry field="tagUrl" title="Tags Url"
+                                 help="/plugin/artifactory/help/release/ReleaseAction/help-tagUrl.html">
+                            <f:textbox name="tagUrl" value="${it.defaultTagUrl}"/>
+                        </f:entry>
+                        <f:entry title="${%Comment}" field="tagComment">
+                            <f:textarea name="tagComment" default="${it.defaultTagComment}"/>
+                        </f:entry>
+                    </f:optionalBlock>
+                    <f:entry title="${%Target repository to deploy the staged release to}" field="repositoryKey"
+                             help="/plugin/artifactory/help/release/StageBuildAction/help-stagingRepository.html">
+                        <select class="setting-input" name="repositoryKey">
+                            <j:forEach var="r" items="${it.repositoryKeys}">
+                                <f:option selected="${r==it.lastPromotionRepository}" value="${r}">${r}</f:option>
+                            </j:forEach>
+                        </select>
+                    </f:entry>
+                    <f:entry field="stagingComment" title="Staging comment"
+                             help="/plugin/artifactory/help/release/ReleaseAction/help-stagingComment.html">
+                        <f:textbox name="stagingComment" value="${it.defaultStagingComment}"/>
                     </f:entry>
                     <tr>
                         <td colspan="3">

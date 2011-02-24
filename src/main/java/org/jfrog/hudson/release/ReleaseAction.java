@@ -16,14 +16,27 @@
 
 package org.jfrog.hudson.release;
 
+import com.google.common.collect.Maps;
+import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSet;
+import hudson.maven.ModuleName;
 import hudson.model.Action;
 import hudson.model.Cause;
+import hudson.model.Descriptor;
+import hudson.tasks.BuildWrapper;
+import hudson.tasks.Publisher;
+import hudson.util.DescribableList;
+import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This action leads to execution of the release wrapper. It will collect information from the user about the release
@@ -34,9 +47,37 @@ import java.io.IOException;
  */
 public class ReleaseAction implements Action {
 
-    private MavenModuleSet project;
-    private String releaseVersion;
-    private String nextVersion;
+    private transient MavenModuleSet project;
+
+    VERSIONING versioning;
+
+    /**
+     * The next release version to change the model to if using one global version.
+     */
+    String releaseVersion;
+    /**
+     * Next (development) version to change the model to if using one global version.
+     */
+    String nextVersion;
+    /**
+     * Map of release versions per module. Only used if versioning is per module
+     */
+    Map<ModuleName, String> releaseVersionPerModule;
+    /**
+     * Map of dev versions per module. Only used if versioning is per module
+     */
+    Map<ModuleName, String> nextVersionPerModule;
+
+    boolean createVcsTag;
+    String tagUrl;
+    String tagComment;
+    String stagingRepositoryKey;
+    String stagingComment;
+    boolean tagCreated;
+
+    public enum VERSIONING {
+        GLOBAL, PER_MODULE, NONE
+    }
 
     public ReleaseAction(MavenModuleSet project) {
         this.project = project;
@@ -57,28 +98,46 @@ public class ReleaseAction implements Action {
         return "release";
     }
 
-    public String getReleaseVersion() {
-        return releaseVersion;
+    public Collection<MavenModule> getModules() {
+        return project.getModules();
     }
 
-    public void setReleaseVersion(String releaseVersion) {
-        this.releaseVersion = releaseVersion;
+    public String latestVersioningSelection() {
+        return VERSIONING.GLOBAL.name();
     }
 
-    public String getNextVersion() {
-        return nextVersion;
+    public String getDefaultTagUrl() {
+        ReleaseWrapper wrapper = getReleaseWrapper();
+        if (wrapper == null) {
+            return null;
+        }
+        String baseTagUrl = wrapper.getBaseTagUrl();
+        StringBuilder sb = new StringBuilder(baseTagUrl);
+        if (!baseTagUrl.endsWith("/")) {
+            sb.append("/");
+        }
+        sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
+        return sb.toString();
     }
 
-    public void setNextVersion(String nextVersion) {
-        this.nextVersion = nextVersion;
+    public String getDefaultTagComment() {
+        return SubversionManager.COMMENT_PREFIX + "Creating release tag for version " + calculateReleaseVersion();
     }
 
     public String getCurrentVersion() {
-        return project.getRootModule().getVersion();
+        return getRootModule().getVersion();
+    }
+
+    private MavenModule getRootModule() {
+        return project.getRootModule();
     }
 
     public String calculateReleaseVersion() {
-        return getCurrentVersion().replace("-SNAPSHOT", "");
+        return calculateReleaseVersion(getCurrentVersion());
+    }
+
+    public String calculateReleaseVersion(String fromVersion) {
+        return fromVersion.replace("-SNAPSHOT", "");
     }
 
     /**
@@ -95,16 +154,18 @@ public class ReleaseAction implements Action {
     /**
      * Calculates the next snapshot version based on the current release version
      *
-     * @param currentVersion A release version
+     * @param fromVersion The version to bump to next development version
      * @return The next calculated development (snapshot) version
      */
-    String calculateNextVersion(String currentVersion) {
+    public String calculateNextVersion(String fromVersion) {
+        // first turn it to release version
+        fromVersion = calculateReleaseVersion(fromVersion);
         String nextVersion;
-        int lastDotIndex = currentVersion.lastIndexOf('.');
+        int lastDotIndex = fromVersion.lastIndexOf('.');
         try {
             if (lastDotIndex != -1) {
                 // probably a major minor version e.g., 2.1.1
-                String minorVersionToken = currentVersion.substring(lastDotIndex + 1);
+                String minorVersionToken = fromVersion.substring(lastDotIndex + 1);
                 String nextMinorVersion;
                 int lastDashIndex = minorVersionToken.lastIndexOf('-');
                 if (lastDashIndex != -1) {
@@ -115,10 +176,10 @@ public class ReleaseAction implements Action {
                 } else {
                     nextMinorVersion = Integer.parseInt(minorVersionToken) + 1 + "";
                 }
-                nextVersion = currentVersion.substring(0, lastDotIndex + 1) + nextMinorVersion;
+                nextVersion = fromVersion.substring(0, lastDotIndex + 1) + nextMinorVersion;
             } else {
                 // maybe it's just a major version; try to parse as an int
-                int nextMajorVersion = Integer.parseInt(currentVersion) + 1;
+                int nextMajorVersion = Integer.parseInt(fromVersion) + 1;
                 nextVersion = nextMajorVersion + "";
             }
         } catch (NumberFormatException e) {
@@ -128,16 +189,110 @@ public class ReleaseAction implements Action {
     }
 
     /**
+     * @return List of target repositories for deployment (release repositories first). Called from the UI.
+     */
+    @SuppressWarnings({"UnusedDeclaration"})
+    public List<String> getRepositoryKeys() {
+        ArtifactoryRedeployPublisher artifactoryPublisher = getArtifactoryPublisher();
+        if (artifactoryPublisher != null) {
+            return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    public String lastStagingRepository() {
+        // prefer the release repository defined in artifactory publisher
+        ArtifactoryRedeployPublisher artifactoryPublisher = getArtifactoryPublisher();
+        return artifactoryPublisher != null ? artifactoryPublisher.getRepositoryKey() : null;
+    }
+
+    /**
      * Form submission is calling this method
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         req.bindParameters(this);
 
+        String versioningStr = req.getParameter("versioning");
+        versioning = VERSIONING.valueOf(versioningStr);
+        switch (versioning) {
+            case GLOBAL:
+                releaseVersion = req.getParameter("releaseVersion");
+                nextVersion = req.getParameter("nextVersion");
+                break;
+            case PER_MODULE:
+                releaseVersionPerModule = Maps.newHashMap();
+                nextVersionPerModule = Maps.newHashMap();
+                Map<String, String> params = req.getParameterMap();
+                for (Map.Entry<String, String> param : params.entrySet()) {
+                    String key = param.getKey();
+                    if (key.startsWith("release.")) {
+                        ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "release."));
+                        releaseVersionPerModule.put(moduleName, param.getValue());
+                    } else if (key.startsWith("next.")) {
+                        ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "next."));
+                        nextVersionPerModule.put(moduleName, param.getValue());
+                    }
+                }
+        }
+        createVcsTag = req.getParameter("createVcsTag") != null;
+        if (createVcsTag) {
+            tagUrl = req.getParameter("tagUrl");
+            tagComment = req.getParameter("tagComment");
+        }
+
+        stagingRepositoryKey = req.getParameter("repositoryKey");
+        stagingComment = req.getParameter("stagingComment");
+
         // schedule release build
-        if (project.scheduleBuild(0, new Cause.UserCause(), new ReleaseMarkerAction(releaseVersion, nextVersion))) {
+        if (project.scheduleBuild(0, new Cause.UserCause(), this,
+                new ReleaseMarkerAction(releaseVersion, nextVersion))) {
             // redirect to the project page
             resp.sendRedirect(project.getAbsoluteUrl());
         }
     }
+
+    public String getReleaseVersionFor(ModuleName moduleName) {
+        switch (versioning) {
+            case GLOBAL:
+                return releaseVersion;
+            case PER_MODULE:
+                return releaseVersionPerModule.get(moduleName);
+            default:
+                return null;
+        }
+    }
+
+    public String getNextVersionFor(ModuleName moduleName) {
+        switch (versioning) {
+            case GLOBAL:
+                return nextVersion;
+            case PER_MODULE:
+                return nextVersionPerModule.get(moduleName);
+            default:
+                return null;
+        }
+    }
+
+    private ReleaseWrapper getReleaseWrapper() {
+        DescribableList<BuildWrapper, Descriptor<BuildWrapper>> wrappers = project.getBuildWrappersList();
+        for (BuildWrapper wrapper : wrappers) {
+            if (wrapper instanceof ReleaseWrapper) {
+                return ((ReleaseWrapper) wrapper);
+            }
+        }
+        return null;
+    }
+
+    private ArtifactoryRedeployPublisher getArtifactoryPublisher() {
+        DescribableList<Publisher, Descriptor<Publisher>> publishersList = project.getPublishersList();
+        for (Publisher publisher : publishersList) {
+            if (publisher instanceof ArtifactoryRedeployPublisher) {
+                return ((ArtifactoryRedeployPublisher) publisher);
+            }
+        }
+        return null;
+    }
+
 }

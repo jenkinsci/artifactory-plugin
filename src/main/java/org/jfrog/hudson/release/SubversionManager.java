@@ -52,9 +52,10 @@ import java.util.logging.Logger;
 public class SubversionManager {
     private static Logger debuggingLogger = Logger.getLogger(SubversionManager.class.getName());
 
+    public static final String COMMENT_PREFIX = "[artifactory-release] ";
+
     private final AbstractBuild<?, ?> abstractBuild;
     private final TaskListener buildListener;
-    private final String COMMENT_PREFIX = "[artifactory-release] ";
 
     public SubversionManager(AbstractBuild<?, ?> abstractBuild, TaskListener buildListener) {
         this.abstractBuild = abstractBuild;
@@ -95,12 +96,12 @@ public class SubversionManager {
     /**
      * Creates a tag directly from the working copy.
      *
-     * @param tagUrl              The URL of the tag to create.
-     * @param commitMessageSuffix Suffix of the commit message (prefixed by '[artifactory-release]')
+     * @param tagUrl        The URL of the tag to create.
+     * @param commitMessage Commit message
      * @return The commit info upon successful operation.
      * @throws IOException On IO of SVN failure
      */
-    public SVNCommitInfo createTag(final String tagUrl, final String commitMessageSuffix)
+    public SVNCommitInfo createTag(final String tagUrl, final String commitMessage)
             throws IOException, InterruptedException {
         return abstractBuild.getWorkspace().act(new FilePath.FileCallable<SVNCommitInfo>() {
             public SVNCommitInfo invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
@@ -110,7 +111,6 @@ public class SubversionManager {
                     SVNURL svnUrl = SVNURL.parseURIEncoded(tagUrl);
                     SVNCopyClient copyClient = new SVNCopyClient(createAuthenticationManager(), null);
 
-                    String commitMessage = COMMENT_PREFIX + commitMessageSuffix;
                     log("Creating subversion tag: " + tagUrl);
                     SVNCopySource source = new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING, workingCopy);
                     SVNCommitInfo commitInfo = copyClient.doCopy(new SVNCopySource[]{source},

@@ -205,6 +205,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 null;
     }
 
+    public ServerDetails getDetails() {
+        return details;
+    }
+
     @Override
     public Action getProjectAction(AbstractProject<?, ?> project) {
         return details != null ? new ArtifactoryProjectAction(details.artifactoryName, project) : null;
