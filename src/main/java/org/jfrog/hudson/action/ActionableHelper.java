@@ -22,10 +22,16 @@ import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
+import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
+import hudson.model.Descriptor;
 import hudson.model.Hudson;
+import hudson.tasks.BuildWrapper;
+import hudson.tasks.Publisher;
+import hudson.util.DescribableList;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.release.ReleaseWrapper;
 
 import java.util.Collections;
 import java.util.List;
@@ -39,15 +45,49 @@ public abstract class ActionableHelper {
         return getLatestAction(mavenBuild, MavenArtifactRecord.class);
     }
 
-    public static <T extends Action> T getLatestAction(AbstractBuild mavenBuild, Class<T> actionClass) {
-        // one module may produce multiple action entries of the same type, the last one contains all the info we need
-        // (previous ones might only contain partial information, eg, only main artifact)
-        List<T> records = mavenBuild.getActions(actionClass);
+    /**
+     * Returns the latest action of the type. One module may produce multiple action entries of the same type, in some
+     * cases the last one contains all the info we need (previous ones might only contain partial information, eg,
+     * only main artifact)
+     *
+     * @param buildThe    build
+     * @param actionClass The type of the action
+     * @return Latest action of the given type or null if not found
+     */
+    public static <T extends Action> T getLatestAction(AbstractBuild build, Class<T> actionClass) {
+        List<T> records = build.getActions(actionClass);
         if (records == null || records.isEmpty()) {
             return null;
         } else {
             return records.get(records.size() - 1);
         }
+    }
+
+    /**
+     * @return The project publisher of the given type. Null if not found.
+     */
+    public static <T extends Publisher> T getPublisher(AbstractProject<?, ?> project, Class<T> type) {
+        DescribableList<Publisher, Descriptor<Publisher>> publishersList = project.getPublishersList();
+        for (Publisher publisher : publishersList) {
+            if (type.isInstance(publisher)) {
+                return type.cast(publisher);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @return The wrapped item (eg, project) wrapper of the given type. Null if not found.
+     */
+    public static <T extends ReleaseWrapper> T getReleaseWrapper(BuildableItemWithBuildWrappers wrapped,
+            Class<T> type) {
+        DescribableList<BuildWrapper, Descriptor<BuildWrapper>> wrappers = wrapped.getBuildWrappersList();
+        for (BuildWrapper wrapper : wrappers) {
+            if (type.isInstance(wrapper)) {
+                return type.cast(wrapper);
+            }
+        }
+        return null;
     }
 
     public static Cause.UpstreamCause getUpstreamCause(AbstractBuild build) {

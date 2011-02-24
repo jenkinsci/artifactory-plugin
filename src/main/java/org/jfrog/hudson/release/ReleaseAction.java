@@ -22,12 +22,9 @@ import hudson.maven.MavenModuleSet;
 import hudson.maven.ModuleName;
 import hudson.model.Action;
 import hudson.model.Cause;
-import hudson.model.Descriptor;
-import hudson.tasks.BuildWrapper;
-import hudson.tasks.Publisher;
-import hudson.util.DescribableList;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -107,7 +104,7 @@ public class ReleaseAction implements Action {
     }
 
     public String getDefaultTagUrl() {
-        ReleaseWrapper wrapper = getReleaseWrapper();
+        ReleaseWrapper wrapper = ActionableHelper.getReleaseWrapper(project, ReleaseWrapper.class);
         if (wrapper == null) {
             return null;
         }
@@ -193,7 +190,8 @@ public class ReleaseAction implements Action {
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public List<String> getRepositoryKeys() {
-        ArtifactoryRedeployPublisher artifactoryPublisher = getArtifactoryPublisher();
+        ArtifactoryRedeployPublisher artifactoryPublisher =
+                ActionableHelper.getPublisher(project, ArtifactoryRedeployPublisher.class);
         if (artifactoryPublisher != null) {
             return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
         } else {
@@ -203,7 +201,8 @@ public class ReleaseAction implements Action {
 
     public String lastStagingRepository() {
         // prefer the release repository defined in artifactory publisher
-        ArtifactoryRedeployPublisher artifactoryPublisher = getArtifactoryPublisher();
+        ArtifactoryRedeployPublisher artifactoryPublisher =
+                ActionableHelper.getPublisher(project, ArtifactoryRedeployPublisher.class);
         return artifactoryPublisher != null ? artifactoryPublisher.getRepositoryKey() : null;
     }
 
@@ -274,25 +273,4 @@ public class ReleaseAction implements Action {
                 return null;
         }
     }
-
-    private ReleaseWrapper getReleaseWrapper() {
-        DescribableList<BuildWrapper, Descriptor<BuildWrapper>> wrappers = project.getBuildWrappersList();
-        for (BuildWrapper wrapper : wrappers) {
-            if (wrapper instanceof ReleaseWrapper) {
-                return ((ReleaseWrapper) wrapper);
-            }
-        }
-        return null;
-    }
-
-    private ArtifactoryRedeployPublisher getArtifactoryPublisher() {
-        DescribableList<Publisher, Descriptor<Publisher>> publishersList = project.getPublishersList();
-        for (Publisher publisher : publishersList) {
-            if (publisher instanceof ArtifactoryRedeployPublisher) {
-                return ((ArtifactoryRedeployPublisher) publisher);
-            }
-        }
-        return null;
-    }
-
 }

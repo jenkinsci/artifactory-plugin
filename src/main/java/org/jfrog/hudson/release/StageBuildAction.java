@@ -19,17 +19,15 @@ package org.jfrog.hudson.release;
 import com.google.common.collect.Lists;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildBadgeAction;
-import hudson.model.Descriptor;
 import hudson.model.TaskAction;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
 import hudson.security.ACL;
 import hudson.security.Permission;
-import hudson.tasks.Publisher;
-import hudson.util.DescribableList;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.StaplerRequest;
@@ -100,7 +98,8 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public List<String> getRepositoryKeys() {
-        ArtifactoryRedeployPublisher artifactoryPublisher = getArtifactoryPublisher();
+        ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
+                build.getProject(), ArtifactoryRedeployPublisher.class);
         if (artifactoryPublisher != null) {
             return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
         } else {
@@ -118,16 +117,6 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
      */
     public String lastPromotionRepository() {
         // TODO: implement
-        return null;
-    }
-
-    private ArtifactoryRedeployPublisher getArtifactoryPublisher() {
-        DescribableList<Publisher, Descriptor<Publisher>> publishersList = build.getProject().getPublishersList();
-        for (Publisher publisher : publishersList) {
-            if (publisher instanceof ArtifactoryRedeployPublisher) {
-                return ((ArtifactoryRedeployPublisher) publisher);
-            }
-        }
         return null;
     }
 
@@ -180,8 +169,8 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
             ArtifactoryBuildInfoClient client = null;
             try {
                 listener.getLogger().println("Promoting build ....");
-
-                ArtifactoryRedeployPublisher artifactoryPublisher = getArtifactoryPublisher();
+                ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
+                        build.getProject(), ArtifactoryRedeployPublisher.class);
                 ArtifactoryServer server = artifactoryPublisher.getArtifactoryServer();
 
                 Credentials deployer = CredentialResolver.getPreferredDeployer(artifactoryPublisher, server);
