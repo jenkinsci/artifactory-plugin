@@ -116,12 +116,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.discardOldBuilds = discardOldBuilds;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
-
-        /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
-        Descriptor<Publisher> redeployPublisher = descriptors.find(RedeployPublisher.DescriptorImpl.class.getName());
-        if (redeployPublisher != null) {
-            descriptors.remove(redeployPublisher);
-        }*/
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -272,7 +266,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return true;
     }
 
-    private boolean isBuildFromM2ReleasePlugin(AbstractBuild build) {
+    private boolean isBuildFromM2ReleasePlugin(AbstractBuild<?, ?> build) {
         List<Cause> causes = build.getCauses();
         return !causes.isEmpty() && Iterables.any(causes, new Predicate<Cause>() {
             public boolean apply(Cause input) {
