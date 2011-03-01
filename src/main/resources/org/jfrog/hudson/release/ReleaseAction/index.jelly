@@ -4,13 +4,13 @@
     <l:layout title="">
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
-                <f:section title="Stage a release in Artifactory">
+                <f:section title="Stage a Release in Artifactory">
                     <f:entry title="Last built version"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-currentVersion.html">
                         ${it.currentVersion}
                     </f:entry>
 
-                    <f:entry title="Select how to change model versions">
+                    <f:section title="${%Module Version Configuration}">
                         <f:radioBlock name="versioning" value="GLOBAL" title="One version for all modules"
                                       checked="${'GLOBAL' == it.latestVersioningSelection()}"
                                       help="/plugin/artifactory/help/release/ReleaseAction/help-versioningGlobal.html">
@@ -45,7 +45,10 @@
                                       checked="${'NONE' == it.latestVersioningSelection()}"
                                       help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
                         </f:radioBlock>
-                    </f:entry>
+                    </f:section>
+                    <f:block>
+                        <hr/>
+                    </f:block>
                     <f:optionalBlock field="createVcsTag" name="createVcsTag"
                                      help="/plugin/artifactory/help/release/ReleaseAction/help-createVcsTag.html"
                                      title="Create VCS tag"

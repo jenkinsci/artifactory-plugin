@@ -242,7 +242,7 @@ public class ReleaseWrapper extends BuildWrapper {
          */
         @Override
         public String getDisplayName() {
-            return "Enable release to Artifactory";
+            return "Enable Artifactory release management";
         }
 
         /**
