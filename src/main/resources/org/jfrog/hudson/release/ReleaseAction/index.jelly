@@ -4,7 +4,7 @@
     <l:layout title="">
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
-                <f:section title="Release to Artifactory">
+                <f:section title="Stage a release in Artifactory">
                     <f:entry title="Last built version"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-currentVersion.html">
                         ${it.currentVersion}
@@ -41,7 +41,7 @@
                                 </f:section>
                             </j:forEach>
                         </f:radioBlock>
-                        <f:radioBlock name="versioning" value="NONE" title="Don't change the versions"
+                        <f:radioBlock name="versioning" value="NONE" title="Use existing module versions"
                                       checked="${'NONE' == it.latestVersioningSelection()}"
                                       help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
                         </f:radioBlock>
@@ -59,7 +59,7 @@
                             <f:textarea name="tagComment" default="${it.defaultTagComment}"/>
                         </f:entry>
                     </f:optionalBlock>
-                    <f:entry title="${%Target repository to deploy the staged release to}" field="repositoryKey"
+                    <f:entry title="${%Repository to stage the release to}" field="repositoryKey"
                              help="/plugin/artifactory/help/release/StageBuildAction/help-stagingRepository.html">
                         <select class="setting-input" name="repositoryKey">
                             <j:forEach var="r" items="${it.repositoryKeys}">
@@ -68,7 +68,7 @@
                         </select>
                     </f:entry>
                     <f:entry field="stagingComment" title="Staging comment"
-                             help="/plugin/artifactory/help/release/ReleaseAction/help-stagingComment.html">
+                             help="/plugin/artifactory/help/release/StageBuildAction/help-stagingComment.html">
                         <f:textbox name="stagingComment" value="${it.defaultStagingComment}"/>
                     </f:entry>
                     <tr>

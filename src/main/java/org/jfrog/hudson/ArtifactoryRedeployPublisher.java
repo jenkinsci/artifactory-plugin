@@ -30,6 +30,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
+import hudson.model.DependencyGraph;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
@@ -43,6 +44,7 @@ import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.BuildInfoDeployer;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
@@ -89,6 +91,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     private final boolean includePublishArtifacts;
 
+    private final boolean passIdentifiedDownstream;
+
     private final String scopes;
 
     private final boolean licenseAutoDiscovery;
@@ -101,7 +105,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
             boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
             String violationRecipients, boolean includePublishArtifacts, String scopes,
-            boolean disableLicenseAutoDiscovery, boolean discardOldBuilds) {
+            boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -114,6 +118,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.scopes = scopes;
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.discardOldBuilds = discardOldBuilds;
+        this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
     }
@@ -131,6 +136,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isDiscardOldBuilds() {
         return discardOldBuilds;
+    }
+
+    public boolean isPassIdentifiedDownstream() {
+        return passIdentifiedDownstream;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -253,6 +262,16 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
                 // add the result action (prefer always the same index)
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
+            }
+            if (isPassIdentifiedDownstream()) {
+                DependencyGraph graph = Hudson.getInstance().getDependencyGraph();
+                List<DependencyGraph.Dependency> downstreamDependencies =
+                        graph.getDownstreamDependencies(build.getProject());
+                for (DependencyGraph.Dependency dependency : downstreamDependencies) {
+                    AbstractProject project = dependency.getDownstreamProject();
+                    BuildUniqueIdentifierHelper.addDownstreamUniqueIdentifierAbstract(build.getProject(), project,
+                            build.getEnvironment(listener));
+                }
             }
             return true;
         } catch (Exception e) {

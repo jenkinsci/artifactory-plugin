@@ -1,0 +1,11 @@
+<div>
+    When checked a build parameter named PARENT_BUILD_${JOB_NAME} with a value of ${BUILD_NUMBER}-${BUILD_ID} will be
+    sent to downstream build, for example:
+    PARENT_BUILD_Infrastructure=2572-2011-05-11_23-59-59.
+    The value of the parameter is also deployed to published artifacts as the property: build.parent.${JOB_NAME}.
+    Downstream builds can add build.parent.${JOB_NAME}=${PARENT_BUILD_${JOB_NAME}} as a matrix parameter to their
+    Artifactory URL, for example:
+    build.parent.Infrastructure=${PARENT_BUILD_Infrastructure}
+    to achieve isolated resolution from Artifactory - i.e. only resolve artifacts produced by the parent build run that
+    triggered it, avoiding any artifacts produced by other runs of the parent build.
+</div>

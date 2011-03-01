@@ -33,6 +33,7 @@ import org.jfrog.build.client.PatternMatcher;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.IncludesExcludes;
 
 import java.io.File;
@@ -47,6 +48,7 @@ import java.util.Map;
  */
 public class ArtifactsDeployer {
 
+
     private final ArtifactoryServer artifactoryServer;
     private final String targetReleasesRepository;
     private final String targetSnapshotsRepository;
@@ -54,6 +56,7 @@ public class ArtifactsDeployer {
     private final MavenModuleSetBuild mavenModuleSetBuild;
     private final BuildListener listener;
     private final IncludeExcludePatterns patterns;
+    private final boolean downstreamIndentifier;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
             MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) {
@@ -63,6 +66,7 @@ public class ArtifactsDeployer {
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
         this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
         this.targetSnapshotsRepository = artifactoryPublisher.getSnapshotsRepositoryKey();
+        this.downstreamIndentifier = artifactoryPublisher.isPassIdentifiedDownstream();
         IncludesExcludes patterns = artifactoryPublisher.getArtifactDeploymentPatterns();
         if (patterns != null) {
             this.patterns = new IncludeExcludePatterns(patterns.getIncludePatterns(), patterns.getExcludePatterns());
@@ -123,6 +127,9 @@ public class ArtifactsDeployer {
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
 
+        BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder,
+                mavenModuleSetBuild.getEnvironment(listener));
+        BuildUniqueIdentifierHelper.addUpstreamIdentifiers(builder, mavenModuleSetBuild);
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(mavenModuleSetBuild);
         if (parent != null) {
