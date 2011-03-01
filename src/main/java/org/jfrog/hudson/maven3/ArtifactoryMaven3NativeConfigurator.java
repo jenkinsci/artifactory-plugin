@@ -146,12 +146,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper {
 
         @Override
         public String getDisplayName() {
-            return "Resolve Artifacts From Artifactory";
+            return "Resolve artifacts from Artifactory";
         }
 
         @Override
         public String getHelpFile() {
-            return "/plugin/artifactory/ivy/help-publish.html";
+            return "/plugin/artifactory/ArtifactoryMaven3NativeConfigurator/help.html";
         }
 
         @Override
