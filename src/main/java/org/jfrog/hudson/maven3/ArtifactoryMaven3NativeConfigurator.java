@@ -8,6 +8,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -66,10 +67,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper {
 
 
     @Override
-    public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
+    public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
         final MavenModuleSet project = (MavenModuleSet) build.getProject();
         final File classWorldsFile = File.createTempFile("classworlds", "conf");
+        build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
@@ -85,6 +87,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper {
                 try {
                     FileUtils.copyFile(classWorldsConf, classWorldsFile);
                 } catch (IOException e) {
+                    build.setResult(Result.FAILURE);
                     throw new RuntimeException(
                             "Unable to copy classworlds file: " + classWorldsConf.getAbsolutePath() + " to: " +
                                     classWorldsFile.getAbsolutePath(), e);
