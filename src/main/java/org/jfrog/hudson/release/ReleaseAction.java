@@ -129,6 +129,18 @@ public class ReleaseAction implements Action {
         return SubversionManager.COMMENT_PREFIX + "Creating release tag for version " + calculateReleaseVersion();
     }
 
+    /**
+     * @return The release repository configured in Artifactory publisher.
+     */
+    public String getDefaultStagingRepository() {
+        ArtifactoryRedeployPublisher publisher = ActionableHelper.getPublisher(
+                project, ArtifactoryRedeployPublisher.class);
+        if (publisher == null) {
+            return null;
+        }
+        return publisher.getRepositoryKey();
+    }
+
     public String getCurrentVersion() {
         return getRootModule().getVersion();
     }
