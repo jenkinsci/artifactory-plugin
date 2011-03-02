@@ -253,8 +253,7 @@ public class ReleaseAction implements Action {
         stagingComment = req.getParameter("stagingComment");
 
         // schedule release build
-        if (project.scheduleBuild(0, new Cause.UserCause(), this,
-                new ReleaseMarkerAction(releaseVersion, nextVersion))) {
+        if (project.scheduleBuild(0, new Cause.UserCause(), this)) {
             // redirect to the project page
             resp.sendRedirect(project.getAbsoluteUrl());
         }

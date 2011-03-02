@@ -28,19 +28,14 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
-import hudson.model.Descriptor;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import hudson.scm.SubversionSCM;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.tasks.Publisher;
-import hudson.util.DescribableList;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
-import org.jfrog.hudson.ServerDetails;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -114,24 +109,6 @@ public class ReleaseWrapper extends BuildWrapper {
             mavenModuleSet.setGoals(alternativeGoals);
         }
 
-        // change the target repository in the redeploy publisher if configured differently
-        DescribableList<Publisher, Descriptor<Publisher>> publishers = mavenModuleSet.getPublishers();
-        String publisherRepositoryKey = null;
-        for (Publisher publisher : publishers) {
-            if (publisher instanceof ArtifactoryRedeployPublisher) {
-                publisherRepositoryKey = ((ArtifactoryRedeployPublisher) publisher).getRepositoryKey();
-                if (!releaseAction.stagingRepositoryKey.equals(publisherRepositoryKey)) {
-                    ServerDetails details = ((ArtifactoryRedeployPublisher) publisher).getDetails();
-                    if (details != null) {
-                        details.repositoryKey = releaseAction.releaseVersion;
-                    }
-                }
-                break;
-            }
-        }
-        final String publisherRepositoryKeyToRestore =
-                releaseAction.stagingRepositoryKey.equals(publisherRepositoryKey) ? null : publisherRepositoryKey;
-
         return new Environment() {
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
@@ -139,20 +116,6 @@ public class ReleaseWrapper extends BuildWrapper {
                 // if we used alternative goals set back the original
                 if (!StringUtils.isBlank(alternativeGoals)) {
                     mavenModuleSet.setGoals(originalGoals);
-                }
-
-                // if we changed the publisher target repository set it back to the original
-                if (!StringUtils.isBlank(publisherRepositoryKeyToRestore)) {
-                    DescribableList<Publisher, Descriptor<Publisher>> publishers = mavenModuleSet.getPublishers();
-                    for (Publisher publisher : publishers) {
-                        if (publisher instanceof ArtifactoryRedeployPublisher) {
-                            ServerDetails details = ((ArtifactoryRedeployPublisher) publisher).getDetails();
-                            if (details != null) {
-                                details.repositoryKey = publisherRepositoryKeyToRestore;
-                            }
-                            break;
-                        }
-                    }
                 }
 
                 SubversionManager svn = new SubversionManager(build, listener);

@@ -33,6 +33,7 @@ import org.jfrog.build.client.PatternMatcher;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.IncludesExcludes;
 
@@ -64,7 +65,10 @@ public class ArtifactsDeployer {
         this.mavenModuleSetBuild = mavenModuleSetBuild;
         this.listener = listener;
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
-        this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
+        // release action might change the target releases repository
+        ReleaseAction releaseAction = ActionableHelper.getLatestAction(mavenModuleSetBuild, ReleaseAction.class);
+        this.targetReleasesRepository = releaseAction != null ? releaseAction.getStagingRepositoryKey() :
+                artifactoryPublisher.getRepositoryKey();
         this.targetSnapshotsRepository = artifactoryPublisher.getSnapshotsRepositoryKey();
         this.downstreamIdentifier = artifactoryPublisher.isPassIdentifiedDownstream();
         IncludesExcludes patterns = artifactoryPublisher.getArtifactDeploymentPatterns();

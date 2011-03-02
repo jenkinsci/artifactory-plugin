@@ -119,7 +119,7 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
 
     @SuppressWarnings({"UnusedDeclaration"})
     public List<String> getTargetStatuses() {
-        return Lists.newArrayList("Staged", "Released", "Rolled-back");
+        return Lists.newArrayList(/*"Staged", */"Released", "Rolled-back");
     }
 
     /**
