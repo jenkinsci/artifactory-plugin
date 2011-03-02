@@ -26,7 +26,7 @@
                              title="Override default resolution credentials"
                              help="/plugin/artifactory/help/common/help-overridingResolverCredentials.html">
                 <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-                <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
+                <f:entry title="User Name" help="/plugin/artifactory/help/common/help-resolverUserName.html"
                          field="username">
                     <f:textbox value="${overridingResolverCredentials.username}"/>
                 </f:entry>
