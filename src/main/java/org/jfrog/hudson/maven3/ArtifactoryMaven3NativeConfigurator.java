@@ -194,7 +194,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
 
         @Override
         public String getHelpFile() {
-            return "/plugin/artifactory/ArtifactoryMaven3NativeConfigurator/help.html";
+            return "/plugin/artifactory/help/ArtifactoryMaven3NativeConfigurator/help.html";
         }
 
         @Override
