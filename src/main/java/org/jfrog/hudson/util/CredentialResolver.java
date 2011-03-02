@@ -18,6 +18,7 @@ package org.jfrog.hudson.util;
 
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.ResolverOverrider;
 
 /**
  * A utility class the helps find the preferred credentials to use out of each setting and server
@@ -39,6 +40,27 @@ public abstract class CredentialResolver {
     public static Credentials getPreferredDeployer(DeployerOverrider overrider, ArtifactoryServer server) {
         if (overrider.isOverridingDefaultDeployer()) {
             return overrider.getOverridingDeployerCredentials();
+        }
+
+        Credentials deployerCredentials = server.getDeployerCredentials();
+        if (deployerCredentials != null) {
+            return deployerCredentials;
+        }
+
+        return new Credentials(null, null);
+    }
+
+
+    /**
+     * Decides and returns the preferred deployment credentials to use from this builder settings and selected server
+     *
+     * @param overrider Deploy-overriding capable builder
+     * @param server    Selected Artifactory server
+     * @return Preferred deployment credentials
+     */
+    public static Credentials getPreferredResolver(ResolverOverrider overrider, ArtifactoryServer server) {
+        if (overrider.isOverridingDefaultResolver()) {
+            return overrider.getOverridingResolverCredentials();
         }
 
         Credentials deployerCredentials = server.getDeployerCredentials();

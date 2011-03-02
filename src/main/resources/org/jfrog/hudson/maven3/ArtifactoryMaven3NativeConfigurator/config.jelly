@@ -21,18 +21,18 @@
     </f:dropdownList>
     <f:block>
         <table style="width:100%">
-            <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
-            <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
+            <j:set var="overridingResolverCredentials" value="${instance.overridingResolverCredentials}"/>
+            <f:optionalBlock name="overridingResolverCredentials" checked="${overridingResolverCredentials != null}"
                              title="Override default resolution credentials"
                              help="/plugin/artifactory/help/common/help-overridingResolverCredentials.html">
                 <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
                 <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
                          field="username">
-                    <f:textbox value="${overridingDeployerCredentials.username}"/>
+                    <f:textbox value="${overridingResolverCredentials.username}"/>
                 </f:entry>
                 <f:entry title="Password" field="password"
                          help="/plugin/artifactory/help/common/help-deployerPassword.html">
-                    <f:password value="${overridingDeployerCredentials.password}"/>
+                    <f:password value="${overridingResolverCredentials.password}"/>
                 </f:entry>
             </f:optionalBlock>
         </table>
