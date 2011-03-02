@@ -19,7 +19,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.client.ClientProperties;
-import org.jfrog.build.extractor.maven.BuildInfoRecorder;
+import org.jfrog.build.extractor.maven.Maven3BuildInfoLogger;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ResolverOverrider;
@@ -27,6 +27,7 @@ import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -144,9 +145,14 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                     mavenOpts.append(opts);
                 }
                 if (!StringUtils.contains(opts, "-Dm3plugin.lib")) {
-                    mavenOpts.append(" -Dm3plugin.lib=")
-                            .append(Which.jarFile(BuildInfoRecorder.class).getAbsoluteFile().getParentFile()
-                                    .getAbsolutePath());
+                    File maven3ExtractorJar = Which.jarFile(Maven3BuildInfoLogger.class);
+                    try {
+                        FilePath actualDependencyDirectory =
+                                PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
+                        mavenOpts.append(" -Dm3plugin.lib=").append(actualDependencyDirectory.getRemote());
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 return mavenOpts.toString();
             }
