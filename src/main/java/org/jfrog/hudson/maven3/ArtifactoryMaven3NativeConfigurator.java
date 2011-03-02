@@ -22,8 +22,11 @@ import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -37,14 +40,16 @@ import java.util.Map;
 /**
  * @author Tomer Cohen
  */
-public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper {
+public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements DeployerOverrider {
 
     private final ServerDetails details;
+    private final Credentials overridingDeployerCredentials;
 
 
     @DataBoundConstructor
-    public ArtifactoryMaven3NativeConfigurator(ServerDetails details) {
+    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, Credentials overridingDeployerCredentials) {
         this.details = details;
+        this.overridingDeployerCredentials = overridingDeployerCredentials;
     }
 
     public ServerDetails getDetails() {
@@ -66,6 +71,14 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper {
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
+    }
+
+    public boolean isOverridingDefaultDeployer() {
+        return (getOverridingDeployerCredentials() != null);
+    }
+
+    public Credentials getOverridingDeployerCredentials() {
+        return overridingDeployerCredentials;
     }
 
 
@@ -110,8 +123,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper {
                 }
                 env.put("classworlds.conf", classworldsConfPath);
                 final ArtifactoryServer artifactoryServer = getArtifactoryServer();
+                Credentials preferredDeployer = CredentialResolver
+                        .getPreferredDeployer(ArtifactoryMaven3NativeConfigurator.this, artifactoryServer);
                 env.put(ClientProperties.PROP_CONTEXT_URL, artifactoryServer.getUrl());
                 env.put(ClientProperties.PROP_RESOLVE_REPOKEY, getDownloadRepositoryKey());
+                env.put(ClientProperties.PROP_RESOLVE_USERNAME, preferredDeployer.getUsername());
+                env.put(ClientProperties.PROP_RESOLVE_PASSWORD, preferredDeployer.getPassword());
             }
 
             @Override
