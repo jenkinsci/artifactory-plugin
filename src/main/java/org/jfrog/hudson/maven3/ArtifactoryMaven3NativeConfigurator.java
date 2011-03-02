@@ -3,6 +3,8 @@ package org.jfrog.hudson.maven3;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.maven.MavenEmbedderException;
+import hudson.maven.MavenEmbedderUtils;
 import hudson.maven.MavenModuleSet;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -86,6 +88,17 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
         final MavenModuleSet project = (MavenModuleSet) build.getProject();
+        try {
+            if (!isValidMavenVersion(
+                    MavenEmbedderUtils.getMavenVersion(project.getMaven().getHomeDir()).getVersion())) {
+                return new Environment() {
+                    // return the empty environment
+                };
+            }
+
+        } catch (MavenEmbedderException e) {
+            throw new RuntimeException(e);
+        }
         final File classWorldsFile = File.createTempFile("classworlds", "conf");
         build.setResult(Result.SUCCESS);
         return new Environment() {
@@ -138,6 +151,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 return super.tearDown(build, listener);
             }
 
+
             private String appendNewMavenOpts(MavenModuleSet project) throws IOException {
                 StringBuilder mavenOpts = new StringBuilder();
                 String opts = project.getMavenOpts();
@@ -159,6 +173,20 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
 
         };
     }
+
+    private boolean isValidMavenVersion(String version) {
+        String[] versionSplit = StringUtils.split(version, ".");
+        if (Integer.parseInt(versionSplit[0]) == 2) {
+            return false;
+        }
+        if (versionSplit.length == 3) {
+            if (Integer.parseInt(versionSplit[2]) < 2) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     public ArtifactoryServer getArtifactoryServer() {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
