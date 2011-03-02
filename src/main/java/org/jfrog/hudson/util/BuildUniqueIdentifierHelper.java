@@ -32,12 +32,27 @@ public class BuildUniqueIdentifierHelper {
     private BuildUniqueIdentifierHelper() {
     }
 
+    /**
+     * Add the unique build identifier as a matrix params to all artifacts that are being deployed as part of the build.
+     * The key of the matrix param is {@link org.jfrog.build.api.ArtifactoryResolutionProperties#ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY}
+     * and the identifier value is the interpolated value of {@link BuildUniqueIdentifierHelper#BUILD_ID_PROPERTY}
+     *
+     * @param builder The deploy details builder
+     * @param env     The map used for interpolation of the value.
+     */
     public static void addUniqueBuildIdentifier(DeployDetails.Builder builder, Map<String, String> env) {
         String identifier = getUniqueBuildIdentifier(env);
         builder.addProperty(ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, identifier);
     }
 
-    public static void addUpstreamIdentifiers(DeployDetails.Builder builder, MavenModuleSetBuild build) {
+    /**
+     * Add the unique identifier as a matrix param with key {@link org.jfrog.build.api.ArtifactoryResolutionProperties#ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY}
+     * The value of this parameters is taken from the upstream build.
+     *
+     * @param builder The deploy details builder.
+     * @param build   The upstream build from where to find the value of the property from.
+     */
+    public static void addUpstreamIdentifier(DeployDetails.Builder builder, MavenModuleSetBuild build) {
         Map<JobPropertyDescriptor, JobProperty<? super MavenModuleSet>> jobProperties =
                 build.getProject().getProperties();
         for (JobProperty<? super MavenModuleSet> property : jobProperties.values()) {
@@ -54,6 +69,16 @@ public class BuildUniqueIdentifierHelper {
         }
     }
 
+    /**
+     * Add a unique identifier to child project, the key of the parameter that is propogated downwards is: {@link
+     * org.jfrog.build.api.ArtifactoryResolutionProperties#ARTIFACT_BUILD_ROOT_KEY}. If the current build is the root
+     * build, then the value is the interpolated value of {@link BuildUniqueIdentifierHelper#BUILD_ID_PROPERTY}
+     * otherwise it is the value that is taken from the upstream build.
+     *
+     * @param currentBuild The current build
+     * @param childProject The child build
+     * @param env          The environment used for interpolation of the unique identifier
+     */
     public static void addDownstreamUniqueIdentifier(AbstractBuild currentBuild,
             AbstractProject childProject, Map<String, String> env) throws IOException {
         // if the current project is not the root project, simply pull the property from the upstream projects
@@ -81,7 +106,10 @@ public class BuildUniqueIdentifierHelper {
         }
     }
 
-    public static String getUniqueBuildIdentifier(Map<String, String> env) {
+    /**
+     * @return The interpolated value of {@link BuildUniqueIdentifierHelper#BUILD_ID_PROPERTY} by the environment map.
+     */
+    private static String getUniqueBuildIdentifier(Map<String, String> env) {
         return Util.replaceMacro(BUILD_ID_PROPERTY, env);
     }
 }

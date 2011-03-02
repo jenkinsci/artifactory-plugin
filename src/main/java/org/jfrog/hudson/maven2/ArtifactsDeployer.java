@@ -56,7 +56,7 @@ public class ArtifactsDeployer {
     private final MavenModuleSetBuild mavenModuleSetBuild;
     private final BuildListener listener;
     private final IncludeExcludePatterns patterns;
-    private final boolean downstreamIndentifier;
+    private final boolean downstreamIdentifier;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
             MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) {
@@ -66,7 +66,7 @@ public class ArtifactsDeployer {
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
         this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
         this.targetSnapshotsRepository = artifactoryPublisher.getSnapshotsRepositoryKey();
-        this.downstreamIndentifier = artifactoryPublisher.isPassIdentifiedDownstream();
+        this.downstreamIdentifier = artifactoryPublisher.isPassIdentifiedDownstream();
         IncludesExcludes patterns = artifactoryPublisher.getArtifactDeploymentPatterns();
         if (patterns != null) {
             this.patterns = new IncludeExcludePatterns(patterns.getIncludePatterns(), patterns.getExcludePatterns());
@@ -127,11 +127,11 @@ public class ArtifactsDeployer {
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
 
-        if (ActionableHelper.getUpstreamCause(mavenBuild) == null) {
+        if (ActionableHelper.getUpstreamCause(mavenBuild) == null && downstreamIdentifier) {
             BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder,
                     mavenModuleSetBuild.getEnvironment(listener));
         }
-        BuildUniqueIdentifierHelper.addUpstreamIdentifiers(builder, mavenModuleSetBuild);
+        BuildUniqueIdentifierHelper.addUpstreamIdentifier(builder, mavenModuleSetBuild);
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(mavenModuleSetBuild);
         if (parent != null) {
