@@ -24,7 +24,7 @@
             <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
             <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
                              title="Override default resolution credentials"
-                             help="/plugin/artifactory/help/common/help-overridingDeployerCredentials.html">
+                             help="/plugin/artifactory/help/common/help-overridingResolverCredentials.html">
                 <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
                 <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
                          field="username">
