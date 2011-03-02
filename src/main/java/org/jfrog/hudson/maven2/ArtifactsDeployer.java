@@ -127,8 +127,10 @@ public class ArtifactsDeployer {
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
 
-        BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder,
-                mavenModuleSetBuild.getEnvironment(listener));
+        if (ActionableHelper.getUpstreamCause(mavenBuild) == null) {
+            BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder,
+                    mavenModuleSetBuild.getEnvironment(listener));
+        }
         BuildUniqueIdentifierHelper.addUpstreamIdentifiers(builder, mavenModuleSetBuild);
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(mavenModuleSetBuild);

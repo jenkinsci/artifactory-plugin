@@ -1,15 +1,18 @@
 package org.jfrog.hudson.maven3;
 
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.Computer;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.remoting.Which;
+import hudson.slaves.SlaveComputer;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
@@ -83,16 +86,29 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper {
                 }
                 URL resource =
                         getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-native.conf");
-                File classWorldsConf = new File(resource.getFile());
-                try {
-                    FileUtils.copyFile(classWorldsConf, classWorldsFile);
-                } catch (IOException e) {
-                    build.setResult(Result.FAILURE);
-                    throw new RuntimeException(
-                            "Unable to copy classworlds file: " + classWorldsConf.getAbsolutePath() + " to: " +
-                                    classWorldsFile.getAbsolutePath(), e);
+                String classworldsConfPath;
+                if (Computer.currentComputer() instanceof SlaveComputer) {
+                    try {
+                        FilePath remoteClassworlds =
+                                build.getWorkspace().createTextTempFile("classworlds", "conf", "", false);
+                        remoteClassworlds.copyFrom(resource);
+                        classworldsConfPath = remoteClassworlds.getRemote();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    classworldsConfPath = classWorldsFile.getAbsolutePath();
+                    File classWorldsConf = new File(resource.getFile());
+                    try {
+                        FileUtils.copyFile(classWorldsConf, classWorldsFile);
+                    } catch (IOException e) {
+                        build.setResult(Result.FAILURE);
+                        throw new RuntimeException(
+                                "Unable to copy classworlds file: " + classWorldsConf.getAbsolutePath() + " to: " +
+                                        classWorldsFile.getAbsolutePath(), e);
+                    }
                 }
-                env.put("classworlds.conf", classWorldsFile.getAbsolutePath());
+                env.put("classworlds.conf", classworldsConfPath);
                 final ArtifactoryServer artifactoryServer = getArtifactoryServer();
                 env.put(ClientProperties.PROP_CONTEXT_URL, artifactoryServer.getUrl());
                 env.put(ClientProperties.PROP_RESOLVE_REPOKEY, getDownloadRepositoryKey());
@@ -111,9 +127,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper {
                 if (StringUtils.isNotBlank(opts)) {
                     mavenOpts.append(opts);
                 }
-                mavenOpts.append(" -Dm3plugin.lib=")
-                        .append(Which.jarFile(BuildInfoRecorder.class).getAbsoluteFile().getParentFile()
-                                .getAbsolutePath());
+                if (!StringUtils.contains(opts, "-Dm3plugin.lib")) {
+                    mavenOpts.append(" -Dm3plugin.lib=")
+                            .append(Which.jarFile(BuildInfoRecorder.class).getAbsoluteFile().getParentFile()
+                                    .getAbsolutePath());
+                }
                 return mavenOpts.toString();
             }
 

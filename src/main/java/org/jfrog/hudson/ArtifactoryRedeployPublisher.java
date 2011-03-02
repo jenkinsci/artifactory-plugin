@@ -269,7 +269,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                         graph.getDownstreamDependencies(build.getProject());
                 for (DependencyGraph.Dependency dependency : downstreamDependencies) {
                     AbstractProject project = dependency.getDownstreamProject();
-                    BuildUniqueIdentifierHelper.addDownstreamUniqueIdentifierAbstract(build.getProject(), project,
+                    BuildUniqueIdentifierHelper.addDownstreamUniqueIdentifier(build, project,
                             build.getEnvironment(listener));
                 }
             }

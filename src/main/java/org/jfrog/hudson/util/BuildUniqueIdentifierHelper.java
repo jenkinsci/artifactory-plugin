@@ -1,9 +1,9 @@
 package org.jfrog.hudson.util;
 
-import com.google.common.collect.Lists;
 import hudson.Util;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
+import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
@@ -11,12 +11,15 @@ import hudson.model.ParameterDefinition;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterDefinition;
 import hudson.model.StringParameterValue;
-import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.client.DeployDetails;
+import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import static org.jfrog.build.api.ArtifactoryResolutionProperties.ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY;
+import static org.jfrog.build.api.ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY;
 
 /**
  * Utility class to help extracting and assembling parameters for the a unique build identifier.
@@ -24,17 +27,14 @@ import java.util.Map;
  * @author Tomer Cohen
  */
 public class BuildUniqueIdentifierHelper {
-    public static final String BUILD_PARENT_PROPERTY_PREFIX = "build.parent.";
-    private static final String BUILD_PARENT_PROPERTY =
-            BUILD_PARENT_PROPERTY_PREFIX + "${JOB_NAME}=${PARENT_BUILD_${JOB_NAME}}";
-    private static final String BUILD_DOWNSTREAM_PROPERTY = "${BUILD_NUMBER}-${BUILD_ID}";
+    private static final String BUILD_ID_PROPERTY = "${JOB_NAME}-${BUILD_NUMBER}";
 
     private BuildUniqueIdentifierHelper() {
     }
 
     public static void addUniqueBuildIdentifier(DeployDetails.Builder builder, Map<String, String> env) {
-        String[] propertySplit = getUniqueBuildIdentifier(env);
-        builder.addProperty(propertySplit[0], propertySplit[1]);
+        String identifier = getUniqueBuildIdentifier(env);
+        builder.addProperty(ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, identifier);
     }
 
     public static void addUpstreamIdentifiers(DeployDetails.Builder builder, MavenModuleSetBuild build) {
@@ -45,49 +45,43 @@ public class BuildUniqueIdentifierHelper {
                 List<ParameterDefinition> definitions =
                         ((ParametersDefinitionProperty) property).getParameterDefinitions();
                 for (ParameterDefinition definition : definitions) {
-                    if (definition.getName().startsWith("PARENT_BUILD_")) {
+                    if (ARTIFACT_BUILD_ROOT_KEY.equals(definition.getName())) {
                         StringParameterValue value = (StringParameterValue) definition.getDefaultParameterValue();
-                        builder.addProperty(definition.getName(), value.value);
+                        builder.addProperty(ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, value.value);
                     }
                 }
             }
         }
     }
 
-    public static void addDownstreamUniqueIdentifierAbstract(AbstractProject currentProject,
+    public static void addDownstreamUniqueIdentifier(AbstractBuild currentBuild,
             AbstractProject childProject, Map<String, String> env) throws IOException {
-        List<ParameterDefinition> result = Lists.newArrayList();
-        Map<JobPropertyDescriptor, JobProperty<? super MavenModuleSet>> jobProperties = currentProject.getProperties();
-        for (JobProperty<? super MavenModuleSet> property : jobProperties.values()) {
-            if (property instanceof ParametersDefinitionProperty) {
-                List<ParameterDefinition> definitions =
-                        ((ParametersDefinitionProperty) property).getParameterDefinitions();
-                for (ParameterDefinition definition : definitions) {
-                    if (definition.getName().startsWith("PARENT_BUILD_")) {
-                        result.add(definition);
+        // if the current project is not the root project, simply pull the property from the upstream projects
+        // with the ID to pass it downwards
+        if (ActionableHelper.getUpstreamCause(currentBuild) != null) {
+            Map<JobPropertyDescriptor, JobProperty<? super MavenModuleSet>> jobProperties =
+                    currentBuild.getProject().getProperties();
+            for (JobProperty<? super MavenModuleSet> property : jobProperties.values()) {
+                if (property instanceof ParametersDefinitionProperty) {
+                    List<ParameterDefinition> definitions =
+                            ((ParametersDefinitionProperty) property).getParameterDefinitions();
+                    for (ParameterDefinition definition : definitions) {
+                        if (definition.getName().startsWith(ARTIFACT_BUILD_ROOT_KEY)) {
+                            childProject.addProperty(new ParametersDefinitionProperty(definition));
+                        }
                     }
                 }
             }
+            // if it is the root project, add it as the unique identifier.
+        } else {
+            String downstreamBuild = Util.replaceMacro(BUILD_ID_PROPERTY, env);
+            StringParameterDefinition definition =
+                    new StringParameterDefinition(ARTIFACT_BUILD_ROOT_KEY, downstreamBuild);
+            childProject.addProperty(new ParametersDefinitionProperty(definition));
         }
-        String currentBuild = Util.replaceMacro(BUILD_PARENT_PROPERTY, env);
-        String key = currentBuild.split("=")[1];
-        key = stripPlaceHolder(key);
-        String downstreamBuild = Util.replaceMacro(BUILD_DOWNSTREAM_PROPERTY, env);
-        StringParameterDefinition definition = new StringParameterDefinition(key, downstreamBuild);
-        result.add(definition);
-        childProject.addProperty(new ParametersDefinitionProperty(result));
     }
 
-    public static String[] getUniqueBuildIdentifier(Map<String, String> env) {
-        String propertyString = Util.replaceMacro(BUILD_PARENT_PROPERTY, env);
-        propertyString = stripPlaceHolder(propertyString);
-        String[] split = propertyString.split("=");
-        return new String[]{split[0], stripPlaceHolder(split[1])};
-    }
-
-    private static String stripPlaceHolder(String prop) {
-        prop = StringUtils.removeStart(prop, "${");
-        prop = StringUtils.removeEnd(prop, "}");
-        return prop;
+    public static String getUniqueBuildIdentifier(Map<String, String> env) {
+        return Util.replaceMacro(BUILD_ID_PROPERTY, env);
     }
 }
