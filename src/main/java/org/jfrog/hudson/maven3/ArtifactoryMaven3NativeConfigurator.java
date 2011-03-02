@@ -122,12 +122,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 }
                 env.put("classworlds.conf", classworldsConfPath);
                 final ArtifactoryServer artifactoryServer = getArtifactoryServer();
-                Credentials preferredDeployer = CredentialResolver
+                Credentials preferredResolver = CredentialResolver
                         .getPreferredResolver(ArtifactoryMaven3NativeConfigurator.this, artifactoryServer);
                 env.put(ClientProperties.PROP_CONTEXT_URL, artifactoryServer.getUrl());
                 env.put(ClientProperties.PROP_RESOLVE_REPOKEY, getDownloadRepositoryKey());
-                env.put(ClientProperties.PROP_RESOLVE_USERNAME, preferredDeployer.getUsername());
-                env.put(ClientProperties.PROP_RESOLVE_PASSWORD, preferredDeployer.getPassword());
+                env.put(ClientProperties.PROP_RESOLVE_USERNAME, preferredResolver.getUsername());
+                env.put(ClientProperties.PROP_RESOLVE_PASSWORD, preferredResolver.getPassword());
             }
 
             @Override
