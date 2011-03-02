@@ -29,7 +29,7 @@ public class ServerDetails {
     /**
      * Key of the repository to deploy release artifacts to
      */
-    public String repositoryKey;
+    public final String repositoryKey;
     /**
      * Key of the repository to deploy snapshot artifacts to. If not specified will use the repositoryKey
      */
