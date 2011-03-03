@@ -177,7 +177,7 @@ public class BuildInfoDeployer {
                     .timestampDate(startedTimestamp.getTime())
                     .comment(release.getStagingComment())
                     .repository(release.getStagingRepositoryKey())
-                    .ciUser(userCause).build());
+                    .ciUser(userCause).user(artifactoryPrincipal).build());
         }
 
         Build buildInfo = infoBuilder.build();
