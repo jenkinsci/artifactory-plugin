@@ -109,7 +109,7 @@
                         <table style="width:100%">
                             <f:optionalBlock name="runChecks"
                                              checked="${instance.runChecks}"
-                                             title="Run license checks (requires Pro)"
+                                             title="Run license checks (requires Artifactory Pro)"
                                              inline="true"
                                              help="/plugin/artifactory/help/common/help-runChecks.html">
                                 <f:entry title="${%Send license violation notifications to: }"
@@ -141,7 +141,7 @@
                         <table style="width:100%">
                             <f:optionalBlock name="discardOldBuilds"
                                              checked="${instance.discardOldBuilds}"
-                                             title="Discard Old Builds from Artifactory (Requires Artifactory Pro)"
+                                             title="Discard old builds from Artifactory (requires Artifactory Pro)"
                                              inline="true"
                                              help="/plugin/artifactory/help/common/help-discardBuilds.html">
                             </f:optionalBlock>
