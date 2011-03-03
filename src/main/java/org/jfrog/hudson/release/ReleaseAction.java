@@ -97,7 +97,7 @@ public class ReleaseAction implements Action {
     }
 
     public Collection<MavenModule> getModules() {
-        return project.getModules();
+        return project.getDisabledModules(false);
     }
 
     public String getStagingComment() {
