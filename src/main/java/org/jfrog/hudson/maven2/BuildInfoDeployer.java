@@ -177,7 +177,7 @@ public class BuildInfoDeployer {
                     .timestampDate(startedTimestamp.getTime())
                     .comment(release.getStagingComment())
                     .repository(release.getStagingRepositoryKey())
-                    .user(userCause).build());
+                    .ciUser(userCause).build());
         }
 
         Build buildInfo = infoBuilder.build();
