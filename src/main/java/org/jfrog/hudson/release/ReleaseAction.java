@@ -32,6 +32,7 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -243,15 +244,15 @@ public class ReleaseAction implements Action {
             case PER_MODULE:
                 releaseVersionPerModule = Maps.newHashMap();
                 nextVersionPerModule = Maps.newHashMap();
-                Map<String, String> params = req.getParameterMap();
-                for (Map.Entry<String, String> param : params.entrySet()) {
-                    String key = param.getKey();
+                Enumeration params = req.getParameterNames();
+                while (params.hasMoreElements()) {
+                    String key = (String) params.nextElement();
                     if (key.startsWith("release.")) {
                         ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "release."));
-                        releaseVersionPerModule.put(moduleName, param.getValue());
+                        releaseVersionPerModule.put(moduleName, req.getParameter(key));
                     } else if (key.startsWith("next.")) {
                         ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "next."));
-                        nextVersionPerModule.put(moduleName, param.getValue());
+                        nextVersionPerModule.put(moduleName, req.getParameter(key));
                     }
                 }
         }

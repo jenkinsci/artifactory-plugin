@@ -18,7 +18,6 @@ package org.jfrog.hudson.release;
 
 import hudson.AbortException;
 import hudson.FilePath;
-import hudson.maven.MavenModule;
 import hudson.maven.ModuleName;
 import hudson.remoting.VirtualChannel;
 import org.apache.commons.io.IOUtils;
@@ -43,30 +42,27 @@ import java.util.Map;
  */
 public class PomTransformer implements FilePath.FileCallable<Object> {
 
-    private final String newVersion;
     private final String scmUrl;
-    private final Map<ModuleName, MavenModule> modulesByName;
+    private final ModuleName currentModule;
+    private final Map<ModuleName, String> versionsByModule;
     private boolean modified;
 
     /**
      * Transforms single pom file.
      *
-     * @param modulesByName Map of module names to module info
-     * @param newVersion    The new version to use for current module and dependencies included in the modules list
-     * @param scmUrl        Scm url to use if scm element exists in the pom file
+     * @param currentModule
+     * @param versionsByModule Map of module names to module version
+     * @param scmUrl           Scm url to use if scm element exists in the pom file
      */
-    public PomTransformer(Map<ModuleName, MavenModule> modulesByName, String newVersion, String scmUrl) {
-        this.modulesByName = modulesByName;
-        this.newVersion = newVersion;
+    public PomTransformer(ModuleName currentModule, Map<ModuleName, String> versionsByModule, String scmUrl) {
+        this.currentModule = currentModule;
+        this.versionsByModule = versionsByModule;
         this.scmUrl = scmUrl;
     }
 
     public Object invoke(File pomFile, VirtualChannel channel) throws IOException, InterruptedException {
         if (!pomFile.exists()) {
             throw new AbortException("Couldn't find pom file: " + pomFile);
-        }
-        if (StringUtils.isBlank(newVersion)) {
-            throw new AbortException("No version specified for pom file: " + pomFile);
         }
 
         SAXBuilder saxBuilder = createSaxBuilder();
@@ -113,16 +109,16 @@ public class PomTransformer implements FilePath.FileCallable<Object> {
         }
 
         ModuleName parentName = extractModuleName(parentElement, ns);
-        if (!modulesByName.containsKey(parentName)) {
+        if (!versionsByModule.containsKey(parentName)) {
             // parent is not part of the currently built project
             return;
         }
 
-        setVersion(parentElement, ns);
+        setVersion(parentElement, ns, versionsByModule.get(parentName));
     }
 
     private void changeVersion(Element rootElement, Namespace ns) {
-        setVersion(rootElement, ns);
+        setVersion(rootElement, ns, versionsByModule.get(currentModule));
     }
 
     private void changeDependencyManagementVersions(Element rootElement, Namespace ns) {
@@ -156,8 +152,8 @@ public class PomTransformer implements FilePath.FileCallable<Object> {
 
     private void changeDependencyVersion(Namespace ns, Element dependency) {
         ModuleName moduleName = extractModuleName(dependency, ns);
-        if (modulesByName.containsKey(moduleName)) {
-            setVersion(dependency, ns);
+        if (versionsByModule.containsKey(moduleName)) {
+            setVersion(dependency, ns, versionsByModule.get(moduleName));
         }
     }
 
@@ -180,12 +176,12 @@ public class PomTransformer implements FilePath.FileCallable<Object> {
         }
     }
 
-    private void setVersion(Element element, Namespace ns) {
-        Element version = element.getChild("version", ns);
-        if (version != null) {
-            String currentVersion = version.getText();
-            if (!newVersion.equals(currentVersion)) {
-                version.setText(newVersion);
+    private void setVersion(Element element, Namespace ns, String version) {
+        Element versionElement = element.getChild("version", ns);
+        if (versionElement != null) {
+            String currentVersion = versionElement.getText();
+            if (!version.equals(currentVersion)) {
+                versionElement.setText(version);
                 modified = true;
             }
         }

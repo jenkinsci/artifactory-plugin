@@ -156,19 +156,19 @@ public class ReleaseWrapper extends BuildWrapper {
         // get the active modules only
         Collection<MavenModule> modules = mavenBuild.getProject().getDisabledModules(false);
 
-        Map<ModuleName, MavenModule> modulesByName = Maps.newHashMap();
+        Map<ModuleName, String> modulesByName = Maps.newHashMap();
         for (MavenModule module : modules) {
-            modulesByName.put(module.getModuleName(), module);
+            String version = releaseVersion ? release.getReleaseVersionFor(module.getModuleName()) :
+                    release.getNextVersionFor(module.getModuleName());
+            modulesByName.put(module.getModuleName(), version);
         }
 
         for (MavenModule mavenModule : modules) {
             String relativePath = mavenModule.getRelativePath();
             String pomRelativePath = StringUtils.isBlank(relativePath) ? "pom.xml" : relativePath + "/pom.xml";
             FilePath pomPath = new FilePath(moduleRoot, pomRelativePath);
-            String newVersion = releaseVersion ? release.getReleaseVersionFor(mavenModule.getModuleName()) :
-                    release.getNextVersionFor(mavenModule.getModuleName());
             debuggingLogger.fine("Changing version of pom: " + pomPath);
-            pomPath.act(new PomTransformer(modulesByName, newVersion, scmUrl));
+            pomPath.act(new PomTransformer(mavenModule.getModuleName(), modulesByName, scmUrl));
         }
     }
 

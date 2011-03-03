@@ -18,7 +18,6 @@ package org.jfrog.hudson.release;
 
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import hudson.maven.MavenModule;
 import hudson.maven.ModuleName;
 import org.jdom.Document;
 import org.jdom.output.XMLOutputter;
@@ -42,10 +41,10 @@ public class PomTransformerTest {
 
     public void transformSimplePom() throws Exception {
         File pomFile = getResourceAsFile("/poms/parentonly/pom.xml");
-        HashMap<ModuleName, MavenModule> modules = Maps.newHashMap();
-        modules.put(new ModuleName("org.jfrog.test", "parent"), null);
+        HashMap<ModuleName, String> modules = Maps.newHashMap();
+        modules.put(new ModuleName("org.jfrog.test", "parent"), "2.2");
 
-        new PomTransformer(modules, "2.2", "").invoke(pomFile, null);
+        new PomTransformer(new ModuleName("org.jfrog.test", "one"), modules, "").invoke(pomFile, null);
 
         String pomStr = Files.toString(pomFile, Charset.defaultCharset());
         Document expected = PomTransformer.createSaxBuilder().build(
@@ -57,11 +56,12 @@ public class PomTransformerTest {
 
     public void transformMultiPom() throws Exception {
         File pomFile = getResourceAsFile("/poms/multi/pom.xml");
-        Map<ModuleName, MavenModule> modules = Maps.newHashMap();
-        modules.put(new ModuleName("org.jfrog.test.nested", "nested1"), null);
-        modules.put(new ModuleName("org.jfrog.test.nested", "nested2"), null);
+        Map<ModuleName, String> modules = Maps.newHashMap();
+        modules.put(new ModuleName("org.jfrog.test.nested", "nested1"), "3.6");
+        modules.put(new ModuleName("org.jfrog.test.nested", "nested2"), "3.6");
+        modules.put(new ModuleName("org.jfrog.test.nested", "two"), "3.6");
 
-        new PomTransformer(modules, "3.6", "").invoke(pomFile, null);
+        new PomTransformer(new ModuleName("org.jfrog.test.nested", "two"), modules, "").invoke(pomFile, null);
 
         String pomStr = Files.toString(pomFile, Charset.defaultCharset());
         Document expected = PomTransformer.createSaxBuilder().build(getResourceAsFile("/poms/multi/pom.expected.xml"));
@@ -72,10 +72,11 @@ public class PomTransformerTest {
 
     public void transformScm() throws Exception {
         File pomFile = getResourceAsFile("/poms/scm/pom.xml");
-        HashMap<ModuleName, MavenModule> modules = Maps.newHashMap();
-        modules.put(new ModuleName("org.jfrog.test", "parent"), null);
+        HashMap<ModuleName, String> modules = Maps.newHashMap();
+        modules.put(new ModuleName("org.jfrog.test", "parent"), "1");
 
-        new PomTransformer(modules, "1", "http://subversion.jfrog.org/test/tags/1").invoke(pomFile, null);
+        new PomTransformer(new ModuleName("org.jfrog.test", "one"), modules,
+                "http://subversion.jfrog.org/test/tags/1").invoke(pomFile, null);
 
         String pomStr = Files.toString(pomFile, Charset.defaultCharset());
         Document expected = PomTransformer.createSaxBuilder().build(
