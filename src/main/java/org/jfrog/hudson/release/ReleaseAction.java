@@ -89,7 +89,7 @@ public class ReleaseAction implements Action {
      * @return The message to display on the left panel for the perform release action.
      */
     public String getDisplayName() {
-        return "Release to Artifactory";
+        return "Artifactory Release Staging";
     }
 
     public String getUrlName() {

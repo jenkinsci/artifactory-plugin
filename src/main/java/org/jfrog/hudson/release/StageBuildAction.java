@@ -72,7 +72,7 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
     }
 
     public String getDisplayName() {
-        return "Stage in Artifactory";
+        return "Artifactory Release Promotion";
     }
 
     public String getUrlName() {

@@ -4,7 +4,7 @@
     <l:layout title="">
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
-                <f:section title="Stage a Release in Artifactory">
+                <f:section title="Artifactory Release Staging">
                     <f:entry title="Last built version"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-currentVersion.html">
                         ${it.currentVersion}

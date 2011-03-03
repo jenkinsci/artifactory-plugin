@@ -4,7 +4,7 @@
     <l:layout>
         <l:main-panel>
             <f:form method="post" action="submit">
-                <f:section title="Stage Build">
+                <f:section title="Artifactory Release Promotion">
                     <f:entry title="${%Target status}" field="targetStatus"
                              help="/plugin/artifactory/help/release/StageBuildAction/help-stagingRepository.html">
                         <select class="setting-input" name="targetStatus">
@@ -24,15 +24,15 @@
                             </j:forEach>
                         </select>
                     </f:entry>
-                    <f:entry field="useCopy"
-                             help="/plugin/artifactory/help/release/StageBuildAction/help-useCopy.html">
-                        <f:checkbox default="false" name="useCopy"/>
-                        <label class="attach-previous">${%Use copy}</label>
-                    </f:entry>
                     <f:entry field="includeDependencies"
                              help="/plugin/artifactory/help/release/StageBuildAction/help-includeDependencies.html">
                         <f:checkbox default="false" name="includeDependencies"/>
                         <label class="attach-previous">${%Include dependencies}</label>
+                    </f:entry>
+                    <f:entry field="useCopy"
+                             help="/plugin/artifactory/help/release/StageBuildAction/help-useCopy.html">
+                        <f:checkbox default="false" name="useCopy"/>
+                        <label class="attach-previous">${%Use copy}</label>
                     </f:entry>
                     <tr>
                         <td colspan="3">
