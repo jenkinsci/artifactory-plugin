@@ -54,7 +54,7 @@
                                      title="Create VCS tag"
                                      checked="${null != it.defaultTagUrl}"
                                      inline="true">
-                        <f:entry field="tagUrl" title="Tags Url"
+                        <f:entry field="tagUrl" title="Tag URL"
                                  help="/plugin/artifactory/help/release/ReleaseAction/help-tagUrl.html">
                             <f:textbox name="tagUrl" value="${it.defaultTagUrl}"/>
                         </f:entry>
