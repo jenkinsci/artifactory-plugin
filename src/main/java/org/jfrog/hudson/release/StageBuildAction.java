@@ -111,7 +111,9 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
         ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
                 build.getProject(), ArtifactoryRedeployPublisher.class);
         if (artifactoryPublisher != null) {
-            return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
+            List<String> repos = artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
+            repos.add(0, "");  // option not to move
+            return repos;
         } else {
             return Collections.emptyList();
         }
@@ -194,8 +196,8 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
 
                 // do a dry run first
                 StagingSettingsBuilder dryBuilder = new StagingSettingsBuilder(
-                        build.getParent().getDisplayName(),
-                        build.getNumber() + "", repositoryKey)
+                        build.getParent().getDisplayName(), build.getNumber() + "")
+                        .targetRepo(repositoryKey)
                         .includeDependencies(includeDependencies)
                         .promotionComment(comment)
                         .promotionStatus(targetStatus)

@@ -64,7 +64,7 @@
                         </f:entry>
                     </f:optionalBlock>
                     <f:entry title="${%Repository to stage the release to}" field="repositoryKey"
-                             help="/plugin/artifactory/help/release/StageBuildAction/help-stagingRepository.html">
+                             help="/plugin/artifactory/help/release/ReleaseAction/help-stagingRepository.html">
                         <select class="setting-input" name="repositoryKey">
                             <j:forEach var="r" items="${it.repositoryKeys}">
                                 <f:option selected="${r==it.defaultStagingRepository}" value="${r}">${r}</f:option>

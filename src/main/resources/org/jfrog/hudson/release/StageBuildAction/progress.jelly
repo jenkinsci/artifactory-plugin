@@ -4,7 +4,7 @@
         <st:include it="${it.build}" page="sidepanel.jelly"/>
         <l:main-panel>
             <h1>Build ${it.build.displayName} Staging</h1>
-            <p>${%Promotion is in progress:}</p>
+            <p>${%Staging is in progress:}</p>
             <st:include page="log.jelly"/>
         </l:main-panel>
     </l:layout>

@@ -13,6 +13,9 @@
                             </j:forEach>
                         </select>
                     </f:entry>
+                    <f:entry title="${%Comment}" field="comment">
+                        <f:textarea name="comment"/>
+                    </f:entry>
                     <f:entry title="${%Target staging repository}" field="repositoryKey"
                              help="/plugin/artifactory/help/release/StageBuildAction/help-stagingRepository.html">
                         <select class="setting-input" name="repositoryKey">
@@ -20,9 +23,6 @@
                                 <f:option selected="${r==it.lastPromotionRepository}" value="${r}">${r}</f:option>
                             </j:forEach>
                         </select>
-                    </f:entry>
-                    <f:entry title="${%Comment}" field="comment">
-                        <f:textarea name="comment"/>
                     </f:entry>
                     <f:entry field="useCopy"
                              help="/plugin/artifactory/help/release/StageBuildAction/help-useCopy.html">
