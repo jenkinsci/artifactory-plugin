@@ -40,7 +40,7 @@ public class ArtifactoryProjectAction implements ProminentProjectAction {
     }
 
     public String getDisplayName() {
-        return "Artifactory Build Information";
+        return "Artifactory Build Info";
     }
 
     public String getUrlName() {

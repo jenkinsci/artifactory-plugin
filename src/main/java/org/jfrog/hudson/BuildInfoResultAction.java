@@ -48,7 +48,7 @@ public class BuildInfoResultAction implements BuildBadgeAction {
     }
 
     public String getDisplayName() {
-        return "Artifactory Build Information";
+        return "Artifactory Build Info";
     }
 
     public String getUrlName() {
