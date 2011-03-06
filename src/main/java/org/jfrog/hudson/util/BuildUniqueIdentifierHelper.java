@@ -108,8 +108,7 @@ public class BuildUniqueIdentifierHelper {
             ParameterDefinition parameterDefinition = jobProperty.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
             if (parameterDefinition != null) {
                 StringParameterDefinition definition = (StringParameterDefinition) parameterDefinition;
-                ParametersDefinitionProperty property =
-                        (ParametersDefinitionProperty) childProject.getProperty(ParametersDefinitionProperty.class);
+                ParametersDefinitionProperty property = childProject.getProperty(ParametersDefinitionProperty.class);
                 if (property != null) {
                     ParameterDefinition childDefinition = property.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
                     if (definition != null && definition instanceof StringParameterDefinition) {
@@ -127,11 +126,15 @@ public class BuildUniqueIdentifierHelper {
             // if it is the root project, add it as the unique identifier.
         } else {
             String downstreamBuild = Util.replaceMacro(BUILD_ID_PROPERTY, env);
-            ParametersDefinitionProperty property =
-                    (ParametersDefinitionProperty) childProject.getProperty(ParametersDefinitionProperty.class);
+            ParametersDefinitionProperty property = childProject.getProperty(ParametersDefinitionProperty.class);
             if (property != null) {
                 ParameterDefinition definition = property.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
-                if (definition != null && definition instanceof StringParameterDefinition) {
+                if (definition == null) {
+                    childProject.removeProperty(property);
+                    List<ParameterDefinition> definitions = Lists.newArrayList(property.getParameterDefinitions());
+                    definitions.add(new StringParameterDefinition(ARTIFACT_BUILD_ROOT_KEY, downstreamBuild));
+                    childProject.addProperty(new ParametersDefinitionProperty(definitions));
+                } else if (definition instanceof StringParameterDefinition) {
                     ((StringParameterDefinition) definition).setDefaultValue(downstreamBuild);
                 }
             } else {
