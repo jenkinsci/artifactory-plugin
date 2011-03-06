@@ -1,5 +1,6 @@
 package org.jfrog.hudson.util;
 
+import com.google.common.collect.Lists;
 import hudson.Util;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.model.AbstractBuild;
@@ -8,10 +9,12 @@ import hudson.model.ParameterDefinition;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterDefinition;
 import hudson.model.StringParameterValue;
+import org.jfrog.build.api.ArtifactoryResolutionProperties;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static org.jfrog.build.api.ArtifactoryResolutionProperties.ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY;
@@ -57,6 +60,30 @@ public class BuildUniqueIdentifierHelper {
             if (parameterDefinition != null) {
                 StringParameterValue value = (StringParameterValue) parameterDefinition.getDefaultParameterValue();
                 builder.addProperty(ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, value.value);
+            }
+        }
+    }
+
+    /**
+     * Remove the unique build identifier from a project, such that it will not be a parametrised project anymore and
+     * after the build has succeeded there is not meaning for it anymore.
+     *
+     * @param build The build from which to remove the {@link ParametersDefinitionProperty} which has a definition with
+     *              key {@link ArtifactoryResolutionProperties#ARTIFACT_BUILD_ROOT_KEY}
+     */
+    public static void removeUniqueIdentifierFromProject(AbstractBuild<?, ?> build) throws IOException {
+        AbstractProject<?, ?> project = build.getProject();
+        ParametersDefinitionProperty property = project.getProperty(ParametersDefinitionProperty.class);
+        if (property != null) {
+            ParameterDefinition definition =
+                    property.getParameterDefinition(ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY);
+            if (definition != null) {
+                List<ParameterDefinition> newDefinitions = Lists.newArrayList(property.getParameterDefinitions());
+                newDefinitions.remove(definition);
+                project.removeProperty(property);
+                if (!newDefinitions.isEmpty()) {
+                    project.addProperty(new ParametersDefinitionProperty(newDefinitions));
+                }
             }
         }
     }
