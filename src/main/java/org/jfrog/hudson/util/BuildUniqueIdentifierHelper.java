@@ -99,7 +99,7 @@ public class BuildUniqueIdentifierHelper {
      * @param env          The environment used for interpolation of the unique identifier
      */
     public static void addDownstreamUniqueIdentifier(AbstractBuild currentBuild,
-            AbstractProject childProject, Map<String, String> env) throws IOException {
+            AbstractProject<?, ?> childProject, Map<String, String> env) throws IOException {
         // if the current project is not the root project, simply pull the property from the upstream projects
         // with the ID to pass it downwards
         if (ActionableHelper.getUpstreamCause(currentBuild) != null) {

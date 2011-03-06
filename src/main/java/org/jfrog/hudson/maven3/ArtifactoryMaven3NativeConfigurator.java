@@ -48,7 +48,6 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     private final ServerDetails details;
     private final Credentials overridingResolverCredentials;
 
-
     @DataBoundConstructor
     public ArtifactoryMaven3NativeConfigurator(ServerDetails details, Credentials overridingResolverCredentials) {
         this.details = details;
@@ -150,7 +149,6 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 FileUtils.deleteQuietly(classWorldsFile);
                 return super.tearDown(build, listener);
             }
-
 
             private String appendNewMavenOpts(MavenModuleSet project) throws IOException {
                 StringBuilder mavenOpts = new StringBuilder();
