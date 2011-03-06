@@ -99,6 +99,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         } catch (MavenEmbedderException e) {
             throw new RuntimeException(e);
         }
+        final String mavenOpts = project.getMavenOpts();
         final File classWorldsFile = File.createTempFile("classworlds", "conf");
         build.setResult(Result.SUCCESS);
         return new Environment() {
@@ -147,6 +148,8 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
+                final MavenModuleSet project = (MavenModuleSet) build.getProject();
+                project.setMavenOpts(mavenOpts);
                 FileUtils.deleteQuietly(classWorldsFile);
                 return super.tearDown(build, listener);
             }
@@ -158,15 +161,13 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 if (StringUtils.isNotBlank(opts)) {
                     mavenOpts.append(opts);
                 }
-                if (!StringUtils.contains(opts, "-Dm3plugin.lib")) {
-                    File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
-                    try {
-                        FilePath actualDependencyDirectory =
-                                PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
-                        mavenOpts.append(" -Dm3plugin.lib=").append(actualDependencyDirectory.getRemote());
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+                File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
+                try {
+                    FilePath actualDependencyDirectory =
+                            PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
+                    mavenOpts.append(" -Dm3plugin.lib=").append(actualDependencyDirectory.getRemote());
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
                 return mavenOpts.toString();
             }
