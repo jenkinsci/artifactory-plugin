@@ -36,7 +36,7 @@
                     </f:entry>
                     <tr>
                         <td colspan="3">
-                            <f:submit value="${%Stage}"/>
+                            <f:submit value="${%Update}"/>
                         </td>
                     </tr>
                 </f:section>
