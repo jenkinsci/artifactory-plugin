@@ -25,14 +25,7 @@ import hudson.maven.MavenBuild;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.DependencyGraph;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -40,6 +33,7 @@ import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
+import org.jfrog.build.api.ArtifactoryResolutionProperties;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
@@ -269,6 +263,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                             build.getEnvironment(listener));
                 }
             }
+            removeUniqueIdentifierFromProject(build);
             return true;
         } catch (Exception e) {
             e.printStackTrace(listener.error(e.getMessage()));
@@ -279,6 +274,18 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         // failed
         build.setResult(Result.FAILURE);
         return true;
+    }
+
+    private void removeUniqueIdentifierFromProject(AbstractBuild<?, ?> build) throws IOException {
+        AbstractProject<?, ?> project = build.getProject();
+        ParametersDefinitionProperty property = project.getProperty(ParametersDefinitionProperty.class);
+        if (property != null) {
+            ParameterDefinition definition =
+                    property.getParameterDefinition(ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY);
+            if (definition != null) {
+                project.removeProperty(property);
+            }
+        }
     }
 
     private boolean isBuildFromM2ReleasePlugin(AbstractBuild<?, ?> build) {
