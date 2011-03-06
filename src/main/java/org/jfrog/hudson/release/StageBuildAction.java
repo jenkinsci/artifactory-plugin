@@ -76,7 +76,25 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
     }
 
     public String getUrlName() {
-        return "stage";
+        if (hasStagingPermission()) {
+            return "stage";
+        }
+        // return null to hide this action
+        return null;
+    }
+
+    public boolean hasStagingPermission() {
+        return getACL().hasPermission(getPermission());
+    }
+
+    @Override
+    protected Permission getPermission() {
+        return ReleaseWrapper.STAGE;
+    }
+
+    @Override
+    protected ACL getACL() {
+        return build.getACL();
     }
 
     public AbstractBuild getBuild() {
@@ -150,21 +168,13 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
+        getACL().checkPermission(getPermission());
+
         req.bindParameters(this);
 
         new StageWorkerThread().start();
 
         resp.sendRedirect(".");
-    }
-
-    @Override
-    protected Permission getPermission() {
-        return null;
-    }
-
-    @Override
-    protected ACL getACL() {
-        return build.getACL();
     }
 
     /**

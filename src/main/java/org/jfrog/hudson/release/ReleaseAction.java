@@ -82,7 +82,12 @@ public class ReleaseAction implements Action {
     }
 
     public String getIconFileName() {
-        return "/plugin/artifactory/images/artifactory-release.png";
+        if (project.hasPermission(ReleaseWrapper.RELEASE)) {
+            return "/plugin/artifactory/images/artifactory-release.png";
+        }
+
+        // return null to hide the action (doSubmit will also perform permission check if someone tries direct link)
+        return null;
     }
 
     /**
@@ -232,6 +237,9 @@ public class ReleaseAction implements Action {
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
+        // enforce release permissions
+        project.checkPermission(ReleaseWrapper.RELEASE);
+
         req.bindParameters(this);
 
         String versioningStr = req.getParameter("versioning");

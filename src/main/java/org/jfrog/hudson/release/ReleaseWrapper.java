@@ -28,10 +28,13 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import hudson.scm.SubversionSCM;
+import hudson.security.Permission;
+import hudson.security.PermissionGroup;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -52,6 +55,14 @@ import java.util.logging.Logger;
  */
 public class ReleaseWrapper extends BuildWrapper {
     private static Logger debuggingLogger = Logger.getLogger(ReleaseWrapper.class.getName());
+
+    //TODO: [by YS] Consider putting it in another place (both for centralizing future permissions and for better naming in the config.xml)
+    private static final PermissionGroup GROUP =
+            new PermissionGroup(DescriptorImpl.class, Messages._permission_group());
+    public static final Permission RELEASE = new Permission(GROUP, "Release",
+            Messages._permission_release(), Hudson.ADMINISTER);
+    public static final Permission STAGE = new Permission(GROUP, "Stage",
+            Messages._permission_stage(), Hudson.ADMINISTER);
 
     private String baseTagUrl;
     private String alternativeGoals;
