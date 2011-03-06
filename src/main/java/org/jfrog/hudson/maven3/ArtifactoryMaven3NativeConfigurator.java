@@ -159,6 +159,9 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 if (StringUtils.isNotBlank(opts)) {
                     mavenOpts.append(opts);
                 }
+                if (StringUtils.contains(mavenOpts.toString(), "-Dm3plugin.lib")) {
+                    return mavenOpts.toString();
+                }
                 File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
                 try {
                     FilePath actualDependencyDirectory =
