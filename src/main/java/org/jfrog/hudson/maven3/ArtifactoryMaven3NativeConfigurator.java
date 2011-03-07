@@ -26,7 +26,6 @@ import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.PluginDependencyHelper;
@@ -37,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -72,7 +72,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
+        return Collections.emptyList();
     }
 
     public boolean isOverridingDefaultResolver() {
