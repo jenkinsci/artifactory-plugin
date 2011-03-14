@@ -25,6 +25,7 @@ import hudson.model.Cause;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.scm.SubversionManager;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -71,6 +72,7 @@ public class ReleaseAction implements Action {
     String tagComment;
     String stagingRepositoryKey;
     String stagingComment;
+    // TODO: maybe it should be saved in the scm coordinator
     boolean tagCreated;
 
     public enum VERSIONING {
@@ -99,6 +101,26 @@ public class ReleaseAction implements Action {
 
     public String getUrlName() {
         return "release";
+    }
+
+    public boolean isCreateVcsTag() {
+        return createVcsTag;
+    }
+
+    public boolean isTagCreated() {
+        return tagCreated;
+    }
+
+    public void setTagCreated(boolean tagCreated) {
+        this.tagCreated = tagCreated;
+    }
+
+    public String getTagUrl() {
+        return tagUrl;
+    }
+
+    public String getTagComment() {
+        return tagComment;
     }
 
     public Collection<MavenModule> getModules() {

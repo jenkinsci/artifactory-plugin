@@ -32,13 +32,14 @@ import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
-import hudson.scm.SubversionSCM;
 import hudson.security.Permission;
 import hudson.security.PermissionGroup;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -66,6 +67,8 @@ public class ReleaseWrapper extends BuildWrapper {
 
     private String baseTagUrl;
     private String alternativeGoals;
+
+    private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
     public ReleaseWrapper(String baseTagUrl, String alternativeGoals) {
@@ -107,6 +110,8 @@ public class ReleaseWrapper extends BuildWrapper {
         log(listener, "Release build triggered");
 
         final MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
+        scmCoordinator = new ScmCoordinator(build, listener);
+        scmCoordinator.prepare();
         if (!releaseAction.versioning.equals(ReleaseAction.VERSIONING.NONE)) {
             // change to release version
             String vcsUrl = releaseAction.createVcsTag ? getBaseTagUrl() : null;
@@ -129,31 +134,19 @@ public class ReleaseWrapper extends BuildWrapper {
                     mavenModuleSet.setGoals(originalGoals);
                 }
 
-                SubversionManager svn = new SubversionManager(build, listener);
                 if (build.getResult().isWorseThan(Result.SUCCESS)) {
                     // revert will happen by the listener
                     return true;
                 }
 
-                if (releaseAction.createVcsTag) {
-                    // create subversion tag
-                    try {
-                        svn.createTag(releaseAction.tagUrl, releaseAction.tagComment);
-                        releaseAction.tagCreated = true;
-                    } catch (IOException e) {
-                        // revert working copy and re-throw the original exception
-                        svn.safeRevertWorkingCopy();
-                        throw e;
-                    }
-                }
+                scmCoordinator.afterSuccessfulReleaseVersionBuild();
 
                 if (!releaseAction.versioning.equals(ReleaseAction.VERSIONING.NONE)) {
                     // change poms versions to next development version
-                    String scmUrl = releaseAction.createVcsTag ? svn.getLocation().remote : null;
+                    String scmUrl = releaseAction.createVcsTag ? scmCoordinator.getRemoteUrl() : null;
                     changeVersions(mavenBuild, releaseAction, false, scmUrl);
+                    scmCoordinator.afterDevelopmentVersionChange();
                 }
-
-                svn.commitWorkingCopy("Committing next development version");
 
                 return true;
             }
@@ -208,7 +201,7 @@ public class ReleaseWrapper extends BuildWrapper {
          */
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return (item instanceof MavenModuleSet) && (item.getScm() instanceof SubversionSCM);
+            return (item instanceof MavenModuleSet)/* && (item.getScm() instanceof SubversionSCM)*/;
         }
 
         /**
@@ -248,29 +241,24 @@ public class ReleaseWrapper extends BuildWrapper {
                 return;
             }
 
-            MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) run;
-            ReleaseAction releaseAction = mavenBuild.getAction(ReleaseAction.class);
+            ReleaseAction releaseAction = run.getAction(ReleaseAction.class);
             if (releaseAction == null) {
                 return;
             }
 
             // remove the release action from the build. the stage action is the point of interaction for successful builds
-            mavenBuild.getActions().remove(releaseAction);
+            run.getActions().remove(releaseAction);
 
-            Result result = mavenBuild.getResult();
+            Result result = run.getResult();
             if (result.isBetterOrEqualTo(Result.SUCCESS)) {
                 // add a stage action
-                mavenBuild.addAction(new StageBuildAction(mavenBuild));
-                return;
+                run.addAction(new StageBuildAction(run));
             }
 
-            // build has failed, make sure to delete the tag and revert the working copy
-            //run.getActions().remove(releaseBadge);
-            SubversionManager svn = new SubversionManager(mavenBuild, listener);
-            svn.safeRevertWorkingCopy();
-            if (releaseAction.tagCreated) {
-                svn.safeRevertTag(releaseAction.tagUrl, "Reverting vcs tag: " + releaseAction.tagUrl);
-            }
+            // signal completion to the scm coordinator
+            MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) run;
+            ReleaseWrapper wrapper = ActionableHelper.getReleaseWrapper(mavenBuild.getProject(), ReleaseWrapper.class);
+            wrapper.scmCoordinator.buildCompleted();
         }
     }
 }

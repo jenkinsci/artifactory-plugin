@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.release;
+package org.jfrog.hudson.release.scm;
 
 import hudson.FilePath;
 import hudson.maven.agent.AbortException;
 import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.SubversionSCM;
@@ -49,17 +48,15 @@ import java.util.logging.Logger;
  *
  * @author Yossi Shaul
  */
-public class SubversionManager {
+public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     private static Logger debuggingLogger = Logger.getLogger(SubversionManager.class.getName());
 
-    public static final String COMMENT_PREFIX = "[artifactory-release] ";
-
-    private final AbstractBuild<?, ?> abstractBuild;
-    private final TaskListener buildListener;
-
     public SubversionManager(AbstractBuild<?, ?> abstractBuild, TaskListener buildListener) {
-        this.abstractBuild = abstractBuild;
-        this.buildListener = buildListener;
+        super(abstractBuild, buildListener);
+    }
+
+    public void prepare() {
+        // nothing to do here
     }
 
     /**
@@ -70,7 +67,7 @@ public class SubversionManager {
      * @throws IOException On IO of SVN failure
      */
     public SVNCommitInfo commitWorkingCopy(final String commitMessageSuffix) throws IOException, InterruptedException {
-        return abstractBuild.getWorkspace().act(new FilePath.FileCallable<SVNCommitInfo>() {
+        return build.getWorkspace().act(new FilePath.FileCallable<SVNCommitInfo>() {
             public SVNCommitInfo invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 SubversionSCM.ModuleLocation location = getLocation();
                 File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
@@ -103,7 +100,7 @@ public class SubversionManager {
      */
     public SVNCommitInfo createTag(final String tagUrl, final String commitMessage)
             throws IOException, InterruptedException {
-        return abstractBuild.getWorkspace().act(new FilePath.FileCallable<SVNCommitInfo>() {
+        return build.getWorkspace().act(new FilePath.FileCallable<SVNCommitInfo>() {
             public SVNCommitInfo invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 SubversionSCM.ModuleLocation moduleLocation = getLocation();
                 File workingCopy = new File(ws, moduleLocation.getLocalDir()).getCanonicalFile();
@@ -132,7 +129,7 @@ public class SubversionManager {
      * Revert all the working copy changes.
      */
     public void revertWorkingCopy() throws IOException, InterruptedException {
-        abstractBuild.getWorkspace().act(new FilePath.FileCallable<Object>() {
+        build.getWorkspace().act(new FilePath.FileCallable<Object>() {
             public Object invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 SubversionSCM.ModuleLocation location = getLocation();
                 File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
@@ -182,7 +179,7 @@ public class SubversionManager {
     }
 
     private void cleanupWorkingCopy() throws IOException, InterruptedException {
-        abstractBuild.getWorkspace().act(new FilePath.FileCallable<Object>() {
+        build.getWorkspace().act(new FilePath.FileCallable<Object>() {
             public Object invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 SubversionSCM.ModuleLocation location = getLocation();
                 File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
@@ -214,13 +211,16 @@ public class SubversionManager {
         }
     }
 
-    private void log(String message) {
-        buildListener.getLogger().println("[RELEASE] " + message);
+    public String getRemoteUrl() {
+        return getLocation().remote;
+    }
+
+    public SubversionSCM.ModuleLocation getLocation() {
+        return getHudsonScm().getLocations()[0];
     }
 
     private ISVNAuthenticationManager createAuthenticationManager() {
-        SubversionSCM scm = getSubversionSCM();
-        ISVNAuthenticationProvider sap = scm.getDescriptor().createAuthenticationProvider();
+        ISVNAuthenticationProvider sap = getHudsonScm().getDescriptor().createAuthenticationProvider();
         if (sap == null) {
             throw new AbortException("Subversion authentication info is not set.");
         }
@@ -229,14 +229,4 @@ public class SubversionManager {
         sam.setAuthenticationProvider(sap);
         return sam;
     }
-
-    private SubversionSCM getSubversionSCM() {
-        AbstractProject<?, ?> rootProject = abstractBuild.getProject().getRootProject();
-        return (SubversionSCM) rootProject.getScm();
-    }
-
-    SubversionSCM.ModuleLocation getLocation() {
-        return getSubversionSCM().getLocations()[0];
-    }
-
 }

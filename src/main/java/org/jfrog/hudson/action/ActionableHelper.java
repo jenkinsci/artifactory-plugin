@@ -31,7 +31,6 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.Publisher;
 import hudson.util.DescribableList;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.release.ReleaseWrapper;
 
 import java.util.Collections;
 import java.util.List;
@@ -79,7 +78,7 @@ public abstract class ActionableHelper {
     /**
      * @return The wrapped item (eg, project) wrapper of the given type. Null if not found.
      */
-    public static <T extends ReleaseWrapper> T getReleaseWrapper(BuildableItemWithBuildWrappers wrapped,
+    public static <T extends BuildWrapper> T getReleaseWrapper(BuildableItemWithBuildWrappers wrapped,
             Class<T> type) {
         DescribableList<BuildWrapper, Descriptor<BuildWrapper>> wrappers = wrapped.getBuildWrappersList();
         for (BuildWrapper wrapper : wrappers) {
