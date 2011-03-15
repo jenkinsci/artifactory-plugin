@@ -37,6 +37,7 @@ import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
@@ -78,6 +79,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean notM2Compatible;
     private final IncludesExcludes artifactDeploymentPatterns;
     private final boolean discardOldBuilds;
+    private final boolean passIdentifiedDownstream;
 
 
     @DataBoundConstructor
@@ -86,7 +88,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-            boolean discardOldBuilds) {
+            boolean discardOldBuilds, boolean passIdentifiedDownstream) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -105,11 +107,16 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.discardOldBuilds = discardOldBuilds;
+        this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public boolean isPassIdentifiedDownstream() {
+        return passIdentifiedDownstream;
     }
 
     public boolean isDiscardOldBuilds() {
@@ -248,6 +255,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     if (isDeployBuildInfo()) {
                         build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
                     }
+                    if (isPassIdentifiedDownstream()) {
+                        BuildUniqueIdentifierHelper
+                                .addUniqueIdentifierToChildProjects(build, build.getEnvironment(listener));
+                    }
+                    BuildUniqueIdentifierHelper.removeUniqueIdentifierFromProject(build);
                     return true;
                 }
                 return false;

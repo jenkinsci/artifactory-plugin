@@ -30,7 +30,6 @@ import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
-import hudson.model.DependencyGraph;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
@@ -260,14 +259,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
             }
             if (isPassIdentifiedDownstream()) {
-                DependencyGraph graph = Hudson.getInstance().getDependencyGraph();
-                List<DependencyGraph.Dependency> downstreamDependencies =
-                        graph.getDownstreamDependencies(build.getProject());
-                for (DependencyGraph.Dependency dependency : downstreamDependencies) {
-                    AbstractProject project = dependency.getDownstreamProject();
-                    BuildUniqueIdentifierHelper.addDownstreamUniqueIdentifier(build, project,
-                            build.getEnvironment(listener));
-                }
+                BuildUniqueIdentifierHelper.addUniqueIdentifierToChildProjects(build, build.getEnvironment(listener));
             }
             BuildUniqueIdentifierHelper.removeUniqueIdentifierFromProject(build);
             return true;

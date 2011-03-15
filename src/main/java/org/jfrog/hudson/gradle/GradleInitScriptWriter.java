@@ -31,6 +31,7 @@ import hudson.tasks.LogRotator;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.ArtifactoryPluginUtils;
+import org.jfrog.build.api.ArtifactoryResolutionProperties;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ClientGradleProperties;
@@ -39,6 +40,7 @@ import org.jfrog.build.client.ClientProperties;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.IncludesExcludes;
@@ -74,7 +76,7 @@ public class GradleInitScriptWriter {
         this.build = build;
     }
 
-    private String addProperties() {
+    private String addProperties() throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
         String key = ClientProperties.PROP_CONTEXT_URL;
         ArtifactoryServer artifactoryServer = getArtifactoryServer();
@@ -212,6 +214,19 @@ public class GradleInitScriptWriter {
         }
         ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS,
                 String.valueOf(gradleConfigurator.includeEnvVars));
+        if (gradleConfigurator.isPassIdentifiedDownstream() && ActionableHelper.getUpstreamCause(build) == null) {
+            String currentIdentifier = BuildUniqueIdentifierHelper.getUniqueBuildIdentifier(envVars);
+            if (StringUtils.isNotBlank(currentIdentifier)) {
+                ArtifactoryPluginUtils.addProperty(stringBuilder,
+                        ArtifactoryResolutionProperties.ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, currentIdentifier);
+            }
+        }
+        String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(build);
+        if (StringUtils.isNotBlank(identifier)) {
+            ArtifactoryPluginUtils.addProperty(stringBuilder,
+                    ArtifactoryResolutionProperties.ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, identifier);
+            BuildUniqueIdentifierHelper.removeUniqueIdentifierFromProject(build);
+        }
         // add build variables
         Map<String, String> buildVariables = build.getBuildVariables();
         for (Map.Entry<String, String> entry : buildVariables.entrySet()) {
