@@ -25,6 +25,7 @@ import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
@@ -41,6 +42,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Deploys artifacts to Artifactory.
@@ -48,7 +50,7 @@ import java.util.Map;
  * @author Yossi Shaul
  */
 public class ArtifactsDeployer {
-
+    private static Logger debuggingLogger = Logger.getLogger(ArtifactsDeployer.class.getName());
 
     private final ArtifactoryServer artifactoryServer;
     private final String targetReleasesRepository;
@@ -97,17 +99,26 @@ public class ArtifactsDeployer {
             MavenArtifact mavenArtifact = mar.mainArtifact;
 
             // deploy main artifact
+            debuggingLogger.fine("Deploying main artifact: " + artifactToString(mavenArtifact, mavenBuild));
             deployArtifact(mavenBuild, mavenArtifact);
             if (!mar.isPOM() && mar.pomArtifact != null && mar.pomArtifact != mar.mainArtifact) {
                 // deploy the pom if the main artifact is not the pom
+                debuggingLogger.fine("Deploying pom artifact: " + artifactToString(mavenArtifact, mavenBuild));
                 deployArtifact(mavenBuild, mar.pomArtifact);
             }
 
             // deploy attached artifacts
             for (MavenArtifact attachedArtifact : mar.attachedArtifacts) {
+                debuggingLogger.fine("Deploying attached artifact: " + artifactToString(mavenArtifact, mavenBuild));
                 deployArtifact(mavenBuild, attachedArtifact);
             }
         }
+    }
+
+    private String artifactToString(MavenArtifact mavenArtifact, MavenBuild mavenBuild) throws FileNotFoundException {
+        return new StringBuilder().append(ToStringBuilder.reflectionToString(mavenArtifact))
+                .append("[File: ").append(getArtifactFile(mavenBuild, mavenArtifact)).append("]")
+                .toString();
     }
 
     private void deployArtifact(MavenBuild mavenBuild, MavenArtifact mavenArtifact)
