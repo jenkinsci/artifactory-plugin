@@ -43,6 +43,7 @@ public class ScmCoordinator {
 
     public void prepare() throws IOException, InterruptedException {
         scmManager = createScmManager(build, listener);
+        // TODO: remove prepare method from ScmManager
         scmManager.prepare();
     }
 
@@ -63,13 +64,12 @@ public class ScmCoordinator {
         scmManager.commitWorkingCopy("Committing next development version");
     }
 
-    public void buildCompleted() {
+    public void buildCompleted() throws IOException, InterruptedException {
         if (isSvn()) {
             buildCompletedSvn();
         } else {
             buildCompletedGit();
         }
-
     }
 
     private void buildCompletedSvn() {
@@ -84,9 +84,13 @@ public class ScmCoordinator {
         }
     }
 
-    private void buildCompletedGit() {
+    private void buildCompletedGit() throws IOException, InterruptedException {
+        GitManager gitManager = (GitManager) scmManager;
         if (build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
-            // TODO: push changes done by the release process (don't push other changes)
+            // push changes done by the release process (but don't push tags created by the git scm)
+            gitManager.push();
+            ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
+            gitManager.pushTag(releaseAction.getTagUrl());
         } else {
             scmManager.safeRevertWorkingCopy();
         }
@@ -105,8 +109,9 @@ public class ScmCoordinator {
                 "Scm of type: " + projectScm.getClass().getName() + " is not supported");
     }
 
-    public String getRemoteUrl() {
-        return scmManager.getRemoteUrl();
+    public String getRemoteUrlForPom() {
+        // return remote url only for svn; git uses the same url
+        return isGit() ? null : scmManager.getRemoteUrl();
     }
 
     boolean isSvn() {

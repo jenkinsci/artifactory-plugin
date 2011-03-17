@@ -85,14 +85,51 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
+                    String escapedTagName = tagName.replace(' ', '_');
                     GitAPI git = createGitAPI(ws);
-                    // create local tag
-                    log("Creating git tag: " + tagName);
-                    String tagOutput = git.launchCommand("tag", "-a", tagName, "-m", commitMessage);
+                    if (git.tagExists(escapedTagName)) {
+                        throw new IOException("Git tag '" + escapedTagName + "' already exists");
+                    }
+                    log("Creating git tag: " + escapedTagName);
+                    String tagOutput = git.launchCommand("tag", "-a", escapedTagName, "-m", commitMessage);
                     debuggingLogger.fine(String.format("Tag command output:%n%s", tagOutput));
                     return tagOutput;
                 } catch (GitException e) {
-                    throw new IOException("Git working copy commit and tag creation failed: " + e.getMessage());
+                    throw new IOException("Git tag creation failed: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    public void push() throws IOException, InterruptedException {
+        build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    GitAPI git = createGitAPI(workspace);
+                    log("Pushing git changes");
+                    String pushOutput = git.launchCommand("push", getRemoteUrl());
+                    debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
+                    return pushOutput;
+                } catch (GitException e) {
+                    throw new IOException("Failed to reset working copy: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    public void pushTag(final String tagName) throws IOException, InterruptedException {
+        build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    String escapedTagName = tagName.replace(' ', '_');
+                    GitAPI git = createGitAPI(workspace);
+                    log("Pushing git tag: " + escapedTagName);
+                    String remoteUri = getRemoteUrl();
+                    String pushOutput = git.launchCommand("push", remoteUri, escapedTagName);
+                    debuggingLogger.fine(String.format("Push tag command output:%n%s", pushOutput));
+                    return pushOutput;
+                } catch (GitException e) {
+                    throw new IOException("Failed to reset working copy: " + e.getMessage());
                 }
             }
         });
@@ -130,7 +167,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     public String getRemoteUrl() {
         RemoteConfig remoteConfig = getHudsonScm().getRepositories().get(0);
         URIish uri = remoteConfig.getURIs().get(0);
-        return uri.toString();
+        return uri.toPrivateString();
     }
 
     private GitAPI createGitAPI(File workspace) throws IOException, InterruptedException {

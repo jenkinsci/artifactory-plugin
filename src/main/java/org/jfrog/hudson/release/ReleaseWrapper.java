@@ -143,7 +143,7 @@ public class ReleaseWrapper extends BuildWrapper {
 
                 if (!releaseAction.versioning.equals(ReleaseAction.VERSIONING.NONE)) {
                     // change poms versions to next development version
-                    String scmUrl = releaseAction.createVcsTag ? scmCoordinator.getRemoteUrl() : null;
+                    String scmUrl = releaseAction.createVcsTag ? scmCoordinator.getRemoteUrlForPom() : null;
                     changeVersions(mavenBuild, releaseAction, false, scmUrl);
                     scmCoordinator.afterDevelopmentVersionChange();
                 }
@@ -246,9 +246,6 @@ public class ReleaseWrapper extends BuildWrapper {
                 return;
             }
 
-            // remove the release action from the build. the stage action is the point of interaction for successful builds
-            run.getActions().remove(releaseAction);
-
             Result result = run.getResult();
             if (result.isBetterOrEqualTo(Result.SUCCESS)) {
                 // add a stage action
@@ -258,7 +255,15 @@ public class ReleaseWrapper extends BuildWrapper {
             // signal completion to the scm coordinator
             MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) run;
             ReleaseWrapper wrapper = ActionableHelper.getReleaseWrapper(mavenBuild.getProject(), ReleaseWrapper.class);
-            wrapper.scmCoordinator.buildCompleted();
+            try {
+                wrapper.scmCoordinator.buildCompleted();
+            } catch (Exception e) {
+                listener.error("[RELEASE] Failed on build completion");
+                e.printStackTrace(listener.getLogger());
+            }
+
+            // remove the release action from the build. the stage action is the point of interaction for successful builds
+            run.getActions().remove(releaseAction);
         }
     }
 }
