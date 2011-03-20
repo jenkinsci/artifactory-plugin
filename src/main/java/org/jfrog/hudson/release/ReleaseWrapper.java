@@ -255,7 +255,7 @@ public class ReleaseWrapper extends BuildWrapper {
 
             // signal completion to the scm coordinator
             MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) run;
-            ReleaseWrapper wrapper = ActionableHelper.getReleaseWrapper(mavenBuild.getProject(), ReleaseWrapper.class);
+            ReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(mavenBuild.getProject(), ReleaseWrapper.class);
             try {
                 wrapper.scmCoordinator.buildCompleted();
             } catch (Exception e) {

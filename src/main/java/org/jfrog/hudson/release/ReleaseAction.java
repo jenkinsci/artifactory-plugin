@@ -140,7 +140,7 @@ public class ReleaseAction implements Action {
     }
 
     public String getDefaultTagUrl() {
-        ReleaseWrapper wrapper = ActionableHelper.getReleaseWrapper(project, ReleaseWrapper.class);
+        ReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, ReleaseWrapper.class);
         if (wrapper == null) {
             return null;
         }
