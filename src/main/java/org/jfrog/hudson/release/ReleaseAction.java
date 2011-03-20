@@ -25,7 +25,7 @@ import hudson.model.Cause;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.release.scm.SubversionManager;
+import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 

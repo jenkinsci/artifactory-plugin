@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.release.scm;
+package org.jfrog.hudson.release.scm.git;
 
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -25,6 +25,7 @@ import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitSCM;
 import hudson.remoting.VirtualChannel;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.release.scm.AbstractScmManager;
 import org.spearce.jgit.transport.RemoteConfig;
 import org.spearce.jgit.transport.URIish;
 

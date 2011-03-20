@@ -39,6 +39,7 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -110,7 +111,7 @@ public class ReleaseWrapper extends BuildWrapper {
         log(listener, "Release build triggered");
 
         final MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
-        scmCoordinator = new ScmCoordinator(build, listener);
+        scmCoordinator = AbstractScmCoordinator.createScmCoordinator(build, listener);
         scmCoordinator.prepare();
         if (!releaseAction.versioning.equals(ReleaseAction.VERSIONING.NONE)) {
             // change to release version

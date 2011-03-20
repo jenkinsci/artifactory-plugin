@@ -28,8 +28,8 @@ import hudson.scm.SCM;
 public abstract class AbstractScmManager<T extends SCM> implements ScmManager {
 
     public static final String COMMENT_PREFIX = "[artifactory-release] ";
-    final AbstractBuild<?, ?> build;
-    final TaskListener buildListener;
+    protected final AbstractBuild<?, ?> build;
+    protected final TaskListener buildListener;
 
     public AbstractScmManager(AbstractBuild<?, ?> build, TaskListener buildListener) {
         this.build = build;

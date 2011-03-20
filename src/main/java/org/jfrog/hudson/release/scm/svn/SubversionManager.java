@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.release.scm;
+package org.jfrog.hudson.release.scm.svn;
 
 import hudson.FilePath;
 import hudson.maven.agent.AbortException;
@@ -22,6 +22,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.SubversionSCM;
+import org.jfrog.hudson.release.scm.AbstractScmManager;
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
