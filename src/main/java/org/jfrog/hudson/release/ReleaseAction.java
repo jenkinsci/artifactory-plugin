@@ -25,6 +25,7 @@ import hudson.model.Cause;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -75,6 +76,9 @@ public class ReleaseAction implements Action {
     // TODO: maybe it should be saved in the scm coordinator
     boolean tagCreated;
 
+    boolean createReleaseBranch;
+    String releaseBranch;
+
     public enum VERSIONING {
         GLOBAL, PER_MODULE, NONE
     }
@@ -123,6 +127,14 @@ public class ReleaseAction implements Action {
         return tagComment;
     }
 
+    public boolean isCreateReleaseBranch() {
+        return createReleaseBranch;
+    }
+
+    public String getReleaseBranch() {
+        return releaseBranch;
+    }
+
     public Collection<MavenModule> getModules() {
         return project.getDisabledModules(false);
     }
@@ -153,8 +165,16 @@ public class ReleaseAction implements Action {
         return sb.toString();
     }
 
+    public String getDefaultReleaseBranch() {
+        return getDefaultTagUrl();
+    }
+
     public String getDefaultTagComment() {
         return SubversionManager.COMMENT_PREFIX + "Creating release tag for version " + calculateReleaseVersion();
+    }
+
+    public boolean isGit() {
+        return AbstractScmCoordinator.isGitScm(project);
     }
 
     /**
@@ -290,6 +310,11 @@ public class ReleaseAction implements Action {
         if (createVcsTag) {
             tagUrl = req.getParameter("tagUrl");
             tagComment = req.getParameter("tagComment");
+        }
+
+        createReleaseBranch = req.getParameter("createReleaseBranch") != null;
+        if (createReleaseBranch) {
+            releaseBranch = req.getParameter("releaseBranch");
         }
 
         stagingRepositoryKey = req.getParameter("repositoryKey");

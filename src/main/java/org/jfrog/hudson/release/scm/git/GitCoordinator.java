@@ -35,13 +35,14 @@ public class GitCoordinator extends AbstractScmCoordinator {
     private static Logger debuggingLogger = Logger.getLogger(GitCoordinator.class.getName());
 
     private GitManager scmManager;
-    private String releaseBranch = "release-branch";
+    private String releaseBranch;
     private String checkoutBranch = "master";
 
     public GitCoordinator(AbstractBuild build, BuildListener listener) {
         super(build, listener);
-        // TODO: take release branch from release action
-        releaseBranch += "-" + build.getNumber();
+        // TODO: check if should create release branch
+        ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
+        releaseBranch = releaseAction.getReleaseBranch();
     }
 
     public void prepare() throws IOException, InterruptedException {

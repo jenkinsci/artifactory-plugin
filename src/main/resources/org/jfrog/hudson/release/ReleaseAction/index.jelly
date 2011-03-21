@@ -46,23 +46,38 @@
                                       help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
                         </f:radioBlock>
                     </f:section>
+
+                    <f:section title="${%VCS Configuration}">
+                        <j:if test="${it.isGit()}">
+                            <f:optionalBlock field="useReleaseBranch" name="useReleaseBranch"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-useReleaseBranch.html"
+                                             title="Use release branch"
+                                             checked="${null != it.defaultReleaseBranch}"
+                                             inline="true">
+                                <f:entry field="releaseBranch" title="Release branch"
+                                         help="/plugin/artifactory/help/release/ReleaseAction/help-releaseBranch.html">
+                                    <f:textbox name="releaseBranch" value="${it.defaultReleaseBranch}"/>
+                                </f:entry>
+                            </f:optionalBlock>
+                        </j:if>
+                        <f:optionalBlock field="createVcsTag" name="createVcsTag"
+                                         help="/plugin/artifactory/help/release/ReleaseAction/help-createVcsTag.html"
+                                         title="Create VCS tag"
+                                         checked="${null != it.defaultTagUrl}"
+                                         inline="true">
+                            <f:entry field="tagUrl" title="Tag URL"
+                                     help="/plugin/artifactory/help/release/ReleaseAction/help-tagUrl.html">
+                                <f:textbox name="tagUrl" value="${it.defaultTagUrl}"/>
+                            </f:entry>
+                            <f:entry title="${%Comment}" field="tagComment"
+                                     help="/plugin/artifactory/help/release/ReleaseAction/help-tagComment.html">
+                                <f:textarea name="tagComment" default="${it.defaultTagComment}"/>
+                            </f:entry>
+                        </f:optionalBlock>
+                    </f:section>
                     <f:block>
                         <hr/>
                     </f:block>
-                    <f:optionalBlock field="createVcsTag" name="createVcsTag"
-                                     help="/plugin/artifactory/help/release/ReleaseAction/help-createVcsTag.html"
-                                     title="Create VCS tag"
-                                     checked="${null != it.defaultTagUrl}"
-                                     inline="true">
-                        <f:entry field="tagUrl" title="Tag URL"
-                                 help="/plugin/artifactory/help/release/ReleaseAction/help-tagUrl.html">
-                            <f:textbox name="tagUrl" value="${it.defaultTagUrl}"/>
-                        </f:entry>
-                        <f:entry title="${%Comment}" field="tagComment"
-                                 help="/plugin/artifactory/help/release/ReleaseAction/help-tagComment.html">
-                            <f:textarea name="tagComment" default="${it.defaultTagComment}"/>
-                        </f:entry>
-                    </f:optionalBlock>
                     <f:entry title="${%Repository to stage the release to}" field="repositoryKey"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-stagingRepository.html">
                         <select class="setting-input" name="repositoryKey">
