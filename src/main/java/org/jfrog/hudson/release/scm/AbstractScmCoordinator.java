@@ -50,4 +50,8 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
         throw new UnsupportedOperationException(
                 "Scm of type: " + projectScm.getClass().getName() + " is not supported");
     }
+
+    protected void log(String message) {
+        listener.getLogger().println("[RELEASE] " + message);
+    }
 }

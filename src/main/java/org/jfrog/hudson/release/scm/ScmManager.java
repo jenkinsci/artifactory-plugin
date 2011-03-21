@@ -25,18 +25,12 @@ import java.io.IOException;
  */
 public interface ScmManager {
 
-    void prepare() throws IOException, InterruptedException;
-
     Object commitWorkingCopy(String commitMessageSuffix) throws IOException, InterruptedException;
 
     Object createTag(String tagUrl, String commitMessage)
             throws IOException, InterruptedException;
 
     void revertWorkingCopy() throws IOException, InterruptedException;
-
-    void safeRevertWorkingCopy();
-
-    void safeRevertTag(String tagUrl, String commitMessageSuffix);
 
     String getRemoteUrl();
 }

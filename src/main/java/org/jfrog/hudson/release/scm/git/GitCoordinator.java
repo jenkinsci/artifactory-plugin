@@ -23,6 +23,8 @@ import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Git scm coordinator. Interacts with the {@link GitManager} to fulfill the release process.
@@ -30,16 +32,25 @@ import java.io.IOException;
  * @author Yossi Shaul
  */
 public class GitCoordinator extends AbstractScmCoordinator {
+    private static Logger debuggingLogger = Logger.getLogger(GitCoordinator.class.getName());
+
     private GitManager scmManager;
+    private String releaseBranch = "release-branch";
+    private String checkoutBranch = "master";
 
     public GitCoordinator(AbstractBuild build, BuildListener listener) {
         super(build, listener);
+        // TODO: take release branch from release action
+        releaseBranch += "-" + build.getNumber();
     }
 
     public void prepare() throws IOException, InterruptedException {
         scmManager = new GitManager(build, listener);
-        // TODO: remove prepare method from ScmManager
-        scmManager.prepare();
+
+        scmManager.getCurrentCommitHash();
+
+        // create a new branch and start it
+        scmManager.checkoutBranch(releaseBranch, true);
     }
 
     public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
@@ -51,6 +62,12 @@ public class GitCoordinator extends AbstractScmCoordinator {
             scmManager.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment());
             releaseAction.setTagCreated(true);
         }
+
+        // TODO: beforeDevelopmentVersionChange should do this
+        // done working on the release branch, checkout back to master
+        // TODO: discover master branch
+        scmManager.checkoutBranch(checkoutBranch, false);
+
     }
 
     public void afterDevelopmentVersionChange() throws IOException, InterruptedException {
@@ -58,14 +75,45 @@ public class GitCoordinator extends AbstractScmCoordinator {
     }
 
     public void buildCompleted() throws IOException, InterruptedException {
-        GitManager gitManager = (GitManager) scmManager;
         if (build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
-            // push changes done by the release process (but don't push tags created by the git scm)
-            gitManager.push();
+            // push the release branch
+            scmManager.push(scmManager.getRemoteUrl(), releaseBranch);
+            // push the tag if created
             ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
-            gitManager.pushTag(releaseAction.getTagUrl());
+            if (releaseAction.isTagCreated()) {
+                scmManager.pushTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
+            }
+            // TODO: only if different from the original
+            // push the next development version (if different from original)
+            // pull before attempting to push changes
+            //scmManager.pull(scmManager.getRemoteUrl(), checkoutBranch);
+            scmManager.push(scmManager.getRemoteUrl(), checkoutBranch);
         } else {
-            scmManager.safeRevertWorkingCopy();
+            // go back to the original checkout branch
+            scmManager.checkoutBranch(checkoutBranch, false);
+            // delete the release branch
+            safeDeleteBranch(releaseBranch);
+            // TODO: make sure it is required and the right branch (master)
+            // reset changes done on the original checkout branch (next dev version)
+            safeRevertWorkingCopy();
+        }
+    }
+
+    public void safeDeleteBranch(String branch) {
+        try {
+            scmManager.deleteBranch(branch);
+        } catch (Exception e) {
+            debuggingLogger.log(Level.FINE, "Failed to delete release branch: ", e);
+            log("Failed to revert working copy: " + e.getLocalizedMessage());
+        }
+    }
+
+    public void safeRevertWorkingCopy() {
+        try {
+            scmManager.revertWorkingCopy();
+        } catch (Exception e) {
+            debuggingLogger.log(Level.FINE, "Failed to revert working copy: ", e);
+            log("Failed to revert working copy: " + e.getLocalizedMessage());
         }
     }
 

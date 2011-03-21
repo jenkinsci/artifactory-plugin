@@ -24,6 +24,7 @@ import hudson.plugins.git.GitAPI;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitSCM;
 import hudson.remoting.VirtualChannel;
+import hudson.util.ArgumentListBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
 import org.spearce.jgit.transport.RemoteConfig;
@@ -31,7 +32,6 @@ import org.spearce.jgit.transport.URIish;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -47,8 +47,8 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         super(build, buildListener);
     }
 
-    public void prepare() throws IOException, InterruptedException {
-        build.getWorkspace().act(new FilePath.FileCallable<String>() {
+    public String getCurrentCommitHash() throws IOException, InterruptedException {
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
                     GitAPI git = createGitAPI(ws);
@@ -63,7 +63,28 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
-    public Object commitWorkingCopy(final String commitMessageSuffix) throws IOException, InterruptedException {
+    public String checkoutBranch(final String branch, final boolean create) throws IOException, InterruptedException {
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    GitAPI git = createGitAPI(ws);
+                    // commit all the modified files
+                    ArgumentListBuilder args = new ArgumentListBuilder("checkout");
+                    if (create) {
+                        args.add("-b"); // force create new branch
+                    }
+                    args.add(branch);
+                    String checkoutResult = git.launchCommand(args);
+                    debuggingLogger.fine(String.format("Checkout result: %s", checkoutResult));
+                    return checkoutResult;
+                } catch (GitException e) {
+                    throw new IOException("Failed checkout branch: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    public String commitWorkingCopy(final String commitMessageSuffix) throws IOException, InterruptedException {
         return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
@@ -81,7 +102,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
-    public Object createTag(final String tagName, final String commitMessage)
+    public String createTag(final String tagName, final String commitMessage)
             throws IOException, InterruptedException {
         return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
@@ -91,7 +112,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
                     if (git.tagExists(escapedTagName)) {
                         throw new IOException("Git tag '" + escapedTagName + "' already exists");
                     }
-                    log("Creating git tag: " + escapedTagName);
+                    log(String.format("Creating tag '%s'", escapedTagName));
                     String tagOutput = git.launchCommand("tag", "-a", escapedTagName, "-m", commitMessage);
                     debuggingLogger.fine(String.format("Tag command output:%n%s", tagOutput));
                     return tagOutput;
@@ -102,35 +123,51 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
-    public void push() throws IOException, InterruptedException {
-        build.getWorkspace().act(new FilePath.FileCallable<String>() {
+    public String push(final String remoteRepository, final String branch) throws IOException, InterruptedException {
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
                     GitAPI git = createGitAPI(workspace);
-                    log("Pushing git changes");
-                    String pushOutput = git.launchCommand("push", getRemoteUrl());
+                    log(String.format("Pushing branch '%s' to '%s'", branch, remoteRepository));
+                    String pushOutput = git.launchCommand("push", remoteRepository, branch);
                     debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
                     return pushOutput;
                 } catch (GitException e) {
-                    throw new IOException("Failed to reset working copy: " + e.getMessage());
+                    throw new IOException("Failed to push: " + e.getMessage());
                 }
             }
         });
     }
 
-    public void pushTag(final String tagName) throws IOException, InterruptedException {
-        build.getWorkspace().act(new FilePath.FileCallable<String>() {
+    public String pushTag(final String remoteRepository, final String tagName)
+            throws IOException, InterruptedException {
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
                     String escapedTagName = tagName.replace(' ', '_');
                     GitAPI git = createGitAPI(workspace);
-                    log("Pushing git tag: " + escapedTagName);
-                    String remoteUri = getRemoteUrl();
-                    String pushOutput = git.launchCommand("push", remoteUri, escapedTagName);
+                    log(String.format("Pushing tag '%s' to '%s'", tagName, remoteRepository));
+                    String pushOutput = git.launchCommand("push", remoteRepository, escapedTagName);
                     debuggingLogger.fine(String.format("Push tag command output:%n%s", pushOutput));
                     return pushOutput;
                 } catch (GitException e) {
-                    throw new IOException("Failed to reset working copy: " + e.getMessage());
+                    throw new IOException("Failed to push tag: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    public String pull(final String remoteUrl, final String branch) throws IOException, InterruptedException {
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    GitAPI git = createGitAPI(workspace);
+                    log("Pulling changes");
+                    String pushOutput = git.launchCommand("pull", remoteUrl, branch);
+                    debuggingLogger.fine(String.format("Pull command output:%n%s", pushOutput));
+                    return pushOutput;
+                } catch (GitException e) {
+                    throw new IOException("Failed to pull: " + e.getMessage());
                 }
             }
         });
@@ -152,17 +189,20 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
-    public void safeRevertWorkingCopy() {
-        try {
-            revertWorkingCopy();
-        } catch (Exception e) {
-            debuggingLogger.log(Level.FINE, "Failed to revert working copy: ", e);
-            log("Failed to revert working copy: " + e.getLocalizedMessage());
-        }
-    }
-
-    public void safeRevertTag(String tagUrl, String commitMessageSuffix) {
-        throw new UnsupportedOperationException("Tag revert not implemented for git. Should revert all local commits.");
+    public String deleteBranch(final String branch) throws IOException, InterruptedException {
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    log("Deleting local git branch: " + branch);
+                    GitAPI git = createGitAPI(workspace);
+                    String output = git.launchCommand("branch", "-D", branch);
+                    debuggingLogger.fine(String.format("Delete branch output:%n%s", output));
+                    return output;
+                } catch (GitException e) {
+                    throw new IOException("Git branch deletion failed: " + e.getMessage());
+                }
+            }
+        });
     }
 
     public String getRemoteUrl() {
