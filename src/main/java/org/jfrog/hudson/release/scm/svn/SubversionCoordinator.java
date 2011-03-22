@@ -31,6 +31,7 @@ import java.io.IOException;
  */
 public class SubversionCoordinator extends AbstractScmCoordinator {
     private SubversionManager scmManager;
+    private boolean tagCreated;
 
     public SubversionCoordinator(AbstractBuild build, BuildListener listener) {
         super(build, listener);
@@ -44,7 +45,7 @@ public class SubversionCoordinator extends AbstractScmCoordinator {
         ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
         if (releaseAction.isCreateVcsTag()) {
             scmManager.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment());
-            releaseAction.setTagCreated(true);
+            tagCreated = true;
         }
     }
 
@@ -58,7 +59,7 @@ public class SubversionCoordinator extends AbstractScmCoordinator {
             //run.getActions().remove(releaseBadge);
             ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
             scmManager.safeRevertWorkingCopy();
-            if (releaseAction.isTagCreated()) {
+            if (tagCreated) {
                 scmManager.safeRevertTag(releaseAction.getTagUrl(), "Reverting vcs tag: " + releaseAction.getTagUrl());
             }
         }

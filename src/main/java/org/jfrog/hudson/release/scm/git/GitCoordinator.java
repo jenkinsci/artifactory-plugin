@@ -61,7 +61,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
         ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
         if (releaseAction.isCreateVcsTag()) {
             scmManager.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment());
-            releaseAction.setTagCreated(true);
         }
 
         // TODO: beforeDevelopmentVersionChange should do this
@@ -81,7 +80,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
             scmManager.push(scmManager.getRemoteUrl(), releaseBranch);
             // push the tag if created
             ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
-            if (releaseAction.isTagCreated()) {
+            if (releaseAction.isCreateVcsTag()) {
                 scmManager.pushTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
             }
             // TODO: only if different from the original

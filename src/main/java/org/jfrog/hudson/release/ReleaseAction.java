@@ -73,8 +73,6 @@ public class ReleaseAction implements Action {
     String tagComment;
     String stagingRepositoryKey;
     String stagingComment;
-    // TODO: maybe it should be saved in the scm coordinator
-    boolean tagCreated;
 
     boolean createReleaseBranch;
     String releaseBranch;
@@ -109,14 +107,6 @@ public class ReleaseAction implements Action {
 
     public boolean isCreateVcsTag() {
         return createVcsTag;
-    }
-
-    public boolean isTagCreated() {
-        return tagCreated;
-    }
-
-    public void setTagCreated(boolean tagCreated) {
-        this.tagCreated = tagCreated;
     }
 
     public String getTagUrl() {
