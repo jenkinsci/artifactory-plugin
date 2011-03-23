@@ -49,8 +49,8 @@
 
                     <f:section title="${%VCS Configuration}">
                         <j:if test="${it.isGit()}">
-                            <f:optionalBlock field="useReleaseBranch" name="useReleaseBranch"
-                                             help="/plugin/artifactory/help/release/ReleaseAction/help-useReleaseBranch.html"
+                            <f:optionalBlock field="createReleaseBranch" name="createReleaseBranch"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-createReleaseBranch.html"
                                              title="Use release branch"
                                              checked="${null != it.defaultReleaseBranch}"
                                              inline="true">

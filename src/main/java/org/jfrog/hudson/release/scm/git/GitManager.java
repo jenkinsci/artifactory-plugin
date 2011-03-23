@@ -129,7 +129,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
                 try {
                     GitAPI git = createGitAPI(workspace);
                     log(String.format("Pushing branch '%s' to '%s'", branch, remoteRepository));
-                    String pushOutput = git.launchCommand("push", remoteRepository, branch);
+                    String pushOutput = git.launchCommand("push", remoteRepository, "refs/heads/" + branch);
                     debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
                     return pushOutput;
                 } catch (GitException e) {
@@ -147,7 +147,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
                     String escapedTagName = tagName.replace(' ', '_');
                     GitAPI git = createGitAPI(workspace);
                     log(String.format("Pushing tag '%s' to '%s'", tagName, remoteRepository));
-                    String pushOutput = git.launchCommand("push", remoteRepository, escapedTagName);
+                    String pushOutput = git.launchCommand("push", remoteRepository, "refs/tags/" + escapedTagName);
                     debuggingLogger.fine(String.format("Push tag command output:%n%s", pushOutput));
                     return pushOutput;
                 } catch (GitException e) {
