@@ -36,12 +36,11 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.aspectj.weaver.loadtime.Agent;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ClientIvyProperties;
 import org.jfrog.build.client.ClientProperties;
-import org.jfrog.build.config.ArtifactoryIvySettingsConfigurator;
+import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
@@ -229,7 +228,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         final ArtifactoryServer artifactoryServer = getArtifactoryServer();
         build.setResult(Result.SUCCESS);
 
-        File localDependencyFile = Which.jarFile(ArtifactoryIvySettingsConfigurator.class);
+        File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
 
@@ -326,29 +325,14 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             }
 
             @Override
-            public String getAdditionalOpts() {
-                File agentLib;
-                try {
-                    agentLib = Which.jarFile(Agent.class);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                StringBuilder extraAntOpts = new StringBuilder();
-
-                String actualAgentLibPath = actualDependencyDir.child(agentLib.getName()).getRemote();
-                actualAgentLibPath = actualAgentLibPath.replace('\\', '/');
-                actualAgentLibPath = "\"" + actualAgentLibPath + "\"";
-                extraAntOpts.append("-javaagent:").append(actualAgentLibPath).append(" ");
-                return extraAntOpts.toString();
-            }
-
-            @Override
             public String getAdditionalArgs() {
                 StringBuilder targets = new StringBuilder();
                 String actualDependencyDirPath = actualDependencyDir.getRemote();
                 actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
                 actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
                 targets.append("-lib ").append(actualDependencyDirPath).append(" ");
+                targets.append("-listener ").append("org.jfrog.build.extractor.listener.ArtifactoryBuildListener")
+                        .append(" ");
                 return targets.toString();
             }
         };

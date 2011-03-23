@@ -67,7 +67,7 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jvnet.hudson.plugins</groupId>
@@ -83,7 +83,13 @@
         <dependency>
             <groupId>org.jvnet.hudson.plugins</groupId>
             <artifactId>ivy</artifactId>
-            <version>1.11</version>
+            <version>1.15</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jvnet.hudson.plugins</groupId>
+            <artifactId>gradle</artifactId>
+            <version>1.4</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -104,7 +110,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-ivy</artifactId>
-            <version>1.1.0</version>
+            <version>1.1.x-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.ant</groupId>
@@ -115,11 +121,6 @@
                     <groupId>org.codehaus.groovy</groupId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjweaver</artifactId>
-            <version>1.6.9</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
