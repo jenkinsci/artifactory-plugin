@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson.ivy;
 
-import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -25,29 +24,22 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.CauseAction;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.tasks.LogRotator;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.BuildInfoConfigProperties;
-import org.jfrog.build.api.BuildInfoProperties;
-import org.jfrog.build.client.ClientIvyProperties;
-import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
@@ -231,97 +223,18 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
-
+        final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyConfigurator.this,
+                isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
+                licenseAutoDiscovery, isDiscardOldBuilds(), isDeployArtifacts(),
+                getArtifactDeploymentPatterns(), isDeployBuildInfo(), isIncludeEnvVars());
         return new AntIvyBuilderEnvironment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
-                Map<String, String> envVars = Maps.newHashMap();
-                for (Map.Entry<String, String> entry : env.entrySet()) {
-                    envVars.put(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(), entry.getValue());
+                try {
+                    ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-                env.putAll(envVars);
-                env.put(ClientProperties.PROP_CONTEXT_URL, artifactoryServer.getUrl());
-                env.put(ClientProperties.PROP_PUBLISH_REPOKEY, getRepositoryKey());
-
-                Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(ArtifactoryIvyConfigurator.this,
-                        artifactoryServer);
-                env.put(ClientProperties.PROP_PUBLISH_USERNAME, preferredDeployer.getUsername());
-                env.put(ClientProperties.PROP_PUBLISH_PASSWORD, preferredDeployer.getPassword());
-                env.put(BuildInfoProperties.PROP_AGENT_NAME, "Hudson");
-                env.put(BuildInfoProperties.PROP_AGENT_VERSION, build.getHudsonVersion());
-                env.put(BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
-                env.put(BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());
-                String principal = "auto";
-                CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
-                if (action != null) {
-                    for (Cause cause : action.getCauses()) {
-                        if (cause instanceof Cause.UserCause) {
-                            principal = ((Cause.UserCause) cause).getUserName();
-                        }
-                    }
-                }
-                env.put(BuildInfoProperties.PROP_PRINCIPAL, principal);
-                env.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, String.valueOf(isIncludeEnvVars()));
-                env.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, String.valueOf(isDeployBuildInfo()));
-                env.put(ClientProperties.PROP_PUBLISH_ARTIFACT, String.valueOf(isDeployArtifacts()));
-                env.put(ClientIvyProperties.PROP_M2_COMPATIBLE, String.valueOf(isM2Compatible()));
-                if (StringUtils.isNotBlank(getIvyPattern())) {
-                    env.put(ClientIvyProperties.PROP_IVY_IVY_PATTERN, normalizeString(getIvyPattern()));
-                }
-                if (StringUtils.isNotBlank(getArtifactPattern())) {
-                    env.put(ClientIvyProperties.PROP_IVY_ARTIFACT_PATTERN, normalizeString(getArtifactPattern()));
-                }
-
-                IncludesExcludes deploymentPatterns = getArtifactDeploymentPatterns();
-                if (deploymentPatterns != null) {
-                    String includePatterns = deploymentPatterns.getIncludePatterns();
-                    if (StringUtils.isNotBlank(includePatterns)) {
-                        env.put(ClientProperties.PROP_PUBLISH_ARTIFACT_INCLUDE_PATTERNS, includePatterns);
-                    }
-
-                    String excludePatterns = deploymentPatterns.getExcludePatterns();
-                    if (StringUtils.isNotBlank(excludePatterns)) {
-                        env.put(ClientProperties.PROP_PUBLISH_ARTIFACT_EXCLUDE_PATTERNS, excludePatterns);
-                    }
-                }
-                String buildUrl = ActionableHelper.getBuildUrl(build);
-                if (StringUtils.isNotBlank(buildUrl)) {
-                    env.put(BuildInfoProperties.PROP_BUILD_URL, buildUrl);
-                }
-                Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
-                if (parent != null) {
-                    env.put(BuildInfoProperties.PROP_PARENT_BUILD_NAME, parent.getUpstreamProject());
-                    env.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parent.getUpstreamBuild() + "");
-                }
-                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, String.valueOf(isRunChecks()));
-                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER,
-                        String.valueOf(licenseAutoDiscovery));
-                env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS,
-                        String.valueOf(isIncludePublishArtifacts()));
-                if (StringUtils.isNotBlank(getViolationRecipients())) {
-                    env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
-                }
-                if (StringUtils.isNotBlank(getScopes())) {
-                    env.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
-                }
-                if (isDiscardOldBuilds()) {
-                    LogRotator rotator = build.getProject().getLogRotator();
-                    if (rotator != null) {
-                        if (rotator.getNumToKeep() > -1) {
-                            env.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS,
-                                    String.valueOf(rotator.getNumToKeep()));
-                        }
-                        if (rotator.getDaysToKeep() > -1) {
-                            env.put(BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
-                                    String.valueOf(rotator.getDaysToKeep()));
-                        }
-                    }
-                }
-            }
-
-            private String normalizeString(String text) {
-                text = StringUtils.removeStart(text, "\"");
-                return StringUtils.removeEnd(text, "\"");
             }
 
             @Override

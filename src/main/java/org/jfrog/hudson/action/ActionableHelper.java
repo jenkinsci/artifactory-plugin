@@ -27,7 +27,9 @@ import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
+import hudson.model.Project;
 import hudson.tasks.BuildWrapper;
+import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
 import hudson.util.DescribableList;
 import org.apache.commons.lang.StringUtils;
@@ -46,8 +48,8 @@ public abstract class ActionableHelper {
 
     /**
      * Returns the latest action of the type. One module may produce multiple action entries of the same type, in some
-     * cases the last one contains all the info we need (previous ones might only contain partial information, eg,
-     * only main artifact)
+     * cases the last one contains all the info we need (previous ones might only contain partial information, eg, only
+     * main artifact)
      *
      * @param buildThe    build
      * @param actionClass The type of the action
@@ -87,6 +89,25 @@ public abstract class ActionableHelper {
             }
         }
         return null;
+    }
+
+    /**
+     * Get a list of {@link Builder}s that are related to the project.
+     *
+     * @param project The project from which to get the builder.
+     * @param type    The type of the builder (the actual class)
+     * @param <T>     The type that the class represents
+     * @return A list of builders that answer the class definition that are attached to the project.
+     */
+    public static <T extends Builder> List<T> getBuilder(Project<?, ?> project, Class<T> type) {
+        List<T> result = Lists.newArrayList();
+        DescribableList<Builder, Descriptor<Builder>> builders = project.getBuildersList();
+        for (Builder builder : builders) {
+            if (type.isInstance(builder)) {
+                result.add(type.cast(builder));
+            }
+        }
+        return result;
     }
 
     public static Cause.UpstreamCause getUpstreamCause(AbstractBuild build) {

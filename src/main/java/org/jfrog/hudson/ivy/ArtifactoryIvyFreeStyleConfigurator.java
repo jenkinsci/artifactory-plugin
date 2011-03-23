@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.gradle;
+package org.jfrog.hudson.ivy;
 
 import com.google.common.collect.Iterables;
 import hudson.Extension;
@@ -28,12 +28,14 @@ import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
 import hudson.model.Project;
 import hudson.model.Result;
-import hudson.plugins.gradle.Gradle;
+import hudson.remoting.Which;
+import hudson.tasks.Ant;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
+import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
@@ -41,16 +43,17 @@ import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.BuildContext;
-import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
+import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -65,11 +68,10 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider {
+public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements DeployerOverrider {
     private ServerDetails details;
     private boolean deployArtifacts;
     private final Credentials overridingDeployerCredentials;
-    public final boolean deployMaven;
     public final boolean deployIvy;
     public final String remotePluginLocation;
     public final boolean deployBuildInfo;
@@ -89,15 +91,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
 
     @DataBoundConstructor
-    public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
+    public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
+            boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
-        this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
         this.deployArtifacts = deployArtifacts;
         this.remotePluginLocation = remotePluginLocation;
@@ -197,10 +198,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return deployArtifacts;
     }
 
-    public boolean isDeployMaven() {
-        return deployMaven;
-    }
-
     public boolean isDeployIvy() {
         return deployIvy;
     }
@@ -221,42 +218,26 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
-        ArtifactoryServer artifactoryServer = getArtifactoryServer();
-        if (artifactoryServer == null) {
-            listener.getLogger().format("No Artifactory server configured for %s. " +
-                    "Please check your configuration.", getArtifactoryName()).println();
-            build.setResult(Result.FAILURE);
-        }
-        GradleInitScriptWriter writer = new GradleInitScriptWriter(build);
-        FilePath workspace = build.getWorkspace();
-        FilePath initScript;
-        try {
-            initScript = workspace.createTextTempFile("init-artifactory", "gradle", writer.generateInitScript(), false);
-        } catch (Exception e) {
-            listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
-            build.setResult(Result.FAILURE);
-            return new Environment() {
-            };
-        }
 
-        String initScriptPath = initScript.getRemote();
-        initScriptPath = initScriptPath.replace('\\', '/');
-        final Gradle gradleBuild = getLastGradleBuild(build.getProject());
-        final String switches = gradleBuild.getSwitches() + "";
-        final String tasks = gradleBuild.getTasks() + "";
-        if (gradleBuild != null) {
-            setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
-            setTargetsField(gradleBuild, "tasks", tasks + " " + "buildInfo");
+        final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyFreeStyleConfigurator.this,
+                isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
+                isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
+                getArtifactDeploymentPatterns(), isDeployBuildInfo(), isIncludeEnvVars());
+        File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
+        final FilePath actualDependencyDir =
+                PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
+        final Ant builder = getLastAntBuild(build.getProject());
+        String originalTargets = null;
+        if (builder != null) {
+            originalTargets = builder.getTargets();
+            setTargetsField(builder, originalTargets + " " + getAdditionalAntArgs(actualDependencyDir));
         }
+        build.setResult(Result.SUCCESS);
+        final String finalOriginalTargets = originalTargets;
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
-                final BuildContext context = new BuildContext(getDetails(), ArtifactoryGradleConfigurator.this,
-                        isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
-                        isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                        getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars());
-                context.setDeployIvy(isDeployIvy());
-                context.setDeployMaven(isDeployMaven());
+                super.buildEnvVars(env);
                 try {
                     ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
                 } catch (Exception e) {
@@ -267,46 +248,46 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
-                if (gradleBuild != null) {
-                    setTargetsField(gradleBuild, "switches", switches);
-                    setTargetsField(gradleBuild, "tasks", tasks);
+                if (builder != null) {
+                    setTargetsField(builder, finalOriginalTargets);
                 }
                 Result result = build.getResult();
-                if (result == null) {
-                    return false;
+                if (!context.isSkipBuildInfoDeploy() && (result == null || result.isBetterOrEqualTo(Result.SUCCESS))) {
+                    build.getActions().add(0, new BuildInfoResultAction(context.getArtifactoryName(), build));
                 }
-                if (result.isBetterOrEqualTo(Result.SUCCESS)) {
-                    if (isDeployBuildInfo()) {
-                        build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
-                    }
-                    if (isPassIdentifiedDownstream()) {
-                        BuildUniqueIdentifierHelper
-                                .addUniqueIdentifierToChildProjects(build, build.getEnvironment(listener));
-                    }
-                    BuildUniqueIdentifierHelper.removeUniqueIdentifierFromProject(build);
-                    return true;
-                }
-                return false;
+                return true;
             }
         };
     }
 
-    private Gradle getLastGradleBuild(AbstractProject project) {
-        if (project instanceof Project) {
-            List<Gradle> ants = ActionableHelper.getBuilder((Project) project, Gradle.class);
-            return Iterables.getLast(ants);
-        }
-        return null;
-    }
-
-    private void setTargetsField(Gradle builder, String fieldName, String value) {
+    private void setTargetsField(Ant builder, String targets) {
         try {
-            Field targetsField = builder.getClass().getDeclaredField(fieldName);
+            Field targetsField = builder.getClass().getDeclaredField("targets");
             targetsField.setAccessible(true);
-            targetsField.set(builder, value);
+            targetsField.set(builder, targets);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    // this is blech.
+    private String getAdditionalAntArgs(FilePath actualDependencyDir) {
+        StringBuilder targets = new StringBuilder();
+        String actualDependencyDirPath = actualDependencyDir.getRemote();
+        actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
+        actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
+        targets.append("-lib ").append(actualDependencyDirPath).append(" ");
+        targets.append("-listener ").append("org.jfrog.build.extractor.listener.ArtifactoryBuildListener")
+                .append(" ");
+        return targets.toString();
+    }
+
+    private Ant getLastAntBuild(AbstractProject project) {
+        if (project instanceof Project) {
+            List<Ant> ants = ActionableHelper.getBuilder((Project) project, Ant.class);
+            return Iterables.getLast(ants);
+        }
+        return null;
     }
 
     public ArtifactoryServer getArtifactoryServer() {
@@ -327,7 +308,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         public DescriptorImpl() {
-            super(ArtifactoryGradleConfigurator.class);
+            super(ArtifactoryIvyFreeStyleConfigurator.class);
             load();
         }
 
@@ -338,12 +319,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
         @Override
         public String getDisplayName() {
-            return "Gradle-Artifactory Integration";
+            return "Ant/Ivy Integration";
         }
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-            req.bindParameters(this, "gradle");
+            req.bindParameters(this, "ivy");
             save();
             return true;
         }

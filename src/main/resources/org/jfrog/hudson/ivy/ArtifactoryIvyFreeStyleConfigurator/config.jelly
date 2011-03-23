@@ -1,19 +1,3 @@
-<!--
-  ~ Copyright (C) 2010 JFrog Ltd.
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~ http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
-
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:section title="${%Artifactory Configuration}">
@@ -23,20 +7,10 @@
                     <f:nested>
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <f:entry title="${%Target releases repository}"
-                                 help="/plugin/artifactory/help/common/help-deployReleases.html">
+                        <f:entry title="${%Publishing repository}">
                             <select class="setting-input" name="repositoryKey">
-                                <j:forEach var="r" items="${s.releaseRepositoryKeysFirst}">
+                                <j:forEach var="r" items="${s.repositoryKeys}">
                                     <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
-                                </j:forEach>
-                            </select>
-                        </f:entry>
-                        <f:entry title="${%Target snapshots repository}"
-                                 help="/plugin/artifactory/help/common/help-deploySnapshots.html">
-                            <select class="setting-input" name="snapshotsRepositoryKey">
-                                <j:forEach var="r" items="${s.snapshotRepositoryKeysFirst}">
-                                    <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
-                                    </f:option>
                                 </j:forEach>
                             </select>
                         </f:entry>
@@ -62,36 +36,10 @@
                 </f:optionalBlock>
             </table>
         </f:block>
+
         <f:block>
             <table style="width:100%">
-                <f:optionalBlock field="deployArtifacts"
-                                 help="/plugin/artifactory/help/common/help-deployArtifacts.html"
-                                 title="Deploy artifacts to Artifactory" inline="true"
-                                 checked="${!instance.deployArtifacts}">
-                    <f:block>
-                        <table style="width:100%">
-                            <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
-                            <f:section name="artifactDeploymentPatterns">
-                                <input type="hidden" name="stapler-class"
-                                       value="org.jfrog.hudson.util.IncludesExcludes"/>
-                                <f:entry title="Include Patterns" field="includePatterns"
-                                         help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
-                                    <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
-                                </f:entry>
-                                <f:entry title="Exclude Patterns"
-                                         field="excludePatterns"
-                                         help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
-                                    <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
-                                </f:entry>
-                            </f:section>
-                        </table>
-                    </f:block>
-                </f:optionalBlock>
-            </table>
-        </f:block>
-        <f:block>
-            <table style="width:100%">
-                <f:optionalBlock name="deployBuildInfo" checked="${!instance.deployBuildInfo}"
+                <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
                                  title="Capture and publish build info"
                                  help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
                                  inline="true">
@@ -132,16 +80,72 @@
                             </f:optionalBlock>
                         </table>
                     </f:block>
+                    <f:optionalBlock name="discardOldBuilds"
+                                     checked="${instance.discardOldBuilds}"
+                                     title="Discard old builds from Artifactory (requires Artifactory Pro)"
+                                     inline="true"
+                                     help="/plugin/artifactory/help/common/help-discardBuilds.html">
+                    </f:optionalBlock>
+                </f:optionalBlock>
+            </table>
+        </f:block>
+        <f:block>
+            <table style="width:100%">
+                <f:optionalBlock field="deployArtifacts"
+                                 help="/plugin/artifactory/help/common/help-deployArtifacts.html"
+                                 inline="true"
+                                 checked="${instance.deployArtifacts}" title="Publish artifacts to Artifactory">
+                    <f:entry field="deployIvy"
+                             help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployIvy.html">
+                        <f:checkbox default="false" checked="${instance.deployIvy}"/>
+                        <label class="attach-previous">${%Publish Ivy descriptors (ivy.xml)}</label>
+                    </f:entry>
                     <f:block>
                         <table style="width:100%">
-                            <f:optionalBlock name="discardOldBuilds"
-                                             checked="${instance.discardOldBuilds}"
-                                             title="Discard old builds from Artifactory (requires Artifactory Pro)"
-                                             inline="true"
-                                             help="/plugin/artifactory/help/common/help-discardBuilds.html">
+                            <f:optionalBlock field="notM2Compatible" negative="true"
+                                             help="/plugin/artifactory/help/common/help-m2Compatible.html"
+                                             inline="true" checked="${!instance.notM2Compatible}"
+                                             title="Use Maven compatible patterns">
                             </f:optionalBlock>
                         </table>
                     </f:block>
+                    <f:entry title="Ivy pattern" field="ivyPattern"
+                             help="/plugin/artifactory/help/common/help-ivyPattern.html">
+                        <f:textbox value="${instance.ivyPattern}"
+                                   default="[organisation]/[module]/ivy-[revision].xml"/>
+                    </f:entry>
+                    <f:entry title="Artifact pattern" field="artifactPattern"
+                             help="/plugin/artifactory/help/common/help-artifactPattern.html">
+                        <f:textbox value="${instance.artifactPattern}"
+                                   default="[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier]).[ext]"/>
+                    </f:entry>
+                    <f:block>
+                        <table style="width:100%">
+                            <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
+                            <f:section name="artifactDeploymentPatterns">
+                                <input type="hidden" name="stapler-class"
+                                       value="org.jfrog.hudson.util.IncludesExcludes"/>
+                                <f:entry title="Include Patterns" field="includePatterns"
+                                         help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
+                                    <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
+                                </f:entry>
+                                <f:entry title="Exclude Patterns"
+                                         field="excludePatterns"
+                                         help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
+                                    <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
+                                </f:entry>
+                            </f:section>
+                        </table>
+                    </f:block>
+                </f:optionalBlock>
+            </table>
+        </f:block>
+        <f:block>
+            <table style="width:100%">
+                <f:optionalBlock field="passIdentifiedDownstream"
+                                 help="/plugin/artifactory/help/common/help-passIdentifiedDownstream.html"
+                                 title="Enable isolated resolution for downstream builds"
+                                 inline="true">
                 </f:optionalBlock>
             </table>
         </f:block>
