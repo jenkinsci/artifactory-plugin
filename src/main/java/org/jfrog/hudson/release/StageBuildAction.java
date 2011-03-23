@@ -33,8 +33,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.build.client.StagingSettings;
-import org.jfrog.build.client.StagingSettingsBuilder;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -152,8 +150,8 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
     }
 
     /**
-     * Select which view to display based on the state of the promotion. Will return the form if user selects to
-     * perform promotion. Progress will be returned if the promotion is currently in progress.
+     * Select which view to display based on the state of the promotion. Will return the form if user selects to perform
+     * promotion. Progress will be returned if the promotion is currently in progress.
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public void doIndex(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
@@ -214,17 +212,13 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
                         .dependencies(includeDependencies)
                         .copy(useCopy)
                         .dryRun(true);
-                StagingSettingsBuilder dryBuilder = new StagingSettingsBuilder(
-                        build.getParent().getDisplayName(), build.getNumber() + "")
-                        .promotion(promotionBuilder.build());
-                StagingSettings dry = dryBuilder.build();
                 listener.getLogger().println("Performing dry run staging (no changes are made during dry run) ...");
-                HttpResponse dryResponse = client.stageBuild(dry);
+                HttpResponse dryResponse = client.stageBuild(build.getParent().getDisplayName(),
+                        build.getNumber() + "", promotionBuilder.build());
                 if (checkSuccess(dryResponse, true, listener)) {
                     listener.getLogger().println("Dry run finished successfully.\nPerforming staging ...");
-                    StagingSettingsBuilder wet = new StagingSettingsBuilder(build.getParent().getDisplayName(),
-                            build.getNumber() + "").promotion(promotionBuilder.dryRun(false).build());
-                    HttpResponse wetResponse = client.stageBuild(wet.build());
+                    HttpResponse wetResponse = client.stageBuild(build.getParent().getDisplayName(),
+                            build.getNumber() + "", promotionBuilder.dryRun(false).build());
                     if (checkSuccess(wetResponse, false, listener)) {
                         listener.getLogger().println("Staging completed successfully!");
                     }
