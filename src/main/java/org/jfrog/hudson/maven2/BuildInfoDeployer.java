@@ -42,8 +42,8 @@ import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
-import org.jfrog.build.api.builder.StatusBuilder;
-import org.jfrog.build.api.release.Status;
+import org.jfrog.build.api.builder.PromotionStatusBuilder;
+import org.jfrog.build.api.release.Promotion;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -173,7 +173,7 @@ public class BuildInfoDeployer {
         // add staging status if it is a release build
         ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
         if (release != null) {
-            infoBuilder.addStatus(new StatusBuilder(Status.STAGED)
+            infoBuilder.addStatus(new PromotionStatusBuilder(Promotion.STAGED)
                     .timestampDate(startedTimestamp.getTime())
                     .comment(release.getStagingComment())
                     .repository(release.getStagingRepositoryKey())
