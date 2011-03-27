@@ -108,11 +108,11 @@ public class GitManager extends AbstractScmManager<GitSCM> {
             public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
                     String escapedTagName = tagName.replace(' ', '_');
+                    log(String.format("Creating tag '%s'", escapedTagName));
                     GitAPI git = createGitAPI(ws);
                     if (git.tagExists(escapedTagName)) {
                         throw new IOException("Git tag '" + escapedTagName + "' already exists");
                     }
-                    log(String.format("Creating tag '%s'", escapedTagName));
                     String tagOutput = git.launchCommand("tag", "-a", escapedTagName, "-m", commitMessage);
                     debuggingLogger.fine(String.format("Tag command output:%n%s", tagOutput));
                     return tagOutput;
@@ -157,13 +157,13 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
-    public String pull(final String remoteUrl, final String branch) throws IOException, InterruptedException {
+    public String pull(final String remoteRepository, final String branch) throws IOException, InterruptedException {
         return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
                     GitAPI git = createGitAPI(workspace);
                     log("Pulling changes");
-                    String pushOutput = git.launchCommand("pull", remoteUrl, branch);
+                    String pushOutput = git.launchCommand("pull", remoteRepository, branch);
                     debuggingLogger.fine(String.format("Pull command output:%n%s", pushOutput));
                     return pushOutput;
                 } catch (GitException e) {
@@ -178,7 +178,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
             public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
                     GitAPI git = createGitAPI(workspace);
-                    log("Reverting git working copy back to initial commit: " + getWorkingDirectory(workspace));
+                    log("Reverting git working copy back to initial commit: " + baseCommit);
                     String resetOutput = git.launchCommand("reset", "--hard", baseCommit);
                     debuggingLogger.fine(String.format("Reset command output:%n%s", resetOutput));
                     return resetOutput;
@@ -189,7 +189,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
-    public String deleteBranch(final String branch) throws IOException, InterruptedException {
+    public String deleteLocalBranch(final String branch) throws IOException, InterruptedException {
         return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
@@ -205,18 +205,40 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
+    public String deleteRemoteBranch(final String remoteRepository, final String branch)
+            throws IOException, InterruptedException {
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File workspace, VirtualChannel channel) throws IOException {
+                try {
+                    GitAPI git = createGitAPI(workspace);
+                    log(String.format("Deleting remote branch '%s' on '%s'", branch, remoteRepository));
+                    String pushOutput = git.launchCommand("push", remoteRepository, ":refs/heads/" + branch);
+                    debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
+                    return pushOutput;
+                } catch (GitException e) {
+                    throw new IOException("Failed to push: " + e.getMessage());
+                }
+            }
+        });
+    }
+
     public String getRemoteUrl() {
         RemoteConfig remoteConfig = getHudsonScm().getRepositories().get(0);
         URIish uri = remoteConfig.getURIs().get(0);
         return uri.toPrivateString();
     }
 
-    private GitAPI createGitAPI(File workspace) throws IOException, InterruptedException {
+    private GitAPI createGitAPI(File workspace) throws IOException {
         GitSCM gitSCM = getHudsonScm();
         File workingCopy = getWorkingDirectory(workspace);
         String gitExe = gitSCM.getGitExe(build.getBuiltOn(), buildListener);
 
-        EnvVars gitEnvironment = build.getEnvironment(buildListener);
+        EnvVars gitEnvironment;
+        try {
+            gitEnvironment = build.getEnvironment(buildListener);
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Failed to get environment", e);
+        }
         String confName = gitSCM.getGitConfigNameToUse();
         if (StringUtils.isNotBlank(confName)) {
             gitEnvironment.put("GIT_COMMITTER_NAME", confName);

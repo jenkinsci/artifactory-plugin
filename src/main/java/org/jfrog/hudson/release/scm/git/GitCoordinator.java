@@ -78,6 +78,13 @@ public class GitCoordinator extends AbstractScmCoordinator {
         if (releaseAction.isCreateVcsTag()) {
             scmManager.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment());
         }
+
+        // push the branch
+        scmManager.push(scmManager.getRemoteUrl(), releaseBranch);
+        // push the tag if created
+        if (releaseAction.isCreateVcsTag()) {
+            scmManager.pushTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
+        }
     }
 
     public void beforeDevelopmentVersionChange() throws IOException, InterruptedException {
@@ -93,13 +100,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
     public void buildCompleted() throws IOException, InterruptedException {
         if (build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
-            // push the release branch
-            scmManager.push(scmManager.getRemoteUrl(), releaseBranch);
-            // push the tag if created
-            ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
-            if (releaseAction.isCreateVcsTag()) {
-                scmManager.pushTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
-            }
             // TODO: only if different from the original
             // push the next development version (if different from original)
             // pull before attempting to push changes?
@@ -110,22 +110,33 @@ public class GitCoordinator extends AbstractScmCoordinator {
             scmManager.checkoutBranch(checkoutBranch, false);
             // delete the release branch
             safeDeleteBranch(releaseBranch);
-            // TODO: make sure it is required and the right branch (master)
+            safeDeleteRemoteBranch(scmManager.getRemoteUrl(), releaseBranch);
+            // TODO: make sure it is the right branch (master)
             // reset changes done on the original checkout branch (next dev version)
             safeRevertWorkingCopy();
         }
     }
 
-    public void safeDeleteBranch(String branch) {
+    private void safeDeleteBranch(String branch) {
         try {
-            scmManager.deleteBranch(branch);
+            scmManager.deleteLocalBranch(branch);
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to delete release branch: ", e);
-            log("Failed to revert working copy: " + e.getLocalizedMessage());
+            log("Failed to delete release branch: " + e.getLocalizedMessage());
         }
     }
 
-    public void safeRevertWorkingCopy() {
+    private void safeDeleteRemoteBranch(String remoteRepository, String branch) {
+        try {
+            // delete the remote branch (including the tag pointing to a commit on that branch)
+            scmManager.deleteRemoteBranch(remoteRepository, branch);
+        } catch (Exception e) {
+            debuggingLogger.log(Level.FINE, "Failed to delete remote release branch: ", e);
+            log("Failed to delete remote release branch: " + e.getLocalizedMessage());
+        }
+    }
+
+    private void safeRevertWorkingCopy() {
         try {
             scmManager.revertWorkingCopy();
         } catch (Exception e) {
