@@ -41,6 +41,7 @@ import java.util.logging.Logger;
  */
 public class GitManager extends AbstractScmManager<GitSCM> {
     private static Logger debuggingLogger = Logger.getLogger(GitManager.class.getName());
+    // todo: put in coordinator
     private String baseCommit;
 
     public GitManager(AbstractBuild<?, ?> build, TaskListener buildListener) {
@@ -53,7 +54,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
                 try {
                     GitAPI git = createGitAPI(ws);
                     // commit all the modified files
-                    baseCommit = git.launchCommand("rev-parse", "--verify", "HEAD");
+                    baseCommit = git.launchCommand("rev-parse", "--verify", "HEAD").trim();
                     debuggingLogger.fine(String.format("Base commit hash%s", baseCommit));
                     return baseCommit;
                 } catch (GitException e) {
@@ -91,7 +92,6 @@ public class GitManager extends AbstractScmManager<GitSCM> {
                     GitAPI git = createGitAPI(ws);
                     // commit all the modified files
                     String commitMessage = COMMENT_PREFIX + commitMessageSuffix;
-                    log(commitMessageSuffix);
                     String commitOutput = git.launchCommand("commit", "--all", "-m", commitMessage);
                     debuggingLogger.fine(String.format("Reset command output:%n%s", commitOutput));
                     return commitOutput;

@@ -67,6 +67,7 @@ public class ReleaseWrapper extends BuildWrapper {
             Messages._permission_stage(), Hudson.ADMINISTER);
 
     private String baseTagUrl;
+    private String releaseBranchPrefix;
     private String alternativeGoals;
 
     private transient ScmCoordinator scmCoordinator;
@@ -85,6 +86,15 @@ public class ReleaseWrapper extends BuildWrapper {
     @SuppressWarnings({"UnusedDeclaration"})
     public void setBaseTagUrl(String baseTagUrl) {
         this.baseTagUrl = baseTagUrl;
+    }
+
+    public String getReleaseBranchPrefix() {
+        // TODO: input parameter
+        return "RELEASE-BRANCH-";
+    }
+
+    public void setReleaseBranchPrefix(String releaseBranchPrefix) {
+        this.releaseBranchPrefix = releaseBranchPrefix;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -259,6 +269,7 @@ public class ReleaseWrapper extends BuildWrapper {
             try {
                 wrapper.scmCoordinator.buildCompleted();
             } catch (Exception e) {
+                run.setResult(Result.FAILURE);
                 listener.error("[RELEASE] Failed on build completion");
                 e.printStackTrace(listener.getLogger());
             }

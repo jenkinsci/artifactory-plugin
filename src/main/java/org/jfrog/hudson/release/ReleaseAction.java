@@ -143,9 +143,6 @@ public class ReleaseAction implements Action {
 
     public String getDefaultTagUrl() {
         ReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, ReleaseWrapper.class);
-        if (wrapper == null) {
-            return null;
-        }
         String baseTagUrl = wrapper.getBaseTagUrl();
         StringBuilder sb = new StringBuilder(baseTagUrl);
         if (!baseTagUrl.endsWith("/")) {
@@ -156,7 +153,11 @@ public class ReleaseAction implements Action {
     }
 
     public String getDefaultReleaseBranch() {
-        return getDefaultTagUrl();
+        ReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, ReleaseWrapper.class);
+        String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
+        StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
+        sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
+        return sb.toString();
     }
 
     public String getDefaultTagComment() {

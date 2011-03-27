@@ -19,6 +19,10 @@ package org.jfrog.hudson.release.scm.git;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
+import hudson.plugins.git.Branch;
+import hudson.plugins.git.Revision;
+import hudson.plugins.git.util.BuildData;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 
@@ -36,26 +40,35 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
     private GitManager scmManager;
     private String releaseBranch;
-    private String checkoutBranch = "master";
+    private String checkoutBranch;
 
     public GitCoordinator(AbstractBuild build, BuildListener listener) {
         super(build, listener);
-        // TODO: check if should create release branch
-        ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
-        releaseBranch = releaseAction.getReleaseBranch();
     }
 
     public void prepare() throws IOException, InterruptedException {
+        // TODO: check if should create release branch
+        ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
+        releaseBranch = releaseAction.getReleaseBranch();
+
+        // find the current local built branch
+        BuildData buildData = build.getAction(BuildData.class);
+        Revision lastRevision = buildData.getLastBuiltRevision();
+        Branch branch = lastRevision.getBranches().iterator().next();
+        checkoutBranch = StringUtils.removeStart(branch.getName(), "origin/");
+
         scmManager = new GitManager(build, listener);
 
         scmManager.getCurrentCommitHash();
 
-        // create a new branch and start it
+        // TODO: only if create release branch otherwise move to the checkout branch
+        // create a new branch for the release and start it
         scmManager.checkoutBranch(releaseBranch, true);
     }
 
     public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
         // commit local changes
+        log(String.format("Committing release version on branch '%s'", releaseBranch));
         scmManager.commitWorkingCopy("Committing release version");
 
         ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
@@ -65,12 +78,12 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
         // TODO: beforeDevelopmentVersionChange should do this
         // done working on the release branch, checkout back to master
-        // TODO: discover master branch
         scmManager.checkoutBranch(checkoutBranch, false);
 
     }
 
     public void afterDevelopmentVersionChange() throws IOException, InterruptedException {
+        log(String.format("Committing next development version on branch '%s'", checkoutBranch));
         scmManager.commitWorkingCopy("Committing next development version");
     }
 
@@ -85,7 +98,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
             }
             // TODO: only if different from the original
             // push the next development version (if different from original)
-            // pull before attempting to push changes
+            // pull before attempting to push changes?
             //scmManager.pull(scmManager.getRemoteUrl(), checkoutBranch);
             scmManager.push(scmManager.getRemoteUrl(), checkoutBranch);
         } else {
