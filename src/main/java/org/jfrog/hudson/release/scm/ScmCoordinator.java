@@ -24,12 +24,39 @@ import java.io.IOException;
  * @author Yossi Shaul
  */
 public interface ScmCoordinator {
+    /**
+     * Called immediately after the coordinator is created.
+     */
     void prepare() throws IOException, InterruptedException;
 
+    /**
+     * Called before changing to release version.
+     */
+    void beforeReleaseVersionChange() throws IOException, InterruptedException;
+
+    /**
+     * Called after a change to release version.
+     */
+    void afterReleaseVersionChange() throws IOException, InterruptedException;
+
+    /**
+     * Called after a successful release build.
+     */
     void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException;
 
+    /**
+     * Called before changing to next development version.
+     */
+    void beforeDevelopmentVersionChange() throws IOException, InterruptedException;
+
+    /**
+     * Called after a change to the next development version.
+     */
     void afterDevelopmentVersionChange() throws IOException, InterruptedException;
 
+    /**
+     * Called after the build has completed and the result was finalized.
+     */
     void buildCompleted() throws IOException, InterruptedException;
 
     String getRemoteUrlForPom();

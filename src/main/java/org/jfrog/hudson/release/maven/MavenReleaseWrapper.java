@@ -128,9 +128,11 @@ public class MavenReleaseWrapper extends BuildWrapper {
         scmCoordinator = AbstractScmCoordinator.createScmCoordinator(build, listener);
         scmCoordinator.prepare();
         if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
+            scmCoordinator.beforeReleaseVersionChange();
             // change to release version
             String vcsUrl = releaseAction.isCreateVcsTag() ? getTagPrefix() : null;
             changeVersions(mavenBuild, releaseAction, true, vcsUrl);
+            scmCoordinator.afterReleaseVersionChange();
         }
 
         final MavenModuleSet mavenModuleSet = mavenBuild.getProject();
@@ -157,6 +159,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                 scmCoordinator.afterSuccessfulReleaseVersionBuild();
 
                 if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
+                    scmCoordinator.beforeDevelopmentVersionChange();
                     // change poms versions to next development version
                     String scmUrl = releaseAction.isCreateVcsTag() ? scmCoordinator.getRemoteUrlForPom() : null;
                     changeVersions(mavenBuild, releaseAction, false, scmUrl);

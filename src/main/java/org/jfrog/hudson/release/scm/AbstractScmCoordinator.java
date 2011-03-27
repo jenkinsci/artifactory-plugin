@@ -24,6 +24,8 @@ import hudson.scm.SubversionSCM;
 import org.jfrog.hudson.release.scm.git.GitCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionCoordinator;
 
+import java.io.IOException;
+
 /**
  * This class coordinates between the release steps and required scm actions based on the svm manager.
  *
@@ -62,5 +64,13 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
 
     protected void log(String message) {
         listener.getLogger().println("[RELEASE] " + message);
+    }
+
+    public void beforeReleaseVersionChange() throws IOException, InterruptedException {
+
+    }
+
+    public void afterReleaseVersionChange() throws IOException, InterruptedException {
+
     }
 }

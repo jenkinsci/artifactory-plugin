@@ -61,6 +61,9 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
         scmManager.getCurrentCommitHash();
 
+    }
+
+    public void beforeReleaseVersionChange() throws IOException, InterruptedException {
         // TODO: only if create release branch otherwise move to the checkout branch
         // create a new branch for the release and start it
         scmManager.checkoutBranch(releaseBranch, true);
@@ -75,11 +78,12 @@ public class GitCoordinator extends AbstractScmCoordinator {
         if (releaseAction.isCreateVcsTag()) {
             scmManager.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment());
         }
+    }
 
+    public void beforeDevelopmentVersionChange() throws IOException, InterruptedException {
         // TODO: beforeDevelopmentVersionChange should do this
         // done working on the release branch, checkout back to master
         scmManager.checkoutBranch(checkoutBranch, false);
-
     }
 
     public void afterDevelopmentVersionChange() throws IOException, InterruptedException {
