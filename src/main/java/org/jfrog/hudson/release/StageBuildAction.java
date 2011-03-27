@@ -36,6 +36,7 @@ import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.maven.MavenReleaseWrapper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.StaplerRequest;
@@ -88,7 +89,7 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
 
     @Override
     protected Permission getPermission() {
-        return ReleaseWrapper.STAGE;
+        return MavenReleaseWrapper.STAGE;
     }
 
     @Override

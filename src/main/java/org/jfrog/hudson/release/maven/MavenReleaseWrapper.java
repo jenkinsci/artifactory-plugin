@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.release;
+package org.jfrog.hudson.release.maven;
 
 import com.google.common.collect.Maps;
 import hudson.Extension;
@@ -39,6 +39,9 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.Messages;
+import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.release.StageBuildAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -55,38 +58,38 @@ import java.util.logging.Logger;
  *
  * @author Yossi Shaul
  */
-public class ReleaseWrapper extends BuildWrapper {
-    private static Logger debuggingLogger = Logger.getLogger(ReleaseWrapper.class.getName());
+public class MavenReleaseWrapper extends BuildWrapper {
+    private static Logger debuggingLogger = Logger.getLogger(MavenReleaseWrapper.class.getName());
 
     //TODO: [by YS] Consider changing the owner class (both for centralizing future permissions and for better naming in the config.xml)
     private static final PermissionGroup GROUP =
-            new PermissionGroup(ReleaseWrapper.class, Messages._permission_group());
+            new PermissionGroup(MavenReleaseWrapper.class, Messages._permission_group());
     public static final Permission RELEASE = new Permission(GROUP, "Release",
             Messages._permission_release(), Hudson.ADMINISTER);
     public static final Permission STAGE = new Permission(GROUP, "Stage",
             Messages._permission_stage(), Hudson.ADMINISTER);
 
-    private String baseTagUrl;
+    private String tagPrefix;
     private String releaseBranchPrefix;
     private String alternativeGoals;
 
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
-    public ReleaseWrapper(String releaseBranchPrefix, String baseTagUrl, String alternativeGoals) {
+    public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeGoals) {
         this.releaseBranchPrefix = releaseBranchPrefix;
-        this.baseTagUrl = baseTagUrl;
+        this.tagPrefix = tagPrefix;
         this.alternativeGoals = alternativeGoals;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    public String getBaseTagUrl() {
-        return baseTagUrl;
+    public String getTagPrefix() {
+        return tagPrefix;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    public void setBaseTagUrl(String baseTagUrl) {
-        this.baseTagUrl = baseTagUrl;
+    public void setTagPrefix(String tagPrefix) {
+        this.tagPrefix = tagPrefix;
     }
 
     public String getReleaseBranchPrefix() {
@@ -124,9 +127,9 @@ public class ReleaseWrapper extends BuildWrapper {
         final MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
         scmCoordinator = AbstractScmCoordinator.createScmCoordinator(build, listener);
         scmCoordinator.prepare();
-        if (!releaseAction.versioning.equals(ReleaseAction.VERSIONING.NONE)) {
+        if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
             // change to release version
-            String vcsUrl = releaseAction.createVcsTag ? getBaseTagUrl() : null;
+            String vcsUrl = releaseAction.isCreateVcsTag() ? getTagPrefix() : null;
             changeVersions(mavenBuild, releaseAction, true, vcsUrl);
         }
 
@@ -153,9 +156,9 @@ public class ReleaseWrapper extends BuildWrapper {
 
                 scmCoordinator.afterSuccessfulReleaseVersionBuild();
 
-                if (!releaseAction.versioning.equals(ReleaseAction.VERSIONING.NONE)) {
+                if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
                     // change poms versions to next development version
-                    String scmUrl = releaseAction.createVcsTag ? scmCoordinator.getRemoteUrlForPom() : null;
+                    String scmUrl = releaseAction.isCreateVcsTag() ? scmCoordinator.getRemoteUrlForPom() : null;
                     changeVersions(mavenBuild, releaseAction, false, scmUrl);
                     scmCoordinator.afterDevelopmentVersionChange();
                 }
@@ -266,7 +269,8 @@ public class ReleaseWrapper extends BuildWrapper {
 
             // signal completion to the scm coordinator
             MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) run;
-            ReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(mavenBuild.getProject(), ReleaseWrapper.class);
+            MavenReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(mavenBuild.getProject(),
+                    MavenReleaseWrapper.class);
             try {
                 wrapper.scmCoordinator.buildCompleted();
             } catch (Exception e) {

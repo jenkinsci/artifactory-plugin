@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.release;
+package org.jfrog.hudson.release.maven;
 
 import hudson.AbortException;
 import hudson.FilePath;

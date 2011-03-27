@@ -21,6 +21,7 @@ import com.google.common.io.Files;
 import hudson.maven.ModuleName;
 import org.jdom.Document;
 import org.jdom.output.XMLOutputter;
+import org.jfrog.hudson.release.maven.PomTransformer;
 import org.testng.annotations.Test;
 
 import java.io.File;

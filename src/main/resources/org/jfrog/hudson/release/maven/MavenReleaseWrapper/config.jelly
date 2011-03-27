@@ -1,17 +1,17 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry field="baseTagUrl" title="VCS tags base URL/name"
-             help="/plugin/artifactory/help/release/ReleaseWrapper/help-tagBaseUrl.html">
-        <f:textbox name="baseTagUrl" value="${instance.baseTagUrl}"/>
+    <f:entry field="tagPrefix" title="VCS tags base URL/name"
+             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-tagBaseUrl.html">
+        <f:textbox name="tagPrefix" value="${instance.tagPrefix}"/>
     </f:entry>
     <!--<j:if test="${it.isGit()}">-->
     <f:entry field="releaseBranchPrefix" title="Release branch name prefix"
-             help="/plugin/artifactory/help/release/ReleaseWrapper/help-releaseBranchPrefix.html">
+             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-releaseBranchPrefix.html">
         <f:textbox name="releaseBranchPrefix" value="${instance.releaseBranchPrefix}"/>
     </f:entry>
     <!--</j:if>-->
     <f:entry title="Alternative Maven goals and options"
-             help="/plugin/artifactory/help/release/ReleaseWrapper/help-alternativeGoals.html">
+             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-alternativeGoals.html">
         <f:textbox name="alternativeGoals" value="${instance.alternativeGoals}"/>
     </f:entry>
 </j:jelly>

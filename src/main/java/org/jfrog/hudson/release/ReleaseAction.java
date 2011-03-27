@@ -25,6 +25,7 @@ import hudson.model.Cause;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.maven.MavenReleaseWrapper;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.kohsuke.stapler.StaplerRequest;
@@ -86,7 +87,7 @@ public class ReleaseAction implements Action {
     }
 
     public String getIconFileName() {
-        if (project.hasPermission(ReleaseWrapper.RELEASE)) {
+        if (project.hasPermission(MavenReleaseWrapper.RELEASE)) {
             return "/plugin/artifactory/images/artifactory-release.png";
         }
 
@@ -103,6 +104,18 @@ public class ReleaseAction implements Action {
 
     public String getUrlName() {
         return "release";
+    }
+
+    public VERSIONING getVersioning() {
+        return versioning;
+    }
+
+    public String getReleaseVersion() {
+        return releaseVersion;
+    }
+
+    public String getNextVersion() {
+        return nextVersion;
     }
 
     public boolean isCreateVcsTag() {
@@ -142,15 +155,15 @@ public class ReleaseAction implements Action {
     }
 
     public String getDefaultTagUrl() {
-        ReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, ReleaseWrapper.class);
-        String baseTagUrl = wrapper.getBaseTagUrl();
+        MavenReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, MavenReleaseWrapper.class);
+        String baseTagUrl = wrapper.getTagPrefix();
         StringBuilder sb = new StringBuilder(baseTagUrl);
         sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
         return sb.toString();
     }
 
     public String getDefaultReleaseBranch() {
-        ReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, ReleaseWrapper.class);
+        MavenReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, MavenReleaseWrapper.class);
         String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
         StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
         sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
@@ -268,7 +281,7 @@ public class ReleaseAction implements Action {
     @SuppressWarnings({"UnusedDeclaration"})
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         // enforce release permissions
-        project.checkPermission(ReleaseWrapper.RELEASE);
+        project.checkPermission(MavenReleaseWrapper.RELEASE);
 
         req.bindParameters(this);
 
