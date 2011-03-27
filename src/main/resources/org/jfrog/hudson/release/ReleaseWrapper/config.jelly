@@ -4,6 +4,12 @@
              help="/plugin/artifactory/help/release/ReleaseWrapper/help-tagBaseUrl.html">
         <f:textbox name="baseTagUrl" value="${instance.baseTagUrl}"/>
     </f:entry>
+    <!--<j:if test="${it.isGit()}">-->
+    <f:entry field="releaseBranchPrefix" title="Release branch name prefix"
+             help="/plugin/artifactory/help/release/ReleaseWrapper/help-releaseBranchPrefix.html">
+        <f:textbox name="releaseBranchPrefix" value="${instance.releaseBranchPrefix}"/>
+    </f:entry>
+    <!--</j:if>-->
     <f:entry title="Alternative Maven goals and options"
              help="/plugin/artifactory/help/release/ReleaseWrapper/help-alternativeGoals.html">
         <f:textbox name="alternativeGoals" value="${instance.alternativeGoals}"/>

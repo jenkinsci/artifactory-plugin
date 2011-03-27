@@ -145,9 +145,6 @@ public class ReleaseAction implements Action {
         ReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, ReleaseWrapper.class);
         String baseTagUrl = wrapper.getBaseTagUrl();
         StringBuilder sb = new StringBuilder(baseTagUrl);
-        if (!baseTagUrl.endsWith("/")) {
-            sb.append("/");
-        }
         sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
         return sb.toString();
     }

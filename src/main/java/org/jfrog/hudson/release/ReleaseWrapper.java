@@ -73,7 +73,8 @@ public class ReleaseWrapper extends BuildWrapper {
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
-    public ReleaseWrapper(String baseTagUrl, String alternativeGoals) {
+    public ReleaseWrapper(String releaseBranchPrefix, String baseTagUrl, String alternativeGoals) {
+        this.releaseBranchPrefix = releaseBranchPrefix;
         this.baseTagUrl = baseTagUrl;
         this.alternativeGoals = alternativeGoals;
     }
@@ -89,10 +90,10 @@ public class ReleaseWrapper extends BuildWrapper {
     }
 
     public String getReleaseBranchPrefix() {
-        // TODO: input parameter
-        return "RELEASE-BRANCH-";
+        return releaseBranchPrefix;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     public void setReleaseBranchPrefix(String releaseBranchPrefix) {
         this.releaseBranchPrefix = releaseBranchPrefix;
     }
