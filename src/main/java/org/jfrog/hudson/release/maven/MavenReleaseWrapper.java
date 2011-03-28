@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -156,16 +157,21 @@ public class MavenReleaseWrapper extends BuildWrapper {
                     return true;
                 }
 
-                scmCoordinator.afterSuccessfulReleaseVersionBuild();
+                try {
+                    scmCoordinator.afterSuccessfulReleaseVersionBuild();
 
-                if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
-                    scmCoordinator.beforeDevelopmentVersionChange();
-                    // change poms versions to next development version
-                    String scmUrl = releaseAction.isCreateVcsTag() ? scmCoordinator.getRemoteUrlForPom() : null;
-                    changeVersions(mavenBuild, releaseAction, false, scmUrl);
-                    scmCoordinator.afterDevelopmentVersionChange();
+                    if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
+                        scmCoordinator.beforeDevelopmentVersionChange();
+                        // change poms versions to next development version
+                        String scmUrl = releaseAction.isCreateVcsTag() ? scmCoordinator.getRemoteUrlForPom() : null;
+                        changeVersions(mavenBuild, releaseAction, false, scmUrl);
+                        scmCoordinator.afterDevelopmentVersionChange();
+                    }
+                } catch (Exception e) {
+                    listener.getLogger().println("Failure in post build SCM action: " + e.getMessage());
+                    debuggingLogger.log(Level.FINE, "Failure in post build SCM action: ", e);
+                    return false;
                 }
-
                 return true;
             }
         };
