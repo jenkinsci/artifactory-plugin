@@ -222,6 +222,39 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
+    public String deleteLocalTag(final String tag) throws IOException, InterruptedException {
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    log("Deleting local tag: " + tag);
+                    GitAPI git = createGitAPI(workspace);
+                    String output = git.launchCommand("tag", "-d", tag);
+                    debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
+                    return output;
+                } catch (GitException e) {
+                    throw new IOException("Git tag deletion failed: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    public String deleteRemoteTag(final String remoteRepository, final String tag)
+            throws IOException, InterruptedException {
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    log(String.format("Deleting remote tag '%s' from '%s'", tag, remoteRepository));
+                    GitAPI git = createGitAPI(workspace);
+                    String output = git.launchCommand("push", remoteRepository, ":refs/tags/" + tag);
+                    debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
+                    return output;
+                } catch (GitException e) {
+                    throw new IOException("Git tag deletion failed: " + e.getMessage());
+                }
+            }
+        });
+    }
+
     public String getRemoteUrl() {
         RemoteConfig remoteConfig = getHudsonScm().getRepositories().get(0);
         URIish uri = remoteConfig.getURIs().get(0);

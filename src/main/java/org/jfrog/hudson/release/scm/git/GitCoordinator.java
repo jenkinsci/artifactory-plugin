@@ -88,7 +88,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
     }
 
     public void beforeDevelopmentVersionChange() throws IOException, InterruptedException {
-        // TODO: beforeDevelopmentVersionChange should do this
         // done working on the release branch, checkout back to master
         scmManager.checkoutBranch(checkoutBranch, false);
     }
@@ -106,10 +105,15 @@ public class GitCoordinator extends AbstractScmCoordinator {
             //scmManager.pull(scmManager.getRemoteUrl(), checkoutBranch);
             scmManager.push(scmManager.getRemoteUrl(), checkoutBranch);
         } else {
+            ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
+
             // go back to the original checkout branch
             scmManager.checkoutBranch(checkoutBranch, false);
             // delete the release branch
             safeDeleteBranch(releaseBranch);
+            safeDeleteRemoteBranch(scmManager.getRemoteUrl(), releaseBranch);
+            safeDeleteTag(releaseAction.getTagUrl());
+            safeDeleteRemoteTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
             safeDeleteRemoteBranch(scmManager.getRemoteUrl(), releaseBranch);
             // TODO: make sure it is the right branch (master)
             // reset changes done on the original checkout branch (next dev version)
@@ -128,11 +132,28 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
     private void safeDeleteRemoteBranch(String remoteRepository, String branch) {
         try {
-            // delete the remote branch (including the tag pointing to a commit on that branch)
             scmManager.deleteRemoteBranch(remoteRepository, branch);
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to delete remote release branch: ", e);
             log("Failed to delete remote release branch: " + e.getLocalizedMessage());
+        }
+    }
+
+    private void safeDeleteTag(String tag) {
+        try {
+            scmManager.deleteLocalTag(tag);
+        } catch (Exception e) {
+            debuggingLogger.log(Level.FINE, "Failed to delete tag: ", e);
+            log("Failed to delete tag: " + e.getLocalizedMessage());
+        }
+    }
+
+    private void safeDeleteRemoteTag(String remoteRepository, String tag) {
+        try {
+            scmManager.deleteRemoteTag(remoteRepository, tag);
+        } catch (Exception e) {
+            debuggingLogger.log(Level.FINE, "Failed to delete remote tag: ", e);
+            log("Failed to delete remote tag: " + e.getLocalizedMessage());
         }
     }
 
