@@ -41,14 +41,15 @@ public class GitCoordinator extends AbstractScmCoordinator {
     private GitManager scmManager;
     private String releaseBranch;
     private String checkoutBranch;
+    private final ReleaseAction releaseAction;
 
-    public GitCoordinator(AbstractBuild build, BuildListener listener) {
+    public GitCoordinator(AbstractBuild build, BuildListener listener, ReleaseAction releaseAction) {
         super(build, listener);
+        this.releaseAction = releaseAction;
     }
 
     public void prepare() throws IOException, InterruptedException {
         // TODO: check if should create release branch
-        ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
         releaseBranch = releaseAction.getReleaseBranch();
 
         // find the current local built branch

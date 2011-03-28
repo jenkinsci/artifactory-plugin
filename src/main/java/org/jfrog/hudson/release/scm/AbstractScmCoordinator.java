@@ -21,6 +21,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
+import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.git.GitCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionCoordinator;
 
@@ -41,14 +42,15 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
         this.listener = listener;
     }
 
-    public static ScmCoordinator createScmCoordinator(AbstractBuild build, BuildListener listener) {
+    public static ScmCoordinator createScmCoordinator(AbstractBuild build, BuildListener listener,
+            ReleaseAction releaseAction) {
         SCM projectScm = build.getProject().getScm();
         if (projectScm instanceof SubversionSCM) {
-            return new SubversionCoordinator(build, listener);
+            return new SubversionCoordinator(build, listener, releaseAction);
         }
         // Git is optional SCM so we cannot use the class here
         if (isGitScm(build.getProject())) {
-            return new GitCoordinator(build, listener);
+            return new GitCoordinator(build, listener, releaseAction);
         }
         throw new UnsupportedOperationException(
                 "Scm of type: " + projectScm.getClass().getName() + " is not supported");

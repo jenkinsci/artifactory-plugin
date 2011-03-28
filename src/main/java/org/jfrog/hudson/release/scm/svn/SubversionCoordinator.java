@@ -32,9 +32,11 @@ import java.io.IOException;
 public class SubversionCoordinator extends AbstractScmCoordinator {
     private SubversionManager scmManager;
     private boolean tagCreated;
+    private final ReleaseAction releaseAction;
 
-    public SubversionCoordinator(AbstractBuild build, BuildListener listener) {
+    public SubversionCoordinator(AbstractBuild build, BuildListener listener, ReleaseAction releaseAction) {
         super(build, listener);
+        this.releaseAction = releaseAction;
     }
 
     public void prepare() throws IOException, InterruptedException {
@@ -42,7 +44,6 @@ public class SubversionCoordinator extends AbstractScmCoordinator {
     }
 
     public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
-        ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
         if (releaseAction.isCreateVcsTag()) {
             scmManager.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment());
             tagCreated = true;
@@ -61,7 +62,6 @@ public class SubversionCoordinator extends AbstractScmCoordinator {
         if (build.getResult().isWorseThan(Result.SUCCESS)) {
             // build has failed, make sure to delete the tag and revert the working copy
             //run.getActions().remove(releaseBadge);
-            ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
             scmManager.safeRevertWorkingCopy();
             if (tagCreated) {
                 scmManager.safeRevertTag(releaseAction.getTagUrl(), "Reverting vcs tag: " + releaseAction.getTagUrl());

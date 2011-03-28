@@ -125,7 +125,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
         log(listener, "Release build triggered");
 
         final MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
-        scmCoordinator = AbstractScmCoordinator.createScmCoordinator(build, listener);
+        scmCoordinator = AbstractScmCoordinator.createScmCoordinator(build, listener, releaseAction);
         scmCoordinator.prepare();
         if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
             scmCoordinator.beforeReleaseVersionChange();
