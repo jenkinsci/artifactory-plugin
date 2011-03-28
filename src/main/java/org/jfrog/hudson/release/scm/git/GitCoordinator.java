@@ -45,6 +45,16 @@ public class GitCoordinator extends AbstractScmCoordinator {
     // the commit hash of the initial checkout
     private String baseCommitIsh;
 
+    private State state = new State();
+
+    private static class State {
+        String currentWorkingBranch;
+        boolean releaseBranchCreated;
+        boolean releaseBranchPushed;
+        boolean tagCreated;
+        boolean tagPushed;
+    }
+
     public GitCoordinator(AbstractBuild build, BuildListener listener, ReleaseAction releaseAction) {
         super(build, listener);
         this.releaseAction = releaseAction;
@@ -66,36 +76,49 @@ public class GitCoordinator extends AbstractScmCoordinator {
     }
 
     public void beforeReleaseVersionChange() throws IOException, InterruptedException {
-        // TODO: only if create release branch otherwise move to the checkout branch
-        // create a new branch for the release and start it
-        scmManager.checkoutBranch(releaseBranch, true);
+        if (releaseAction.isCreateReleaseBranch()) {
+            // create a new branch for the release and start it
+            scmManager.checkoutBranch(releaseBranch, true);
+            state.currentWorkingBranch = releaseBranch;
+            state.releaseBranchCreated = true;
+        } else {
+            // make sure we are on the checkout branch
+            scmManager.checkoutBranch(checkoutBranch, false);
+            state.currentWorkingBranch = checkoutBranch;
+        }
     }
 
     public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
         // commit local changes
-        log(String.format("Committing release version on branch '%s'", releaseBranch));
+        log(String.format("Committing release version on branch '%s'", state.currentWorkingBranch));
         scmManager.commitWorkingCopy("Committing release version");
 
-        ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
         if (releaseAction.isCreateVcsTag()) {
             scmManager.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment());
+            state.tagCreated = true;
         }
 
-        // push the branch
-        scmManager.push(scmManager.getRemoteUrl(), releaseBranch);
+        // push the current branch
+        scmManager.push(scmManager.getRemoteUrl(), state.currentWorkingBranch);
+        state.releaseBranchPushed = true;
+
         // push the tag if created
         if (releaseAction.isCreateVcsTag()) {
             scmManager.pushTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
+            state.tagPushed = true;
         }
     }
 
     public void beforeDevelopmentVersionChange() throws IOException, InterruptedException {
-        // done working on the release branch, checkout back to master
-        scmManager.checkoutBranch(checkoutBranch, false);
+        if (releaseAction.isCreateReleaseBranch()) {
+            // done working on the release branch, checkout back to master
+            scmManager.checkoutBranch(checkoutBranch, false);
+            state.currentWorkingBranch = checkoutBranch;
+        }
     }
 
     public void afterDevelopmentVersionChange() throws IOException, InterruptedException {
-        log(String.format("Committing next development version on branch '%s'", checkoutBranch));
+        log(String.format("Committing next development version on branch '%s'", state.currentWorkingBranch));
         scmManager.commitWorkingCopy("Committing next development version");
     }
 
@@ -105,19 +128,23 @@ public class GitCoordinator extends AbstractScmCoordinator {
             // push the next development version (if different from original)
             // pull before attempting to push changes?
             //scmManager.pull(scmManager.getRemoteUrl(), checkoutBranch);
-            scmManager.push(scmManager.getRemoteUrl(), checkoutBranch);
+            scmManager.push(scmManager.getRemoteUrl(), state.currentWorkingBranch);
         } else {
-            ReleaseAction releaseAction = build.getAction(ReleaseAction.class);
-
             // go back to the original checkout branch
             scmManager.checkoutBranch(checkoutBranch, false);
-            // delete the release branch
-            safeDeleteBranch(releaseBranch);
-            safeDeleteRemoteBranch(scmManager.getRemoteUrl(), releaseBranch);
-            safeDeleteTag(releaseAction.getTagUrl());
-            safeDeleteRemoteTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
-            safeDeleteRemoteBranch(scmManager.getRemoteUrl(), releaseBranch);
-            // TODO: make sure it is the right branch (master)
+
+            if (state.releaseBranchCreated) {
+                safeDeleteBranch(releaseBranch);
+            }
+            if (state.releaseBranchPushed) {
+                safeDeleteRemoteBranch(scmManager.getRemoteUrl(), releaseBranch);
+            }
+            if (state.tagCreated) {
+                safeDeleteTag(releaseAction.getTagUrl());
+            }
+            if (state.tagPushed) {
+                safeDeleteRemoteTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
+            }
             // reset changes done on the original checkout branch (next dev version)
             safeRevertWorkingCopy();
         }
@@ -161,6 +188,8 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
     private void safeRevertWorkingCopy() {
         try {
+            scmManager.checkoutBranch(checkoutBranch, false);
+            state.currentWorkingBranch = checkoutBranch;
             scmManager.revertWorkingCopy(baseCommitIsh);
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to revert working copy: ", e);
