@@ -41,8 +41,6 @@ import java.util.logging.Logger;
  */
 public class GitManager extends AbstractScmManager<GitSCM> {
     private static Logger debuggingLogger = Logger.getLogger(GitManager.class.getName());
-    // todo: put in coordinator
-    private String baseCommit;
 
     public GitManager(AbstractBuild<?, ?> build, TaskListener buildListener) {
         super(build, buildListener);
@@ -54,7 +52,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
                 try {
                     GitAPI git = createGitAPI(ws);
                     // commit all the modified files
-                    baseCommit = git.launchCommand("rev-parse", "--verify", "HEAD").trim();
+                    String baseCommit = git.launchCommand("rev-parse", "--verify", "HEAD").trim();
                     debuggingLogger.fine(String.format("Base commit hash%s", baseCommit));
                     return baseCommit;
                 } catch (GitException e) {
@@ -173,13 +171,13 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
-    public void revertWorkingCopy() throws IOException, InterruptedException {
+    public void revertWorkingCopy(final String commitIsh) throws IOException, InterruptedException {
         build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
                     GitAPI git = createGitAPI(workspace);
-                    log("Reverting git working copy back to initial commit: " + baseCommit);
-                    String resetOutput = git.launchCommand("reset", "--hard", baseCommit);
+                    log("Reverting git working copy back to initial commit: " + commitIsh);
+                    String resetOutput = git.launchCommand("reset", "--hard", commitIsh);
                     debuggingLogger.fine(String.format("Reset command output:%n%s", resetOutput));
                     return resetOutput;
                 } catch (GitException e) {

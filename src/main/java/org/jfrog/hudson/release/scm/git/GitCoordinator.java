@@ -38,10 +38,12 @@ import java.util.logging.Logger;
 public class GitCoordinator extends AbstractScmCoordinator {
     private static Logger debuggingLogger = Logger.getLogger(GitCoordinator.class.getName());
 
+    private final ReleaseAction releaseAction;
     private GitManager scmManager;
     private String releaseBranch;
     private String checkoutBranch;
-    private final ReleaseAction releaseAction;
+    // the commit hash of the initial checkout
+    private String baseCommitIsh;
 
     public GitCoordinator(AbstractBuild build, BuildListener listener, ReleaseAction releaseAction) {
         super(build, listener);
@@ -60,8 +62,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
         scmManager = new GitManager(build, listener);
 
-        scmManager.getCurrentCommitHash();
-
+        baseCommitIsh = scmManager.getCurrentCommitHash();
     }
 
     public void beforeReleaseVersionChange() throws IOException, InterruptedException {
@@ -160,7 +161,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
     private void safeRevertWorkingCopy() {
         try {
-            scmManager.revertWorkingCopy();
+            scmManager.revertWorkingCopy(baseCommitIsh);
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to revert working copy: ", e);
             log("Failed to revert working copy: " + e.getLocalizedMessage());
