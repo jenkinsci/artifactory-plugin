@@ -36,8 +36,10 @@ public interface ScmCoordinator {
 
     /**
      * Called after a change to release version.
+     *
+     * @param modified
      */
-    void afterReleaseVersionChange() throws IOException, InterruptedException;
+    void afterReleaseVersionChange(boolean modified) throws IOException, InterruptedException;
 
     /**
      * Called after a successful release build.
@@ -51,8 +53,10 @@ public interface ScmCoordinator {
 
     /**
      * Called after a change to the next development version.
+     *
+     * @param modified
      */
-    void afterDevelopmentVersionChange() throws IOException, InterruptedException;
+    void afterDevelopmentVersionChange(boolean modified) throws IOException, InterruptedException;
 
     /**
      * Called after the build has completed and the result was finalized.

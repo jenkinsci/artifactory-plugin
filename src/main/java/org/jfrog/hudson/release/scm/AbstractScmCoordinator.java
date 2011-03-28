@@ -36,6 +36,8 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
 
     protected final AbstractBuild build;
     protected final BuildListener listener;
+    protected boolean modifiedFilesForReleaseVersion;
+    protected boolean modifiedFilesForDevVersion;
 
     public AbstractScmCoordinator(AbstractBuild build, BuildListener listener) {
         this.build = build;
@@ -72,7 +74,11 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
 
     }
 
-    public void afterReleaseVersionChange() throws IOException, InterruptedException {
+    public void afterReleaseVersionChange(boolean modified) throws IOException, InterruptedException {
+        modifiedFilesForReleaseVersion = modified;
+    }
 
+    public void afterDevelopmentVersionChange(boolean modified) throws IOException, InterruptedException {
+        modifiedFilesForDevVersion = modified;
     }
 }

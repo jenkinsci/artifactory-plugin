@@ -40,7 +40,7 @@ import java.util.Map;
  *
  * @author Yossi Shaul
  */
-public class PomTransformer implements FilePath.FileCallable<Object> {
+public class PomTransformer implements FilePath.FileCallable<Boolean> {
 
     private final String scmUrl;
     private final ModuleName currentModule;
@@ -50,7 +50,7 @@ public class PomTransformer implements FilePath.FileCallable<Object> {
     /**
      * Transforms single pom file.
      *
-     * @param currentModule
+     * @param currentModule    The current module we work on
      * @param versionsByModule Map of module names to module version
      * @param scmUrl           Scm url to use if scm element exists in the pom file
      */
@@ -60,7 +60,12 @@ public class PomTransformer implements FilePath.FileCallable<Object> {
         this.scmUrl = scmUrl;
     }
 
-    public Object invoke(File pomFile, VirtualChannel channel) throws IOException, InterruptedException {
+    /**
+     * Performs the transformation.
+     *
+     * @return True if the file was modified.
+     */
+    public Boolean invoke(File pomFile, VirtualChannel channel) throws IOException, InterruptedException {
         if (!pomFile.exists()) {
             throw new AbortException("Couldn't find pom file: " + pomFile);
         }
@@ -99,7 +104,7 @@ public class PomTransformer implements FilePath.FileCallable<Object> {
             }
         }
 
-        return null;
+        return modified;
     }
 
     private void changeParentVersion(Element root, Namespace ns) {

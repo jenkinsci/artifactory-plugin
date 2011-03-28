@@ -132,8 +132,8 @@ public class MavenReleaseWrapper extends BuildWrapper {
             scmCoordinator.beforeReleaseVersionChange();
             // change to release version
             String vcsUrl = releaseAction.isCreateVcsTag() ? getTagPrefix() : null;
-            changeVersions(mavenBuild, releaseAction, true, vcsUrl);
-            scmCoordinator.afterReleaseVersionChange();
+            boolean modified = changeVersions(mavenBuild, releaseAction, true, vcsUrl);
+            scmCoordinator.afterReleaseVersionChange(modified);
         }
 
         final MavenModuleSet mavenModuleSet = mavenBuild.getProject();
@@ -164,8 +164,8 @@ public class MavenReleaseWrapper extends BuildWrapper {
                         scmCoordinator.beforeDevelopmentVersionChange();
                         // change poms versions to next development version
                         String scmUrl = releaseAction.isCreateVcsTag() ? scmCoordinator.getRemoteUrlForPom() : null;
-                        changeVersions(mavenBuild, releaseAction, false, scmUrl);
-                        scmCoordinator.afterDevelopmentVersionChange();
+                        boolean modified = changeVersions(mavenBuild, releaseAction, false, scmUrl);
+                        scmCoordinator.afterDevelopmentVersionChange(modified);
                     }
                 } catch (Exception e) {
                     listener.getLogger().println("Failure in post build SCM action: " + e.getMessage());
@@ -177,9 +177,8 @@ public class MavenReleaseWrapper extends BuildWrapper {
         };
     }
 
-    private void changeVersions(MavenModuleSetBuild mavenBuild, ReleaseAction release, boolean releaseVersion,
-            String scmUrl)
-            throws IOException, InterruptedException {
+    private boolean changeVersions(MavenModuleSetBuild mavenBuild, ReleaseAction release, boolean releaseVersion,
+            String scmUrl) throws IOException, InterruptedException {
         FilePath moduleRoot = mavenBuild.getModuleRoot();
         // get the active modules only
         Collection<MavenModule> modules = mavenBuild.getProject().getDisabledModules(false);
@@ -191,13 +190,15 @@ public class MavenReleaseWrapper extends BuildWrapper {
             modulesByName.put(module.getModuleName(), version);
         }
 
+        boolean modified = false;
         for (MavenModule mavenModule : modules) {
             String relativePath = mavenModule.getRelativePath();
             String pomRelativePath = StringUtils.isBlank(relativePath) ? "pom.xml" : relativePath + "/pom.xml";
             FilePath pomPath = new FilePath(moduleRoot, pomRelativePath);
             debuggingLogger.fine("Changing version of pom: " + pomPath);
-            pomPath.act(new PomTransformer(mavenModule.getModuleName(), modulesByName, scmUrl));
+            modified |= pomPath.act(new PomTransformer(mavenModule.getModuleName(), modulesByName, scmUrl));
         }
+        return modified;
     }
 
     private void log(BuildListener listener, String message) {
