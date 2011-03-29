@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,14 @@ package org.jfrog.hudson.release;
 
 import com.google.common.collect.Maps;
 import hudson.FilePath;
-import hudson.model.AbstractProject;
-import hudson.model.BuildableItemWithBuildWrappers;
+import hudson.model.FreeStyleProject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
-import org.jfrog.hudson.release.gradle.GradleModule;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
 import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -43,45 +39,57 @@ import java.util.Map;
  */
 public class GradleReleaseAction extends ReleaseAction {
 
-    private transient AbstractProject project;
-    private Map<GradleModule, String> versions;
-    private Map<GradleModule, String> additionalProps;
-    private final String propKeys;
-    private final String additionalPropKeys;
+    private final transient FreeStyleProject project;
+
+    private transient Map<String, String> versionProps;
+    private transient Map<String, String> additionalProps;
     /**
      * Map of release versions per module. Only used if versioning is per module
      */
-    Map<GradleModule, String> releaseVersionPerModule;
+    Map<String, String> releaseVersionPerModule;
     /**
      * Map of dev versions per module. Only used if versioning is per module
      */
-    Map<GradleModule, String> nextVersionPerModule;
+    Map<String, String> nextVersionPerModule;
 
-    Map<GradleModule, String> nextAdditionalValuePerModule;
+    Map<String, String> nextAdditionalValuePerModule;
 
-    public GradleReleaseAction(AbstractProject project, Map<GradleModule, String> versions,
-            Map<GradleModule, String> additionalProps, String propKeys, String additionalPropKeys) {
-        //TODO: [by ys] use abstract project
+    public GradleReleaseAction(FreeStyleProject project) {
         super(project);
         this.project = project;
-        this.versions = versions;
-        this.additionalProps = additionalProps;
-        this.propKeys = propKeys;
-        this.additionalPropKeys = additionalPropKeys;
     }
 
-    public Collection<GradleModule> getVersionProperties() throws IOException {
-        FilePath workspace = project.getSomeWorkspace();
-        FilePath filePath = new FilePath(workspace, "gradle.properties");
-        versions = PropertyUtils.getModulesPropertiesFromPropFile(filePath, propKeys);
-        return versions.keySet();
+    public String[] getVersionProperties() {
+        return getReleaseWrapper().getVersionPropsKeysList();
     }
 
-    public Collection<GradleModule> getAdditionalProperties() throws IOException {
+    public String[] getAdditionalProperties() {
+        return getReleaseWrapper().getAdditionalPropsKeysList();
+    }
+
+
+    private void init() {
         FilePath workspace = project.getSomeWorkspace();
-        FilePath filePath = new FilePath(workspace, "gradle.properties");
-        additionalProps = PropertyUtils.getModulesPropertiesFromPropFile(filePath, additionalPropKeys);
-        return additionalProps.keySet();
+        if (workspace == null) {
+            throw new IllegalStateException("No workspace found, cannot perform staging");
+        }
+        FilePath gradlePropertiesPath = new FilePath(workspace, "gradle.properties");
+        if (versionProps == null) {
+            versionProps = PropertyUtils.getModulesPropertiesFromPropFile(gradlePropertiesPath, getVersionProperties());
+        }
+        if (additionalProps == null) {
+            additionalProps =
+                    PropertyUtils.getModulesPropertiesFromPropFile(gradlePropertiesPath, getAdditionalProperties());
+        }
+    }
+
+    /**
+     * Nullify the version properties map and the additional properties map, should be only called once the build is
+     * <b>finished</b>.
+     */
+    public void reset() {
+        versionProps = null;
+        additionalProps = null;
     }
 
     /**
@@ -90,7 +98,7 @@ public class GradleReleaseAction extends ReleaseAction {
     @Override
     public String getDefaultStagingRepository() {
         ArtifactoryGradleConfigurator publisher = ActionableHelper.getBuildWrapper(
-                (BuildableItemWithBuildWrappers) project, ArtifactoryGradleConfigurator.class);
+                project, ArtifactoryGradleConfigurator.class);
         if (publisher == null) {
             return null;
         }
@@ -104,8 +112,7 @@ public class GradleReleaseAction extends ReleaseAction {
     @SuppressWarnings({"UnusedDeclaration"})
     public List<String> getRepositoryKeys() {
         ArtifactoryGradleConfigurator artifactoryPublisher =
-                ActionableHelper
-                        .getBuildWrapper((BuildableItemWithBuildWrappers) project, ArtifactoryGradleConfigurator.class);
+                ActionableHelper.getBuildWrapper(project, ArtifactoryGradleConfigurator.class);
         if (artifactoryPublisher != null) {
             return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
         } else {
@@ -115,22 +122,18 @@ public class GradleReleaseAction extends ReleaseAction {
 
     @Override
     public String getDefaultTagUrl() {
-        GradleReleaseWrapper wrapper =
-                ActionableHelper.getBuildWrapper((BuildableItemWithBuildWrappers) project, GradleReleaseWrapper.class);
-        String baseTagUrl = wrapper.getTagPrefix();
+        String baseTagUrl = getReleaseWrapper().getTagPrefix();
         StringBuilder sb = new StringBuilder(baseTagUrl);
-        String releaseVersion = calculateReleaseVersion(versions.keySet().iterator().next().getModuleVersion());
+        //String releaseVersion = calculateReleaseVersion(releaseVersionPerModule.keySet().iterator().next());
         sb.append(releaseVersion);
         return sb.toString();
     }
 
     @Override
     public String getDefaultReleaseBranch() {
-        GradleReleaseWrapper wrapper =
-                ActionableHelper.getBuildWrapper((BuildableItemWithBuildWrappers) project, GradleReleaseWrapper.class);
-        String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
+        String releaseBranchPrefix = getReleaseWrapper().getReleaseBranchPrefix();
         StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
-        String releaseVersion = calculateReleaseVersion(versions.keySet().iterator().next().getModuleVersion());
+        //String releaseVersion = calculateReleaseVersion(releaseVersionPerModule.keySet().iterator().next());
         sb.append(releaseVersion);
         return sb.toString();
     }
@@ -142,13 +145,10 @@ public class GradleReleaseAction extends ReleaseAction {
 
     /**
      * {@inheritDoc}
-     *
-     * @return Nothing, since in Gradle there is no version for the root project like in Maven, this release version
-     *         from the root project has no meaning.
      */
     @Override
     public String calculateReleaseVersion() {
-        return "";
+        return releaseVersion;
     }
 
     @Override
@@ -160,36 +160,48 @@ public class GradleReleaseAction extends ReleaseAction {
         while (params.hasMoreElements()) {
             String key = (String) params.nextElement();
             if (key.startsWith("release.")) {
-                releaseVersionPerModule
-                        .put(new GradleModule(StringUtils.removeStart(key, "release."), req.getParameter(key)),
-                                req.getParameter(key));
+                releaseVersionPerModule.put(StringUtils.removeStart(key, "release."), req.getParameter(key));
             } else if (key.startsWith("next.")) {
-                nextVersionPerModule
-                        .put(new GradleModule(StringUtils.removeStart(key, "next."), req.getParameter(key)),
-                                req.getParameter(key));
+                nextVersionPerModule.put(StringUtils.removeStart(key, "next."), req.getParameter(key));
             }
         }
     }
 
-    public String getReleaseVersionFor(GradleModule moduleName) {
+    public String getValueForProp(String prop) {
+        init();
+        return additionalProps.get(prop);
+    }
+
+    @Override
+    public String calculateReleaseVersion(String fromVersion) {
+        init();
+        releaseVersion = super.calculateReleaseVersion(versionProps.get(fromVersion));
+        return releaseVersion;
+    }
+
+    public String getReleaseVersionFor(String key) {
         switch (versioning) {
             case GLOBAL:
                 return releaseVersion;
             case PER_MODULE:
-                return releaseVersionPerModule.get(moduleName);
+                return releaseVersionPerModule.get(key);
             default:
                 return null;
         }
     }
 
-    public String getNextVersionFor(GradleModule moduleName) {
+    public String getNextVersionFor(String key) {
         switch (versioning) {
             case GLOBAL:
                 return nextVersion;
             case PER_MODULE:
-                return nextVersionPerModule.get(moduleName);
+                return nextVersionPerModule.get(key);
             default:
                 return null;
         }
+    }
+
+    private GradleReleaseWrapper getReleaseWrapper() {
+        return ActionableHelper.getBuildWrapper(project, GradleReleaseWrapper.class);
     }
 }

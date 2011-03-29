@@ -11,8 +11,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * Based on: /org/springframework/spring-core/3.0.5.RELEASE/spring-core-3.0.5.RELEASE.jar!/org/springframework/util/DefaultPropertiesPersister.java
  */
 
 package org.jfrog.hudson.release.gradle;
@@ -34,16 +32,16 @@ import java.io.StringReader;
 import java.util.Map;
 
 /**
- * Rewrites the project versions in the {@code gradle.properties}.
+ * Rewrites the project properties in the {@code gradle.properties}.
  *
  * @author Tomer Cohen
  */
 public class PropertiesTransformer implements FilePath.FileCallable<Boolean> {
 
 
-    private final Map<GradleModule, String> versionsByName;
+    private final Map<String, String> versionsByName;
 
-    public PropertiesTransformer(Map<GradleModule, String> versionsByName) {
+    public PropertiesTransformer(Map<String, String> versionsByName) {
         this.versionsByName = versionsByName;
     }
 
@@ -70,9 +68,9 @@ public class PropertiesTransformer implements FilePath.FileCallable<Boolean> {
         while ((line = reader.readLine()) != null) {
             if (line.contains("=")) {
                 String[] keyValue = StringUtils.split(line, "=");
-                String value = versionsByName.get(new GradleModule(keyValue[0], keyValue[1]));
+                String value = versionsByName.get(unescape(keyValue[0]));
                 if (value != null) {
-                    if (!value.equals(keyValue[1])) {
+                    if (!value.equals(unescape(keyValue[1]))) {
                         modified = true;
                         keyValue[1] = escape(value, false);
                         line = keyValue[0] + "=" + keyValue[1];
@@ -132,4 +130,29 @@ public class PropertiesTransformer implements FilePath.FileCallable<Boolean> {
         return result.toString();
     }
 
+    private static String unescape(String str) {
+        StringBuilder result = new StringBuilder(str.length());
+        for (int index = 0; index < str.length(); ) {
+            char c = str.charAt(index++);
+            if (c == '\\') {
+                c = str.charAt(index++);
+                switch (c) {
+                    case 't':
+                        c = '\t';
+                        break;
+                    case 'r':
+                        c = '\r';
+                        break;
+                    case 'n':
+                        c = '\n';
+                        break;
+                    case 'f':
+                        c = '\f';
+                        break;
+                }
+            }
+            result.append(c);
+        }
+        return result.toString();
+    }
 }

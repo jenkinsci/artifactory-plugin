@@ -15,11 +15,11 @@
         <f:textbox name="alternativeGoals" value="${instance.alternativeGoals}"/>
     </f:entry>
     <f:entry title="Version property keys"
-             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-alternativeGoals.html">
-        <f:textbox name="propKeys" value="${instance.propKeys}"/>
+             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-versionPropKeys.html">
+        <f:textbox name="versionPropKeys" value="${instance.versionPropKeys}"/>
     </f:entry>
     <f:entry title="Additional property keys"
-             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-alternativeGoals.html">
+             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-additionalPropKeys.html">
         <f:textbox name="additionalPropKeys" value="${instance.additionalPropKeys}"/>
     </f:entry>
 </j:jelly>

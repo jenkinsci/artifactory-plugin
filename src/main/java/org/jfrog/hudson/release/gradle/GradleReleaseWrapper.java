@@ -32,13 +32,12 @@ import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.GradleReleaseAction;
 import org.jfrog.hudson.release.GradleStageBuildAction;
-import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
-import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -50,28 +49,28 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * A release wrapper for Gradle projects. Allows performing release steps on Gradle
+ * A release wrapper for Gradle projects. Allows performing release steps on Gradle.
  *
  * @author Tomer Cohen
  */
 public class GradleReleaseWrapper extends BuildWrapper {
-    private static Logger debuggingLogger = Logger.getLogger(GradleReleaseWrapper.class.getName());
+    private final static Logger debuggingLogger = Logger.getLogger(GradleReleaseWrapper.class.getName());
 
     private String tagPrefix;
     private String releaseBranchPrefix;
     private String alternativeGoals;
-    private String propKeys;
+    private String versionPropKeys;
     private String additionalPropKeys;
 
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
     public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeGoals,
-            String propKeys, String additionalPropKeys) {
+            String versionPropKeys, String additionalPropKeys) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeGoals = alternativeGoals;
-        this.propKeys = propKeys;
+        this.versionPropKeys = versionPropKeys;
         this.additionalPropKeys = additionalPropKeys;
     }
 
@@ -85,13 +84,13 @@ public class GradleReleaseWrapper extends BuildWrapper {
         this.tagPrefix = tagPrefix;
     }
 
-    public String getPropKeys() {
-        return propKeys;
+    public String getVersionPropKeys() {
+        return versionPropKeys;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    public void setPropKeys(String propKeys) {
-        this.propKeys = propKeys;
+    public void setVersionPropKeys(String versionPropKeys) {
+        this.versionPropKeys = versionPropKeys;
     }
 
     public String getAdditionalPropKeys() {
@@ -122,6 +121,24 @@ public class GradleReleaseWrapper extends BuildWrapper {
         this.alternativeGoals = alternativeGoals;
     }
 
+    public String[] getVersionPropsKeysList() {
+        return stringToArray(getVersionPropKeys());
+    }
+
+    public String[] getAdditionalPropsKeysList() {
+        return stringToArray(getAdditionalPropKeys());
+    }
+
+    private String[] stringToArray(String commaSeparatedString) {
+        String[] split;
+        if (StringUtils.isBlank(commaSeparatedString)) {
+            split = new String[0];
+        } else {
+            split = StringUtils.split(commaSeparatedString, ",");
+        }
+        return split;
+    }
+
     @Override
     public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
@@ -134,10 +151,11 @@ public class GradleReleaseWrapper extends BuildWrapper {
         log(listener, "Release build triggered");
         scmCoordinator = AbstractScmCoordinator.createScmCoordinator(build, listener, releaseAction);
         scmCoordinator.prepare();
+        // TODO: replace the versioning mode with something else
         if (!releaseAction.getVersioning().equals(GradleReleaseAction.VERSIONING.NONE)) {
             scmCoordinator.beforeReleaseVersionChange();
-            // change to release version
-            boolean modified = changeVersions(build, releaseAction, true);
+            // change to release properties values
+            boolean modified = changeProperties(build, releaseAction, true);
             scmCoordinator.afterReleaseVersionChange(modified);
         }
         return new Environment() {
@@ -154,8 +172,7 @@ public class GradleReleaseWrapper extends BuildWrapper {
                     scmCoordinator.afterSuccessfulReleaseVersionBuild();
                     if (!releaseAction.getVersioning().equals(GradleReleaseAction.VERSIONING.NONE)) {
                         scmCoordinator.beforeDevelopmentVersionChange();
-                        // change poms versions to next development version
-                        boolean modified = changeVersions(build, releaseAction, false);
+                        boolean modified = changeProperties(build, releaseAction, false);
                         scmCoordinator.afterDevelopmentVersionChange(modified);
                     }
                 } catch (Exception e) {
@@ -168,25 +185,26 @@ public class GradleReleaseWrapper extends BuildWrapper {
         };
     }
 
-    private boolean changeVersions(AbstractBuild build, GradleReleaseAction release, boolean releaseVersion)
+    private boolean changeProperties(AbstractBuild build, GradleReleaseAction release, boolean releaseVersion)
             throws IOException, InterruptedException {
         FilePath root = build.getModuleRoot();
         debuggingLogger.fine("Root directory is: " + root.getRemote());
-        FilePath gradlePropertiesFilePath = new FilePath(root, "gradle.properties");
-        Collection<GradleModule> modules = release.getVersionProperties();
-        Map<GradleModule, String> modulesByName = Maps.newHashMap();
-        for (GradleModule module : modules) {
+        String[] modules = release.getVersionProperties();
+        Map<String, String> modulesByName = Maps.newHashMap();
+        for (String module : modules) {
             String version = releaseVersion ? release.getReleaseVersionFor(module) :
                     release.getNextVersionFor(module);
             modulesByName.put(module, version);
         }
-        Collection<GradleModule> additionalModuleProperties = release.getAdditionalProperties();
-        for (GradleModule additionalModuleProperty : additionalModuleProperties) {
-            String version = releaseVersion ? release.getReleaseVersionFor(additionalModuleProperty) :
-                    release.getNextVersionFor(additionalModuleProperty);
-            modulesByName.put(additionalModuleProperty, version);
+
+        String[] additionalModuleProperties = release.getAdditionalProperties();
+        for (String property : additionalModuleProperties) {
+            String version = releaseVersion ? release.getReleaseVersionFor(property) :
+                    release.getNextVersionFor(property);
+            modulesByName.put(property, version);
         }
         debuggingLogger.fine("Changing version of gradle properties");
+        FilePath gradlePropertiesFilePath = new FilePath(root, "gradle.properties");
         return gradlePropertiesFilePath.act(new PropertiesTransformer(modulesByName));
     }
 
@@ -196,17 +214,7 @@ public class GradleReleaseWrapper extends BuildWrapper {
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject job) {
-        FilePath filePath = new FilePath(job.getSomeWorkspace(), "gradle.properties");
-        try {
-            Map<GradleModule, String> moduleVersions =
-                    PropertyUtils.getModulesPropertiesFromPropFile(filePath, getPropKeys());
-            Map<GradleModule, String> additionalProps =
-                    PropertyUtils.getModulesPropertiesFromPropFile(filePath, getAdditionalPropKeys());
-            return Arrays.asList(new GradleReleaseAction(job, moduleVersions, additionalProps, getPropKeys(),
-                    getAdditionalPropKeys()));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return Arrays.asList(new GradleReleaseAction((FreeStyleProject) job));
     }
 
     @Override
@@ -264,10 +272,11 @@ public class GradleReleaseWrapper extends BuildWrapper {
                 return;
             }
 
-            ReleaseAction releaseAction = run.getAction(ReleaseAction.class);
+            GradleReleaseAction releaseAction = run.getAction(GradleReleaseAction.class);
             if (releaseAction == null) {
                 return;
             }
+            releaseAction.reset();
 
             Result result = run.getResult();
             if (result.isBetterOrEqualTo(Result.SUCCESS)) {
