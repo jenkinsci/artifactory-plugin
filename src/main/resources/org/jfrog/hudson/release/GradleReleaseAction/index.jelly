@@ -1,0 +1,96 @@
+<!-- displays a form to choose the next release and development version and re-schedules a build -->
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <l:layout title="">
+        <l:main-panel>
+            <f:form method="post" action="submit" name="form">
+                <f:section title="Artifactory Release Staging">
+
+                    <f:section title="${%Module Version Configuration}">
+                        <f:radioBlock name="versioning" value="PER_MODULE" title="Version per module"
+                                      checked="${'PER_MODULE' == it.latestVersioningSelection()}"
+                                      help="/plugin/artifactory/help/release/ReleaseAction/help-versioningPerModule.html">
+                            <j:forEach var="module" items="${it.versionProperties}">
+                                <f:section title="${module.moduleName}">
+                                    <f:entry title="Release version"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
+                                        <f:textbox name="release.${module.moduleName}"
+                                                   value="${it.calculateReleaseVersion(module.moduleVersion)}"/>
+                                    </f:entry>
+                                    <f:entry title="Next development version"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
+                                        <f:textbox name="next.${module.moduleName}"
+                                                   value="${it.calculateNextVersion(module.moduleVersion)}"/>
+                                    </f:entry>
+                                </f:section>
+                            </j:forEach>
+                            <j:forEach var="module" items="${it.additionalProperties}">
+                                <f:section title="${module.moduleName}">
+                                    <f:entry title="Release value"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
+                                        <f:textbox name="release.${module.moduleName}"
+                                                   value="${module.moduleVersion}"/>
+                                    </f:entry>
+                                    <f:entry title="Next Development value"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
+                                        <f:textbox name="next.${module.moduleName}"
+                                                   value="${module.moduleVersion}"/>
+                                    </f:entry>
+                                </f:section>
+                            </j:forEach>
+                        </f:radioBlock>
+                    </f:section>
+
+                    <f:section title="${%VCS Configuration}">
+                        <j:if test="${it.isGit()}">
+                            <f:optionalBlock field="createReleaseBranch" name="createReleaseBranch"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-createReleaseBranch.html"
+                                             title="Use release branch"
+                                             checked="${null != it.defaultReleaseBranch}"
+                                             inline="true">
+                                <f:entry field="releaseBranch" title="Release branch"
+                                         help="/plugin/artifactory/help/release/ReleaseAction/help-releaseBranch.html">
+                                    <f:textbox name="releaseBranch" value="${it.defaultReleaseBranch}"/>
+                                </f:entry>
+                            </f:optionalBlock>
+                        </j:if>
+                        <f:optionalBlock field="createVcsTag" name="createVcsTag"
+                                         help="/plugin/artifactory/help/release/ReleaseAction/help-createVcsTag.html"
+                                         title="Create VCS tag"
+                                         checked="${null != it.defaultTagUrl}"
+                                         inline="true">
+                            <f:entry field="tagUrl" title="Tag URL"
+                                     help="/plugin/artifactory/help/release/ReleaseAction/help-tagUrl.html">
+                                <f:textbox name="tagUrl" value="${it.defaultTagUrl}"/>
+                            </f:entry>
+                            <f:entry title="${%Comment}" field="tagComment"
+                                     help="/plugin/artifactory/help/release/ReleaseAction/help-tagComment.html">
+                                <f:textarea name="tagComment" default="${it.defaultTagComment}"/>
+                            </f:entry>
+                        </f:optionalBlock>
+                    </f:section>
+                    <f:block>
+                        <hr/>
+                    </f:block>
+                    <f:entry title="${%Repository to stage the release to}" field="repositoryKey"
+                             help="/plugin/artifactory/help/release/ReleaseAction/help-stagingRepository.html">
+                        <select class="setting-input" name="repositoryKey">
+                            <j:forEach var="r" items="${it.repositoryKeys}">
+                                <f:option selected="${r==it.defaultStagingRepository}" value="${r}">${r}</f:option>
+                            </j:forEach>
+                        </select>
+                    </f:entry>
+                    <f:entry field="stagingComment" title="Staging comment"
+                             help="/plugin/artifactory/help/release/StageBuildAction/help-stagingComment.html">
+                        <f:textbox name="stagingComment" value="${it.defaultStagingComment}"/>
+                    </f:entry>
+                    <tr>
+                        <td colspan="3">
+                            <f:submit value="${%Build and Release to Artifactory}"/>
+                        </td>
+                    </tr>
+                </f:section>
+            </f:form>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

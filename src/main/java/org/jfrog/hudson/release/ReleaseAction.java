@@ -20,7 +20,9 @@ import com.google.common.collect.Maps;
 import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.ModuleName;
+import hudson.model.AbstractProject;
 import hudson.model.Action;
+import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryPlugin;
@@ -42,14 +44,13 @@ import java.util.Map;
 
 /**
  * This action leads to execution of the release wrapper. It will collect information from the user about the release
- * and will trigger the release build.
- * This action is not saved in the job xml file.
+ * and will trigger the release build. This action is not saved in the job xml file.
  *
  * @author Yossi Shaul
  */
 public class ReleaseAction implements Action {
 
-    private transient MavenModuleSet project;
+    private transient AbstractProject project;
 
     VERSIONING versioning;
 
@@ -83,7 +84,7 @@ public class ReleaseAction implements Action {
         GLOBAL, PER_MODULE, NONE
     }
 
-    public ReleaseAction(MavenModuleSet project) {
+    public ReleaseAction(AbstractProject project) {
         this.project = project;
     }
 
@@ -140,7 +141,10 @@ public class ReleaseAction implements Action {
     }
 
     public Collection<MavenModule> getModules() {
-        return project.getDisabledModules(false);
+        if (project instanceof MavenModuleSet) {
+            return ((MavenModuleSet) project).getDisabledModules(false);
+        }
+        return Collections.emptyList();
     }
 
     public String getStagingComment() {
@@ -156,19 +160,27 @@ public class ReleaseAction implements Action {
     }
 
     public String getDefaultTagUrl() {
-        MavenReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, MavenReleaseWrapper.class);
-        String baseTagUrl = wrapper.getTagPrefix();
-        StringBuilder sb = new StringBuilder(baseTagUrl);
-        sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
-        return sb.toString();
+        if (project instanceof MavenModuleSet) {
+            MavenReleaseWrapper wrapper = ActionableHelper
+                    .getBuildWrapper((BuildableItemWithBuildWrappers) project, MavenReleaseWrapper.class);
+            String baseTagUrl = wrapper.getTagPrefix();
+            StringBuilder sb = new StringBuilder(baseTagUrl);
+            sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
+            return sb.toString();
+        }
+        return "";
     }
 
     public String getDefaultReleaseBranch() {
-        MavenReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, MavenReleaseWrapper.class);
-        String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
-        StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
-        sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
-        return sb.toString();
+        if (project instanceof MavenModuleSet) {
+            MavenReleaseWrapper wrapper = ActionableHelper
+                    .getBuildWrapper((BuildableItemWithBuildWrappers) project, MavenReleaseWrapper.class);
+            String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
+            StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
+            sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
+            return sb.toString();
+        }
+        return "";
     }
 
     public String getDefaultTagComment() {
@@ -196,7 +208,10 @@ public class ReleaseAction implements Action {
     }
 
     private MavenModule getRootModule() {
-        return project.getRootModule();
+        if (project instanceof MavenModuleSet) {
+            return ((MavenModuleSet) project).getRootModule();
+        }
+        return null;
     }
 
     public String calculateReleaseVersion() {
@@ -290,23 +305,10 @@ public class ReleaseAction implements Action {
         versioning = VERSIONING.valueOf(versioningStr);
         switch (versioning) {
             case GLOBAL:
-                releaseVersion = req.getParameter("releaseVersion");
-                nextVersion = req.getParameter("nextVersion");
+                doGlobalVersioning(req);
                 break;
             case PER_MODULE:
-                releaseVersionPerModule = Maps.newHashMap();
-                nextVersionPerModule = Maps.newHashMap();
-                Enumeration params = req.getParameterNames();
-                while (params.hasMoreElements()) {
-                    String key = (String) params.nextElement();
-                    if (key.startsWith("release.")) {
-                        ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "release."));
-                        releaseVersionPerModule.put(moduleName, req.getParameter(key));
-                    } else if (key.startsWith("next.")) {
-                        ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "next."));
-                        nextVersionPerModule.put(moduleName, req.getParameter(key));
-                    }
-                }
+                doPerModuleVersioning(req);
         }
         createVcsTag = req.getParameter("createVcsTag") != null;
         if (createVcsTag) {
@@ -327,6 +329,39 @@ public class ReleaseAction implements Action {
             // redirect to the project page
             resp.sendRedirect(project.getAbsoluteUrl());
         }
+    }
+
+    /**
+     * Execute the {@link VERSIONING#PER_MODULE} strategy of the versioning mechanism, which assigns each module its own
+     * version for release and for the next development version
+     *
+     * @param req The request that is coming from the form when staging.
+     */
+    protected void doPerModuleVersioning(StaplerRequest req) {
+        releaseVersionPerModule = Maps.newHashMap();
+        nextVersionPerModule = Maps.newHashMap();
+        Enumeration params = req.getParameterNames();
+        while (params.hasMoreElements()) {
+            String key = (String) params.nextElement();
+            if (key.startsWith("release.")) {
+                ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "release."));
+                releaseVersionPerModule.put(moduleName, req.getParameter(key));
+            } else if (key.startsWith("next.")) {
+                ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "next."));
+                nextVersionPerModule.put(moduleName, req.getParameter(key));
+            }
+        }
+    }
+
+    /**
+     * Execute the {@link VERSIONING#GLOBAL} strategy of the versioning mechanism, which assigns all modules the same
+     * version for the release and for the next development version.
+     *
+     * @param req The request that is coming from the form when staging.
+     */
+    protected void doGlobalVersioning(StaplerRequest req) {
+        releaseVersion = req.getParameter("releaseVersion");
+        nextVersion = req.getParameter("nextVersion");
     }
 
     public String getReleaseVersionFor(ModuleName moduleName) {
