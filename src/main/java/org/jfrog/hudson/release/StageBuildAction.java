@@ -171,10 +171,33 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
         getACL().checkPermission(getPermission());
 
         req.bindParameters(this);
+        ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
+                build.getProject(), ArtifactoryRedeployPublisher.class);
+        ArtifactoryServer server = getArtifactoryServer();
 
-        new StageWorkerThread().start();
+        new StageWorkerThread(server, getCredentials(server)).start();
 
         resp.sendRedirect(".");
+    }
+
+    /**
+     * @return The Artifactory server that is used for the build.
+     */
+    protected ArtifactoryServer getArtifactoryServer() {
+        ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
+                build.getProject(), ArtifactoryRedeployPublisher.class);
+        return artifactoryPublisher.getArtifactoryServer();
+    }
+
+    /**
+     * @param server The Artifactory server that is used for the build.
+     * @return The credentials that were used for this server.
+     */
+    protected Credentials getCredentials(ArtifactoryServer server) {
+        ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
+                build.getProject(), ArtifactoryRedeployPublisher.class);
+        Credentials deployer = CredentialResolver.getPreferredDeployer(artifactoryPublisher, server);
+        return deployer;
     }
 
     /**
@@ -182,8 +205,13 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
      */
     public final class StageWorkerThread extends TaskThread {
 
-        public StageWorkerThread() {
+        private final ArtifactoryServer artifactoryServer;
+        private final Credentials deployer;
+
+        public StageWorkerThread(ArtifactoryServer artifactoryServer, Credentials deployer) {
             super(StageBuildAction.this, ListenerAndText.forMemory(null));
+            this.artifactoryServer = artifactoryServer;
+            this.deployer = deployer;
         }
 
         @Override
@@ -191,12 +219,8 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
             ArtifactoryBuildInfoClient client = null;
             try {
                 listener.getLogger().println("Promoting build ....");
-                ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
-                        build.getProject(), ArtifactoryRedeployPublisher.class);
-                ArtifactoryServer server = artifactoryPublisher.getArtifactoryServer();
 
-                Credentials deployer = CredentialResolver.getPreferredDeployer(artifactoryPublisher, server);
-                client = server.createArtifactoryClient(deployer.getUsername(), deployer.getPassword());
+                client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword());
 
                 Cause.UserCause userCause = ActionableHelper.getUserCause(build);
                 String username = null;
