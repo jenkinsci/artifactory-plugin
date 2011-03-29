@@ -28,18 +28,14 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
-import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
-import hudson.security.Permission;
-import hudson.security.PermissionGroup;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.release.Messages;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.StageBuildAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -61,14 +57,6 @@ import java.util.logging.Logger;
  */
 public class MavenReleaseWrapper extends BuildWrapper {
     private static Logger debuggingLogger = Logger.getLogger(MavenReleaseWrapper.class.getName());
-
-    //TODO: [by YS] Consider changing the owner class (both for centralizing future permissions and for better naming in the config.xml)
-    private static final PermissionGroup GROUP =
-            new PermissionGroup(MavenReleaseWrapper.class, Messages._permission_group());
-    public static final Permission RELEASE = new Permission(GROUP, "Release",
-            Messages._permission_release(), Hudson.ADMINISTER);
-    public static final Permission STAGE = new Permission(GROUP, "Stage",
-            Messages._permission_stage(), Hudson.ADMINISTER);
 
     private String tagPrefix;
     private String releaseBranchPrefix;

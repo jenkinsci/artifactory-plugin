@@ -23,6 +23,7 @@ import hudson.maven.ModuleName;
 import hudson.model.Action;
 import hudson.model.Cause;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.maven.MavenReleaseWrapper;
@@ -87,7 +88,7 @@ public class ReleaseAction implements Action {
     }
 
     public String getIconFileName() {
-        if (project.hasPermission(MavenReleaseWrapper.RELEASE)) {
+        if (project.hasPermission(ArtifactoryPlugin.RELEASE)) {
             return "/plugin/artifactory/images/artifactory-release.png";
         }
 
@@ -281,7 +282,7 @@ public class ReleaseAction implements Action {
     @SuppressWarnings({"UnusedDeclaration"})
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         // enforce release permissions
-        project.checkPermission(MavenReleaseWrapper.RELEASE);
+        project.checkPermission(ArtifactoryPlugin.RELEASE);
 
         req.bindParameters(this);
 
