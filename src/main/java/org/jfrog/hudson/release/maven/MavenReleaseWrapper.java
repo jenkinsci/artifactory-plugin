@@ -36,6 +36,7 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.MavenReleaseAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.StageBuildAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -56,7 +57,7 @@ import java.util.logging.Logger;
  * @author Yossi Shaul
  */
 public class MavenReleaseWrapper extends BuildWrapper {
-    private static Logger debuggingLogger = Logger.getLogger(MavenReleaseWrapper.class.getName());
+    private static final Logger debuggingLogger = Logger.getLogger(MavenReleaseWrapper.class.getName());
 
     private String tagPrefix;
     private String releaseBranchPrefix;
@@ -195,7 +196,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject job) {
-        return Arrays.asList(new ReleaseAction((MavenModuleSet) job));
+        return Arrays.asList(new MavenReleaseAction((MavenModuleSet) job));
     }
 
     @Override

@@ -33,7 +33,7 @@ public class ReleaseActionTest {
 
     @BeforeMethod
     public void setup() {
-        action = new ReleaseAction(null);
+        action = new MavenReleaseAction(null);
     }
 
 

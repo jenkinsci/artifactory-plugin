@@ -16,19 +16,10 @@
 
 package org.jfrog.hudson.release;
 
-import com.google.common.collect.Maps;
-import hudson.maven.MavenModule;
-import hudson.maven.MavenModuleSet;
-import hudson.maven.ModuleName;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
-import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
-import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryPlugin;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
-import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.release.maven.MavenReleaseWrapper;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.kohsuke.stapler.StaplerRequest;
@@ -36,11 +27,7 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This action leads to execution of the release wrapper. It will collect information from the user about the release
@@ -48,9 +35,9 @@ import java.util.Map;
  *
  * @author Yossi Shaul
  */
-public class ReleaseAction implements Action {
+public abstract class ReleaseAction implements Action {
 
-    private transient AbstractProject project;
+    private final transient AbstractProject project;
 
     VERSIONING versioning;
 
@@ -62,14 +49,7 @@ public class ReleaseAction implements Action {
      * Next (development) version to change the model to if using one global version.
      */
     String nextVersion;
-    /**
-     * Map of release versions per module. Only used if versioning is per module
-     */
-    Map<ModuleName, String> releaseVersionPerModule;
-    /**
-     * Map of dev versions per module. Only used if versioning is per module
-     */
-    Map<ModuleName, String> nextVersionPerModule;
+
 
     boolean createVcsTag;
     String tagUrl;
@@ -140,13 +120,6 @@ public class ReleaseAction implements Action {
         return releaseBranch;
     }
 
-    public Collection<MavenModule> getModules() {
-        if (project instanceof MavenModuleSet) {
-            return ((MavenModuleSet) project).getDisabledModules(false);
-        }
-        return Collections.emptyList();
-    }
-
     public String getStagingComment() {
         return stagingComment;
     }
@@ -159,29 +132,9 @@ public class ReleaseAction implements Action {
         return VERSIONING.GLOBAL.name();
     }
 
-    public String getDefaultTagUrl() {
-        if (project instanceof MavenModuleSet) {
-            MavenReleaseWrapper wrapper = ActionableHelper
-                    .getBuildWrapper((BuildableItemWithBuildWrappers) project, MavenReleaseWrapper.class);
-            String baseTagUrl = wrapper.getTagPrefix();
-            StringBuilder sb = new StringBuilder(baseTagUrl);
-            sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
-            return sb.toString();
-        }
-        return "";
-    }
+    public abstract String getDefaultTagUrl();
 
-    public String getDefaultReleaseBranch() {
-        if (project instanceof MavenModuleSet) {
-            MavenReleaseWrapper wrapper = ActionableHelper
-                    .getBuildWrapper((BuildableItemWithBuildWrappers) project, MavenReleaseWrapper.class);
-            String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
-            StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
-            sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
-            return sb.toString();
-        }
-        return "";
-    }
+    public abstract String getDefaultReleaseBranch();
 
     public String getDefaultTagComment() {
         return SubversionManager.COMMENT_PREFIX + "Creating release tag for version " + calculateReleaseVersion();
@@ -194,29 +147,13 @@ public class ReleaseAction implements Action {
     /**
      * @return The release repository configured in Artifactory publisher.
      */
-    public String getDefaultStagingRepository() {
-        ArtifactoryRedeployPublisher publisher = ActionableHelper.getPublisher(
-                project, ArtifactoryRedeployPublisher.class);
-        if (publisher == null) {
-            return null;
-        }
-        return publisher.getRepositoryKey();
-    }
-
-    public String getCurrentVersion() {
-        return getRootModule().getVersion();
-    }
-
-    private MavenModule getRootModule() {
-        if (project instanceof MavenModuleSet) {
-            return ((MavenModuleSet) project).getRootModule();
-        }
-        return null;
-    }
+    public abstract String getDefaultStagingRepository();
 
     public String calculateReleaseVersion() {
         return calculateReleaseVersion(getCurrentVersion());
     }
+
+    public abstract String getCurrentVersion();
 
     public String calculateReleaseVersion(String fromVersion) {
         return fromVersion.replace("-SNAPSHOT", "");
@@ -225,7 +162,6 @@ public class ReleaseAction implements Action {
     /**
      * Calculates the next snapshot version based on the current release version
      *
-     * @param currentVersion A release version
      * @return The next calculated development (snapshot) version
      */
     @SuppressWarnings({"UnusedDeclaration"})
@@ -274,22 +210,10 @@ public class ReleaseAction implements Action {
      * @return List of target repositories for deployment (release repositories first). Called from the UI.
      */
     @SuppressWarnings({"UnusedDeclaration"})
-    public List<String> getRepositoryKeys() {
-        ArtifactoryRedeployPublisher artifactoryPublisher =
-                ActionableHelper.getPublisher(project, ArtifactoryRedeployPublisher.class);
-        if (artifactoryPublisher != null) {
-            return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
-        } else {
-            return Collections.emptyList();
-        }
-    }
+    public abstract List<String> getRepositoryKeys();
 
-    public String lastStagingRepository() {
-        // prefer the release repository defined in artifactory publisher
-        ArtifactoryRedeployPublisher artifactoryPublisher =
-                ActionableHelper.getPublisher(project, ArtifactoryRedeployPublisher.class);
-        return artifactoryPublisher != null ? artifactoryPublisher.getRepositoryKey() : null;
-    }
+    // prefer the release repository defined in artifactory publisher
+    public abstract String lastStagingRepository();
 
     /**
      * Form submission is calling this method
@@ -337,21 +261,7 @@ public class ReleaseAction implements Action {
      *
      * @param req The request that is coming from the form when staging.
      */
-    protected void doPerModuleVersioning(StaplerRequest req) {
-        releaseVersionPerModule = Maps.newHashMap();
-        nextVersionPerModule = Maps.newHashMap();
-        Enumeration params = req.getParameterNames();
-        while (params.hasMoreElements()) {
-            String key = (String) params.nextElement();
-            if (key.startsWith("release.")) {
-                ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "release."));
-                releaseVersionPerModule.put(moduleName, req.getParameter(key));
-            } else if (key.startsWith("next.")) {
-                ModuleName moduleName = ModuleName.fromString(StringUtils.removeStart(key, "next."));
-                nextVersionPerModule.put(moduleName, req.getParameter(key));
-            }
-        }
-    }
+    protected abstract void doPerModuleVersioning(StaplerRequest req);
 
     /**
      * Execute the {@link VERSIONING#GLOBAL} strategy of the versioning mechanism, which assigns all modules the same
@@ -364,25 +274,7 @@ public class ReleaseAction implements Action {
         nextVersion = req.getParameter("nextVersion");
     }
 
-    public String getReleaseVersionFor(ModuleName moduleName) {
-        switch (versioning) {
-            case GLOBAL:
-                return releaseVersion;
-            case PER_MODULE:
-                return releaseVersionPerModule.get(moduleName);
-            default:
-                return null;
-        }
-    }
+    public abstract String getReleaseVersionFor(Object moduleName);
 
-    public String getNextVersionFor(ModuleName moduleName) {
-        switch (versioning) {
-            case GLOBAL:
-                return nextVersion;
-            case PER_MODULE:
-                return nextVersionPerModule.get(moduleName);
-            default:
-                return null;
-        }
-    }
+    public abstract String getNextVersionFor(Object moduleName);
 }

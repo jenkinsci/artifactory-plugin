@@ -32,10 +32,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This action leads to execution of the release wrapper. It will collect information from the user about the release
- * and will trigger the release build. This action is not saved in the job xml file.
+ * {@inheritDoc} A release action which relates to Maven projects. All relevant information is taken from the {@code
+ * gradle.properties} file which is related to the Gradle build.
  *
- * @author Yossi Shaul
+ * @author Tomer Cohen
  */
 public class GradleReleaseAction extends ReleaseAction {
 
@@ -46,13 +46,11 @@ public class GradleReleaseAction extends ReleaseAction {
     /**
      * Map of release versions per module. Only used if versioning is per module
      */
-    Map<String, String> releaseVersionPerModule;
+    private Map<String, String> releaseVersionPerModule;
     /**
      * Map of dev versions per module. Only used if versioning is per module
      */
-    Map<String, String> nextVersionPerModule;
-
-    Map<String, String> nextAdditionalValuePerModule;
+    private Map<String, String> nextVersionPerModule;
 
     public GradleReleaseAction(FreeStyleProject project) {
         super(project);
@@ -67,7 +65,10 @@ public class GradleReleaseAction extends ReleaseAction {
         return getReleaseWrapper().getAdditionalPropsKeysList();
     }
 
-
+    /**
+     * Initialize the version properties map from the gradle.properties file, and the additional properties from the
+     * gradle.properties file.
+     */
     private void init() {
         FilePath workspace = project.getSomeWorkspace();
         if (workspace == null) {
@@ -97,8 +98,7 @@ public class GradleReleaseAction extends ReleaseAction {
      */
     @Override
     public String getDefaultStagingRepository() {
-        ArtifactoryGradleConfigurator publisher = ActionableHelper.getBuildWrapper(
-                project, ArtifactoryGradleConfigurator.class);
+        ArtifactoryGradleConfigurator publisher = getGradleWrapper();
         if (publisher == null) {
             return null;
         }
@@ -111,13 +111,17 @@ public class GradleReleaseAction extends ReleaseAction {
     @Override
     @SuppressWarnings({"UnusedDeclaration"})
     public List<String> getRepositoryKeys() {
-        ArtifactoryGradleConfigurator artifactoryPublisher =
-                ActionableHelper.getBuildWrapper(project, ArtifactoryGradleConfigurator.class);
+        ArtifactoryGradleConfigurator artifactoryPublisher = getGradleWrapper();
         if (artifactoryPublisher != null) {
             return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
         } else {
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    public String lastStagingRepository() {
+        return getGradleWrapper().getRepositoryKey();
     }
 
     @Override
@@ -143,11 +147,8 @@ public class GradleReleaseAction extends ReleaseAction {
         return VERSIONING.PER_MODULE.name();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public String calculateReleaseVersion() {
+    public String getCurrentVersion() {
         return releaseVersion;
     }
 
@@ -155,7 +156,6 @@ public class GradleReleaseAction extends ReleaseAction {
     protected void doPerModuleVersioning(StaplerRequest req) {
         releaseVersionPerModule = Maps.newHashMap();
         nextVersionPerModule = Maps.newHashMap();
-        nextAdditionalValuePerModule = Maps.newHashMap();
         Enumeration params = req.getParameterNames();
         while (params.hasMoreElements()) {
             String key = (String) params.nextElement();
@@ -167,6 +167,7 @@ public class GradleReleaseAction extends ReleaseAction {
         }
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     public String getValueForProp(String prop) {
         init();
         return additionalProps.get(prop);
@@ -175,27 +176,32 @@ public class GradleReleaseAction extends ReleaseAction {
     @Override
     public String calculateReleaseVersion(String fromVersion) {
         init();
-        releaseVersion = super.calculateReleaseVersion(versionProps.get(fromVersion));
+        String version = versionProps.get(fromVersion);
+        if (StringUtils.isNotBlank(version)) {
+            releaseVersion = super.calculateReleaseVersion(version);
+        }
         return releaseVersion;
     }
 
-    public String getReleaseVersionFor(String key) {
+    @Override
+    public String getReleaseVersionFor(Object moduleName) {
         switch (versioning) {
             case GLOBAL:
                 return releaseVersion;
             case PER_MODULE:
-                return releaseVersionPerModule.get(key);
+                return releaseVersionPerModule.get(moduleName.toString());
             default:
                 return null;
         }
     }
 
-    public String getNextVersionFor(String key) {
+    @Override
+    public String getNextVersionFor(Object moduleName) {
         switch (versioning) {
             case GLOBAL:
                 return nextVersion;
             case PER_MODULE:
-                return nextVersionPerModule.get(key);
+                return nextVersionPerModule.get(moduleName.toString());
             default:
                 return null;
         }
@@ -203,5 +209,9 @@ public class GradleReleaseAction extends ReleaseAction {
 
     private GradleReleaseWrapper getReleaseWrapper() {
         return ActionableHelper.getBuildWrapper(project, GradleReleaseWrapper.class);
+    }
+
+    private ArtifactoryGradleConfigurator getGradleWrapper() {
+        return ActionableHelper.getBuildWrapper(project, ArtifactoryGradleConfigurator.class);
     }
 }
