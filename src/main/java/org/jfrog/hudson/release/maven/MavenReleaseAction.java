@@ -1,10 +1,11 @@
 /*
  * Copyright (C) 2011 JFrog Ltd.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.release;
+package org.jfrog.hudson.release.maven;
 
 import com.google.common.collect.Maps;
 import hudson.maven.MavenModule;
@@ -22,7 +23,7 @@ import hudson.maven.ModuleName;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.release.maven.MavenReleaseWrapper;
+import org.jfrog.hudson.release.ReleaseAction;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.util.Collection;

@@ -39,16 +39,16 @@ public abstract class ReleaseAction implements Action {
 
     private final transient AbstractProject project;
 
-    VERSIONING versioning;
+    protected VERSIONING versioning;
 
     /**
      * The next release version to change the model to if using one global version.
      */
-    String releaseVersion;
+    protected String releaseVersion;
     /**
      * Next (development) version to change the model to if using one global version.
      */
-    String nextVersion;
+    protected String nextVersion;
 
 
     boolean createVcsTag;

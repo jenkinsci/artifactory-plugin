@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.release;
 
+import org.jfrog.hudson.release.maven.MavenReleaseAction;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

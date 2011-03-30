@@ -36,7 +36,6 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.release.MavenReleaseAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.StageBuildAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.release;
+package org.jfrog.hudson.release.gradle;
 
 import com.google.common.collect.Maps;
 import hudson.FilePath;
@@ -22,7 +22,7 @@ import hudson.model.FreeStyleProject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
-import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
+import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.StaplerRequest;
 
