@@ -34,12 +34,14 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.Credentials;
@@ -251,7 +253,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
-                final BuildContext context = new BuildContext(getDetails(), ArtifactoryGradleConfigurator.this,
+                ServerDetails serverDetails = getDetails();
+                ReleaseAction releaseAction = ActionableHelper.getLatestAction(build, ReleaseAction.class);
+                if (releaseAction != null && StringUtils.isNotBlank(releaseAction.getStagingRepositoryKey())) {
+                    serverDetails = new ServerDetails(
+                            serverDetails.artifactoryName, releaseAction.getStagingRepositoryKey(),
+                            serverDetails.snapshotsRepositoryKey, serverDetails.downloadRepositoryKey);
+                }
+                final BuildContext context = new BuildContext(serverDetails, ArtifactoryGradleConfigurator.this,
                         isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                         isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
                         getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars());

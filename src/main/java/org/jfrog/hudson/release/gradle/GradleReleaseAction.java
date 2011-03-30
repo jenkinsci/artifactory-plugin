@@ -111,9 +111,9 @@ public class GradleReleaseAction extends ReleaseAction {
     @Override
     @SuppressWarnings({"UnusedDeclaration"})
     public List<String> getRepositoryKeys() {
-        ArtifactoryGradleConfigurator artifactoryPublisher = getGradleWrapper();
-        if (artifactoryPublisher != null) {
-            return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
+        ArtifactoryGradleConfigurator configurator = getGradleWrapper();
+        if (configurator != null) {
+            return configurator.getArtifactoryServer().getReleaseRepositoryKeysFirst();
         } else {
             return Collections.emptyList();
         }
@@ -121,7 +121,8 @@ public class GradleReleaseAction extends ReleaseAction {
 
     @Override
     public String lastStagingRepository() {
-        return getGradleWrapper().getRepositoryKey();
+        ArtifactoryGradleConfigurator gradleWrapper = getGradleWrapper();
+        return gradleWrapper == null ? null : gradleWrapper.getRepositoryKey();
     }
 
     @Override

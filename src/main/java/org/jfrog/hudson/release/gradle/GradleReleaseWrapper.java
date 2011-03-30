@@ -129,13 +129,8 @@ public class GradleReleaseWrapper extends BuildWrapper {
     }
 
     private String[] stringToArray(String commaSeparatedString) {
-        String[] split;
-        if (StringUtils.isBlank(commaSeparatedString)) {
-            split = new String[0];
-        } else {
-            split = StringUtils.split(commaSeparatedString, ",");
-        }
-        return split;
+        commaSeparatedString = StringUtils.trimToEmpty(commaSeparatedString);
+        return StringUtils.split(commaSeparatedString, ", ");
     }
 
     @Override
