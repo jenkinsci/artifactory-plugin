@@ -309,14 +309,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
+                boolean success;
                 if (isRelease(build)) {
-                    releaseWrapper.tearDown(build, listener);
+                    success = releaseWrapper.tearDown(build, listener);
                 }
                 setTargetsField(gradleBuild, "switches", switches);
                 setTargetsField(gradleBuild, "tasks", originalTasks);
                 Result result = build.getResult();
                 if (result == null) {
-                    return false;
+                    success = false;
                 }
                 if (result.isBetterOrEqualTo(Result.SUCCESS)) {
                     if (isDeployBuildInfo()) {
@@ -327,9 +328,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                 .addUniqueIdentifierToChildProjects(build, build.getEnvironment(listener));
                     }
                     BuildUniqueIdentifierHelper.removeUniqueIdentifierFromProject(build);
-                    return true;
+                    success = true;
                 }
-                return false;
+                success = false;
+                return success;
             }
         };
     }
