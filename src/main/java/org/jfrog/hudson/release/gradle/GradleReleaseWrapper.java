@@ -186,7 +186,7 @@ public class GradleReleaseWrapper {
         FilePath gradlePropertiesFilePath = new FilePath(root, "gradle.properties");
         String next = releaseVersion ? "release" : "development";
         log(listener,
-                "Changing gradle.properties at " + gradlePropertiesFilePath.getRemote() + "to " + next + " version");
+                "Changing gradle.properties at " + gradlePropertiesFilePath.getRemote() + " to " + next + " version");
         return gradlePropertiesFilePath.act(new PropertiesTransformer(modulesByName));
     }
 
