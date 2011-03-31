@@ -36,8 +36,8 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.PromoteBuildAction;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.release.StageBuildAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -262,7 +262,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
             Result result = run.getResult();
             if (result.isBetterOrEqualTo(Result.SUCCESS)) {
                 // add a stage action
-                run.addAction(new StageBuildAction(run));
+                run.addAction(new PromoteBuildAction(run));
             }
 
             // signal completion to the scm coordinator

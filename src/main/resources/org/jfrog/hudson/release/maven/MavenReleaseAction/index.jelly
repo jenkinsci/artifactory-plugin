@@ -18,10 +18,16 @@
                                      help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
                                 <f:textbox name="releaseVersion" value="${it.calculateReleaseVersion()}"/>
                             </f:entry>
-                            <f:entry field="releaseVersion" title="Next development version"
+                            <!--<f:optionalBlock field="changeNextVersion" name="changeNextVersion"
+                                             help="/plugin/artifactory/help/release/ReleaseAction/help-changeNextVersion.html"
+                                             title="Change Next Version"
+                                             checked="${null != it.defaultReleaseBranch}"
+                                             inline="true">-->
+                            <f:entry field="nextVersion" title="Next development version"
                                      help="/plugin/artifactory/help/release/ReleaseAction/help-nextVersion.html">
                                 <f:textbox name="nextVersion" value="${it.calculateNextVersion()}"/>
                             </f:entry>
+                            <!--</f:optionalBlock>-->
                         </f:radioBlock>
                         <f:radioBlock name="versioning" value="PER_MODULE" title="Version per module"
                                       checked="${'PER_MODULE' == it.latestVersioningSelection()}"
@@ -87,7 +93,7 @@
                         </select>
                     </f:entry>
                     <f:entry field="stagingComment" title="Staging comment"
-                             help="/plugin/artifactory/help/release/StageBuildAction/help-stagingComment.html">
+                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-stagingComment.html">
                         <f:textbox name="stagingComment" value="${it.defaultStagingComment}"/>
                     </f:entry>
                     <tr>

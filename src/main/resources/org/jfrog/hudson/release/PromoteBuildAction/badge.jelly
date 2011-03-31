@@ -1,7 +1,7 @@
 <j:jelly xmlns:j="jelly:core">
     <j:choose>
-        <j:when test="${it.hasStagingPermission()}">
-            <a href="${link}stage/">
+        <j:when test="${it.hasPromotionPermission()}">
+            <a href="${link}promote/">
                 <img width="16" height="16" title="${it.displayName}" alt="[Released]"
                      src="${rootURL}${it.iconFileName}"/>
             </a>

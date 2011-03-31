@@ -32,7 +32,7 @@ public class ArtifactoryPlugin extends Plugin {
             new PermissionGroup(ArtifactoryPlugin.class, Messages._permission_group());
     public static final Permission RELEASE = new Permission(GROUP, "Release",
             Messages._permission_release(), Hudson.ADMINISTER);
-    public static final Permission STAGE = new Permission(GROUP, "Stage",
-            Messages._permission_stage(), Hudson.ADMINISTER);
+    public static final Permission PROMOTE = new Permission(GROUP, "Promote",
+            Messages._permission_promote(), Hudson.ADMINISTER);
 
 }

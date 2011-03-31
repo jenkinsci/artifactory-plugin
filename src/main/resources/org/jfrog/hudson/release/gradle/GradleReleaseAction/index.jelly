@@ -78,7 +78,7 @@
                         </select>
                     </f:entry>
                     <f:entry field="stagingComment" title="Staging comment"
-                             help="/plugin/artifactory/help/release/StageBuildAction/help-stagingComment.html">
+                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-stagingComment.html">
                         <f:textbox name="stagingComment" value="${it.defaultStagingComment}"/>
                     </f:entry>
                     <tr>

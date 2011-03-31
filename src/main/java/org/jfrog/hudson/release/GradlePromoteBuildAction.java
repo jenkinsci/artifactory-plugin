@@ -33,15 +33,15 @@ import java.util.List;
  *
  * @author Tomer Cohen
  */
-public class GradleStageBuildAction extends StageBuildAction {
+public class GradlePromoteBuildAction extends PromoteBuildAction {
 
-    public GradleStageBuildAction(AbstractBuild build) {
+    public GradlePromoteBuildAction(AbstractBuild build) {
         super(build);
     }
 
     @Override
     protected Permission getPermission() {
-        return ArtifactoryPlugin.STAGE;
+        return ArtifactoryPlugin.PROMOTE;
     }
 
 

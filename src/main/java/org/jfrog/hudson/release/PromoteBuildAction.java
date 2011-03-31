@@ -49,12 +49,11 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * This badge action marks the build as a release build. The release wrapper takes the release and next version string
- * from this badge.
+ * This badge action is added to a successful staged builds. It allows performing additional promotion.
  *
  * @author Yossi Shaul
  */
-public class StageBuildAction extends TaskAction implements BuildBadgeAction {
+public class PromoteBuildAction extends TaskAction implements BuildBadgeAction {
     private final AbstractBuild build;
 
     private String targetStatus;
@@ -63,7 +62,7 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
     private boolean useCopy;
     private boolean includeDependencies;
 
-    public StageBuildAction(AbstractBuild build) {
+    public PromoteBuildAction(AbstractBuild build) {
         this.build = build;
     }
 
@@ -76,20 +75,20 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
     }
 
     public String getUrlName() {
-        if (hasStagingPermission()) {
-            return "stage";
+        if (hasPromotionPermission()) {
+            return "promote";
         }
         // return null to hide this action
         return null;
     }
 
-    public boolean hasStagingPermission() {
+    public boolean hasPromotionPermission() {
         return getACL().hasPermission(getPermission());
     }
 
     @Override
     protected Permission getPermission() {
-        return ArtifactoryPlugin.STAGE;
+        return ArtifactoryPlugin.PROMOTE;
     }
 
     @Override
@@ -175,7 +174,7 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
                 build.getProject(), ArtifactoryRedeployPublisher.class);
         ArtifactoryServer server = getArtifactoryServer();
 
-        new StageWorkerThread(server, getCredentials(server)).start();
+        new PromoteWorkerThread(server, getCredentials(server)).start();
 
         resp.sendRedirect(".");
     }
@@ -203,13 +202,13 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
     /**
      * The thread that performs the promotion asynchronously.
      */
-    public final class StageWorkerThread extends TaskThread {
+    public final class PromoteWorkerThread extends TaskThread {
 
         private final ArtifactoryServer artifactoryServer;
         private final Credentials deployer;
 
-        public StageWorkerThread(ArtifactoryServer artifactoryServer, Credentials deployer) {
-            super(StageBuildAction.this, ListenerAndText.forMemory(null));
+        public PromoteWorkerThread(ArtifactoryServer artifactoryServer, Credentials deployer) {
+            super(PromoteBuildAction.this, ListenerAndText.forMemory(null));
             this.artifactoryServer = artifactoryServer;
             this.deployer = deployer;
         }
@@ -237,15 +236,15 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
                         .dependencies(includeDependencies)
                         .copy(useCopy)
                         .dryRun(true);
-                listener.getLogger().println("Performing dry run staging (no changes are made during dry run) ...");
+                listener.getLogger().println("Performing dry run promotion (no changes are made during dry run) ...");
                 HttpResponse dryResponse = client.stageBuild(build.getParent().getDisplayName(),
                         build.getNumber() + "", promotionBuilder.build());
                 if (checkSuccess(dryResponse, true, listener)) {
-                    listener.getLogger().println("Dry run finished successfully.\nPerforming staging ...");
+                    listener.getLogger().println("Dry run finished successfully.\nPerforming promotion ...");
                     HttpResponse wetResponse = client.stageBuild(build.getParent().getDisplayName(),
                             build.getNumber() + "", promotionBuilder.dryRun(false).build());
                     if (checkSuccess(wetResponse, false, listener)) {
-                        listener.getLogger().println("Staging completed successfully!");
+                        listener.getLogger().println("Promotion completed successfully!");
                     }
                 }
 
@@ -264,9 +263,9 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
             StatusLine status = response.getStatusLine();
             if (status.getStatusCode() != 200) {
                 if (dryRun) {
-                    listener.error("Staging failed during dry run (no change in Artifactory was done): " + status);
+                    listener.error("Promotion failed during dry run (no change in Artifactory was done): " + status);
                 } else {
-                    listener.error("Staging failed. View Artifactory logs for more details: " + status);
+                    listener.error("Promotion failed. View Artifactory logs for more details: " + status);
                 }
                 return false;
             }
@@ -290,7 +289,7 @@ public class StageBuildAction extends TaskAction implements BuildBadgeAction {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace(listener.error("Failed parsing staging response:"));
+                e.printStackTrace(listener.error("Failed parsing promotion response:"));
                 failed = true;
             }
 
