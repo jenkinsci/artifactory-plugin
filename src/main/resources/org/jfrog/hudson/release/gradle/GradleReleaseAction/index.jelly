@@ -5,38 +5,39 @@
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
                 <f:section title="Artifactory Release Staging">
-                    <f:section title="${%Module Version Configuration}">
-                        <f:radioBlock name="versioning" value="PER_MODULE" title="Version per module"
-                                      checked="${'PER_MODULE' == it.latestVersioningSelection()}"
-                                      help="/plugin/artifactory/help/release/ReleaseAction/help-versioningPerModule.html">
-                            <j:forEach var="prop" items="${it.versionProperties}">
-                                <f:section title="${prop}">
-                                    <f:entry title="Release version"
-                                             help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-releaseVersion.html">
-                                        <f:textbox name="release.${prop}"
-                                                   value="${it.calculateReleaseVersion(prop)}"/>
-                                    </f:entry>
-                                    <f:entry title="Next development version"
-                                             help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-nextDevelopmentVersion.html">
-                                        <f:textbox name="next.${prop}"
-                                                   value="${it.calculateNextVersion(prop)}"/>
-                                    </f:entry>
-                                </f:section>
-                            </j:forEach>
-                            <j:forEach var="prop" items="${it.additionalProperties}">
-                                <f:section title="${prop}">
-                                    <f:entry title="Release value"
-                                             help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-releaseValue.html">
-                                        <f:textbox name="release.${prop}" value="${it.getValueForProp(prop)}"/>
-                                    </f:entry>
-                                    <f:entry title="Next Development value"
-                                             help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-nextDevelopmentValue.html">
-                                        <f:textbox name="next.${prop}" value="${it.getValueForProp(prop)}"/>
-                                    </f:entry>
-                                </f:section>
-                            </j:forEach>
-                        </f:radioBlock>
-                    </f:section>
+                    <f:entry name="version"
+                             title="Property values for release and next development version (if applicable):"
+                             help="/plugin/artifactory/help/release/ReleaseAction/help-versioningPerModule.html">
+                    </f:entry>
+                    <f:invisibleEntry>
+                        <input type="hidden" name="versioning" value="PER_MODULE"/>
+                    </f:invisibleEntry>
+                    <j:forEach var="prop" items="${it.versionProperties}">
+                        <f:section title="${prop}">
+                            <f:entry title="Release version"
+                                     help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-releaseVersion.html">
+                                <f:textbox name="release.${prop}"
+                                           value="${it.calculateReleaseVersion(prop)}"/>
+                            </f:entry>
+                            <f:entry title="Next development version"
+                                     help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-nextDevelopmentVersion.html">
+                                <f:textbox name="next.${prop}"
+                                           value="${it.calculateNextVersion(prop)}"/>
+                            </f:entry>
+                        </f:section>
+                    </j:forEach>
+                    <j:forEach var="prop" items="${it.additionalProperties}">
+                        <f:section title="${prop}">
+                            <f:entry title="Release value"
+                                     help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-releaseValue.html">
+                                <f:textbox name="release.${prop}" value="${it.getValueForProp(prop)}"/>
+                            </f:entry>
+                            <f:entry title="Next Development value"
+                                     help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-nextDevelopmentValue.html">
+                                <f:textbox name="next.${prop}" value="${it.getValueForProp(prop)}"/>
+                            </f:entry>
+                        </f:section>
+                    </j:forEach>
 
                     <f:section title="${%VCS Configuration}">
                         <j:if test="${it.isGit()}">
