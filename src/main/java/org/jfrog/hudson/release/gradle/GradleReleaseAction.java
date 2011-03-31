@@ -91,6 +91,7 @@ public class GradleReleaseAction extends ReleaseAction {
     public void reset() {
         versionProps = null;
         additionalProps = null;
+        releaseVersion = null;
     }
 
     /**

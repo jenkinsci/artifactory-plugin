@@ -247,6 +247,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         initScriptPath = initScriptPath.replace('\\', '/');
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
         final String switches = gradleBuild.getSwitches() + "";
+        final String originalTasks = gradleBuild.getTasks() + "";
         GradleReleaseWrapper releaseWrapper = ActionableHelper
                 .getBuildWrapper((BuildableItemWithBuildWrappers) build.getProject(), GradleReleaseWrapper.class);
         final String tasks;
@@ -292,7 +293,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     throws IOException, InterruptedException {
                 if (gradleBuild != null) {
                     setTargetsField(gradleBuild, "switches", switches);
-                    setTargetsField(gradleBuild, "tasks", tasks);
+                    setTargetsField(gradleBuild, "tasks", originalTasks);
                 }
                 Result result = build.getResult();
                 if (result == null) {
