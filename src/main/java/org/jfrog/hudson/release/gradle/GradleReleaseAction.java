@@ -178,10 +178,10 @@ public class GradleReleaseAction extends ReleaseAction {
     public String calculateReleaseVersion(String fromVersion) {
         init();
         String version = versionProps.get(fromVersion);
-        if (StringUtils.isNotBlank(version)) {
+        if (StringUtils.isBlank(releaseVersion) && StringUtils.isNotBlank(version)) {
             releaseVersion = super.calculateReleaseVersion(version);
         }
-        return releaseVersion;
+        return StringUtils.isNotBlank(releaseVersion) ? releaseVersion : "";
     }
 
     @Override

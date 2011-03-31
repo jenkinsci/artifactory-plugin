@@ -24,6 +24,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
 import hudson.model.Project;
@@ -42,6 +43,7 @@ import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
 import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.Credentials;
@@ -245,7 +247,19 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         initScriptPath = initScriptPath.replace('\\', '/');
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
         final String switches = gradleBuild.getSwitches() + "";
-        final String tasks = gradleBuild.getTasks() + "";
+        GradleReleaseWrapper releaseWrapper = ActionableHelper
+                .getBuildWrapper((BuildableItemWithBuildWrappers) build.getProject(), GradleReleaseWrapper.class);
+        final String tasks;
+        if (releaseWrapper != null) {
+            String alternativeGoals = releaseWrapper.getAlternativeGoals();
+            if (StringUtils.isNotBlank(alternativeGoals)) {
+                tasks = alternativeGoals;
+            } else {
+                tasks = "";
+            }
+        } else {
+            tasks = gradleBuild.getTasks() + "";
+        }
         if (gradleBuild != null) {
             setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
             setTargetsField(gradleBuild, "tasks", tasks + " " + "buildInfo");

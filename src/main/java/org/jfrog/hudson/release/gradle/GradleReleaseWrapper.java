@@ -149,7 +149,7 @@ public class GradleReleaseWrapper extends BuildWrapper {
         if (!releaseAction.getVersioning().equals(GradleReleaseAction.VERSIONING.NONE)) {
             scmCoordinator.beforeReleaseVersionChange();
             // change to release properties values
-            boolean modified = changeProperties(build, releaseAction, true);
+            boolean modified = changeProperties(build, releaseAction, true, listener);
             scmCoordinator.afterReleaseVersionChange(modified);
         }
         return new Environment() {
@@ -166,7 +166,7 @@ public class GradleReleaseWrapper extends BuildWrapper {
                     scmCoordinator.afterSuccessfulReleaseVersionBuild();
                     if (!releaseAction.getVersioning().equals(GradleReleaseAction.VERSIONING.NONE)) {
                         scmCoordinator.beforeDevelopmentVersionChange();
-                        boolean modified = changeProperties(build, releaseAction, false);
+                        boolean modified = changeProperties(build, releaseAction, false, listener);
                         scmCoordinator.afterDevelopmentVersionChange(modified);
                     }
                 } catch (Exception e) {
@@ -179,8 +179,8 @@ public class GradleReleaseWrapper extends BuildWrapper {
         };
     }
 
-    private boolean changeProperties(AbstractBuild build, GradleReleaseAction release, boolean releaseVersion)
-            throws IOException, InterruptedException {
+    private boolean changeProperties(AbstractBuild build, GradleReleaseAction release, boolean releaseVersion,
+            BuildListener listener) throws IOException, InterruptedException {
         FilePath root = build.getModuleRoot();
         debuggingLogger.fine("Root directory is: " + root.getRemote());
         String[] modules = release.getVersionProperties();
@@ -199,6 +199,9 @@ public class GradleReleaseWrapper extends BuildWrapper {
         }
         debuggingLogger.fine("Changing version of gradle properties");
         FilePath gradlePropertiesFilePath = new FilePath(root, "gradle.properties");
+        String next = releaseVersion ? "release" : "development";
+        log(listener,
+                "Changing gradle.properties at " + gradlePropertiesFilePath.getRemote() + "to " + next + " version");
         return gradlePropertiesFilePath.act(new PropertiesTransformer(modulesByName));
     }
 
@@ -234,7 +237,7 @@ public class GradleReleaseWrapper extends BuildWrapper {
          */
         @Override
         public String getDisplayName() {
-            return "Enable Artifactory release management";
+            return "Enable Artifactory Gradle release management";
         }
 
         /**
