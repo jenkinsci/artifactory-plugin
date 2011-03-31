@@ -230,6 +230,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             listener.getLogger().format("No Artifactory server configured for %s. " +
                     "Please check your configuration.", getArtifactoryName()).println();
             build.setResult(Result.FAILURE);
+            return new Environment() {
+            };
         }
         GradleInitScriptWriter writer = new GradleInitScriptWriter(build);
         FilePath workspace = build.getWorkspace();
@@ -246,6 +248,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         String initScriptPath = initScript.getRemote();
         initScriptPath = initScriptPath.replace('\\', '/');
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
+        if (gradleBuild == null) {
+            listener.getLogger().format("No Gradle build is configured for Please check your configuration. ");
+            build.setResult(Result.FAILURE);
+            return new Environment() {
+            };
+        }
         final String switches = gradleBuild.getSwitches() + "";
         final String originalTasks = gradleBuild.getTasks() + "";
         GradleReleaseWrapper releaseWrapper = ActionableHelper
@@ -261,10 +269,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         } else {
             tasks = gradleBuild.getTasks() + "";
         }
-        if (gradleBuild != null) {
-            setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
-            setTargetsField(gradleBuild, "tasks", tasks + " " + "buildInfo");
-        }
+        setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
+        setTargetsField(gradleBuild, "tasks", tasks + " " + "buildInfo");
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
@@ -291,10 +297,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
-                if (gradleBuild != null) {
-                    setTargetsField(gradleBuild, "switches", switches);
-                    setTargetsField(gradleBuild, "tasks", originalTasks);
-                }
+                setTargetsField(gradleBuild, "switches", switches);
+                setTargetsField(gradleBuild, "tasks", originalTasks);
                 Result result = build.getResult();
                 if (result == null) {
                     return false;
