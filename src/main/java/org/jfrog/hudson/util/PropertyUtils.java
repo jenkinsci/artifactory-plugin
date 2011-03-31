@@ -54,7 +54,7 @@ public class PropertyUtils {
      */
     public static Map<String, String> getModulesPropertiesFromPropFile(FilePath gradlePropPath, String[] propKeys) {
         Properties gradleProps = loadGradleProperties(gradlePropPath);
-        Map<String, String> versionsByPropKey = Maps.newHashMap();
+        Map<String, String> versionsByPropKey = Maps.newLinkedHashMap();
         for (String propKey : propKeys) {
             if (gradleProps.containsKey(propKey)) {
                 versionsByPropKey.put(propKey, gradleProps.getProperty(propKey));

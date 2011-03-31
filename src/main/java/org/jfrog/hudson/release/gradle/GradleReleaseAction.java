@@ -23,6 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
 import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -88,6 +89,7 @@ public class GradleReleaseAction extends ReleaseAction {
      * Nullify the version properties map and the additional properties map, should be only called once the build is
      * <b>finished</b>.
      */
+    //TODO: [by tc] get this out of here
     public void reset() {
         versionProps = null;
         additionalProps = null;
@@ -130,7 +132,7 @@ public class GradleReleaseAction extends ReleaseAction {
     public String getDefaultTagUrl() {
         String baseTagUrl = getReleaseWrapper().getTagPrefix();
         StringBuilder sb = new StringBuilder(baseTagUrl);
-        //String releaseVersion = calculateReleaseVersion(releaseVersionPerModule.keySet().iterator().next());
+        String releaseVersion = getFirstReleaseVersion();
         sb.append(releaseVersion);
         return sb.toString();
     }
@@ -139,7 +141,7 @@ public class GradleReleaseAction extends ReleaseAction {
     public String getDefaultReleaseBranch() {
         String releaseBranchPrefix = getReleaseWrapper().getReleaseBranchPrefix();
         StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
-        //String releaseVersion = calculateReleaseVersion(releaseVersionPerModule.keySet().iterator().next());
+        String releaseVersion = getFirstReleaseVersion();
         sb.append(releaseVersion);
         return sb.toString();
     }
@@ -151,7 +153,13 @@ public class GradleReleaseAction extends ReleaseAction {
 
     @Override
     public String getCurrentVersion() {
-        return releaseVersion;
+        return versionProps.values().iterator().next();
+    }
+
+    @Override
+    public String getDefaultTagComment() {
+        return SubversionManager.COMMENT_PREFIX + "Creating release tag for version " + super.calculateReleaseVersion(
+                getCurrentVersion());
     }
 
     @Override
@@ -179,10 +187,10 @@ public class GradleReleaseAction extends ReleaseAction {
     public String calculateReleaseVersion(String fromVersion) {
         init();
         String version = versionProps.get(fromVersion);
-        if (StringUtils.isBlank(releaseVersion) && StringUtils.isNotBlank(version)) {
-            releaseVersion = super.calculateReleaseVersion(version);
+        if (StringUtils.isNotBlank(version)) {
+            return super.calculateReleaseVersion(version);
         }
-        return StringUtils.isNotBlank(releaseVersion) ? releaseVersion : "";
+        return "";
     }
 
     @Override
@@ -215,5 +223,9 @@ public class GradleReleaseAction extends ReleaseAction {
 
     private ArtifactoryGradleConfigurator getGradleWrapper() {
         return ActionableHelper.getBuildWrapper(project, ArtifactoryGradleConfigurator.class);
+    }
+
+    private String getFirstReleaseVersion() {
+        return super.calculateReleaseVersion(getCurrentVersion());
     }
 }

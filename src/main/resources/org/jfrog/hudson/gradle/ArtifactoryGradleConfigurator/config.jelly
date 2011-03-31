@@ -175,9 +175,10 @@
                         <f:textbox name="tagPrefix" value="${releaseWrapper.tagPrefix}"/>
                     </f:entry>
                     <!--<j:if test="${it.isGit()}">-->
-                    <f:entry field="releaseBranchPrefix" title="Release branch name prefix"
+                    <f:entry field="releaseBranchPrefix" title="Git release branch name prefix"
                              help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-releaseBranchPrefix.html">
-                        <f:textbox name="releaseBranchPrefix" value="${releaseWrapper.releaseBranchPrefix}"/>
+                        <f:textbox name="releaseBranchPrefix" value="${releaseWrapper.releaseBranchPrefix}"
+                                   default="REL-BRANCH-"/>
                     </f:entry>
                     <!--</j:if>-->
                     <f:entry title="Version property keys"
