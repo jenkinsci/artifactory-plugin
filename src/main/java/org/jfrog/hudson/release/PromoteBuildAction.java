@@ -1,11 +1,10 @@
 /*
  * Copyright (C) 2011 JFrog Ltd.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +23,6 @@ import hudson.model.TaskAction;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
 import hudson.security.ACL;
-import hudson.security.Permission;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
@@ -33,11 +31,9 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -45,7 +41,6 @@ import org.kohsuke.stapler.StaplerResponse;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -53,7 +48,7 @@ import java.util.List;
  *
  * @author Yossi Shaul
  */
-public class PromoteBuildAction extends TaskAction implements BuildBadgeAction {
+public abstract class PromoteBuildAction extends TaskAction implements BuildBadgeAction {
     private final AbstractBuild build;
 
     private String targetStatus;
@@ -84,11 +79,6 @@ public class PromoteBuildAction extends TaskAction implements BuildBadgeAction {
 
     public boolean hasPromotionPermission() {
         return getACL().hasPermission(getPermission());
-    }
-
-    @Override
-    protected Permission getPermission() {
-        return ArtifactoryPlugin.PROMOTE;
     }
 
     @Override
@@ -123,18 +113,7 @@ public class PromoteBuildAction extends TaskAction implements BuildBadgeAction {
     /**
      * @return List of target repositories for deployment (release repositories first). Called from the UI.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
-    public List<String> getRepositoryKeys() {
-        ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
-                build.getProject(), ArtifactoryRedeployPublisher.class);
-        if (artifactoryPublisher != null) {
-            List<String> repos = artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst();
-            repos.add(0, "");  // option not to move
-            return repos;
-        } else {
-            return Collections.emptyList();
-        }
-    }
+    public abstract List<String> getRepositoryKeys();
 
     @SuppressWarnings({"UnusedDeclaration"})
     public List<String> getTargetStatuses() {
@@ -182,22 +161,14 @@ public class PromoteBuildAction extends TaskAction implements BuildBadgeAction {
     /**
      * @return The Artifactory server that is used for the build.
      */
-    protected ArtifactoryServer getArtifactoryServer() {
-        ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
-                build.getProject(), ArtifactoryRedeployPublisher.class);
-        return artifactoryPublisher.getArtifactoryServer();
-    }
+    protected abstract ArtifactoryServer getArtifactoryServer();
 
     /**
      * @param server The Artifactory server that is used for the build.
      * @return The credentials that were used for this server.
      */
-    protected Credentials getCredentials(ArtifactoryServer server) {
-        ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
-                build.getProject(), ArtifactoryRedeployPublisher.class);
-        Credentials deployer = CredentialResolver.getPreferredDeployer(artifactoryPublisher, server);
-        return deployer;
-    }
+    protected abstract Credentials getCredentials(ArtifactoryServer server);
+
 
     /**
      * The thread that performs the promotion asynchronously.
