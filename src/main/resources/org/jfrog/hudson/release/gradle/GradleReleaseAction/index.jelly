@@ -12,12 +12,12 @@
                             <j:forEach var="prop" items="${it.versionProperties}">
                                 <f:section title="${prop}">
                                     <f:entry title="Release version"
-                                             help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
+                                             help="/plugin/artifactory/help/release/GradleReleaseAction/help-releaseVersion.html">
                                         <f:textbox name="release.${prop}"
                                                    value="${it.calculateReleaseVersion(prop)}"/>
                                     </f:entry>
                                     <f:entry title="Next development version"
-                                             help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
+                                             help="/plugin/artifactory/help/release/GradleReleaseAction/help-nextDevelopmentVersion.html">
                                         <f:textbox name="next.${prop}"
                                                    value="${it.calculateNextVersion(prop)}"/>
                                     </f:entry>
@@ -26,11 +26,11 @@
                             <j:forEach var="prop" items="${it.additionalProperties}">
                                 <f:section title="${prop}">
                                     <f:entry title="Release value"
-                                             help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
+                                             help="/plugin/artifactory/help/release/GradleReleaseAction/help-releaseValue.html">
                                         <f:textbox name="release.${prop}" value="${it.getValueForProp(prop)}"/>
                                     </f:entry>
                                     <f:entry title="Next Development value"
-                                             help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
+                                             help="/plugin/artifactory/help/release/GradleReleaseAction/help-nextDevelopmentValue.html">
                                         <f:textbox name="next.${prop}" value="${it.getValueForProp(prop)}"/>
                                     </f:entry>
                                 </f:section>
