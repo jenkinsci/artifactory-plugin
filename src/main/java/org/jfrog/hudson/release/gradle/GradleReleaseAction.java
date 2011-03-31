@@ -210,7 +210,7 @@ public class GradleReleaseAction extends ReleaseAction {
     }
 
     private GradleReleaseWrapper getReleaseWrapper() {
-        return ActionableHelper.getBuildWrapper(project, GradleReleaseWrapper.class);
+        return getGradleWrapper().getReleaseWrapper();
     }
 
     private ArtifactoryGradleConfigurator getGradleWrapper() {

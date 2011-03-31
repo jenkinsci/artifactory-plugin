@@ -163,6 +163,39 @@
                 </f:optionalBlock>
             </table>
         </f:block>
+        <f:block>
+            <table style="width:100%">
+                <j:set var="releaseWrapper" value="${instance.releaseWrapper}"/>
+                <f:optionalBlock name="releaseWrapper" checked="${releaseWrapper != null}"
+                                 title="Enabled Release Management">
+                    <input type="hidden" name="stapler-class"
+                           value="org.jfrog.hudson.release.gradle.GradleReleaseWrapper"/>
+                    <f:entry field="tagPrefix" title="VCS tags base URL/name"
+                             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-tagBaseUrl.html">
+                        <f:textbox name="tagPrefix" value="${releaseWrapper.tagPrefix}"/>
+                    </f:entry>
+                    <!--<j:if test="${it.isGit()}">-->
+                    <f:entry field="releaseBranchPrefix" title="Release branch name prefix"
+                             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-releaseBranchPrefix.html">
+                        <f:textbox name="releaseBranchPrefix" value="${releaseWrapper.releaseBranchPrefix}"/>
+                    </f:entry>
+                    <!--</j:if>-->
+                    <f:entry title="Version property keys"
+                             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-versionPropKeys.html">
+                        <f:textbox name="versionPropKeys" value="${releaseWrapper.versionPropKeys}"/>
+                    </f:entry>
+                    <f:entry title="Additional property keys"
+                             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-additionalPropKeys.html">
+                        <f:textbox name="additionalPropKeys" value="${releaseWrapper.additionalPropKeys}"/>
+                    </f:entry>
+
+                    <f:entry title="Alternative Gradle tasks and options"
+                             help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-alternativeTasks.html">
+                        <f:textbox name="alternativeGoals" value="${releaseWrapper.alternativeTasks}"/>
+                    </f:entry>
+                </f:optionalBlock>
+            </table>
+        </f:block>
     </f:section>
     <f:block>
         <hr/>

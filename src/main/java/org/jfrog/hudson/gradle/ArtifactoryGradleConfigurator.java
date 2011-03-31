@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 JFrog Ltd.
+ * Copyright (C) 2011 JFrog Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,8 @@ import com.google.common.collect.Iterables;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.BuildableItemWithBuildWrappers;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Project;
-import hudson.model.Result;
+import hudson.model.*;
+import hudson.model.listeners.RunListener;
 import hudson.plugins.gradle.Gradle;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -42,7 +35,10 @@ import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.action.ArtifactoryProjectAction;
+import org.jfrog.hudson.release.GradlePromoteBuildAction;
 import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
 import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
@@ -57,6 +53,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +87,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final IncludesExcludes artifactDeploymentPatterns;
     private final boolean discardOldBuilds;
     private final boolean passIdentifiedDownstream;
+    private final GradleReleaseWrapper releaseWrapper;
 
 
     @DataBoundConstructor
@@ -98,7 +96,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-            boolean discardOldBuilds, boolean passIdentifiedDownstream) {
+            boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -118,7 +116,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.discardOldBuilds = discardOldBuilds;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
+        this.releaseWrapper = releaseWrapper;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
+    }
+
+    public GradleReleaseWrapper getReleaseWrapper() {
+        return releaseWrapper;
     }
 
     public ServerDetails getDetails() {
@@ -219,12 +222,23 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
+        List<ArtifactoryProjectAction> action =
+                ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
+        if (getReleaseWrapper() != null) {
+            List actions = new ArrayList();
+            actions.add(new GradleReleaseAction((FreeStyleProject) project));
+            actions.addAll(action);
+            return actions;
+        }
+        return action;
     }
 
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
+        if (isRelease(build)) {
+            releaseWrapper.setUp(build, launcher, listener);
+        }
         ArtifactoryServer artifactoryServer = getArtifactoryServer();
         if (artifactoryServer == null) {
             listener.getLogger().format("No Artifactory server configured for %s. " +
@@ -256,15 +270,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         }
         final String switches = gradleBuild.getSwitches() + "";
         final String originalTasks = gradleBuild.getTasks() + "";
-        GradleReleaseWrapper releaseWrapper = ActionableHelper
-                .getBuildWrapper((BuildableItemWithBuildWrappers) build.getProject(), GradleReleaseWrapper.class);
         final String tasks;
-        if (releaseWrapper != null) {
-            String alternativeGoals = releaseWrapper.getAlternativeGoals();
+        if (isRelease(build)) {
+            String alternativeGoals = releaseWrapper.getAlternativeTasks();
             if (StringUtils.isNotBlank(alternativeGoals)) {
                 tasks = alternativeGoals;
             } else {
-                tasks = "";
+                tasks = gradleBuild.getTasks() + "";
             }
         } else {
             tasks = gradleBuild.getTasks() + "";
@@ -297,6 +309,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
+                if (isRelease(build)) {
+                    releaseWrapper.tearDown(build, listener);
+                }
                 setTargetsField(gradleBuild, "switches", switches);
                 setTargetsField(gradleBuild, "tasks", originalTasks);
                 Result result = build.getResult();
@@ -317,6 +332,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 return false;
             }
         };
+    }
+
+    public boolean isRelease(AbstractBuild build) {
+        return getReleaseWrapper() != null && build.getAction(GradleReleaseAction.class) != null;
     }
 
     private Gradle getLastGradleBuild(AbstractProject project) {
@@ -381,6 +400,19 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         }
 
         /**
+         * @param baseTagUrl The subversion tags url
+         * @return Error message if tags url is not set
+         */
+        @SuppressWarnings({"UnusedDeclaration"})
+        public FormValidation doCheckBaseTagUrl(@QueryParameter String baseTagUrl) {
+            String trimmedUrl = hudson.Util.fixEmptyAndTrim(baseTagUrl);
+            if (trimmedUrl == null) {
+                return FormValidation.error("Subversion base tags URL is mandatory");
+            }
+            return FormValidation.ok();
+        }
+
+        /**
          * Returns the list of {@link org.jfrog.hudson.ArtifactoryServer} configured.
          *
          * @return can be empty but never null.
@@ -398,6 +430,49 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     public static final class ConverterImpl extends OverridingDeployerCredentialsConverter {
         public ConverterImpl(XStream2 xstream) {
             super(xstream);
+        }
+    }
+
+    /**
+     * This run listener handles the job completed event to cleanup svn tags and working copy in case of build failure.
+     */
+    @Extension
+    public static final class ReleaseRunListener extends RunListener<AbstractBuild> {
+        /**
+         * Completed event is sent after the build and publishers execution. The build result in this stage is final and
+         * cannot be modified. So this is a good place to revert working copy and tag if the build failed.
+         */
+        @Override
+        public void onCompleted(AbstractBuild run, TaskListener listener) {
+            if (!(run instanceof FreeStyleBuild)) {
+                return;
+            }
+
+            GradleReleaseAction releaseAction = run.getAction(GradleReleaseAction.class);
+            if (releaseAction == null) {
+                return;
+            }
+            releaseAction.reset();
+
+            Result result = run.getResult();
+            if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+                // add a stage action
+                run.addAction(new GradlePromoteBuildAction(run));
+            }
+
+            // signal completion to the scm coordinator
+            ArtifactoryGradleConfigurator wrapper = ActionableHelper.getBuildWrapper(
+                    (BuildableItemWithBuildWrappers) run.getProject(), ArtifactoryGradleConfigurator.class);
+            try {
+                wrapper.getReleaseWrapper().getScmCoordinator().buildCompleted();
+            } catch (Exception e) {
+                run.setResult(Result.FAILURE);
+                listener.error("[RELEASE] Failed on build completion");
+                e.printStackTrace(listener.getLogger());
+            }
+
+            // remove the release action from the build. the stage action is the point of interaction for successful builds
+            run.getActions().remove(releaseAction);
         }
     }
 
