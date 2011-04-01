@@ -263,7 +263,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         initScriptPath = initScriptPath.replace('\\', '/');
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
         if (gradleBuild == null) {
-            listener.getLogger().format("No Gradle build is configured for Please check your configuration. ");
+            listener.getLogger().format("No Gradle build is configured - please check your configuration.");
             build.setResult(Result.FAILURE);
             return new Environment() {
             };
