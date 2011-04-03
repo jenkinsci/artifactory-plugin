@@ -6,12 +6,21 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Computer;
+import hudson.model.Node;
 import hudson.model.Result;
+import hudson.model.Run;
+import hudson.remoting.VirtualChannel;
+import hudson.slaves.NodeProperty;
+import hudson.slaves.NodePropertyDescriptor;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.LogRotator;
+import hudson.tasks.Maven;
+import hudson.tools.ToolLocationNodeProperty;
+import hudson.util.DescribableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Build;
@@ -23,6 +32,7 @@ import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.ReleaseAction;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +40,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -42,7 +53,88 @@ public class ExtractorUtils {
         throw new IllegalAccessError();
     }
 
-    public static void addCustomClassworlds(AbstractBuild<?, ?> build, URL resource, Map<String, String> env,
+    /**
+     * Get the Maven home directory from where to execute Maven from. This is primarily used when running an external
+     * Maven invocation outside of Jenkins, can will return a slave Maven home if Maven is on slave according to the
+     * maven installation.
+     *
+     * @return The maven home
+     */
+    public static FilePath getMavenHomeDir(AbstractBuild<?, ?> build, BuildListener listener, Map<String, String> env,
+            Maven.MavenInstallation mavenInstallation) {
+        Computer computer = Computer.currentComputer();
+        VirtualChannel virtualChannel = computer.getChannel();
+
+        String mavenHome = null;
+
+        //Check for a node defined tool if we are on a slave
+        if (computer instanceof SlaveComputer) {
+            mavenHome = getNodeDefinedMavenHome(build);
+        }
+
+        //Either we are on the master or that no node tool was defined
+        if (StringUtils.isBlank(mavenHome)) {
+            mavenHome = getJobDefinedMavenInstallation(listener, mavenInstallation);
+        }
+
+        //Try to find the home via the env vars
+        if (StringUtils.isBlank(mavenHome)) {
+            mavenHome = getEnvDefinedMavenHome(env);
+        }
+        return new FilePath(virtualChannel, mavenHome);
+    }
+
+    private static String getJobDefinedMavenInstallation(BuildListener listener,
+            Maven.MavenInstallation mavenInstallation) {
+        if (mavenInstallation == null) {
+            listener.error("Maven version is not configured for this project. Can't determine which Maven to run");
+            throw new Run.RunnerAbortedException();
+        }
+        String mvnHome = mavenInstallation.getHome();
+        if (mvnHome == null) {
+            listener.error("Maven '%s' doesn't have its home set", mavenInstallation.getName());
+            throw new Run.RunnerAbortedException();
+        }
+        return mvnHome;
+    }
+
+    private static String getNodeDefinedMavenHome(AbstractBuild<?, ?> build) {
+        Node currentNode = build.getBuiltOn();
+        DescribableList<NodeProperty<?>, NodePropertyDescriptor> properties = currentNode.getNodeProperties();
+        ToolLocationNodeProperty toolLocation = properties.get(ToolLocationNodeProperty.class);
+        if (toolLocation != null) {
+
+            List<ToolLocationNodeProperty.ToolLocation> locations = toolLocation.getLocations();
+            if (locations != null) {
+                for (ToolLocationNodeProperty.ToolLocation location : locations) {
+                    if (location.getType().isSubTypeOf(Maven.MavenInstallation.class)) {
+                        String installationHome = location.getHome();
+                        if (StringUtils.isNotBlank(installationHome)) {
+                            return installationHome;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String getEnvDefinedMavenHome(Map<String, String> env) {
+        String mavenHome = env.get("MAVEN_HOME");
+        if (StringUtils.isNotBlank(mavenHome)) {
+            return mavenHome;
+        }
+
+        return env.get("M2_HOME");
+    }
+
+    /**
+     * Add a custom {@code classworlds.conf} file that will be read by the Maven build. Adds an environment variable
+     * {@code classwordls.conf} with the location of the classworlds file for Maven.
+     *
+     * @return The path of the classworlds.conf file
+     */
+    public static String addCustomClassworlds(AbstractBuild<?, ?> build, URL resource, Map<String, String> env,
             File classWorldsFile) {
         String classworldsConfPath;
         if (Computer.currentComputer() instanceof SlaveComputer) {
@@ -67,8 +159,22 @@ public class ExtractorUtils {
             }
         }
         env.put("classworlds.conf", classworldsConfPath);
+        return classworldsConfPath;
     }
 
+    /**
+     * Add build info properties that will be read by an external extractor. All properties are then saved into a {@code
+     * buildinfo.properties} into a temporary location. The location is then put into an environment variable {@link
+     * BuildInfoConfigProperties#PROP_PROPS_FILE} for the extractor to read.
+     *
+     * @param env                       A map of the environment variables that are to be persisted into the
+     *                                  buildinfo.properties file
+     * @param build                     The build from which to get build/project related information from (e.g build
+     *                                  name and build number).
+     * @param selectedArtifactoryServer The Artifactory server that is to be used during the build for resolution/
+     *                                  deployment
+     * @param context                   A container object for build related data.
+     */
     public static void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build,
             ArtifactoryServer selectedArtifactoryServer, BuildContext context)
             throws IOException, InterruptedException {
@@ -188,6 +294,15 @@ public class ExtractorUtils {
             String excludePatterns = deploymentPatterns.getExcludePatterns();
             if (StringUtils.isNotBlank(excludePatterns)) {
                 props.put(ClientProperties.PROP_PUBLISH_ARTIFACT_EXCLUDE_PATTERNS, excludePatterns);
+            }
+        }
+
+        ReleaseAction releaseAction = ActionableHelper.getLatestAction(build, ReleaseAction.class);
+        if (releaseAction != null) {
+            props.setProperty(BuildInfoProperties.PROP_RELEASE_ENABLED, "true");
+            String comment = releaseAction.getStagingComment();
+            if (StringUtils.isNotBlank(comment)) {
+                props.setProperty(BuildInfoProperties.PROP_RELEASE_COMMENT, comment);
             }
         }
 
