@@ -262,27 +262,27 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         String initScriptPath = initScript.getRemote();
         initScriptPath = initScriptPath.replace('\\', '/');
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
-        if (gradleBuild == null) {
-            listener.getLogger().format("No Gradle build is configured for Please check your configuration. ");
-            build.setResult(Result.FAILURE);
-            return new Environment() {
-            };
-        }
-        final String switches = gradleBuild.getSwitches() + "";
-        final String originalTasks = gradleBuild.getTasks() + "";
-        final String tasks;
-        if (isRelease(build)) {
-            String alternativeGoals = releaseWrapper.getAlternativeTasks();
-            if (StringUtils.isNotBlank(alternativeGoals)) {
-                tasks = alternativeGoals;
+        String originalTasks = null;
+        String switches = null;
+        if (gradleBuild != null) {
+            switches = gradleBuild.getSwitches() + "";
+            originalTasks = gradleBuild.getTasks() + "";
+            final String tasks;
+            if (isRelease(build)) {
+                String alternativeGoals = releaseWrapper.getAlternativeTasks();
+                if (StringUtils.isNotBlank(alternativeGoals)) {
+                    tasks = alternativeGoals;
+                } else {
+                    tasks = gradleBuild.getTasks() + "";
+                }
             } else {
                 tasks = gradleBuild.getTasks() + "";
             }
-        } else {
-            tasks = gradleBuild.getTasks() + "";
+            setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
+            setTargetsField(gradleBuild, "tasks", tasks + " " + "buildInfo");
         }
-        setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
-        setTargetsField(gradleBuild, "tasks", tasks + " " + "buildInfo");
+        final String finalSwitches = switches;
+        final String finalOriginalTasks = originalTasks;
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
@@ -314,8 +314,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 if (isRelease(build)) {
                     releaseSuccess = releaseWrapper.tearDown(build, listener);
                 }
-                setTargetsField(gradleBuild, "switches", switches);
-                setTargetsField(gradleBuild, "tasks", originalTasks);
+                if (gradleBuild != null) {
+                    setTargetsField(gradleBuild, "switches", finalSwitches);
+                    setTargetsField(gradleBuild, "tasks", finalOriginalTasks);
+                }
                 Result result = build.getResult();
                 if (result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     if (isDeployBuildInfo()) {
