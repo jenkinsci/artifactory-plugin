@@ -133,7 +133,7 @@ public abstract class ReleaseAction implements Action {
     }
 
     protected String getBaseTagUrlAccordingToScm(String baseTagUrl) {
-        if (!AbstractScmCoordinator.isSvn(project) && !baseTagUrl.endsWith("/")) {
+        if (AbstractScmCoordinator.isSvn(project) && !baseTagUrl.endsWith("/")) {
             return baseTagUrl + "/";
         }
         return baseTagUrl;
