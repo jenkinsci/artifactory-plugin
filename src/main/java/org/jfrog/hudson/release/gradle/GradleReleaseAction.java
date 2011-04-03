@@ -153,6 +153,9 @@ public class GradleReleaseAction extends ReleaseAction {
 
     @Override
     public String getCurrentVersion() {
+        if (versionProps == null) {
+            return "";
+        }
         return versionProps.values().iterator().next();
     }
 
