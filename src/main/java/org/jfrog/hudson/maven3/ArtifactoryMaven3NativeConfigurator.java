@@ -28,6 +28,7 @@ import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -99,42 +100,19 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             throw new RuntimeException(e);
         }
         final String mavenOpts = project.getMavenOpts();
+        try {
+            project.setMavenOpts(appendNewMavenOpts(project, build));
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to manipulate maven_opts for project: " + project, e);
+        }
         final File classWorldsFile = File.createTempFile("classworlds", "conf");
+        URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-native.conf");
+        final String classworldsConfPath = ExtractorUtils.copyClassWorldsFile(build, resource, classWorldsFile);
         build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 super.buildEnvVars(env);
-                try {
-                    project.setMavenOpts(appendNewMavenOpts(project));
-                } catch (IOException e) {
-                    throw new RuntimeException("Unable to manipulate maven_opts for project: " + project, e);
-                }
-                URL resource =
-                        getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-native.conf");
-                String classworldsConfPath;
-                if (Computer.currentComputer() instanceof SlaveComputer) {
-                    try {
-                        FilePath remoteClassworlds =
-                                build.getWorkspace().createTextTempFile("classworlds", "conf", "", false);
-                        remoteClassworlds.copyFrom(resource);
-                        classworldsConfPath = remoteClassworlds.getRemote();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    classworldsConfPath = classWorldsFile.getAbsolutePath();
-                    File classWorldsConf = new File(resource.getFile());
-                    try {
-                        FileUtils.copyFile(classWorldsConf, classWorldsFile);
-                    } catch (IOException e) {
-                        build.setResult(Result.FAILURE);
-                        throw new RuntimeException(
-                                "Unable to copy classworlds file: " + classWorldsConf.getAbsolutePath() + " to: " +
-                                        classWorldsFile.getAbsolutePath(), e);
-                    }
-                }
-                env.put("classworlds.conf", classworldsConfPath);
                 final ArtifactoryServer artifactoryServer = getArtifactoryServer();
                 Credentials preferredResolver = CredentialResolver
                         .getPreferredResolver(ArtifactoryMaven3NativeConfigurator.this, artifactoryServer);
@@ -142,6 +120,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 env.put(ClientProperties.PROP_RESOLVE_REPOKEY, getDownloadRepositoryKey());
                 env.put(ClientProperties.PROP_RESOLVE_USERNAME, preferredResolver.getUsername());
                 env.put(ClientProperties.PROP_RESOLVE_PASSWORD, preferredResolver.getPassword());
+                env.put("classworlds.conf", classworldsConfPath);
             }
 
             @Override
@@ -152,28 +131,27 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 FileUtils.deleteQuietly(classWorldsFile);
                 return super.tearDown(build, listener);
             }
-
-            private String appendNewMavenOpts(MavenModuleSet project) throws IOException {
-                StringBuilder mavenOpts = new StringBuilder();
-                String opts = project.getMavenOpts();
-                if (StringUtils.isNotBlank(opts)) {
-                    mavenOpts.append(opts);
-                }
-                if (StringUtils.contains(mavenOpts.toString(), "-Dm3plugin.lib")) {
-                    return mavenOpts.toString();
-                }
-                File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
-                try {
-                    FilePath actualDependencyDirectory =
-                            PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
-                    mavenOpts.append(" -Dm3plugin.lib=").append(actualDependencyDirectory.getRemote());
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                return mavenOpts.toString();
-            }
-
         };
+    }
+
+    private String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build) throws IOException {
+        StringBuilder mavenOpts = new StringBuilder();
+        String opts = project.getMavenOpts();
+        if (StringUtils.isNotBlank(opts)) {
+            mavenOpts.append(opts);
+        }
+        if (StringUtils.contains(mavenOpts.toString(), "-Dm3plugin.lib")) {
+            return mavenOpts.toString();
+        }
+        File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
+        try {
+            FilePath actualDependencyDirectory =
+                    PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
+            mavenOpts.append(" -Dm3plugin.lib=").append(actualDependencyDirectory.getRemote());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return mavenOpts.toString();
     }
 
     private boolean isValidMavenVersion(String version) {

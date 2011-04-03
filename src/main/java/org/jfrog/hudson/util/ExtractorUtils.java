@@ -129,13 +129,12 @@ public class ExtractorUtils {
     }
 
     /**
-     * Add a custom {@code classworlds.conf} file that will be read by the Maven build. Adds an environment variable
-     * {@code classwordls.conf} with the location of the classworlds file for Maven.
+     * Copies a classworlds file to a temporary location either on the local filesystem or on a slave depending on the
+     * node type.
      *
      * @return The path of the classworlds.conf file
      */
-    public static String addCustomClassworlds(AbstractBuild<?, ?> build, URL resource, Map<String, String> env,
-            File classWorldsFile) {
+    public static String copyClassWorldsFile(AbstractBuild<?, ?> build, URL resource, File classWorldsFile) {
         String classworldsConfPath;
         if (Computer.currentComputer() instanceof SlaveComputer) {
             try {
@@ -158,6 +157,19 @@ public class ExtractorUtils {
                                 classWorldsFile.getAbsolutePath(), e);
             }
         }
+        return classworldsConfPath;
+    }
+
+
+    /**
+     * Add a custom {@code classworlds.conf} file that will be read by the Maven build. Adds an environment variable
+     * {@code classwordls.conf} with the location of the classworlds file for Maven.
+     *
+     * @return The path of the classworlds.conf file
+     */
+    public static String addCustomClassworlds(AbstractBuild<?, ?> build, URL resource, Map<String, String> env,
+            File classWorldsFile) {
+        String classworldsConfPath = copyClassWorldsFile(build, resource, classWorldsFile);
         env.put("classworlds.conf", classworldsConfPath);
         return classworldsConfPath;
     }
