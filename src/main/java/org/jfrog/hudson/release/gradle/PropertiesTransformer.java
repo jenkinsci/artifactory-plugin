@@ -52,7 +52,7 @@ public class PropertiesTransformer implements FilePath.FileCallable<Boolean> {
      */
     public Boolean invoke(File propertiesFile, VirtualChannel channel) throws IOException, InterruptedException {
         if (!propertiesFile.exists()) {
-            throw new AbortException("Couldn't find properties file file: " + propertiesFile.getAbsolutePath());
+            throw new AbortException("Couldn't find properties file: " + propertiesFile.getAbsolutePath());
         }
         String properties;
         InputStream inputStream = new FileInputStream(propertiesFile);
