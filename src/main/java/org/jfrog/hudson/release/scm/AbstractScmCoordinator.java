@@ -58,6 +58,11 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
                 "Scm of type: " + projectScm.getClass().getName() + " is not supported");
     }
 
+    public static boolean isSvn(AbstractProject project) {
+        SCM projectScm = project.getScm();
+        return projectScm instanceof SubversionSCM;
+    }
+
     public static boolean isGitScm(AbstractProject project) {
         SCM scm = project.getScm();
         if (scm != null) {
