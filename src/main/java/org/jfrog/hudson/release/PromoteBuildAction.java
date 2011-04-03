@@ -188,6 +188,7 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
         protected void perform(TaskListener listener) {
             ArtifactoryBuildInfoClient client = null;
             try {
+                long started = System.currentTimeMillis();
                 listener.getLogger().println("Promoting build ....");
 
                 client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword());
@@ -220,6 +221,12 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
                 }
 
                 build.save();
+                // if the client gets back to the progress (after the redirect) page when this thread already done,
+                // she will get an error message because the log dies with the thread. So lets delay up to 3 seconds
+                long timeToWait = 2000 - (System.currentTimeMillis() - started);
+                if (timeToWait > 0) {
+                    Thread.sleep(timeToWait);
+                }
                 workerThread = null;
             } catch (Throwable e) {
                 e.printStackTrace(listener.error(e.getMessage()));
