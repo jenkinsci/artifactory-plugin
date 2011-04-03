@@ -171,22 +171,22 @@
                     <input type="hidden" name="stapler-class"
                            value="org.jfrog.hudson.release.gradle.GradleReleaseWrapper"/>
                     <f:entry field="tagPrefix" title="VCS tags base URL/name"
-                             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-tagBaseUrl.html">
+                             help="/plugin/artifactory/help/release/common/help-tagBaseUrl.html">
                         <f:textbox name="tagPrefix" value="${releaseWrapper.tagPrefix}"/>
                     </f:entry>
                     <!--<j:if test="${it.isGit()}">-->
                     <f:entry field="releaseBranchPrefix" title="Git release branch name prefix"
-                             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-releaseBranchPrefix.html">
+                             help="/plugin/artifactory/help/release/common/help-releaseBranchPrefix.html">
                         <f:textbox name="releaseBranchPrefix" value="${releaseWrapper.releaseBranchPrefix}"
                                    default="REL-BRANCH-"/>
                     </f:entry>
                     <!--</j:if>-->
                     <f:entry title="Version property keys"
-                             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-versionPropKeys.html">
+                             help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-versionPropKeys.html">
                         <f:textbox name="versionPropKeys" value="${releaseWrapper.versionPropKeys}"/>
                     </f:entry>
                     <f:entry title="Additional property keys"
-                             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-additionalPropKeys.html">
+                             help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-additionalPropKeys.html">
                         <f:textbox name="additionalPropKeys" value="${releaseWrapper.additionalPropKeys}"/>
                     </f:entry>
 
