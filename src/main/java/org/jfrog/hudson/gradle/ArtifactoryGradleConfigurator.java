@@ -453,7 +453,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             if (releaseAction == null) {
                 return;
             }
-            releaseAction.reset();
 
             Result result = run.getResult();
             if (result.isBetterOrEqualTo(Result.SUCCESS)) {
@@ -471,6 +470,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 listener.error("[RELEASE] Failed on build completion");
                 e.printStackTrace(listener.getLogger());
             }
+
+            // once the build is completed reset the version maps. Since the GradleReleaseAction is saved
+            // in memory and is only build when re-saving a project's config or during startup, therefore
+            // a cleanup of the internal maps is needed.
+            releaseAction.reset();
 
             // remove the release action from the build. the stage action is the point of interaction for successful builds
             run.getActions().remove(releaseAction);

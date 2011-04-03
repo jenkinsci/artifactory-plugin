@@ -10,6 +10,9 @@
                              help="/plugin/artifactory/help/release/ReleaseAction/help-versioningPerModule.html">
                     </f:entry>
                     <f:invisibleEntry>
+                        <input type="hidden" name="init" value="${it.init()}"/>
+                    </f:invisibleEntry>
+                    <f:invisibleEntry>
                         <input type="hidden" name="versioning" value="PER_MODULE"/>
                     </f:invisibleEntry>
                     <j:forEach var="prop" items="${it.versionProperties}">

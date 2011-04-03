@@ -70,7 +70,7 @@ public class GradleReleaseAction extends ReleaseAction {
      * Initialize the version properties map from the gradle.properties file, and the additional properties from the
      * gradle.properties file.
      */
-    private void init() {
+    public void init() {
         FilePath workspace = project.getSomeWorkspace();
         if (workspace == null) {
             throw new IllegalStateException("No workspace found, cannot perform staging");
@@ -87,9 +87,9 @@ public class GradleReleaseAction extends ReleaseAction {
 
     /**
      * Nullify the version properties map and the additional properties map, should be only called once the build is
-     * <b>finished</b>.
+     * <b>finished</b>. <p>Since the GradleReleaseAction is saved in memory and is only build when re-saving a project's
+     * config or during startup, therefore a cleanup of the internal maps is needed.</p>
      */
-    //TODO: [by tc] get this out of here
     public void reset() {
         versionProps = null;
         additionalProps = null;
@@ -182,13 +182,11 @@ public class GradleReleaseAction extends ReleaseAction {
 
     @SuppressWarnings({"UnusedDeclaration"})
     public String getValueForProp(String prop) {
-        init();
         return additionalProps.get(prop);
     }
 
     @Override
     public String calculateReleaseVersion(String fromVersion) {
-        init();
         String version = versionProps.get(fromVersion);
         if (StringUtils.isNotBlank(version)) {
             return super.calculateReleaseVersion(version);
