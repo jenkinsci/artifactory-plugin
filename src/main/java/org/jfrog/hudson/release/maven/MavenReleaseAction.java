@@ -24,7 +24,6 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.util.Collection;
@@ -74,10 +73,7 @@ public class MavenReleaseAction extends ReleaseAction {
     public String getDefaultTagUrl() {
         MavenReleaseWrapper wrapper = getReleaseWrapper();
         String baseTagUrl = wrapper.getTagPrefix();
-        StringBuilder sb = new StringBuilder(baseTagUrl);
-        if (!AbstractScmCoordinator.isSvn(project) && !baseTagUrl.endsWith("/")) {
-            sb.append("/");
-        }
+        StringBuilder sb = new StringBuilder(getBaseTagUrlAccordingToScm(baseTagUrl));
         sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
         return sb.toString();
     }

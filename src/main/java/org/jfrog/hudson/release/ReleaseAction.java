@@ -132,6 +132,13 @@ public abstract class ReleaseAction implements Action {
         return VERSIONING.GLOBAL.name();
     }
 
+    protected String getBaseTagUrlAccordingToScm(String baseTagUrl) {
+        if (!AbstractScmCoordinator.isSvn(project) && !baseTagUrl.endsWith("/")) {
+            return baseTagUrl + "/";
+        }
+        return baseTagUrl;
+    }
+
     public abstract String getDefaultTagUrl();
 
     public abstract String getDefaultReleaseBranch();

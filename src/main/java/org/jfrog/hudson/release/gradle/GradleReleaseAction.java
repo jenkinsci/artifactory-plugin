@@ -23,7 +23,6 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.StaplerRequest;
@@ -132,10 +131,7 @@ public class GradleReleaseAction extends ReleaseAction {
     @Override
     public String getDefaultTagUrl() {
         String baseTagUrl = getReleaseWrapper().getTagPrefix();
-        StringBuilder sb = new StringBuilder(baseTagUrl);
-        if (!AbstractScmCoordinator.isSvn(project) && !baseTagUrl.endsWith("/")) {
-            sb.append("/");
-        }
+        StringBuilder sb = new StringBuilder(getBaseTagUrlAccordingToScm(baseTagUrl));
         String releaseVersion = getFirstReleaseVersion();
         sb.append(releaseVersion);
         return sb.toString();
