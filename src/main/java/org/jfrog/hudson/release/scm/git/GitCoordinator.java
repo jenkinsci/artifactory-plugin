@@ -138,6 +138,10 @@ public class GitCoordinator extends AbstractScmCoordinator {
                 scmManager.push(scmManager.getRemoteUrl(), state.currentWorkingBranch);
             }
         } else {
+            // go back to the original checkout branch (required to delete the release branch and reset the working copy)
+            scmManager.checkoutBranch(checkoutBranch, false);
+            state.currentWorkingBranch = checkoutBranch;
+
             if (state.releaseBranchCreated) {
                 safeDeleteBranch(releaseBranch);
             }
@@ -194,9 +198,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
     private void safeRevertWorkingCopy() {
         try {
-            // go back to the original checkout branch
-            scmManager.checkoutBranch(checkoutBranch, false);
-            state.currentWorkingBranch = checkoutBranch;
             scmManager.revertWorkingCopy(baseCommitIsh);
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to revert working copy: ", e);
