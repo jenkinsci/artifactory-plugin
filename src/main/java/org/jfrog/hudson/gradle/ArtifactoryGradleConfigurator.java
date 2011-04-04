@@ -416,6 +416,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         }
 
         /**
+         * @param tagPrefix The subversion tags url
+         * @return Error message if tags url is not set
+         */
+        @SuppressWarnings({"UnusedDeclaration"})
+        public FormValidation doCheckTagPrefix(@QueryParameter String tagPrefix) {
+            return FormValidations.validateTagPrefix(tagPrefix);
+        }
+
+        /**
          * Returns the list of {@link org.jfrog.hudson.ArtifactoryServer} configured.
          *
          * @return can be empty but never null.

@@ -39,6 +39,7 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
+import org.jfrog.hudson.util.FormValidations;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -225,16 +226,12 @@ public class MavenReleaseWrapper extends BuildWrapper {
         }
 
         /**
-         * @param baseTagUrl The subversion tags url
+         * @param tagPrefix The subversion tags url
          * @return Error message if tags url is not set
          */
         @SuppressWarnings({"UnusedDeclaration"})
-        public FormValidation doCheckBaseTagUrl(@QueryParameter String baseTagUrl) {
-            String trimmedUrl = hudson.Util.fixEmptyAndTrim(baseTagUrl);
-            if (trimmedUrl == null) {
-                return FormValidation.error("Subversion base tags URL is mandatory");
-            }
-            return FormValidation.ok();
+        public FormValidation doCheckTagPrefix(@QueryParameter String tagPrefix) {
+            return FormValidations.validateTagPrefix(tagPrefix);
         }
     }
 
