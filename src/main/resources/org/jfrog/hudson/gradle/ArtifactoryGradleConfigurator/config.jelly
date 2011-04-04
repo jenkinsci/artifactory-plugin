@@ -192,7 +192,7 @@
 
                     <f:entry title="Alternative Gradle tasks and options"
                              help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-alternativeTasks.html">
-                        <f:textbox name="alternativeGoals" value="${releaseWrapper.alternativeTasks}"/>
+                        <f:textbox name="alternativeTasks" value="${releaseWrapper.alternativeTasks}"/>
                     </f:entry>
                 </f:optionalBlock>
             </table>
