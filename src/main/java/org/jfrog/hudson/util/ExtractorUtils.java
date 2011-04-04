@@ -167,9 +167,7 @@ public class ExtractorUtils {
      *
      * @return The path of the classworlds.conf file
      */
-    public static String addCustomClassworlds(AbstractBuild<?, ?> build, URL resource, Map<String, String> env,
-            File classWorldsFile) {
-        String classworldsConfPath = copyClassWorldsFile(build, resource, classWorldsFile);
+    public static String addCustomClassworlds(Map<String, String> env, String classworldsConfPath) {
         env.put("classworlds.conf", classworldsConfPath);
         return classworldsConfPath;
     }

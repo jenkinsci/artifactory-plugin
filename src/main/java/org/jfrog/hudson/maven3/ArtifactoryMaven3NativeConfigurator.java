@@ -118,6 +118,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 env.put(ClientProperties.PROP_RESOLVE_REPOKEY, getDownloadRepositoryKey());
                 env.put(ClientProperties.PROP_RESOLVE_USERNAME, preferredResolver.getUsername());
                 env.put(ClientProperties.PROP_RESOLVE_PASSWORD, preferredResolver.getPassword());
+                ExtractorUtils.addCustomClassworlds(env, classworldsConfPath);
                 env.put("classworlds.conf", classworldsConfPath);
             }
 
