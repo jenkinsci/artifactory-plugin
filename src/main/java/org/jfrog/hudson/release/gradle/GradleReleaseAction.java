@@ -19,6 +19,8 @@ package org.jfrog.hudson.release.gradle;
 import com.google.common.collect.Maps;
 import hudson.FilePath;
 import hudson.model.FreeStyleProject;
+import hudson.scm.SCM;
+import hudson.scm.SubversionSCM;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
@@ -71,7 +73,7 @@ public class GradleReleaseAction extends ReleaseAction {
      * gradle.properties file.
      */
     public void init() {
-        FilePath workspace = project.getSomeWorkspace();
+        FilePath workspace = getRootLocationPath(project.getSomeWorkspace());
         if (workspace == null) {
             throw new IllegalStateException("No workspace found, cannot perform staging");
         }
@@ -83,6 +85,21 @@ public class GradleReleaseAction extends ReleaseAction {
             additionalProps =
                     PropertyUtils.getModulesPropertiesFromPropFile(gradlePropertiesPath, getAdditionalProperties());
         }
+    }
+
+    /**
+     * Get the root path where the build is located, in case of {@link SubversionSCM} the project may be checked out to
+     * a sub-directory from the root workspace location.
+     *
+     * @param workspace The root workspace of the project.
+     * @return The location of the root of the Gradle build.
+     */
+    private FilePath getRootLocationPath(FilePath workspace) {
+        SCM scm = project.getScm();
+        if (scm instanceof SubversionSCM) {
+            return new FilePath(workspace, ((SubversionSCM) scm).getLocations()[0].getLocalDir());
+        }
+        return workspace;
     }
 
     /**
