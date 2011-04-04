@@ -141,23 +141,28 @@ public class BuildUniqueIdentifierHelper {
         if (ActionableHelper.getUpstreamCause(currentBuild) != null) {
             ParametersDefinitionProperty jobProperty =
                     currentBuild.getProject().getProperty(ParametersDefinitionProperty.class);
-            ParameterDefinition parameterDefinition = jobProperty.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
-            if (parameterDefinition != null) {
-                StringParameterDefinition definition = (StringParameterDefinition) parameterDefinition;
-                ParametersDefinitionProperty property = childProject.getProperty(ParametersDefinitionProperty.class);
-                if (property != null) {
-                    ParameterDefinition childDefinition = property.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
-                    if (definition != null && definition instanceof StringParameterDefinition) {
-                        String value = definition.getDefaultParameterValue().value;
-                        ((StringParameterDefinition) childDefinition).setDefaultValue(value);
+            if (jobProperty != null) {
+                ParameterDefinition parameterDefinition = jobProperty.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
+                if (parameterDefinition != null) {
+                    ParametersDefinitionProperty property =
+                            childProject.getProperty(ParametersDefinitionProperty.class);
+                    if (property != null) {
+                        ParameterDefinition childDefinition = property.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
+                        if (parameterDefinition instanceof StringParameterDefinition) {
+                            String value =
+                                    ((StringParameterDefinition) parameterDefinition).getDefaultParameterValue().value;
+                            ((StringParameterDefinition) childDefinition).setDefaultValue(value);
+                        }
+                    } else {
+                        if (parameterDefinition instanceof StringParameterDefinition) {
+                            String value =
+                                    ((StringParameterDefinition) parameterDefinition).getDefaultParameterValue().value;
+                            StringParameterDefinition newDefinition =
+                                    new StringParameterDefinition(ARTIFACT_BUILD_ROOT_KEY, value);
+                            childProject.addProperty(new ParametersDefinitionProperty(newDefinition));
+                        }
                     }
-                } else {
-                    String value = definition.getDefaultParameterValue().value;
-                    StringParameterDefinition newDefinition =
-                            new StringParameterDefinition(ARTIFACT_BUILD_ROOT_KEY, value);
-                    childProject.addProperty(new ParametersDefinitionProperty(newDefinition));
                 }
-
             }
             // if it is the root project, add it as the unique identifier.
         } else {
