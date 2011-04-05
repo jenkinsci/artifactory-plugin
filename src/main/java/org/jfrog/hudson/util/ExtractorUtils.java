@@ -167,9 +167,8 @@ public class ExtractorUtils {
      *
      * @return The path of the classworlds.conf file
      */
-    public static String addCustomClassworlds(Map<String, String> env, String classworldsConfPath) {
+    public static void addCustomClassworlds(Map<String, String> env, String classworldsConfPath) {
         env.put("classworlds.conf", classworldsConfPath);
-        return classworldsConfPath;
     }
 
     /**
@@ -334,7 +333,7 @@ public class ExtractorUtils {
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propFilePath);
     }
 
-    private static void addEnvVars(Map<String, String> env, AbstractBuild build, Properties props) {
+    private static void addEnvVars(Map<String, String> env, AbstractBuild<?, ?> build, Properties props) {
         // Write all the deploy (matrix params) properties.
         Map<String, String> filteredEnvMatrixParams = Maps.filterKeys(env, new Predicate<String>() {
             public boolean apply(String input) {
