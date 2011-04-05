@@ -19,15 +19,7 @@ package org.jfrog.hudson.action;
 import com.google.common.collect.Lists;
 import hudson.maven.MavenBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildableItemWithBuildWrappers;
-import hudson.model.Cause;
-import hudson.model.CauseAction;
-import hudson.model.Descriptor;
-import hudson.model.Hudson;
-import hudson.model.Project;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
@@ -51,7 +43,7 @@ public abstract class ActionableHelper {
      * cases the last one contains all the info we need (previous ones might only contain partial information, eg, only
      * main artifact)
      *
-     * @param buildThe    build
+     * @param build       The build
      * @param actionClass The type of the action
      * @return Latest action of the given type or null if not found
      */
@@ -62,6 +54,58 @@ public abstract class ActionableHelper {
         } else {
             return records.get(records.size() - 1);
         }
+    }
+
+    /**
+     * Get the root build which triggered the current build.
+     *
+     * @param currentBuild The current build.
+     * @return The root build.
+     */
+    public static AbstractBuild<?, ?> getRootBuild(AbstractBuild<?, ?> currentBuild) {
+        AbstractBuild<?, ?> rootBuild = null;
+        while (getUpstreamCause(currentBuild) != null) {
+            Cause.UpstreamCause cause = getUpstreamCause(currentBuild);
+            AbstractProject<?, ?> project = getProject(cause.getUpstreamProject());
+            if (project == null) {
+                throw new RuntimeException("No project found answering for the name: " + cause.getUpstreamProject());
+            }
+            rootBuild = getBuildByNumber(project, cause.getUpstreamBuild());
+            if (rootBuild == null) {
+                throw new RuntimeException(
+                        "No build with name: " + project.getName() + " and number: " + cause.getUpstreamBuild());
+            }
+            currentBuild = rootBuild;
+        }
+        if (rootBuild == null) {
+            return currentBuild;
+        }
+        return rootBuild;
+    }
+
+    /**
+     * Get a build according to the build's name (which is actually the project's name) and the build number.
+     *
+     * @param project     The project from which to get the build's name.
+     * @param buildNumber The build number.
+     * @return The build which answers for the name and number.
+     */
+    private static AbstractBuild<?, ?> getBuildByNumber(AbstractProject<?, ?> project, int buildNumber) {
+        return project.getBuildByNumber(buildNumber);
+    }
+
+    /**
+     * Get a project according to its name.
+     *
+     * @param name The name of the project.
+     * @return The project which answers the name.
+     */
+    private static AbstractProject<?, ?> getProject(String name) {
+        TopLevelItem item = Hudson.getInstance().getItem(name);
+        if (item != null && item instanceof AbstractProject) {
+            return (AbstractProject<?, ?>) item;
+        }
+        return null;
     }
 
     /**

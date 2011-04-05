@@ -43,7 +43,6 @@ import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.BuildInfoDeployer;
-import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.FormValidations;
@@ -127,6 +126,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean isDeployArtifacts() {
         return !deployArtifacts;
+    }
+
+    public ServerDetails getDetails() {
+        return details;
     }
 
     public IncludesExcludes getArtifactDeploymentPatterns() {
@@ -223,6 +226,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
+        if (!(build instanceof MavenModuleSetBuild)) {
+            listener.getLogger().format("Non maven build type: %s", build.getClass()).println();
+            build.setResult(Result.FAILURE);
+            return true;
+        }
+        MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
         if (getArtifactoryServer() == null) {
             listener.getLogger().format("No Artifactory server configured for %s. " +
                     "Please check your configuration.", getArtifactoryName()).println();
@@ -230,13 +239,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
-        if (!(build instanceof MavenModuleSetBuild)) {
-            listener.getLogger().format("Non maven build type: %s", build.getClass()).println();
-            build.setResult(Result.FAILURE);
-            return true;
-        }
-
-        MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
         List<MavenAbstractArtifactRecord> mars = getArtifactRecordActions(mavenBuild);
         if (mars.isEmpty()) {
             listener.getLogger().println("No artifacts are recorded. Is this a Maven project?");
@@ -258,17 +260,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 // add the result action (prefer always the same index)
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
             }
-            if (isPassIdentifiedDownstream()) {
-                BuildUniqueIdentifierHelper.addUniqueIdentifierToChildProjects(build, build.getEnvironment(listener));
-            }
-            BuildUniqueIdentifierHelper.removeUniqueIdentifierFromProject(build);
             return true;
         } catch (Exception e) {
             e.printStackTrace(listener.error(e.getMessage()));
         } finally {
             client.shutdown();
         }
-
         // failed
         build.setResult(Result.FAILURE);
         return true;
@@ -282,6 +279,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             }
         });
     }
+
 
     private void verifySupportedArtifactoryVersion(ArtifactoryBuildInfoClient client) throws Exception {
         // get the version of artifactory, if it is an unsupported version, an UnsupportedOperationException

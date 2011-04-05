@@ -21,6 +21,7 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
+import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Result;
@@ -146,7 +147,10 @@ public class ArtifactsDeployer {
             BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder,
                     mavenModuleSetBuild.getEnvironment(listener));
         }
-        BuildUniqueIdentifierHelper.addUpstreamIdentifier(builder, mavenModuleSetBuild);
+        AbstractBuild<?, ?> rootBuild = ActionableHelper.getRootBuild(mavenModuleSetBuild);
+        if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
+            BuildUniqueIdentifierHelper.addUpstreamIdentifier(builder, rootBuild);
+        }
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(mavenModuleSetBuild);
         if (parent != null) {

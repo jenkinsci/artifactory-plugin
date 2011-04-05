@@ -18,12 +18,15 @@ import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.ArtifactoryResolutionProperties;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -120,6 +123,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 env.put(ClientProperties.PROP_RESOLVE_PASSWORD, preferredResolver.getPassword());
                 ExtractorUtils.addCustomClassworlds(env, classworldsConfPath);
                 env.put("classworlds.conf", classworldsConfPath);
+                AbstractBuild<?, ?> rootBuild = ActionableHelper.getRootBuild(build);
+                if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
+                    String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(rootBuild);
+                    env.put(ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY, identifier);
+                }
             }
 
             @Override

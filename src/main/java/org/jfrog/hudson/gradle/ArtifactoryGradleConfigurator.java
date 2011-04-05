@@ -29,6 +29,8 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.ArtifactoryResolutionProperties;
+import org.jfrog.build.client.ClientProperties;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
@@ -306,6 +308,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
+                AbstractBuild<?, ?> rootBuild = ActionableHelper.getRootBuild(build);
+                if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
+                    String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(rootBuild);
+                    env.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX +
+                            ArtifactoryResolutionProperties.ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, identifier);
+                }
             }
 
             @Override
@@ -325,11 +333,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     if (isDeployBuildInfo()) {
                         build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
                     }
-                    if (isPassIdentifiedDownstream()) {
-                        BuildUniqueIdentifierHelper
-                                .addUniqueIdentifierToChildProjects(build, build.getEnvironment(listener));
-                    }
-                    BuildUniqueIdentifierHelper.removeUniqueIdentifierFromProject(build);
                     success = true;
                 }
                 return success && releaseSuccess;
