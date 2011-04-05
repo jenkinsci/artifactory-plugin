@@ -147,7 +147,7 @@ public class ArtifactsDeployer {
             BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder,
                     mavenModuleSetBuild.getEnvironment(listener));
         }
-        AbstractBuild<?, ?> rootBuild = ActionableHelper.getRootBuild(mavenModuleSetBuild);
+        AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(mavenModuleSetBuild);
         if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
             BuildUniqueIdentifierHelper.addUpstreamIdentifier(builder, rootBuild);
         }

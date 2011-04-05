@@ -308,7 +308,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-                AbstractBuild<?, ?> rootBuild = ActionableHelper.getRootBuild(build);
+                AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(build);
                 if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
                     String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(rootBuild);
                     env.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX +

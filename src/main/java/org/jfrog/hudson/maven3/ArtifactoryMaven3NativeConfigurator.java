@@ -123,7 +123,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 env.put(ClientProperties.PROP_RESOLVE_PASSWORD, preferredResolver.getPassword());
                 ExtractorUtils.addCustomClassworlds(env, classworldsConfPath);
                 env.put("classworlds.conf", classworldsConfPath);
-                AbstractBuild<?, ?> rootBuild = ActionableHelper.getRootBuild(build);
+                AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(build);
                 if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
                     String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(rootBuild);
                     env.put(ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY, identifier);

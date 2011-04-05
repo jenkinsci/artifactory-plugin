@@ -4,6 +4,9 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildableItemWithBuildWrappers;
+import hudson.model.Cause;
+import hudson.model.Hudson;
+import hudson.model.TopLevelItem;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
@@ -52,6 +55,61 @@ public class BuildUniqueIdentifierHelper {
         if (StringUtils.isNotBlank(identifier)) {
             builder.addProperty(ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, identifier);
         }
+    }
+
+    /**
+     * Get the root build which triggered the current build. The build root is considered to be the one furthest one
+     * away from the current build which has the isPassIdentifiedDownstream active
+     *
+     * @param currentBuild The current build.
+     * @return The root build with isPassIdentifiedDownstream active.
+     */
+    public static AbstractBuild<?, ?> getRootBuild(AbstractBuild<?, ?> currentBuild) {
+        AbstractBuild<?, ?> rootBuild = null;
+        while (ActionableHelper.getUpstreamCause(currentBuild) != null) {
+            Cause.UpstreamCause cause = ActionableHelper.getUpstreamCause(currentBuild);
+            AbstractProject<?, ?> project = getProject(cause.getUpstreamProject());
+            if (project == null) {
+                throw new RuntimeException("No project found answering for the name: " + cause.getUpstreamProject());
+            }
+            rootBuild = getBuildByNumber(project, cause.getUpstreamBuild());
+            if (rootBuild == null) {
+                throw new RuntimeException(
+                        "No build with name: " + project.getName() + " and number: " + cause.getUpstreamBuild());
+            }
+            if (isPassIdentifiedDownstream(rootBuild)) {
+                currentBuild = rootBuild;
+            }
+        }
+        if (rootBuild == null) {
+            return currentBuild;
+        }
+        return rootBuild;
+    }
+
+    /**
+     * Get a build according to the build's name (which is actually the project's name) and the build number.
+     *
+     * @param project     The project from which to get the build's name.
+     * @param buildNumber The build number.
+     * @return The build which answers for the name and number.
+     */
+    private static AbstractBuild<?, ?> getBuildByNumber(AbstractProject<?, ?> project, int buildNumber) {
+        return project.getBuildByNumber(buildNumber);
+    }
+
+    /**
+     * Get a project according to its name.
+     *
+     * @param name The name of the project.
+     * @return The project which answers the name.
+     */
+    private static AbstractProject<?, ?> getProject(String name) {
+        TopLevelItem item = Hudson.getInstance().getItem(name);
+        if (item != null && item instanceof AbstractProject) {
+            return (AbstractProject<?, ?>) item;
+        }
+        return null;
     }
 
     /**
