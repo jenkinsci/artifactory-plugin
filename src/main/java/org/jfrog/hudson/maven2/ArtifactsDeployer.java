@@ -199,11 +199,12 @@ public class ArtifactsDeployer {
      * Obtains the {@link java.io.File} representing the archived artifact.
      */
     private File getArtifactFile(MavenBuild build, MavenArtifact mavenArtifact) throws IOException {
+        String fileName = mavenArtifact.fileName;
         if (isArchiveJenkinsVersion) {
-            return mavenArtifact.getFile(build);
+            fileName = mavenArtifact.canonicalName;
         }
         File file = new File(new File(new File(new File(build.getArtifactsDir(), mavenArtifact.groupId),
-                mavenArtifact.artifactId), mavenArtifact.version), mavenArtifact.fileName);
+                mavenArtifact.artifactId), mavenArtifact.version), fileName);
         if (!file.exists()) {
             throw new FileNotFoundException("Archived artifact is missing: " + file);
         }
