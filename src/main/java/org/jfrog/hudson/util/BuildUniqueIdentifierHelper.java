@@ -3,14 +3,7 @@ package org.jfrog.hudson.util;
 import com.google.common.collect.Lists;
 import hudson.Util;
 import hudson.maven.MavenModuleSetBuild;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.DependencyGraph;
-import hudson.model.Hudson;
-import hudson.model.ParameterDefinition;
-import hudson.model.ParametersDefinitionProperty;
-import hudson.model.StringParameterDefinition;
-import hudson.model.StringParameterValue;
+import hudson.model.*;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.ArtifactoryResolutionProperties;
 import org.jfrog.build.client.DeployDetails;
@@ -21,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.jfrog.build.api.ArtifactoryResolutionProperties.ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY;
-import static org.jfrog.build.api.ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY;
 
 /**
  * Utility class to help extracting and assembling parameters for the a unique build identifier.
@@ -30,6 +22,8 @@ import static org.jfrog.build.api.ArtifactoryResolutionProperties.ARTIFACT_BUILD
  */
 public class BuildUniqueIdentifierHelper {
     private static final String BUILD_ID_PROPERTY = "${JOB_NAME}-${BUILD_NUMBER}";
+    private static final String UNIQUE_ARTIFACT_BUILD_ROOT_KEY =
+            ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY + "-" + "${JOB_NAME}-${BUILD_NUMBER}";
 
     private BuildUniqueIdentifierHelper() {
     }
@@ -68,12 +62,13 @@ public class BuildUniqueIdentifierHelper {
      * @return The build's unique identifier with {@link ArtifactoryResolutionProperties#ARTIFACT_BUILD_ROOT_KEY} as its
      *         key
      */
-    public static String getUpstreamIdentifier(AbstractBuild<?, ?> build) {
+    private static String getUpstreamIdentifier(AbstractBuild<?, ?> build) {
         ParametersDefinitionProperty definitionProperty =
                 build.getProject().getProperty(ParametersDefinitionProperty.class);
         if (definitionProperty != null) {
+            Cause.UpstreamCause upstreamCause = ActionableHelper.getUpstreamCause(build);
             ParameterDefinition parameterDefinition =
-                    definitionProperty.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
+                    definitionProperty.getParameterDefinition(getUniqueIdentifierForUpstreamBuild(upstreamCause));
             if (parameterDefinition != null) {
                 StringParameterValue value = (StringParameterValue) parameterDefinition.getDefaultParameterValue();
                 return value.value;
@@ -93,8 +88,9 @@ public class BuildUniqueIdentifierHelper {
         AbstractProject<?, ?> project = build.getProject();
         ParametersDefinitionProperty property = project.getProperty(ParametersDefinitionProperty.class);
         if (property != null) {
+            Cause.UpstreamCause upstreamCause = ActionableHelper.getUpstreamCause(build);
             ParameterDefinition definition =
-                    property.getParameterDefinition(ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY);
+                    property.getParameterDefinition(getUniqueIdentifierForUpstreamBuild(upstreamCause));
             if (definition != null) {
                 List<ParameterDefinition> newDefinitions = Lists.newArrayList(property.getParameterDefinitions());
                 newDefinitions.remove(definition);
@@ -134,7 +130,7 @@ public class BuildUniqueIdentifierHelper {
      * @param childProject The child build
      * @param env          The environment used for interpolation of the unique identifier
      */
-    public static void addDownstreamUniqueIdentifier(AbstractBuild<?, ?> currentBuild,
+    private static void addDownstreamUniqueIdentifier(AbstractBuild<?, ?> currentBuild,
             AbstractProject<?, ?> childProject, Map<String, String> env) throws IOException {
         // if the current project is not the root project, simply pull the property from the upstream projects
         // with the ID to pass it downwards
@@ -142,12 +138,14 @@ public class BuildUniqueIdentifierHelper {
             ParametersDefinitionProperty jobProperty =
                     currentBuild.getProject().getProperty(ParametersDefinitionProperty.class);
             if (jobProperty != null) {
-                ParameterDefinition parameterDefinition = jobProperty.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
+                ParameterDefinition parameterDefinition =
+                        jobProperty.getParameterDefinition(UNIQUE_ARTIFACT_BUILD_ROOT_KEY);
                 if (parameterDefinition != null) {
                     ParametersDefinitionProperty property =
                             childProject.getProperty(ParametersDefinitionProperty.class);
                     if (property != null) {
-                        ParameterDefinition childDefinition = property.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
+                        ParameterDefinition childDefinition =
+                                property.getParameterDefinition(UNIQUE_ARTIFACT_BUILD_ROOT_KEY);
                         if (parameterDefinition instanceof StringParameterDefinition) {
                             String value =
                                     ((StringParameterDefinition) parameterDefinition).getDefaultParameterValue().value;
@@ -158,7 +156,7 @@ public class BuildUniqueIdentifierHelper {
                             String value =
                                     ((StringParameterDefinition) parameterDefinition).getDefaultParameterValue().value;
                             StringParameterDefinition newDefinition =
-                                    new StringParameterDefinition(ARTIFACT_BUILD_ROOT_KEY, value);
+                                    new StringParameterDefinition(UNIQUE_ARTIFACT_BUILD_ROOT_KEY, value);
                             childProject.addProperty(new ParametersDefinitionProperty(newDefinition));
                         }
                     }
@@ -167,23 +165,23 @@ public class BuildUniqueIdentifierHelper {
             // if it is the root project, add it as the unique identifier.
         } else {
             String downstreamBuild = Util.replaceMacro(BUILD_ID_PROPERTY, env);
+            String downstreamReleaseKey = Util.replaceMacro(UNIQUE_ARTIFACT_BUILD_ROOT_KEY, env);
             ParametersDefinitionProperty property = childProject.getProperty(ParametersDefinitionProperty.class);
             if (property != null) {
-                ParameterDefinition definition = property.getParameterDefinition(ARTIFACT_BUILD_ROOT_KEY);
+                ParameterDefinition definition = property.getParameterDefinition(downstreamReleaseKey);
                 if (definition == null) {
                     childProject.removeProperty(property);
                     List<ParameterDefinition> definitions = Lists.newArrayList(property.getParameterDefinitions());
-                    definitions.add(new StringParameterDefinition(ARTIFACT_BUILD_ROOT_KEY, downstreamBuild));
+                    definitions.add(new StringParameterDefinition(downstreamReleaseKey, downstreamBuild));
                     childProject.addProperty(new ParametersDefinitionProperty(definitions));
                 } else if (definition instanceof StringParameterDefinition) {
                     ((StringParameterDefinition) definition).setDefaultValue(downstreamBuild);
                 }
             } else {
                 StringParameterDefinition definition =
-                        new StringParameterDefinition(ARTIFACT_BUILD_ROOT_KEY, downstreamBuild);
+                        new StringParameterDefinition(downstreamReleaseKey, downstreamBuild);
                 childProject.addProperty(new ParametersDefinitionProperty(definition));
             }
-
         }
     }
 
@@ -192,5 +190,22 @@ public class BuildUniqueIdentifierHelper {
      */
     public static String getUniqueBuildIdentifier(Map<String, String> env) {
         return Util.replaceMacro(BUILD_ID_PROPERTY, env);
+    }
+
+    /**
+     * Get the unique identifier for the upstream build which tirggered the current build according to its upstream
+     * cause. if there is no such cause, an {@link StringUtils#EMPTY} is returned.
+     *
+     * @param cause The upstream build cause of the current build, may be null.
+     * @return The unique identifier of the upstream build, which is composed of: {@link
+     *         ArtifactoryResolutionProperties#ARTIFACT_BUILD_ROOT_KEY}-{@link hudson.model.Cause.UpstreamCause#upstreamProject}-{@link
+     *         hudson.model.Cause.UpstreamCause#upstreamBuild}
+     */
+    private static String getUniqueIdentifierForUpstreamBuild(Cause.UpstreamCause cause) {
+        if (cause == null) {
+            return StringUtils.EMPTY;
+        }
+        return ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY + "-" + cause.getUpstreamProject() +
+                "-" + cause.getUpstreamBuild();
     }
 }
