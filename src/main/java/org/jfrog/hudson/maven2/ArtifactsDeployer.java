@@ -24,7 +24,9 @@ import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
+import hudson.model.Hudson;
 import hudson.model.Result;
+import hudson.util.VersionNumber;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.jfrog.build.api.BuildInfoProperties;
@@ -52,6 +54,7 @@ import java.util.logging.Logger;
  */
 public class ArtifactsDeployer {
     private static Logger debuggingLogger = Logger.getLogger(ArtifactsDeployer.class.getName());
+    private static final String HIGHEST_VERSION_BEFORE_ARCHIVE_FIX = "1.404";
 
     private final ArtifactoryServer artifactoryServer;
     private final String targetReleasesRepository;
@@ -61,6 +64,7 @@ public class ArtifactsDeployer {
     private final BuildListener listener;
     private final IncludeExcludePatterns patterns;
     private final boolean downstreamIdentifier;
+    private final boolean isArchiveJenkinsVersion;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
             MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) {
@@ -80,6 +84,8 @@ public class ArtifactsDeployer {
         } else {
             this.patterns = IncludeExcludePatterns.EMPTY;
         }
+        this.isArchiveJenkinsVersion = Hudson.getVersion().isNewerThan(new VersionNumber(
+                HIGHEST_VERSION_BEFORE_ARCHIVE_FIX));
     }
 
     public void deploy() throws IOException, InterruptedException {
@@ -116,7 +122,7 @@ public class ArtifactsDeployer {
         }
     }
 
-    private String artifactToString(MavenArtifact mavenArtifact, MavenBuild mavenBuild) throws FileNotFoundException {
+    private String artifactToString(MavenArtifact mavenArtifact, MavenBuild mavenBuild) throws IOException {
         return new StringBuilder().append(ToStringBuilder.reflectionToString(mavenArtifact))
                 .append("[File: ").append(getArtifactFile(mavenBuild, mavenArtifact)).append("]")
                 .toString();
@@ -192,7 +198,10 @@ public class ArtifactsDeployer {
     /**
      * Obtains the {@link java.io.File} representing the archived artifact.
      */
-    private File getArtifactFile(MavenBuild build, MavenArtifact mavenArtifact) throws FileNotFoundException {
+    private File getArtifactFile(MavenBuild build, MavenArtifact mavenArtifact) throws IOException {
+        if (isArchiveJenkinsVersion) {
+            return mavenArtifact.getFile(build);
+        }
         File file = new File(new File(new File(new File(build.getArtifactsDir(), mavenArtifact.groupId),
                 mavenArtifact.artifactId), mavenArtifact.version), mavenArtifact.fileName);
         if (!file.exists()) {
