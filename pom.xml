@@ -14,7 +14,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jvnet.hudson.plugins</groupId>
@@ -117,7 +118,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-gradle</artifactId>
-            <version>1.1.1</version>
+            <version>1.1.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.ant</groupId>
@@ -174,19 +175,20 @@
 
     <build>
         <plugins>
-          <plugin>
-            <artifactId>maven-release-plugin</artifactId>
-            <configuration>
-              <goals>deploy</goals>
-            </configuration>
-          </plugin>
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <goals>deploy</goals>
+                </configuration>
+            </plugin>
         </plugins>
-      </build>
+    </build>
 
     <scm>
-      <connection>scm:git:git://github.com/jenkinsci/artifactory-plugin.git</connection>
-      <developerConnection>scm:git:git@github.com:jenkinsci/artifactory-plugin.git</developerConnection>
-  </scm>
+        <connection>scm:git:ssh://github.com/jenkinsci/artifactory-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/jenkinsci/artifactory-plugin.git</developerConnection>
+        <url>https://github.com/jenkinsci/artifactory-plugin</url>
+    </scm>
 
     <profiles>
         <profile>
@@ -207,11 +209,11 @@
         </profile>
     </profiles>
 
-<distributionManagement>
-    <repository>
-      <id>maven.jenkins-ci.org</id>
-      <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
-    </repository>
-  </distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>maven.jenkins-ci.org</id>
+            <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
+        </repository>
+    </distributionManagement>
 
 </project>
