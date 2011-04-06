@@ -23,7 +23,9 @@ import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
+import hudson.model.Hudson;
 import hudson.model.Result;
+import hudson.util.VersionNumber;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
@@ -46,6 +48,7 @@ import java.util.Map;
  * @author Yossi Shaul
  */
 public class ArtifactsDeployer {
+    private static final String HIGHEST_VERSION_BEFORE_ARCHIVE_FIX = "1.404";
 
     private final ArtifactoryServer artifactoryServer;
     private final String targetReleasesRepository;
@@ -54,6 +57,7 @@ public class ArtifactsDeployer {
     private final MavenModuleSetBuild mavenModuleSetBuild;
     private final BuildListener listener;
     private final IncludeExcludePatterns patterns;
+    private final boolean isArchiveJenkinsVersion;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
             MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) {
@@ -69,6 +73,8 @@ public class ArtifactsDeployer {
         } else {
             this.patterns = IncludeExcludePatterns.EMPTY;
         }
+        this.isArchiveJenkinsVersion = Hudson.getVersion().isNewerThan(new VersionNumber(
+                HIGHEST_VERSION_BEFORE_ARCHIVE_FIX));
     }
 
     public void deploy() throws IOException, InterruptedException {
@@ -165,8 +171,12 @@ public class ArtifactsDeployer {
      * Obtains the {@link java.io.File} representing the archived artifact.
      */
     private File getArtifactFile(MavenBuild build, MavenArtifact mavenArtifact) throws FileNotFoundException {
+        String fileName = mavenArtifact.fileName;
+        if (isArchiveJenkinsVersion) {
+            fileName = mavenArtifact.canonicalName;
+        }
         File file = new File(new File(new File(new File(build.getArtifactsDir(), mavenArtifact.groupId),
-                mavenArtifact.artifactId), mavenArtifact.version), mavenArtifact.fileName);
+                mavenArtifact.artifactId), mavenArtifact.version), fileName);
         if (!file.exists()) {
             throw new FileNotFoundException("Archived artifact is missing: " + file);
         }

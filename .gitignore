@@ -4,4 +4,6 @@ build
 .project
 .classpath
 *.iml
-
+*.ipr
+*.iws
+work
