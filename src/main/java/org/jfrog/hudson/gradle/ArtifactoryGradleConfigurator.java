@@ -30,8 +30,7 @@ import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.ArtifactoryPluginUtils;
-import org.jfrog.build.api.ArtifactoryResolutionProperties;
-import org.jfrog.build.client.ClientProperties;
+import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
@@ -305,15 +304,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 context.setDeployIvy(isDeployIvy());
                 context.setDeployMaven(isDeployMaven());
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
+                    ArtifactoryClientConfiguration configuration =
+                            ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
-                }
-                AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(build);
-                if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
-                    String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(rootBuild);
-                    env.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX +
-                            ArtifactoryResolutionProperties.ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, identifier);
                 }
             }
 

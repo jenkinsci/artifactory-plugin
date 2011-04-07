@@ -18,14 +18,13 @@ import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.ArtifactoryResolutionProperties;
-import org.jfrog.build.client.ClientProperties;
+import org.jfrog.build.api.util.NullLog;
+import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
@@ -117,17 +116,15 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 final ArtifactoryServer artifactoryServer = getArtifactoryServer();
                 Credentials preferredResolver = CredentialResolver
                         .getPreferredResolver(ArtifactoryMaven3NativeConfigurator.this, artifactoryServer);
-                env.put(ClientProperties.PROP_CONTEXT_URL, artifactoryServer.getUrl());
-                env.put(ClientProperties.PROP_RESOLVE_REPOKEY, getDownloadRepositoryKey());
-                env.put(ClientProperties.PROP_RESOLVE_USERNAME, preferredResolver.getUsername());
-                env.put(ClientProperties.PROP_RESOLVE_PASSWORD, preferredResolver.getPassword());
+
+                ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
+                configuration.setContextUrl(artifactoryServer.getUrl());
+                configuration.resolver.setRepoKey(getDownloadRepositoryKey());
+                configuration.resolver.setUserName(preferredResolver.getUsername());
+                configuration.resolver.setPassword(preferredResolver.getPassword());
+                ExtractorUtils.addBuildRootIfNeeded(build, configuration);
+                env.putAll(configuration.getAllProperties());
                 ExtractorUtils.addCustomClassworlds(env, classworldsConfPath);
-                env.put("classworlds.conf", classworldsConfPath);
-                AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(build);
-                if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
-                    String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(rootBuild);
-                    env.put(ArtifactoryResolutionProperties.ARTIFACT_BUILD_ROOT_KEY, identifier);
-                }
             }
 
             @Override

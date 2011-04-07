@@ -29,7 +29,7 @@ import hudson.model.Result;
 import hudson.util.VersionNumber;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ToStringBuilder;
-import org.jfrog.build.api.BuildInfoProperties;
+import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.build.client.IncludeExcludePatterns;
@@ -165,7 +165,7 @@ public class ArtifactsDeployer {
         }
         String revision = mavenModuleSetBuild.getEnvironment(listener).get("SVN_REVISION");
         if (StringUtils.isNotBlank(revision)) {
-            builder.addProperty(BuildInfoProperties.PROP_VCS_REVISION, revision);
+            builder.addProperty(BuildInfoFields.VCS_REVISION, revision);
         }
         DeployDetails deployDetails = builder.build();
         logDeploymentPath(deployDetails, artifactPath);

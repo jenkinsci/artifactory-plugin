@@ -8,6 +8,7 @@ import hudson.model.Cause;
 import hudson.model.Hudson;
 import hudson.model.TopLevelItem;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -15,7 +16,6 @@ import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
 
 import java.util.Map;
 
-import static org.jfrog.build.api.ArtifactoryResolutionProperties.ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY;
 
 /**
  * Utility class to help extracting and assembling parameters for the a unique build identifier.
@@ -40,7 +40,7 @@ public class BuildUniqueIdentifierHelper {
      */
     public static void addUniqueBuildIdentifier(DeployDetails.Builder builder, Map<String, String> env) {
         String identifier = getUniqueBuildIdentifier(env);
-        builder.addProperty(ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, identifier);
+        builder.addProperty(BuildInfoFields.BUILD_ROOT, identifier);
     }
 
     /**
@@ -53,7 +53,7 @@ public class BuildUniqueIdentifierHelper {
     public static void addUpstreamIdentifier(DeployDetails.Builder builder, AbstractBuild<?, ?> build) {
         String identifier = getUpstreamIdentifier(build);
         if (StringUtils.isNotBlank(identifier)) {
-            builder.addProperty(ARTIFACTORY_BUILD_ROOT_MATRIX_PARAM_KEY, identifier);
+            builder.addProperty(BuildInfoFields.BUILD_ROOT, identifier);
         }
     }
 
