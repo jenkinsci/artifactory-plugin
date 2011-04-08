@@ -248,7 +248,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                         artifactoryServer);
                 env.put(ClientProperties.PROP_PUBLISH_USERNAME, preferredDeployer.getUsername());
                 env.put(ClientProperties.PROP_PUBLISH_PASSWORD, preferredDeployer.getPassword());
-                env.put(BuildInfoProperties.PROP_AGENT_NAME, "Hudson");
+                env.put(BuildInfoProperties.PROP_AGENT_NAME, "Jenkins");
                 env.put(BuildInfoProperties.PROP_AGENT_VERSION, build.getHudsonVersion());
                 env.put(BuildInfoProperties.PROP_BUILD_NUMBER, build.getNumber() + "");
                 env.put(BuildInfoProperties.PROP_BUILD_NAME, build.getProject().getName());

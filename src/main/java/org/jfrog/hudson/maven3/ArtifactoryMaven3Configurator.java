@@ -335,7 +335,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         props.put(BuildInfoProperties.PROP_PRINCIPAL, userName);
 
-        props.put(BuildInfoProperties.PROP_AGENT_NAME, "Hudson");
+        props.put(BuildInfoProperties.PROP_AGENT_NAME, "Jenkins");
         props.put(BuildInfoProperties.PROP_AGENT_VERSION, build.getHudsonVersion());
 
         props.put(ClientProperties.PROP_CONTEXT_URL, selectedArtifactoryServer.getUrl());

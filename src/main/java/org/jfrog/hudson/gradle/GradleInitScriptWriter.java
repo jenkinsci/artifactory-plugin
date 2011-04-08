@@ -179,7 +179,7 @@ public class GradleInitScriptWriter {
         if (StringUtils.isNotBlank(svnRevision)) {
             ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_VCS_REVISION, svnRevision);
         }
-        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_AGENT_NAME, "Hudson");
+        ArtifactoryPluginUtils.addProperty(stringBuilder, BuildInfoProperties.PROP_AGENT_NAME, "Jenkins");
         ArtifactoryPluginUtils
                 .addProperty(stringBuilder, BuildInfoProperties.PROP_AGENT_VERSION, build.getHudsonVersion());
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
