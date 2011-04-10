@@ -202,6 +202,13 @@ public class ExtractorUtils {
             configuration.publisher.addMatrixParam(BuildInfoFields.VCS_REVISION, vcsRevision);
         }
 
+        if (StringUtils.isNotBlank(context.getArtifactsPattern())) {
+            configuration.publisher.setIvyArtifactPattern(context.getArtifactsPattern());
+        }
+        if (StringUtils.isNotBlank(context.getIvyPattern())) {
+            configuration.publisher.setIvyPattern(context.getIvyPattern());
+        }
+
         String buildUrl = ActionableHelper.getBuildUrl(build);
         if (StringUtils.isNotBlank(buildUrl)) {
             configuration.info.setBuildUrl(buildUrl);
