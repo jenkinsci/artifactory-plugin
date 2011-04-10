@@ -25,6 +25,8 @@ public class BuildContext {
     private boolean evenIfUnstable;
     private boolean deployMaven;
     private boolean deployIvy;
+    private String artifactsPattern = "";
+    private String ivyPattern = "";
 
     public BuildContext(ServerDetails details, DeployerOverrider deployerOverrider, boolean runChecks,
             boolean includePublishArtifacts, String violationRecipients, String scopes, boolean licenseAutoDiscovery,
@@ -42,6 +44,22 @@ public class BuildContext {
         this.includesExcludes = includesExcludes;
         this.skipBuildInfoDeploy = skipBuildInfoDeploy;
         this.includeEnvVars = includeEnvVars;
+    }
+
+    public String getArtifactsPattern() {
+        return artifactsPattern;
+    }
+
+    public void setArtifactsPattern(String artifactsPattern) {
+        this.artifactsPattern = artifactsPattern;
+    }
+
+    public String getIvyPattern() {
+        return ivyPattern;
+    }
+
+    public void setIvyPattern(String ivyPattern) {
+        this.ivyPattern = ivyPattern;
     }
 
     public ServerDetails getDetails() {

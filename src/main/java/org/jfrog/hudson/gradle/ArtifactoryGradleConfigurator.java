@@ -30,7 +30,6 @@ import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.ArtifactoryPluginUtils;
-import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
@@ -43,7 +42,6 @@ import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
 import org.jfrog.hudson.util.BuildContext;
-import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
@@ -301,11 +299,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                         isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
                         getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars());
+                context.setArtifactsPattern(getArtifactPattern());
+                context.setIvyPattern(getIvyPattern());
                 context.setDeployIvy(isDeployIvy());
                 context.setDeployMaven(isDeployMaven());
                 try {
-                    ArtifactoryClientConfiguration configuration =
-                            ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
