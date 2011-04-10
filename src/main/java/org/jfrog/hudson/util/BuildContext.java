@@ -1,5 +1,6 @@
 package org.jfrog.hudson.util;
 
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 
@@ -47,7 +48,7 @@ public class BuildContext {
     }
 
     public String getArtifactsPattern() {
-        return artifactsPattern;
+        return getCleanString(artifactsPattern);
     }
 
     public void setArtifactsPattern(String artifactsPattern) {
@@ -55,7 +56,7 @@ public class BuildContext {
     }
 
     public String getIvyPattern() {
-        return ivyPattern;
+        return getCleanString(ivyPattern);
     }
 
     public void setIvyPattern(String ivyPattern) {
@@ -136,5 +137,9 @@ public class BuildContext {
 
     public void setEvenIfUnstable(boolean evenIfUnstable) {
         this.evenIfUnstable = evenIfUnstable;
+    }
+
+    private String getCleanString(String stringToClean) {
+        return StringUtils.removeEnd(StringUtils.removeStart(stringToClean, "\""), "\"");
     }
 }
