@@ -328,7 +328,7 @@ public class ExtractorUtils {
 
         // add build variables
         Map<String, String> buildVariables = build.getBuildVariables();
-        configuration.publisher.addMatrixParams(buildVariables);
+        configuration.fillFromProperties(buildVariables);
         Map<String, String> filteredBuildVars = Maps.newHashMap();
 
         MapDifference<String, String> buildVarDifference = Maps.difference(buildVariables, filteredBuildVars);
