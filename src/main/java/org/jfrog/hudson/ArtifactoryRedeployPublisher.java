@@ -29,6 +29,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
 import hudson.model.Hudson;
 import hudson.model.Result;
@@ -40,6 +41,7 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.BuildInfoDeployer;
@@ -226,6 +228,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
+        if (isExtractorUsed(build)) {
+            return true;
+        }
+
         if (!(build instanceof MavenModuleSetBuild)) {
             listener.getLogger().format("Non maven build type: %s", build.getClass()).println();
             build.setResult(Result.FAILURE);
@@ -278,6 +284,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 return "org.jvnet.hudson.plugins.m2release.ReleaseCause".equals(input.getClass().getName());
             }
         });
+    }
+
+    private boolean isExtractorUsed(AbstractBuild build) {
+        BuildableItemWithBuildWrappers project = (BuildableItemWithBuildWrappers) build.getProject();
+        return ActionableHelper.getBuildWrapper(project, Maven3ExtractorWrapper.class) != null;
     }
 
 
