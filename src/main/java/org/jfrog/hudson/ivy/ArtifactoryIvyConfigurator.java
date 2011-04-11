@@ -226,7 +226,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyConfigurator.this,
                 isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                 licenseAutoDiscovery, isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), isDeployBuildInfo(), isIncludeEnvVars());
+                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars());
         return new AntIvyBuilderEnvironment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
