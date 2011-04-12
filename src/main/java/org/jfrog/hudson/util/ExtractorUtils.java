@@ -268,6 +268,7 @@ public class ExtractorUtils {
                 if (rotator.getDaysToKeep() > -1) {
                     configuration.info.setBuildRetentionMinimumDate(String.valueOf(rotator.getDaysToKeep()));
                 }
+                configuration.info.setDeleteBuildArtifacts(context.isDiscardBuildArtifacts());
             }
         }
         configuration.publisher.setPublishArtifacts(context.isDeployArtifacts());

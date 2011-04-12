@@ -19,6 +19,7 @@ public class BuildContext {
     private final String scopes;
     private final boolean licenseAutoDiscovery;
     private final boolean discardOldBuilds;
+    private final boolean discardBuildArtifacts;
     private final boolean deployArtifacts;
     private final IncludesExcludes includesExcludes;
     private final boolean skipBuildInfoDeploy;
@@ -32,7 +33,7 @@ public class BuildContext {
     public BuildContext(ServerDetails details, DeployerOverrider deployerOverrider, boolean runChecks,
             boolean includePublishArtifacts, String violationRecipients, String scopes, boolean licenseAutoDiscovery,
             boolean discardOldBuilds, boolean deployArtifacts, IncludesExcludes includesExcludes,
-            boolean skipBuildInfoDeploy, boolean includeEnvVars) {
+            boolean skipBuildInfoDeploy, boolean includeEnvVars, boolean discardBuildArtifacts) {
         this.details = details;
         this.deployerOverrider = deployerOverrider;
         this.runChecks = runChecks;
@@ -45,6 +46,7 @@ public class BuildContext {
         this.includesExcludes = includesExcludes;
         this.skipBuildInfoDeploy = skipBuildInfoDeploy;
         this.includeEnvVars = includeEnvVars;
+        this.discardBuildArtifacts = discardBuildArtifacts;
     }
 
     public String getArtifactsPattern() {
@@ -57,6 +59,10 @@ public class BuildContext {
 
     public String getIvyPattern() {
         return getCleanString(ivyPattern);
+    }
+
+    public boolean isDiscardBuildArtifacts() {
+        return discardBuildArtifacts;
     }
 
     public void setIvyPattern(String ivyPattern) {

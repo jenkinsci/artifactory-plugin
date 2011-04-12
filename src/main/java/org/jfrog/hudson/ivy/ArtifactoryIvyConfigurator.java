@@ -73,6 +73,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private boolean licenseAutoDiscovery;
     private boolean disableLicenseAutoDiscovery;
     private boolean discardOldBuilds;
+    private final boolean discardBuildArtifacts;
     private boolean notM2Compatible;
     private String ivyPattern;
     private String artifactPattern;
@@ -82,7 +83,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
             boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
             String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
-            String artifactPattern, boolean discardOldBuilds) {
+            String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -98,6 +99,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.ivyPattern = ivyPattern;
         this.artifactPattern = artifactPattern;
         this.discardOldBuilds = discardOldBuilds;
+        this.discardBuildArtifacts = discardBuildArtifacts;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
@@ -115,6 +117,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     public boolean isNotM2Compatible() {
         return notM2Compatible;
+    }
+
+    public boolean isDiscardBuildArtifacts() {
+        return discardBuildArtifacts;
     }
 
     public void setNotM2Compatible(boolean notM2Compatible) {
@@ -226,7 +232,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyConfigurator.this,
                 isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                 licenseAutoDiscovery, isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars());
+                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts());
         return new AntIvyBuilderEnvironment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {

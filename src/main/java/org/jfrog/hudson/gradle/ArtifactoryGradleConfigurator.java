@@ -88,6 +88,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean discardOldBuilds;
     private final boolean passIdentifiedDownstream;
     private final GradleReleaseWrapper releaseWrapper;
+    private final boolean discardBuildArtifacts;
 
 
     @DataBoundConstructor
@@ -96,7 +97,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-            boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper) {
+            boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
+            boolean discardBuildArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -117,6 +119,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.discardOldBuilds = discardOldBuilds;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.releaseWrapper = releaseWrapper;
+        this.discardBuildArtifacts = discardBuildArtifacts;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
@@ -130,6 +133,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public boolean isPassIdentifiedDownstream() {
         return passIdentifiedDownstream;
+    }
+
+    public boolean isDiscardBuildArtifacts() {
+        return discardBuildArtifacts;
     }
 
     public boolean isDiscardOldBuilds() {
@@ -298,7 +305,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 final BuildContext context = new BuildContext(serverDetails, ArtifactoryGradleConfigurator.this,
                         isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                         isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                        getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars());
+                        getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(),
+                        isDiscardBuildArtifacts());
                 context.setArtifactsPattern(getArtifactPattern());
                 context.setIvyPattern(getIvyPattern());
                 context.setDeployIvy(isDeployIvy());

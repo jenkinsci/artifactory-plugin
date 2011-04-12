@@ -19,7 +19,7 @@ public class BuildRetentionFactory {
      * @return a new Build retention
      */
     public static BuildRetention createBuildRetention(AbstractBuild build) {
-        BuildRetention buildRetention = new BuildRetention();
+        BuildRetention buildRetention = new BuildRetention(true);
         LogRotator rotator = build.getProject().getLogRotator();
         if (rotator == null) {
             return buildRetention;

@@ -66,7 +66,7 @@ public class Maven3ExtractorWrapper extends BuildWrapper {
                 publisher.isIncludePublishArtifacts(), publisher.getViolationRecipients(), publisher.getScopes(),
                 publisher.isLicenseAutoDiscovery(), publisher.isDiscardOldBuilds(), !publisher.isDeployArtifacts(),
                 publisher.getArtifactDeploymentPatterns(), publisher.isSkipBuildInfoDeploy(),
-                publisher.isIncludeEnvVars());
+                publisher.isIncludeEnvVars(), publisher.isDiscardBuildArtifacts());
         context.setEvenIfUnstable(publisher.isEvenIfUnstable());
         final String originalMavenOpts = project.getMavenOpts();
         project.setMavenOpts(appendNewMavenOpts(project, build));

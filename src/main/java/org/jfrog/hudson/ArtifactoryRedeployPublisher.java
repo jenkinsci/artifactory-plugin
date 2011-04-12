@@ -98,6 +98,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean licenseAutoDiscovery;
     private final boolean disableLicenseAutoDiscovery;
     private final boolean discardOldBuilds;
+    private final boolean discardBuildArtifacts;
 
 
     @DataBoundConstructor
@@ -105,7 +106,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
             boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
             String violationRecipients, boolean includePublishArtifacts, String scopes,
-            boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream) {
+            boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
+            boolean discardBuildArtifacts) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -119,6 +121,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.discardOldBuilds = discardOldBuilds;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
+        this.discardBuildArtifacts = discardBuildArtifacts;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
     }
@@ -140,6 +143,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isDiscardOldBuilds() {
         return discardOldBuilds;
+    }
+
+    public boolean isDiscardBuildArtifacts() {
+        return discardBuildArtifacts;
     }
 
     public boolean isPassIdentifiedDownstream() {

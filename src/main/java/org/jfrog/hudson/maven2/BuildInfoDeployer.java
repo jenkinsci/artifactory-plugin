@@ -164,7 +164,7 @@ public class BuildInfoDeployer {
         licenseControl.setIncludePublishedArtifacts(publisher.isIncludePublishArtifacts());
         licenseControl.setAutoDiscover(publisher.isLicenseAutoDiscovery());
         infoBuilder.licenseControl(licenseControl);
-        BuildRetention buildRetention = new BuildRetention();
+        BuildRetention buildRetention = new BuildRetention(publisher.isDiscardBuildArtifacts());
         if (publisher.isDiscardOldBuilds()) {
             buildRetention = BuildRetentionFactory.createBuildRetention(build);
         }

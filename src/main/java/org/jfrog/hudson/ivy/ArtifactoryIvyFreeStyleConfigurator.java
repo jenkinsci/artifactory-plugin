@@ -88,6 +88,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private final IncludesExcludes artifactDeploymentPatterns;
     private final boolean discardOldBuilds;
     private final boolean passIdentifiedDownstream;
+    private final boolean discardBuildArtifacts;
 
 
     @DataBoundConstructor
@@ -96,7 +97,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-            boolean discardOldBuilds, boolean passIdentifiedDownstream) {
+            boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployIvy = deployIvy;
@@ -116,6 +117,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.discardOldBuilds = discardOldBuilds;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
+        this.discardBuildArtifacts = discardBuildArtifacts;
     }
 
     public ServerDetails getDetails() {
@@ -124,6 +126,10 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     public boolean isPassIdentifiedDownstream() {
         return passIdentifiedDownstream;
+    }
+
+    public boolean isDiscardBuildArtifacts() {
+        return discardBuildArtifacts;
     }
 
     public boolean isDiscardOldBuilds() {
@@ -222,7 +228,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyFreeStyleConfigurator.this,
                 isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                 isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), isDeployBuildInfo(), isIncludeEnvVars());
+                getArtifactDeploymentPatterns(), isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts());
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);

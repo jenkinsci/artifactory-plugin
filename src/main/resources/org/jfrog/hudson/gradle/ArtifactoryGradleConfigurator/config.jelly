@@ -94,6 +94,11 @@
                                      title="Discard old builds from Artifactory (requires Artifactory Pro)"
                                      inline="true"
                                      help="/plugin/artifactory/help/common/help-discardBuilds.html">
+                        <f:entry field="discardBuildArtifacts"
+                                 help="/plugin/artifactory/help/common/help-discardBuildArtifacts.html">
+                            <f:checkbox default="true" checked="${instance.discardBuildArtifacts}"/>
+                            <label class="attach-previous">${%Discard build artifacts}</label>
+                        </f:entry>
                     </f:optionalBlock>
                 </f:optionalBlock>
             </table>
