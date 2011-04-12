@@ -52,6 +52,7 @@ import org.jfrog.hudson.MavenDependency;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildRetentionFactory;
+import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -134,7 +135,7 @@ public class BuildInfoDeployer {
         gatherSysPropInfo(infoBuilder);
         addBuildInfoVariables(infoBuilder);
         EnvVars envVars = build.getEnvironment(listener);
-        String revision = envVars.get("SVN_REVISION");
+        String revision = ExtractorUtils.getVcsRevision(envVars);
         if (StringUtils.isNotBlank(revision)) {
             infoBuilder.vcsRevision(revision);
         }

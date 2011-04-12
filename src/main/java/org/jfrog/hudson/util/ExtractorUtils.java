@@ -46,6 +46,21 @@ public class ExtractorUtils {
     }
 
     /**
+     * Get the VCS revision from the Jenkins build environment. The search will first be for an "SVN_REVISION" in the
+     * environment. If it is not found then a search will be for a "GIT_COMMIT".
+     *
+     * @param env Th Jenkins build environment.
+     * @return The subversion revision if found, or the git revision if found.
+     */
+    public static String getVcsRevision(Map<String, String> env) {
+        String revision = env.get("SVN_REVISION");
+        if (StringUtils.isBlank(revision)) {
+            revision = env.get("GIT_COMMIT");
+        }
+        return revision;
+    }
+
+    /**
      * Get the Maven home directory from where to execute Maven from. This is primarily used when running an external
      * Maven invocation outside of Jenkins, can will return a slave Maven home if Maven is on slave according to the
      * maven installation.
@@ -194,7 +209,7 @@ public class ExtractorUtils {
         configuration.info.setBuildTimestamp(String.valueOf(buildStartDate.getTime()));
         configuration.publisher.addMatrixParam("build.timestamp", String.valueOf(buildStartDate.getTime()));
 
-        String vcsRevision = env.get("SVN_REVISION");
+        String vcsRevision = getVcsRevision(env);
         if (StringUtils.isNotBlank(vcsRevision)) {
             configuration.info.setVcsRevision(vcsRevision);
             configuration.publisher.addMatrixParam(BuildInfoFields.VCS_REVISION, vcsRevision);

@@ -39,6 +39,7 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.IncludesExcludes;
 
 import java.io.File;
@@ -163,7 +164,7 @@ public class ArtifactsDeployer {
             builder.addProperty("build.parentName", parent.getUpstreamProject())
                     .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
         }
-        String revision = mavenModuleSetBuild.getEnvironment(listener).get("SVN_REVISION");
+        String revision = ExtractorUtils.getVcsRevision(mavenModuleSetBuild.getEnvironment(listener));
         if (StringUtils.isNotBlank(revision)) {
             builder.addProperty(BuildInfoFields.VCS_REVISION, revision);
         }
