@@ -205,7 +205,7 @@ public class ExtractorUtils {
         configuration.publisher.addMatrixParam("build.number", buildNumber);
 
         Date buildStartDate = build.getTimestamp().getTime();
-        configuration.info.setBuildStarted(String.valueOf(buildStartDate.getTime()));
+        configuration.info.setBuildStarted(buildStartDate.getTime());
         configuration.info.setBuildTimestamp(String.valueOf(buildStartDate.getTime()));
         configuration.publisher.addMatrixParam("build.timestamp", String.valueOf(buildStartDate.getTime()));
 
