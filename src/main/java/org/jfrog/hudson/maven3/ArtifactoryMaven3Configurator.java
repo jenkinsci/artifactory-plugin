@@ -19,39 +19,32 @@ package org.jfrog.hudson.maven3;
 import com.google.common.base.Predicate;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.common.io.Closeables;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.CauseAction;
 import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.tasks.LogRotator;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.Build;
-import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.client.ClientProperties;
-import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
@@ -60,10 +53,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.text.SimpleDateFormat;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -146,6 +136,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public boolean isDeployArtifacts() {
+        // TODO: ha?
         return !deployArtifacts;
     }
 
@@ -154,6 +145,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public boolean isDeployBuildInfo() {
+        // TODO: ha?
         return !deployBuildInfo;
     }
 
@@ -277,132 +269,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build,
             ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
 
-        Properties props = new Properties();
-
-        props.put(BuildInfoRecorder.ACTIVATE_RECORDER, Boolean.TRUE.toString());
-
-        String buildName = build.getProject().getDisplayName();
-        props.put(BuildInfoProperties.PROP_BUILD_NAME, buildName);
-        props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + "build.name", buildName);
-
-        String buildNumber = build.getNumber() + "";
-        props.put(BuildInfoProperties.PROP_BUILD_NUMBER, buildNumber);
-        props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + "build.number", buildNumber);
-
-        Date buildStartDate = build.getTimestamp().getTime();
-        props.put(BuildInfoProperties.PROP_BUILD_STARTED,
-                new SimpleDateFormat(Build.STARTED_FORMAT).format(buildStartDate));
-
-        props.put(BuildInfoProperties.PROP_BUILD_TIMESTAMP, String.valueOf(buildStartDate.getTime()));
-        props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + "build.timestamp",
-                String.valueOf(buildStartDate.getTime()));
-
-        String vcsRevision = env.get("SVN_REVISION");
-        if (StringUtils.isNotBlank(vcsRevision)) {
-            props.put(BuildInfoProperties.PROP_VCS_REVISION, vcsRevision);
-            props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX +
-                    BuildInfoProperties.PROP_VCS_REVISION, vcsRevision);
-        }
-
-        String buildUrl = ActionableHelper.getBuildUrl(build);
-        if (StringUtils.isNotBlank(buildUrl)) {
-            props.put(BuildInfoProperties.PROP_BUILD_URL, buildUrl);
-        }
-
-        String userName = "unknown";
-        Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
-        if (parent != null) {
-            String parentProject = parent.getUpstreamProject();
-            props.put(BuildInfoProperties.PROP_PARENT_BUILD_NAME, parentProject);
-            props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX +
-                    BuildInfoProperties.PROP_PARENT_BUILD_NAME, parentProject);
-
-            String parentBuildNumber = parent.getUpstreamBuild() + "";
-            props.put(BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parentBuildNumber);
-            props.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX +
-                    BuildInfoProperties.PROP_PARENT_BUILD_NUMBER, parentBuildNumber);
-            userName = "auto";
-        }
-
-        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
-        if (action != null) {
-            for (Cause cause : action.getCauses()) {
-                if (cause instanceof Cause.UserCause) {
-                    userName = ((Cause.UserCause) cause).getUserName();
-                }
-            }
-        }
-
-        props.put(BuildInfoProperties.PROP_PRINCIPAL, userName);
-
-        props.put(BuildInfoProperties.PROP_AGENT_NAME, "Hudson");
-        props.put(BuildInfoProperties.PROP_AGENT_VERSION, build.getHudsonVersion());
-
-        props.put(ClientProperties.PROP_CONTEXT_URL, selectedArtifactoryServer.getUrl());
-        props.put(ClientProperties.PROP_TIMEOUT, Integer.toString(selectedArtifactoryServer.getTimeout()));
-        props.put(ClientProperties.PROP_PUBLISH_REPOKEY, getDetails().repositoryKey);
-        props.put(ClientProperties.PROP_PUBLISH_SNAPSHOTS_REPOKEY, getDetails().snapshotsRepositoryKey);
-
-        Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(this, selectedArtifactoryServer);
-        if (StringUtils.isNotBlank(preferredDeployer.getUsername())) {
-            props.put(ClientProperties.PROP_PUBLISH_USERNAME, preferredDeployer.getUsername());
-            props.put(ClientProperties.PROP_PUBLISH_PASSWORD, preferredDeployer.getPassword());
-        }
-        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_RUN_CHECKS, Boolean.toString(isRunChecks()));
-        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_INCLUDE_PUBLISHED_ARTIFACTS,
-                Boolean.toString(isIncludePublishArtifacts()));
-        props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_AUTO_DISCOVER, Boolean.toString(isLicenseAutoDiscovery()));
-        if (isRunChecks()) {
-            if (StringUtils.isNotBlank(getViolationRecipients())) {
-                props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_VIOLATION_RECIPIENTS, getViolationRecipients());
-            }
-            if (StringUtils.isNotBlank(getScopes())) {
-                props.put(BuildInfoProperties.PROP_LICENSE_CONTROL_SCOPES, getScopes());
-            }
-        }
-        if (isDiscardOldBuilds()) {
-            LogRotator rotator = build.getProject().getLogRotator();
-            if (rotator != null) {
-                if (rotator.getNumToKeep() > -1) {
-                    props.put(BuildInfoProperties.PROP_BUILD_RETENTION_DAYS, String.valueOf(rotator.getNumToKeep()));
-                }
-                if (rotator.getDaysToKeep() > -1) {
-                    props.put(BuildInfoProperties.PROP_BUILD_RETENTION_MINIMUM_DATE,
-                            String.valueOf(rotator.getDaysToKeep()));
-                }
-            }
-        }
-        props.put(ClientProperties.PROP_PUBLISH_ARTIFACT, Boolean.toString(deployArtifacts));
-
-        IncludesExcludes deploymentPatterns = getArtifactDeploymentPatterns();
-        if (deploymentPatterns != null) {
-            String includePatterns = deploymentPatterns.getIncludePatterns();
-            if (StringUtils.isNotBlank(includePatterns)) {
-                props.put(ClientProperties.PROP_PUBLISH_ARTIFACT_INCLUDE_PATTERNS, includePatterns);
-            }
-
-            String excludePatterns = deploymentPatterns.getExcludePatterns();
-            if (StringUtils.isNotBlank(excludePatterns)) {
-                props.put(ClientProperties.PROP_PUBLISH_ARTIFACT_EXCLUDE_PATTERNS, excludePatterns);
-            }
-        }
-
-        props.put(ClientProperties.PROP_PUBLISH_BUILD_INFO, Boolean.toString(!isSkipBuildInfoDeploy()));
-        props.put(BuildInfoConfigProperties.PROP_INCLUDE_ENV_VARS, Boolean.toString(isIncludeEnvVars()));
-        addEnvVars(env, build, props);
-
-        String propFilePath;
-        OutputStream fileOutputStream = null;
-        try {
-            FilePath tempFile = build.getWorkspace().createTextTempFile("buildInfo", "properties", "", false);
-            fileOutputStream = tempFile.write();
-            props.store(fileOutputStream, null);
-            propFilePath = tempFile.getRemote();
-        } finally {
-            Closeables.closeQuietly(fileOutputStream);
-        }
-
-        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propFilePath);
+        final BuildContext context = new BuildContext(getDetails(), this, isRunChecks(),
+                isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
+                isLicenseAutoDiscovery(), isDiscardOldBuilds(), !isDeployArtifacts(),
+                getArtifactDeploymentPatterns(), isSkipBuildInfoDeploy(), isIncludeEnvVars(), true);
+        ExtractorUtils.addBuilderInfoArguments(env, build, selectedArtifactoryServer, context);
     }
 
     private void addEnvVars(Map<String, String> env, AbstractBuild build, Properties props) {
