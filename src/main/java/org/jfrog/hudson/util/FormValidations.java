@@ -38,6 +38,20 @@ public abstract class FormValidations {
     }
 
     /**
+     * Validates the existence of a tag prefix.
+     *
+     * @param tagPrefix The tag prefix to validate.
+     * @return {@link hudson.util.FormValidation.ok()} if non empty, error otherwise
+     */
+    public static FormValidation validateTagPrefix(String tagPrefix) {
+        String trimmedUrl = hudson.Util.fixEmptyAndTrim(tagPrefix);
+        if (trimmedUrl == null) {
+            return FormValidation.error("Subversion base tags URL is mandatory");
+        }
+        return FormValidation.ok();
+    }
+
+    /**
      * Validates an internet address (url, email address, etc.).
      *
      * @param address The address to validate

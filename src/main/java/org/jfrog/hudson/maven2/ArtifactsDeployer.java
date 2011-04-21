@@ -21,13 +21,15 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
+import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.util.VersionNumber;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.BuildInfoProperties;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.build.client.IncludeExcludePatterns;
@@ -35,12 +37,16 @@ import org.jfrog.build.client.PatternMatcher;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.IncludesExcludes;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Deploys artifacts to Artifactory.
@@ -48,6 +54,7 @@ import java.util.Map;
  * @author Yossi Shaul
  */
 public class ArtifactsDeployer {
+    private static Logger debuggingLogger = Logger.getLogger(ArtifactsDeployer.class.getName());
     private static final String HIGHEST_VERSION_BEFORE_ARCHIVE_FIX = "1.404";
 
     private final ArtifactoryServer artifactoryServer;
@@ -57,6 +64,7 @@ public class ArtifactsDeployer {
     private final MavenModuleSetBuild mavenModuleSetBuild;
     private final BuildListener listener;
     private final IncludeExcludePatterns patterns;
+    private final boolean downstreamIdentifier;
     private final boolean isArchiveJenkinsVersion;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
@@ -65,8 +73,12 @@ public class ArtifactsDeployer {
         this.mavenModuleSetBuild = mavenModuleSetBuild;
         this.listener = listener;
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
-        this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
+        // release action might change the target releases repository
+        ReleaseAction releaseAction = ActionableHelper.getLatestAction(mavenModuleSetBuild, ReleaseAction.class);
+        this.targetReleasesRepository = releaseAction != null ? releaseAction.getStagingRepositoryKey() :
+                artifactoryPublisher.getRepositoryKey();
         this.targetSnapshotsRepository = artifactoryPublisher.getSnapshotsRepositoryKey();
+        this.downstreamIdentifier = artifactoryPublisher.isPassIdentifiedDownstream();
         IncludesExcludes patterns = artifactoryPublisher.getArtifactDeploymentPatterns();
         if (patterns != null) {
             this.patterns = new IncludeExcludePatterns(patterns.getIncludePatterns(), patterns.getExcludePatterns());
@@ -95,17 +107,26 @@ public class ArtifactsDeployer {
             MavenArtifact mavenArtifact = mar.mainArtifact;
 
             // deploy main artifact
+            debuggingLogger.fine("Deploying main artifact: " + artifactToString(mavenArtifact, mavenBuild));
             deployArtifact(mavenBuild, mavenArtifact);
             if (!mar.isPOM() && mar.pomArtifact != null && mar.pomArtifact != mar.mainArtifact) {
                 // deploy the pom if the main artifact is not the pom
+                debuggingLogger.fine("Deploying pom artifact: " + artifactToString(mavenArtifact, mavenBuild));
                 deployArtifact(mavenBuild, mar.pomArtifact);
             }
 
             // deploy attached artifacts
             for (MavenArtifact attachedArtifact : mar.attachedArtifacts) {
+                debuggingLogger.fine("Deploying attached artifact: " + artifactToString(mavenArtifact, mavenBuild));
                 deployArtifact(mavenBuild, attachedArtifact);
             }
         }
+    }
+
+    private String artifactToString(MavenArtifact mavenArtifact, MavenBuild mavenBuild) throws IOException {
+        return new StringBuilder().append(ToStringBuilder.reflectionToString(mavenArtifact))
+                .append("[File: ").append(getArtifactFile(mavenBuild, mavenArtifact)).append("]")
+                .toString();
     }
 
     private void deployArtifact(MavenBuild mavenBuild, MavenArtifact mavenArtifact)
@@ -129,15 +150,23 @@ public class ArtifactsDeployer {
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
 
+        if (downstreamIdentifier && ActionableHelper.getUpstreamCause(mavenBuild) == null) {
+            BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder,
+                    mavenModuleSetBuild.getEnvironment(listener));
+        }
+        AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(mavenModuleSetBuild);
+        if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
+            BuildUniqueIdentifierHelper.addUpstreamIdentifier(builder, rootBuild);
+        }
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(mavenModuleSetBuild);
         if (parent != null) {
             builder.addProperty("build.parentName", parent.getUpstreamProject())
                     .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
         }
-        String revision = mavenModuleSetBuild.getEnvironment(listener).get("SVN_REVISION");
+        String revision = ExtractorUtils.getVcsRevision(mavenModuleSetBuild.getEnvironment(listener));
         if (StringUtils.isNotBlank(revision)) {
-            builder.addProperty(BuildInfoProperties.PROP_VCS_REVISION, revision);
+            builder.addProperty(BuildInfoFields.VCS_REVISION, revision);
         }
         DeployDetails deployDetails = builder.build();
         logDeploymentPath(deployDetails, artifactPath);
@@ -170,7 +199,7 @@ public class ArtifactsDeployer {
     /**
      * Obtains the {@link java.io.File} representing the archived artifact.
      */
-    private File getArtifactFile(MavenBuild build, MavenArtifact mavenArtifact) throws FileNotFoundException {
+    private File getArtifactFile(MavenBuild build, MavenArtifact mavenArtifact) throws IOException {
         String fileName = mavenArtifact.fileName;
         if (isArchiveJenkinsVersion) {
             fileName = mavenArtifact.canonicalName;

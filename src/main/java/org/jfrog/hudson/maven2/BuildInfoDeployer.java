@@ -42,13 +42,17 @@ import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
+import org.jfrog.build.api.builder.PromotionStatusBuilder;
+import org.jfrog.build.api.release.Promotion;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.MavenDependenciesRecord;
 import org.jfrog.hudson.MavenDependency;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildRetentionFactory;
+import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -131,7 +135,7 @@ public class BuildInfoDeployer {
         gatherSysPropInfo(infoBuilder);
         addBuildInfoVariables(infoBuilder);
         EnvVars envVars = build.getEnvironment(listener);
-        String revision = envVars.get("SVN_REVISION");
+        String revision = ExtractorUtils.getVcsRevision(envVars);
         if (StringUtils.isNotBlank(revision)) {
             infoBuilder.vcsRevision(revision);
         }
@@ -161,11 +165,22 @@ public class BuildInfoDeployer {
         licenseControl.setIncludePublishedArtifacts(publisher.isIncludePublishArtifacts());
         licenseControl.setAutoDiscover(publisher.isLicenseAutoDiscovery());
         infoBuilder.licenseControl(licenseControl);
-        BuildRetention buildRetention = new BuildRetention();
+        BuildRetention buildRetention = new BuildRetention(publisher.isDiscardBuildArtifacts());
         if (publisher.isDiscardOldBuilds()) {
             buildRetention = BuildRetentionFactory.createBuildRetention(build);
         }
         infoBuilder.buildRetention(buildRetention);
+
+        // add staging status if it is a release build
+        ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
+        if (release != null) {
+            infoBuilder.addStatus(new PromotionStatusBuilder(Promotion.STAGED)
+                    .timestampDate(startedTimestamp.getTime())
+                    .comment(release.getStagingComment())
+                    .repository(release.getStagingRepositoryKey())
+                    .ciUser(userCause).user(artifactoryPrincipal).build());
+        }
+
         Build buildInfo = infoBuilder.build();
         // for backwards compatibility for Artifactory 2.2.3
         if (parent != null) {

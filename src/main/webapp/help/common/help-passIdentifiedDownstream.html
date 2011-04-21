@@ -1,0 +1,16 @@
+<div>
+    <p>When checked, a build parameter named ARTIFACTORY_BUILD_ROOT with a value of ${JOB_NAME}-${BUILD_NUMBER} will be
+        sent to downstream builds.</p>
+
+    <p>For example: ARTIFACTORY_BUILD_ROOT=Infrastructure-1025.
+        The value of the parameter is also attached to published artifacts as the property: build.root as a matrix
+        parameter on the deployment URL.</p>
+    <br/>
+
+    <p>Downstream builds will add build.root=${ARTIFACTORY_BUILD_ROOT} as a matrix parameter to their Artifactory
+        resolution URL</p>
+
+    <p>For example: build.root=Infrastructure-1025 to achieve isolated resolution from Artifactory and only resolve
+        artifacts produced by the root build that triggered it, avoiding any artifacts produced by other runs
+        that are out of the build chain.</p>
+</div>

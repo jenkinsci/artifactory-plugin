@@ -29,6 +29,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
 import hudson.model.Hudson;
 import hudson.model.Result;
@@ -40,6 +41,7 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.BuildInfoDeployer;
@@ -89,11 +91,14 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     private final boolean includePublishArtifacts;
 
+    private final boolean passIdentifiedDownstream;
+
     private final String scopes;
 
     private final boolean licenseAutoDiscovery;
     private final boolean disableLicenseAutoDiscovery;
     private final boolean discardOldBuilds;
+    private final boolean discardBuildArtifacts;
 
 
     @DataBoundConstructor
@@ -101,7 +106,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
             boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
             String violationRecipients, boolean includePublishArtifacts, String scopes,
-            boolean disableLicenseAutoDiscovery, boolean discardOldBuilds) {
+            boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
+            boolean discardBuildArtifacts) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -114,14 +120,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.scopes = scopes;
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.discardOldBuilds = discardOldBuilds;
+        this.passIdentifiedDownstream = passIdentifiedDownstream;
+        this.discardBuildArtifacts = discardBuildArtifacts;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
-
-        /*DescriptorExtensionList<Publisher, Descriptor<Publisher>> descriptors = Publisher.all();
-        Descriptor<Publisher> redeployPublisher = descriptors.find(RedeployPublisher.DescriptorImpl.class.getName());
-        if (redeployPublisher != null) {
-            descriptors.remove(redeployPublisher);
-        }*/
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -131,12 +133,24 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return !deployArtifacts;
     }
 
+    public ServerDetails getDetails() {
+        return details;
+    }
+
     public IncludesExcludes getArtifactDeploymentPatterns() {
         return artifactDeploymentPatterns;
     }
 
     public boolean isDiscardOldBuilds() {
         return discardOldBuilds;
+    }
+
+    public boolean isDiscardBuildArtifacts() {
+        return discardBuildArtifacts;
+    }
+
+    public boolean isPassIdentifiedDownstream() {
+        return passIdentifiedDownstream;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -221,10 +235,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
-        if (getArtifactoryServer() == null) {
-            listener.getLogger().format("No Artifactory server configured for %s. " +
-                    "Please check your configuration.", getArtifactoryName()).println();
-            build.setResult(Result.FAILURE);
+        if (isExtractorUsed(build)) {
             return true;
         }
 
@@ -233,8 +244,14 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             build.setResult(Result.FAILURE);
             return true;
         }
-
         MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
+        if (getArtifactoryServer() == null) {
+            listener.getLogger().format("No Artifactory server configured for %s. " +
+                    "Please check your configuration.", getArtifactoryName()).println();
+            build.setResult(Result.FAILURE);
+            return true;
+        }
+
         List<MavenAbstractArtifactRecord> mars = getArtifactRecordActions(mavenBuild);
         if (mars.isEmpty()) {
             listener.getLogger().println("No artifacts are recorded. Is this a Maven project?");
@@ -253,8 +270,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             }
             if (!skipBuildInfoDeploy) {
                 new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
-                // add the result action
-                build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
+                // add the result action (prefer always the same index)
+                build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
             }
             return true;
         } catch (Exception e) {
@@ -262,13 +279,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         } finally {
             client.shutdown();
         }
-
         // failed
         build.setResult(Result.FAILURE);
         return true;
     }
 
-    private boolean isBuildFromM2ReleasePlugin(AbstractBuild build) {
+    private boolean isBuildFromM2ReleasePlugin(AbstractBuild<?, ?> build) {
         List<Cause> causes = build.getCauses();
         return !causes.isEmpty() && Iterables.any(causes, new Predicate<Cause>() {
             public boolean apply(Cause input) {
@@ -276,6 +292,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             }
         });
     }
+
+    private boolean isExtractorUsed(AbstractBuild build) {
+        BuildableItemWithBuildWrappers project = (BuildableItemWithBuildWrappers) build.getProject();
+        return ActionableHelper.getBuildWrapper(project, Maven3ExtractorWrapper.class) != null;
+    }
+
 
     private void verifySupportedArtifactoryVersion(ArtifactoryBuildInfoClient client) throws Exception {
         // get the version of artifactory, if it is an unsupported version, an UnsupportedOperationException

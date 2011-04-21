@@ -21,15 +21,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Computer;
-import hudson.model.Hudson;
-import hudson.model.JDK;
-import hudson.model.Node;
-import hudson.model.Result;
-import hudson.model.Run;
+import hudson.model.*;
 import hudson.remoting.VirtualChannel;
 import hudson.remoting.Which;
 import hudson.slaves.NodeProperty;
@@ -62,7 +54,6 @@ import java.util.List;
  * @author Yossi Shaul
  * @deprecated Hudson 1.392 added native support for maven 3
  */
-@Deprecated
 public class Maven3Builder extends Builder {
 
     public static final String CLASSWORLDS_LAUNCHER = "org.codehaus.plexus.classworlds.launcher.Launcher";
@@ -180,7 +171,7 @@ public class Maven3Builder extends Builder {
             args.add("-Dm3plugin.lib=" + actualDependencyDirectory.getRemote());
 
             URL classworldsResource =
-                    getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds.conf");
+                    getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-freestyle.conf");
 
             File classworldsConfFile = new File(URLDecoder.decode(classworldsResource.getFile(), "utf-8"));
             if (!classworldsConfFile.exists()) {
@@ -328,7 +319,7 @@ public class Maven3Builder extends Builder {
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-            return true;
+            return jobType.equals(FreeStyleProject.class);
         }
 
         @Override

@@ -17,11 +17,6 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:section title="${%Artifactory Configuration}">
-        <f:entry title="${%Deprecation}">
-            <div class="warning">
-                This feature is deprecated. Please use a Maven 2/3 project (available in Hudson v1.392 and above).
-            </div>
-        </f:entry>
         <f:dropdownList name="details" title="${%Artifactory server}">
             <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
                 <f:dropdownListBlock value="${s.name}" title="${s.name}" selected="${s.name==instance.artifactoryName}">
@@ -109,7 +104,7 @@
                         <table style="width:100%">
                             <f:optionalBlock name="runChecks"
                                              checked="${instance.runChecks}"
-                                             title="Run license checks (requires Pro)"
+                                             title="Run license checks (requires Artifactory Pro)"
                                              inline="true"
                                              help="/plugin/artifactory/help/common/help-runChecks.html">
                                 <f:entry title="${%Send license violation notifications to: }"
@@ -141,9 +136,14 @@
                         <table style="width:100%">
                             <f:optionalBlock name="discardOldBuilds"
                                              checked="${instance.discardOldBuilds}"
-                                             title="Discard Old Builds from Artifactory (Requires Artifactory Pro)"
+                                             title="Discard old builds from Artifactory (requires Artifactory Pro)"
                                              inline="true"
                                              help="/plugin/artifactory/help/common/help-discardBuilds.html">
+                                <f:entry field="discardBuildArtifacts"
+                                         help="/plugin/artifactory/help/common/help-discardBuildArtifacts.html">
+                                    <f:checkbox default="true" checked="${instance.discardBuildArtifacts}"/>
+                                    <label class="attach-previous">${%Discard build artifacts}</label>
+                                </f:entry>
                             </f:optionalBlock>
                         </table>
                     </f:block>

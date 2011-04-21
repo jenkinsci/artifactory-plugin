@@ -92,13 +92,13 @@
                                  inline="true">
                     <f:entry field="includeEnvVars" help="/plugin/artifactory/help/common/help-includeEnvVars.html">
                         <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
-                        <label class="attach-previous">${%Include All Environment Variables}</label>
+                        <label class="attach-previous">${%Include all environment variables}</label>
                     </f:entry>
                     <f:block>
                         <table style="width:100%">
                             <f:optionalBlock name="runChecks"
                                              checked="${instance.runChecks}"
-                                             title="Run license checks (requires Pro)"
+                                             title="Run license checks (requires Artifactory Pro)"
                                              inline="true"
                                              help="/plugin/artifactory/help/common/help-runChecks.html">
                                 <f:entry title="${%Send license violation notifications to: }"
@@ -130,12 +130,26 @@
                         <table style="width:100%">
                             <f:optionalBlock name="discardOldBuilds"
                                              checked="${instance.discardOldBuilds}"
-                                             title="Discard Old Builds from Artifactory (Requires Artifactory Pro)"
+                                             title="Discard old builds from Artifactory (requires Artifactory Pro)"
                                              inline="true"
                                              help="/plugin/artifactory/help/common/help-discardBuilds.html">
+                                <f:entry field="discardBuildArtifacts"
+                                         help="/plugin/artifactory/help/common/help-discardBuildArtifacts.html">
+                                    <f:checkbox default="true" checked="${instance.discardBuildArtifacts}"/>
+                                    <label class="attach-previous">${%Discard build artifacts}</label>
+                                </f:entry>
                             </f:optionalBlock>
                         </table>
                     </f:block>
+                </f:optionalBlock>
+            </table>
+        </f:block>
+        <f:block>
+            <table style="width:100%">
+                <f:optionalBlock field="passIdentifiedDownstream"
+                                 help="/plugin/artifactory/help/common/help-passIdentifiedDownstream.html"
+                                 title="Enable isolated resolution for downstream builds"
+                                 inline="true">
                 </f:optionalBlock>
             </table>
         </f:block>

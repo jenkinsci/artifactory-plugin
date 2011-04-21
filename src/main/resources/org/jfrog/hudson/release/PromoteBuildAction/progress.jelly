@@ -1,0 +1,11 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <l:layout norefresh="true">
+        <st:include it="${it.build}" page="sidepanel.jelly"/>
+        <l:main-panel>
+            <h1>Build ${it.build.displayName} Promotion</h1>
+            <p>${%Promotion is in progress:}</p>
+            <st:include page="log.jelly"/>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>
