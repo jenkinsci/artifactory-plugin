@@ -130,7 +130,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean isDeployArtifacts() {
-        return !deployArtifacts;
+        return deployArtifacts;
     }
 
     public ServerDetails getDetails() {

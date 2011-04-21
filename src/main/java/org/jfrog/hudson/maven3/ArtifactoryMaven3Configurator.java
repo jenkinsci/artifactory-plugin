@@ -74,10 +74,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
      */
     private final boolean deployArtifacts;
     private final IncludesExcludes artifactDeploymentPatterns;
-    /**
-     * If true skip the deployment of the build info.
-     */
-    private final boolean skipBuildInfoDeploy;
 
     /**
      * Include environment variables in the generated build info
@@ -111,7 +107,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.scopes = scopes;
         this.discardOldBuilds = discardOldBuilds;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
-        this.skipBuildInfoDeploy = !deployBuildInfo;
         this.deployBuildInfo = deployBuildInfo;
         this.deployArtifacts = deployArtifacts;
         this.includeEnvVars = includeEnvVars;
@@ -136,8 +131,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public boolean isDeployArtifacts() {
-        // TODO: ha?
-        return !deployArtifacts;
+        return deployArtifacts;
     }
 
     public IncludesExcludes getArtifactDeploymentPatterns() {
@@ -145,8 +139,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public boolean isDeployBuildInfo() {
-        // TODO: ha?
-        return !deployBuildInfo;
+        return deployBuildInfo;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -178,10 +171,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
-    }
-
-    public boolean isSkipBuildInfoDeploy() {
-        return skipBuildInfoDeploy;
     }
 
     public String getScopes() {
@@ -253,7 +242,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 if (result == null || result.isWorseThan(Result.SUCCESS)) {
                     return false;
                 }
-                if (!skipBuildInfoDeploy) {
+                if (deployBuildInfo) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
                 }
                 return true;
@@ -271,8 +260,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         final BuildContext context = new BuildContext(getDetails(), this, isRunChecks(),
                 isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
-                isLicenseAutoDiscovery(), isDiscardOldBuilds(), !isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), isSkipBuildInfoDeploy(), isIncludeEnvVars(), true);
+                isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
+                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), true);
         ExtractorUtils.addBuilderInfoArguments(env, build, selectedArtifactoryServer, context);
     }
 
@@ -382,4 +371,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
      */
     @Deprecated
     private transient String scrambledPassword;
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator#deployBuildInfo
+     */
+    @Deprecated
+    private transient boolean skipBuildInfoDeploy;
+
 }

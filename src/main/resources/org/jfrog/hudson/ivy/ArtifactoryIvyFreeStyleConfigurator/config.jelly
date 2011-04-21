@@ -39,7 +39,7 @@
 
         <f:block>
             <table style="width:100%">
-                <f:optionalBlock name="deployBuildInfo" checked="${instance.deployBuildInfo}"
+                <f:optionalBlock name="deployBuildInfo" checked="${h.defaultToTrue(instance.deployBuildInfo)}"
                                  title="Capture and publish build info"
                                  help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
                                  inline="true">
@@ -99,7 +99,8 @@
                 <f:optionalBlock field="deployArtifacts"
                                  help="/plugin/artifactory/help/common/help-deployArtifacts.html"
                                  inline="true"
-                                 checked="${instance.deployArtifacts}" title="Publish artifacts to Artifactory">
+                                 checked="${h.defaultToTrue(instance.deployArtifacts)}"
+                                 title="Publish artifacts to Artifactory">
                     <f:entry field="deployIvy"
                              help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployIvy.html">
                         <f:checkbox default="false" checked="${instance.deployIvy}"/>

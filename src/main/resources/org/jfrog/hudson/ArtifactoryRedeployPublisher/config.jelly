@@ -61,7 +61,7 @@
                 <f:optionalBlock field="deployArtifacts"
                                  help="/plugin/artifactory/help/common/help-deployArtifacts.html"
                                  title="Deploy maven artifacts"
-                                 checked="${!instance.deployArtifacts}"
+                                 checked="${h.defaultToTrue(instance.deployArtifacts)}"
                                  inline="true">
                     <f:block>
                         <table style="width:100%">

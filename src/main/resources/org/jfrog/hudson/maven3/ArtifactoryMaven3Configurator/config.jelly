@@ -67,7 +67,7 @@
                 <f:optionalBlock field="deployArtifacts"
                                  help="/plugin/artifactory/help/common/help-deployArtifacts.html"
                                  title="Deploy artifacts to Artifactory" inline="true"
-                                 checked="${!instance.deployArtifacts}">
+                                 checked="${h.defaultToTrue(instance.deployArtifacts)}">
                     <f:block>
                         <table style="width:100%">
                             <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
@@ -91,7 +91,7 @@
         </f:block>
         <f:block>
             <table style="width:100%">
-                <f:optionalBlock name="deployBuildInfo" checked="${!instance.deployBuildInfo}"
+                <f:optionalBlock name="deployBuildInfo" checked="${h.defaultToTrue(instance.deployBuildInfo)}"
                                  title="Capture and publish build info"
                                  help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
                                  inline="true">

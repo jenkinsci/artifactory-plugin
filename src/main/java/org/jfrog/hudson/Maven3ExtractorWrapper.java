@@ -64,7 +64,7 @@ public class Maven3ExtractorWrapper extends BuildWrapper {
 
         final BuildContext context = new BuildContext(publisher.getDetails(), publisher, publisher.isRunChecks(),
                 publisher.isIncludePublishArtifacts(), publisher.getViolationRecipients(), publisher.getScopes(),
-                publisher.isLicenseAutoDiscovery(), publisher.isDiscardOldBuilds(), !publisher.isDeployArtifacts(),
+                publisher.isLicenseAutoDiscovery(), publisher.isDiscardOldBuilds(), publisher.isDeployArtifacts(),
                 publisher.getArtifactDeploymentPatterns(), publisher.isSkipBuildInfoDeploy(),
                 publisher.isIncludeEnvVars(), publisher.isDiscardBuildArtifacts());
         context.setEvenIfUnstable(publisher.isEvenIfUnstable());
