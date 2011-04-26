@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.util;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import hudson.FilePath;
@@ -185,7 +186,6 @@ public class ExtractorUtils {
         return classworldsConfPath;
     }
 
-
     /**
      * Add a custom {@code classworlds.conf} file that will be read by the Maven build. Adds an environment variable
      * {@code classwordls.conf} with the location of the classworlds file for Maven.
@@ -303,6 +303,7 @@ public class ExtractorUtils {
                 }
                 configuration.info.setDeleteBuildArtifacts(context.isDiscardBuildArtifacts());
             }
+            configuration.info.setBuildNumbersNotToDelete(getBuildNumbersNotToBeDeletedAsString(build));
         }
         configuration.publisher.setPublishArtifacts(context.isDeployArtifacts());
         configuration.publisher.setEvenUnstable(context.isEvenIfUnstable());
@@ -334,6 +335,29 @@ public class ExtractorUtils {
         addEnvVars(env, build, configuration);
         persistConfiguration(build, configuration, env);
         return configuration;
+    }
+
+    /**
+     * Get the list of build numbers that are to be kept forever.
+     */
+    public static List<String> getBuildNumbersNotToBeDeleted(AbstractBuild build) {
+        List<String> notToDelete = Lists.newArrayList();
+        List<? extends Run<?, ?>> builds = build.getProject().getBuilds();
+        for (Run<?, ?> run : builds) {
+            if (run.isKeepLog()) {
+                notToDelete.add(String.valueOf(run.getNumber()));
+            }
+        }
+        return notToDelete;
+    }
+
+    private static String getBuildNumbersNotToBeDeletedAsString(AbstractBuild build) {
+        StringBuilder builder = new StringBuilder();
+        List<String> notToBeDeleted = getBuildNumbersNotToBeDeleted(build);
+        for (String notToDelete : notToBeDeleted) {
+            builder.append(notToDelete).append(",");
+        }
+        return builder.toString();
     }
 
     public static void addBuildRootIfNeeded(AbstractBuild build, ArtifactoryClientConfiguration configuration) {

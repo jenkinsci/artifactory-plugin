@@ -6,6 +6,7 @@ import org.jfrog.build.api.BuildRetention;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author Tomer Cohen
@@ -31,6 +32,10 @@ public class BuildRetentionFactory {
             Calendar calendar = Calendar.getInstance();
             calendar.roll(Calendar.DAY_OF_MONTH, -rotator.getDaysToKeep());
             buildRetention.setMinimumBuildDate(new Date(calendar.getTimeInMillis()));
+        }
+        List<String> notToBeDeleted = ExtractorUtils.getBuildNumbersNotToBeDeleted(build);
+        for (String notToDelete : notToBeDeleted) {
+            buildRetention.addBuildNotToBeDiscarded(notToDelete);
         }
         return buildRetention;
     }
