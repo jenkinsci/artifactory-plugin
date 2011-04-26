@@ -204,6 +204,7 @@
     <scm>
         <connection>scm:git:git://github.com/jenkinsci/artifactory-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/artifactory-plugin.git</developerConnection>
+        <url>https://github.com/jenkinsci/artifactory-plugin</url>
     </scm>
 
     <profiles>
