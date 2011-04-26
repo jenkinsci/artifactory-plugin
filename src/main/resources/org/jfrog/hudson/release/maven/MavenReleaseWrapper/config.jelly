@@ -15,4 +15,8 @@
         <f:textbox name="alternativeGoals" value="${instance.alternativeGoals}"
                    default="${jenkins.artifactory.release.maven.alternativeGoalsDefault}"/>
     </f:entry>
+    <f:entry title="${%Default module version configuration}" field="defaultVersioning"
+             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-versioningDefault.html">
+        <f:select/>
+    </f:entry>
 </j:jelly>

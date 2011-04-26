@@ -12,7 +12,7 @@
 
                     <f:section title="${%Module Version Configuration}">
                         <f:radioBlock name="versioning" value="GLOBAL" title="One version for all modules"
-                                      checked="${'GLOBAL' == it.latestVersioningSelection()}"
+                                      checked="${'GLOBAL' == it.defaultVersioning}"
                                       help="/plugin/artifactory/help/release/ReleaseAction/help-versioningGlobal.html">
                             <f:entry field="releaseVersion" title="Release version"
                                      help="/plugin/artifactory/help/release/ReleaseAction/help-releaseVersion.html">
@@ -30,7 +30,7 @@
                             <!--</f:optionalBlock>-->
                         </f:radioBlock>
                         <f:radioBlock name="versioning" value="PER_MODULE" title="Version per module"
-                                      checked="${'PER_MODULE' == it.latestVersioningSelection()}"
+                                      checked="${'PER_MODULE' == it.defaultVersioning}"
                                       help="/plugin/artifactory/help/release/ReleaseAction/help-versioningPerModule.html">
                             <j:forEach var="module" items="${it.modules}">
                                 <f:section title="${module.moduleName}">
@@ -48,7 +48,7 @@
                             </j:forEach>
                         </f:radioBlock>
                         <f:radioBlock name="versioning" value="NONE" title="Use existing module versions"
-                                      checked="${'NONE' == it.latestVersioningSelection()}"
+                                      checked="${'NONE' == it.defaultVersioning}"
                                       help="/plugin/artifactory/help/release/ReleaseAction/help-versioningNone.html">
                         </f:radioBlock>
                     </f:section>

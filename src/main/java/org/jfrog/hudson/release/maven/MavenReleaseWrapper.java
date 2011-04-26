@@ -34,6 +34,7 @@ import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -61,17 +62,19 @@ public class MavenReleaseWrapper extends BuildWrapper {
     private String tagPrefix;
     private String releaseBranchPrefix;
     private String alternativeGoals;
+    private String defaultVersioning;
 
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
-    public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeGoals) {
+    public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeGoals,
+            String defaultVersioning) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeGoals = alternativeGoals;
+        this.defaultVersioning = defaultVersioning;
     }
 
-    @SuppressWarnings({"UnusedDeclaration"})
     public String getTagPrefix() {
         return tagPrefix;
     }
@@ -98,6 +101,16 @@ public class MavenReleaseWrapper extends BuildWrapper {
     @SuppressWarnings({"UnusedDeclaration"})
     public void setAlternativeGoals(String alternativeGoals) {
         this.alternativeGoals = alternativeGoals;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public String getDefaultVersioning() {
+        return defaultVersioning;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void setDefaultVersioning(String defaultVersioning) {
+        this.defaultVersioning = defaultVersioning;
     }
 
     @Override
@@ -232,6 +245,18 @@ public class MavenReleaseWrapper extends BuildWrapper {
         @SuppressWarnings({"UnusedDeclaration"})
         public FormValidation doCheckTagPrefix(@QueryParameter String tagPrefix) {
             return FormValidations.validateTagPrefix(tagPrefix);
+        }
+
+        /**
+         * @return Model with the release actions allowed. Used to set the defaultVersioning.
+         */
+        @SuppressWarnings({"UnusedDeclaration"})
+        public ListBoxModel doFillDefaultVersioningItems() {
+            ListBoxModel model = new ListBoxModel();
+            for (ReleaseAction.VERSIONING versioning : ReleaseAction.VERSIONING.values()) {
+                model.add(versioning.toString());
+            }
+            return model;
         }
     }
 

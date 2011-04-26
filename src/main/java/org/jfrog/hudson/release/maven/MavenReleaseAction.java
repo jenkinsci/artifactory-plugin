@@ -60,6 +60,12 @@ public class MavenReleaseAction extends ReleaseAction {
         return project.getDisabledModules(false);
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
+    public String getDefaultVersioning() {
+        MavenReleaseWrapper wrapper = getReleaseWrapper();
+        return wrapper.getDefaultVersioning();
+    }
+
     @Override
     public String getDefaultReleaseBranch() {
         MavenReleaseWrapper wrapper = getReleaseWrapper();
