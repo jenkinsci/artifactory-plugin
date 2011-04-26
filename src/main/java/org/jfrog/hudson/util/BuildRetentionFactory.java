@@ -34,9 +34,7 @@ public class BuildRetentionFactory {
             buildRetention.setMinimumBuildDate(new Date(calendar.getTimeInMillis()));
         }
         List<String> notToBeDeleted = ExtractorUtils.getBuildNumbersNotToBeDeleted(build);
-        for (String notToDelete : notToBeDeleted) {
-            buildRetention.addBuildNotToBeDiscarded(notToDelete);
-        }
+        buildRetention.setBuildNumbersNotToBeDiscarded(notToBeDeleted);
         return buildRetention;
     }
 }
