@@ -16,10 +16,9 @@
 
 package org.jfrog.hudson.maven3;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Iterables;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -27,15 +26,17 @@ import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
+import hudson.model.Project;
 import hudson.model.Result;
+import hudson.remoting.Which;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.tasks.Maven;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.BuildInfoProperties;
-import org.jfrog.build.client.ClientProperties;
+import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
@@ -48,21 +49,22 @@ import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
+import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.URL;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * @author Noam Y. Tenne
- * @deprecated Hudson 1.392 added native support for maven 3
  */
-@Deprecated
 public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider {
     /**
      * Repository URL and repository to deploy artifacts to
@@ -92,12 +94,15 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private boolean licenseAutoDiscovery;
     private boolean disableLicenseAutoDiscovery;
     private final boolean discardOldBuilds;
+    private final boolean discardBuildArtifacts;
+    private final String matrixParams;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
             IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts, boolean deployBuildInfo,
             boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-            String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds) {
+            String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
+            boolean discardBuildArtifacts, String matrixParams) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -106,6 +111,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.includePublishArtifacts = includePublishArtifacts;
         this.scopes = scopes;
         this.discardOldBuilds = discardOldBuilds;
+        this.discardBuildArtifacts = discardBuildArtifacts;
+        this.matrixParams = matrixParams;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.deployBuildInfo = deployBuildInfo;
         this.deployArtifacts = deployArtifacts;
@@ -122,6 +129,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return discardOldBuilds;
     }
 
+    public boolean isDiscardBuildArtifacts() {
+        return discardBuildArtifacts;
+    }
+
     public boolean isOverridingDefaultDeployer() {
         return (getOverridingDeployerCredentials() != null);
     }
@@ -132,6 +143,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public boolean isDeployArtifacts() {
         return deployArtifacts;
+    }
+
+    public String getMatrixParams() {
+        return matrixParams;
     }
 
     public IncludesExcludes getArtifactDeploymentPatterns() {
@@ -219,18 +234,38 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             build.setResult(Result.FAILURE);
             throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
-
+        final Maven maven = getLastMaven(build.getProject());
+        String mavenOpts = getMavenOpts(maven);
+        String targets = getMavenTargets(maven);
+        final File classWorldsFile = File.createTempFile("classworlds", "conf");
+        final BuildContext context = new BuildContext(getDetails(), ArtifactoryMaven3Configurator.this, isRunChecks(),
+                isIncludePublishArtifacts(), getViolationRecipients(), getScopes(), isLicenseAutoDiscovery(),
+                isDiscardOldBuilds(), isDeployArtifacts(), getArtifactDeploymentPatterns(), skipBuildInfoDeploy,
+                isIncludeEnvVars(), isDiscardBuildArtifacts(), getMatrixParams());
+        URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-freestyle.conf");
+        final String classworldsConfPath = ExtractorUtils.copyClassWorldsFile(build, resource, classWorldsFile);
+        final String finalMavenOpts = mavenOpts;
+        final String finalTargets = targets;
+        if (maven != null) {
+            FilePath mavenHomeDir =
+                    ExtractorUtils.getMavenHomeDir(build, listener, build.getEnvironment(listener), maven.getMaven());
+            setOptsField(maven,
+                    createNewMavenOpts(finalMavenOpts, build, classworldsConfPath, mavenHomeDir, listener));
+            setTargetsField(maven, finalTargets + " " + "-Dclassworlds.conf=" + classworldsConfPath);
+        }
+        build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
-
                 try {
-                    addBuilderInfoArguments(env, build, artifactoryServer);
+                    ExtractorUtils.addCustomClassworlds(env, classworldsConfPath);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, artifactoryServer, context);
                 } catch (Exception e) {
                     listener.getLogger().
                             format("Failed to collect Artifactory Build Info to properties file: %s", e.getMessage()).
                             println();
                     build.setResult(Result.FAILURE);
+                    org.apache.commons.io.FileUtils.deleteQuietly(classWorldsFile);
                     throw new RuntimeException(e);
                 }
             }
@@ -238,6 +273,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
+                org.apache.commons.io.FileUtils.deleteQuietly(classWorldsFile);
+                if (maven != null) {
+                    setOptsField(maven, finalMavenOpts);
+                    setTargetsField(maven, finalTargets);
+                }
                 Result result = build.getResult();
                 if (result == null || result.isWorseThan(Result.SUCCESS)) {
                     return false;
@@ -250,65 +290,77 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         };
     }
 
+    private Maven getLastMaven(AbstractProject project) {
+        if (project instanceof Project) {
+            List<Maven> mavens = ActionableHelper.getBuilder((Project) project, Maven.class);
+            return Iterables.getLast(mavens, null);
+        }
+        return null;
+    }
+
+
+    private String createNewMavenOpts(String originalMavenOpts, AbstractBuild build, String classWorldsConfPath,
+            FilePath mavenHomeDir, BuildListener listener) throws IOException, InterruptedException {
+        StringBuilder builder = new StringBuilder(originalMavenOpts).append(" ");
+        builder.append("classworlds.conf=").append(classWorldsConfPath).append(" ");
+        builder.append(appendNewMavenOpts(build, originalMavenOpts)).append(" ");
+        return builder.toString();
+    }
+
+
+    private String getMavenOpts(Maven maven) {
+        if (maven != null && StringUtils.isNotBlank(maven.jvmOptions)) {
+            return maven.jvmOptions;
+        }
+        return "";
+    }
+
+    private String getMavenTargets(Maven maven) {
+        if (maven != null && StringUtils.isNotBlank(maven.targets)) {
+            return maven.targets;
+        }
+        return "";
+    }
+
+    private void setOptsField(Maven builder, String opts) {
+        try {
+            Field targetsField = builder.getClass().getDeclaredField("jvmOptions");
+            targetsField.setAccessible(true);
+            targetsField.set(builder, opts);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String appendNewMavenOpts(AbstractBuild build, String opts) throws IOException {
+        StringBuilder mavenOpts = new StringBuilder();
+        if (StringUtils.contains(opts, "-Dm3plugin.lib")) {
+            return mavenOpts.toString();
+        }
+        File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
+        try {
+            FilePath actualDependencyDirectory =
+                    PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
+            mavenOpts.append(" -Dm3plugin.lib=").append(actualDependencyDirectory.getRemote());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return mavenOpts.toString();
+    }
+
+    private void setTargetsField(Maven builder, String targets) {
+        try {
+            Field targetsField = builder.getClass().getDeclaredField("targets");
+            targetsField.setAccessible(true);
+            targetsField.set(builder, targets);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
-    }
-
-    private void addBuilderInfoArguments(Map<String, String> env, AbstractBuild build,
-            ArtifactoryServer selectedArtifactoryServer) throws IOException, InterruptedException {
-
-        final BuildContext context = new BuildContext(getDetails(), this, isRunChecks(),
-                isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
-                isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), true);
-        ExtractorUtils.addBuilderInfoArguments(env, build, selectedArtifactoryServer, context);
-    }
-
-    private void addEnvVars(Map<String, String> env, AbstractBuild build, Properties props) {
-        // Write all the deploy (matrix params) properties.
-        Map<String, String> filteredEnvMatrixParams = Maps.filterKeys(env, new Predicate<String>() {
-            public boolean apply(String input) {
-                return input.startsWith(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX);
-            }
-        });
-        for (Map.Entry<String, String> entry : filteredEnvMatrixParams.entrySet()) {
-            props.put(entry.getKey(), entry.getValue());
-        }
-
-        //Add only the hudson specific environment variables
-        MapDifference<String, String> envDifference = Maps.difference(env, System.getenv());
-        Map<String, String> filteredEnvDifference = envDifference.entriesOnlyOnLeft();
-        for (Map.Entry<String, String> entry : filteredEnvDifference.entrySet()) {
-            props.put(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(), entry.getValue());
-        }
-
-        // add build variables
-        Map<String, String> buildVariables = build.getBuildVariables();
-        Map<String, String> filteredBuildVars = Maps.newHashMap();
-
-        filteredBuildVars.putAll(Maps.filterKeys(buildVariables, new Predicate<String>() {
-            public boolean apply(String input) {
-                return input.startsWith(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX);
-            }
-        }));
-        filteredBuildVars.putAll(Maps.filterKeys(buildVariables, new Predicate<String>() {
-            public boolean apply(String input) {
-                return input.startsWith(BuildInfoProperties.BUILD_INFO_PROP_PREFIX);
-            }
-        }));
-
-        for (Map.Entry<String, String> filteredBuildVar : filteredBuildVars.entrySet()) {
-            props.put(filteredBuildVar.getKey(), filteredBuildVar.getValue());
-        }
-
-        MapDifference<String, String> buildVarDifference = Maps.difference(buildVariables, filteredBuildVars);
-        Map<String, String> filteredBuildVarDifferences = buildVarDifference.entriesOnlyOnLeft();
-
-        for (Map.Entry<String, String> filteredBuildVarDifference : filteredBuildVarDifferences.entrySet()) {
-            props.put(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + filteredBuildVarDifference.getKey(),
-                    filteredBuildVarDifference.getValue());
-        }
     }
 
     @Extension(optional = true)
