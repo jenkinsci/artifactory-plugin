@@ -191,16 +191,9 @@ public class GradleReleaseAction extends ReleaseAction {
             return "";
         }
         for (String value : versionStrings) {
-            value = StringUtils.removeEnd(value, "-SNAPSHOT");
-            String[] split = StringUtils.split(value, '.');
-            boolean isValid = true;
-            for (String number : split) {
-                if (!StringUtils.isNumeric(number)) {
-                    isValid = false;
-                }
-            }
-            if (isValid) {
-                return value;
+            String releaseValue = calculateReleaseVersion(value);
+            if (!releaseValue.equals(value)) {
+                return releaseValue;
             }
         }
         return "";
