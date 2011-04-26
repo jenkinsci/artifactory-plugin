@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.maven2;
 
+import hudson.Util;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
@@ -66,12 +67,15 @@ public class ArtifactsDeployer {
     private final IncludeExcludePatterns patterns;
     private final boolean downstreamIdentifier;
     private final boolean isArchiveJenkinsVersion;
+    private final Map<String, String> env;
+    private final String[] matrixParams;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
-            MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) {
+            MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) throws IOException, InterruptedException {
         this.client = client;
         this.mavenModuleSetBuild = mavenModuleSetBuild;
         this.listener = listener;
+        this.env = mavenModuleSetBuild.getEnvironment(listener);
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
         // release action might change the target releases repository
         ReleaseAction releaseAction = ActionableHelper.getLatestAction(mavenModuleSetBuild, ReleaseAction.class);
@@ -85,6 +89,7 @@ public class ArtifactsDeployer {
         } else {
             this.patterns = IncludeExcludePatterns.EMPTY;
         }
+        this.matrixParams = StringUtils.split(artifactoryPublisher.getMatrixParams(), ", ");
         this.isArchiveJenkinsVersion = Hudson.getVersion().isNewerThan(new VersionNumber(
                 HIGHEST_VERSION_BEFORE_ARCHIVE_FIX));
     }
@@ -151,8 +156,7 @@ public class ArtifactsDeployer {
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
 
         if (downstreamIdentifier && ActionableHelper.getUpstreamCause(mavenBuild) == null) {
-            BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder,
-                    mavenModuleSetBuild.getEnvironment(listener));
+            BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder, env);
         }
         AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(mavenModuleSetBuild);
         if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
@@ -164,13 +168,27 @@ public class ArtifactsDeployer {
             builder.addProperty("build.parentName", parent.getUpstreamProject())
                     .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
         }
-        String revision = ExtractorUtils.getVcsRevision(mavenModuleSetBuild.getEnvironment(listener));
+        String revision = ExtractorUtils.getVcsRevision(env);
         if (StringUtils.isNotBlank(revision)) {
             builder.addProperty(BuildInfoFields.VCS_REVISION, revision);
         }
+        addMatrixParams(builder);
         DeployDetails deployDetails = builder.build();
         logDeploymentPath(deployDetails, artifactPath);
         client.deployArtifact(deployDetails);
+    }
+
+    private void addMatrixParams(DeployDetails.Builder builder) {
+        if (matrixParams == null) {
+            return;
+        }
+        for (String matrixParam : matrixParams) {
+            String[] split = StringUtils.split(matrixParam, '=');
+            if (split.length == 2) {
+                String value = Util.replaceMacro(split[1], env);
+                builder.addProperty(split[0], value);
+            }
+        }
     }
 
     private void logDeploymentPath(DeployDetails deployDetails, String artifactPath) {

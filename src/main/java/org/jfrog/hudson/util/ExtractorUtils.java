@@ -19,6 +19,7 @@ package org.jfrog.hudson.util;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import hudson.FilePath;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
@@ -329,6 +330,7 @@ public class ExtractorUtils {
         addBuildRootIfNeeded(build, configuration);
         configuration.publisher.setPublishBuildInfo(!context.isSkipBuildInfoDeploy());
         configuration.setIncludeEnvVars(context.isIncludeEnvVars());
+        addMatrixParams(context, configuration.publisher, env);
         addEnvVars(env, build, configuration);
         persistConfiguration(build, configuration, env);
         return configuration;
@@ -348,6 +350,25 @@ public class ExtractorUtils {
         configuration.setPropertiesFile(tempFile.getRemote());
         env.putAll(configuration.getAllRootConfig());
         configuration.persistToPropertiesFile();
+    }
+
+    private static void addMatrixParams(BuildContext context, ArtifactoryClientConfiguration.PublisherHandler publisher,
+            Map<String, String> env) {
+        String matrixParams = context.getMatrixParams();
+        if (StringUtils.isBlank(matrixParams)) {
+            return;
+        }
+        String[] keyValuePairs = StringUtils.split(matrixParams, ", ");
+        if (keyValuePairs == null) {
+            return;
+        }
+        for (String keyValuePair : keyValuePairs) {
+            String[] split = StringUtils.split(keyValuePair, "=");
+            if (split.length == 2) {
+                String value = Util.replaceMacro(split[1], env);
+                publisher.addMatrixParam(split[0], value);
+            }
+        }
     }
 
     private static void addEnvVars(Map<String, String> env, AbstractBuild<?, ?> build,

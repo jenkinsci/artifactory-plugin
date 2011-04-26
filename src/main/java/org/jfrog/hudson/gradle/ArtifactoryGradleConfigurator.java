@@ -89,6 +89,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean passIdentifiedDownstream;
     private final GradleReleaseWrapper releaseWrapper;
     private final boolean discardBuildArtifacts;
+    private final String matrixParams;
 
 
     @DataBoundConstructor
@@ -98,7 +99,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
-            boolean discardBuildArtifacts) {
+            boolean discardBuildArtifacts, String matrixParams) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -120,6 +121,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.releaseWrapper = releaseWrapper;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.matrixParams = matrixParams;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
@@ -129,6 +131,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public String getMatrixParams() {
+        return matrixParams;
     }
 
     public boolean isPassIdentifiedDownstream() {
@@ -306,7 +312,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                         isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
                         getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(),
-                        isDiscardBuildArtifacts());
+                        isDiscardBuildArtifacts(), getMatrixParams());
                 context.setArtifactsPattern(getArtifactPattern());
                 context.setIvyPattern(getIvyPattern());
                 context.setDeployIvy(isDeployIvy());

@@ -86,6 +86,10 @@
                             </f:section>
                         </table>
                     </f:block>
+                    <f:entry title="Matrix params" field="matrixParams"
+                             help="/plugin/artifactory/help/common/help-matrixParams.html">
+                        <f:textbox value="${instance.matrixParams}"/>
+                    </f:entry>
                 </f:optionalBlock>
             </table>
         </f:block>

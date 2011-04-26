@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 JFrog Ltd.
+ * Copyright (C) 2011 JFrog Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,6 +89,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private final boolean discardOldBuilds;
     private final boolean passIdentifiedDownstream;
     private final boolean discardBuildArtifacts;
+    private final String matrixParams;
 
 
     @DataBoundConstructor
@@ -97,7 +98,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-            boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts) {
+            boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts, String matrixParams) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployIvy = deployIvy;
@@ -116,12 +117,17 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.discardOldBuilds = discardOldBuilds;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
+        this.matrixParams = matrixParams;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.discardBuildArtifacts = discardBuildArtifacts;
     }
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public String getMatrixParams() {
+        return matrixParams;
     }
 
     public boolean isPassIdentifiedDownstream() {
@@ -228,7 +234,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyFreeStyleConfigurator.this,
                 isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                 isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts());
+                getArtifactDeploymentPatterns(), isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
+                getMatrixParams());
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);

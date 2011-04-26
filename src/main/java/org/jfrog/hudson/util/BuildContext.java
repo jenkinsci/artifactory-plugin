@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2011 JFrog Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jfrog.hudson.util;
 
 import org.apache.commons.lang.StringUtils;
@@ -29,11 +45,12 @@ public class BuildContext {
     private boolean deployIvy;
     private String artifactsPattern = "";
     private String ivyPattern = "";
+    private final String matrixParams;
 
     public BuildContext(ServerDetails details, DeployerOverrider deployerOverrider, boolean runChecks,
             boolean includePublishArtifacts, String violationRecipients, String scopes, boolean licenseAutoDiscovery,
             boolean discardOldBuilds, boolean deployArtifacts, IncludesExcludes includesExcludes,
-            boolean skipBuildInfoDeploy, boolean includeEnvVars, boolean discardBuildArtifacts) {
+            boolean skipBuildInfoDeploy, boolean includeEnvVars, boolean discardBuildArtifacts, String matrixParams) {
         this.details = details;
         this.deployerOverrider = deployerOverrider;
         this.runChecks = runChecks;
@@ -47,10 +64,15 @@ public class BuildContext {
         this.skipBuildInfoDeploy = skipBuildInfoDeploy;
         this.includeEnvVars = includeEnvVars;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.matrixParams = matrixParams;
     }
 
     public String getArtifactsPattern() {
         return getCleanString(artifactsPattern);
+    }
+
+    public String getMatrixParams() {
+        return matrixParams;
     }
 
     public void setArtifactsPattern(String artifactsPattern) {

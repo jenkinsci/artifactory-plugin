@@ -74,6 +74,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private boolean disableLicenseAutoDiscovery;
     private boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
+    private final String matrixParams;
     private boolean notM2Compatible;
     private String ivyPattern;
     private String artifactPattern;
@@ -83,7 +84,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
             boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
             String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
-            String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts) {
+            String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, String matrixParams) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -100,11 +101,16 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.artifactPattern = artifactPattern;
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.matrixParams = matrixParams;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public String getMatrixParams() {
+        return matrixParams;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -232,7 +238,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyConfigurator.this,
                 isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                 licenseAutoDiscovery, isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts());
+                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
+                getMatrixParams());
         return new AntIvyBuilderEnvironment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {

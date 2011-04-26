@@ -99,6 +99,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean disableLicenseAutoDiscovery;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
+    private final String matrixParams;
 
 
     @DataBoundConstructor
@@ -107,7 +108,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
             String violationRecipients, boolean includePublishArtifacts, String scopes,
             boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
-            boolean discardBuildArtifacts) {
+            boolean discardBuildArtifacts, String matrixParams) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -122,6 +123,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.discardOldBuilds = discardOldBuilds;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.matrixParams = matrixParams;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.skipBuildInfoDeploy = !deployBuildInfo;
     }
@@ -131,6 +133,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean isDeployArtifacts() {
         return deployArtifacts;
+    }
+
+    public String getMatrixParams() {
+        return matrixParams;
     }
 
     public ServerDetails getDetails() {
