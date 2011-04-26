@@ -208,7 +208,7 @@ public abstract class ReleaseAction implements Action {
                 nextVersion = nextMajorVersion + "";
             }
         } catch (NumberFormatException e) {
-            nextVersion = "Next.Version";
+            return fromVersion;
         }
         return nextVersion + "-SNAPSHOT";
     }

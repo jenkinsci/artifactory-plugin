@@ -54,7 +54,7 @@ public class ReleaseActionTest {
 
     public void unsupportedVersions() {
         // currently unsupported until custom/improved logic implementation
-        assertEquals(action.calculateNextVersion("1-beta"), "Next.Version-SNAPSHOT");
-        assertEquals(action.calculateNextVersion("1.2-alpha"), "Next.Version-SNAPSHOT");
+        assertEquals(action.calculateNextVersion("1-beta"), "1-beta");
+        assertEquals(action.calculateNextVersion("1.2-alpha"), "1.2-alpha");
     }
 }

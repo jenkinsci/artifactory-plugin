@@ -29,6 +29,7 @@ import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -44,8 +45,8 @@ public class GradleReleaseAction extends ReleaseAction {
 
     private final transient FreeStyleProject project;
 
-    private transient Map<String, String> versionProps;
-    private transient Map<String, String> additionalProps;
+    private transient Map<String, String> releaseProps;
+    private transient Map<String, String> nextIntegProps;
     /**
      * Map of release versions per module. Only used if versioning is per module
      */
@@ -60,12 +61,12 @@ public class GradleReleaseAction extends ReleaseAction {
         this.project = project;
     }
 
-    public String[] getVersionProperties() {
-        return getReleaseWrapper().getVersionPropsKeysList();
+    public String[] getReleaseProperties() {
+        return getReleaseWrapper().getReleasePropsKeysList();
     }
 
-    public String[] getAdditionalProperties() {
-        return getReleaseWrapper().getAdditionalPropsKeysList();
+    public String[] getNextIntegProperties() {
+        return getReleaseWrapper().getNextIntegPropsKeysList();
     }
 
     /**
@@ -78,12 +79,12 @@ public class GradleReleaseAction extends ReleaseAction {
             throw new IllegalStateException("No workspace found, cannot perform staging");
         }
         FilePath gradlePropertiesPath = new FilePath(workspace, "gradle.properties");
-        if (versionProps == null) {
-            versionProps = PropertyUtils.getModulesPropertiesFromPropFile(gradlePropertiesPath, getVersionProperties());
+        if (releaseProps == null) {
+            releaseProps = PropertyUtils.getModulesPropertiesFromPropFile(gradlePropertiesPath, getReleaseProperties());
         }
-        if (additionalProps == null) {
-            additionalProps =
-                    PropertyUtils.getModulesPropertiesFromPropFile(gradlePropertiesPath, getAdditionalProperties());
+        if (nextIntegProps == null) {
+            nextIntegProps =
+                    PropertyUtils.getModulesPropertiesFromPropFile(gradlePropertiesPath, getNextIntegProperties());
         }
     }
 
@@ -108,8 +109,8 @@ public class GradleReleaseAction extends ReleaseAction {
      * config or during startup, therefore a cleanup of the internal maps is needed.</p>
      */
     public void reset() {
-        versionProps = null;
-        additionalProps = null;
+        releaseProps = null;
+        nextIntegProps = null;
         releaseVersion = null;
     }
 
@@ -170,10 +171,39 @@ public class GradleReleaseAction extends ReleaseAction {
 
     @Override
     public String getCurrentVersion() {
-        if (versionProps == null) {
+        String version = extractNumericVersion(releaseProps.values());
+        if (StringUtils.isBlank(version)) {
+            version = extractNumericVersion(nextIntegProps.values());
+        }
+        return version;
+    }
+
+    /**
+     * Try to extract a numeric version from a collection of strings. Iterate over all the strings, stripping a snapshot
+     * suffix if any, then split the string using '.' as the separator character, then iterate over the split to see
+     * that all parts are numeric. if they are, return the value.
+     *
+     * @param versionStrings Collection of string properties.
+     * @return The version string if exists in the collection.
+     */
+    private String extractNumericVersion(Collection<String> versionStrings) {
+        if (versionStrings == null) {
             return "";
         }
-        return versionProps.values().iterator().next();
+        for (String value : versionStrings) {
+            value = StringUtils.removeEnd(value, "-SNAPSHOT");
+            String[] split = StringUtils.split(value, '.');
+            boolean isValid = true;
+            for (String number : split) {
+                if (!StringUtils.isNumeric(number)) {
+                    isValid = false;
+                }
+            }
+            if (isValid) {
+                return value;
+            }
+        }
+        return "";
     }
 
     @Override
@@ -199,16 +229,23 @@ public class GradleReleaseAction extends ReleaseAction {
 
     @SuppressWarnings({"UnusedDeclaration"})
     public String getValueForProp(String prop) {
-        return additionalProps.get(prop);
+        return nextIntegProps.get(prop);
     }
 
     @Override
     public String calculateReleaseVersion(String fromVersion) {
-        String version = versionProps.get(fromVersion);
+        String version = releaseProps.get(fromVersion);
+        if (StringUtils.isBlank(version)) {
+            version = nextIntegProps.get(fromVersion);
+        }
         if (StringUtils.isNotBlank(version)) {
             return super.calculateReleaseVersion(version);
         }
         return "";
+    }
+
+    public String getCurrentVersionFor(String moduleName) {
+        return releaseProps.get(moduleName);
     }
 
     @Override

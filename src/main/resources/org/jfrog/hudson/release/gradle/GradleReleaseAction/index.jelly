@@ -15,29 +15,24 @@
                     <f:invisibleEntry>
                         <input type="hidden" name="versioning" value="PER_MODULE"/>
                     </f:invisibleEntry>
-                    <j:forEach var="prop" items="${it.versionProperties}">
+                    <j:forEach var="prop" items="${it.releaseProperties}">
                         <f:section title="${prop}">
                             <f:entry title="Release version"
                                      help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-releaseVersion.html">
                                 <f:textbox name="release.${prop}"
                                            value="${it.calculateReleaseVersion(prop)}"/>
                             </f:entry>
-                            <f:entry title="Next development version"
-                                     help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-nextDevelopmentVersion.html">
-                                <f:textbox name="next.${prop}"
-                                           value="${it.calculateNextVersion(prop)}"/>
-                            </f:entry>
                         </f:section>
                     </j:forEach>
-                    <j:forEach var="prop" items="${it.additionalProperties}">
+                    <j:forEach var="prop" items="${it.nextIntegProperties}">
                         <f:section title="${prop}">
                             <f:entry title="Release value"
                                      help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-releaseValue.html">
-                                <f:textbox name="release.${prop}" value="${it.getValueForProp(prop)}"/>
+                                <f:textbox name="release.${prop}" value="${it.calculateReleaseVersion(prop)}"/>
                             </f:entry>
                             <f:entry title="Next Development value"
                                      help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-nextDevelopmentValue.html">
-                                <f:textbox name="next.${prop}" value="${it.getValueForProp(prop)}"/>
+                                <f:textbox name="next.${prop}" value="${it.calculateNextVersion(prop)}"/>
                             </f:entry>
                         </f:section>
                     </j:forEach>

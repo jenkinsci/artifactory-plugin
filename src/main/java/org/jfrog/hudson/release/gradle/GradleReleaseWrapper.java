@@ -45,19 +45,19 @@ public class GradleReleaseWrapper {
     private String tagPrefix;
     private String releaseBranchPrefix;
     private String alternativeTasks;
-    private String versionPropKeys;
-    private String additionalPropKeys;
+    private String releasePropsKeys;
+    private String nextIntegPropsKeys;
 
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
     public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeTasks,
-            String versionPropKeys, String additionalPropKeys) {
+            String releasePropsKeys, String nextIntegPropsKeys) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeTasks = alternativeTasks;
-        this.versionPropKeys = versionPropKeys;
-        this.additionalPropKeys = additionalPropKeys;
+        this.releasePropsKeys = releasePropsKeys;
+        this.nextIntegPropsKeys = nextIntegPropsKeys;
     }
 
     public ScmCoordinator getScmCoordinator() {
@@ -74,22 +74,22 @@ public class GradleReleaseWrapper {
         this.tagPrefix = tagPrefix;
     }
 
-    public String getVersionPropKeys() {
-        return versionPropKeys;
+    public String getReleasePropsKeys() {
+        return releasePropsKeys;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    public void setVersionPropKeys(String versionPropKeys) {
-        this.versionPropKeys = versionPropKeys;
+    public void setReleasePropsKeys(String releasePropsKeys) {
+        this.releasePropsKeys = releasePropsKeys;
     }
 
-    public String getAdditionalPropKeys() {
-        return additionalPropKeys;
+    public String getNextIntegPropsKeys() {
+        return nextIntegPropsKeys;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    public void setAdditionalPropKeys(String additionalPropKeys) {
-        this.additionalPropKeys = additionalPropKeys;
+    public void setNextIntegPropsKeys(String nextIntegPropsKeys) {
+        this.nextIntegPropsKeys = nextIntegPropsKeys;
     }
 
     public String getReleaseBranchPrefix() {
@@ -111,12 +111,12 @@ public class GradleReleaseWrapper {
         this.alternativeTasks = alternativeTasks;
     }
 
-    public String[] getVersionPropsKeysList() {
-        return stringToArray(getVersionPropKeys());
+    public String[] getReleasePropsKeysList() {
+        return stringToArray(getReleasePropsKeys());
     }
 
-    public String[] getAdditionalPropsKeysList() {
-        return stringToArray(getAdditionalPropKeys());
+    public String[] getNextIntegPropsKeysList() {
+        return stringToArray(getNextIntegPropsKeys());
     }
 
     private String[] stringToArray(String commaSeparatedString) {
@@ -168,15 +168,15 @@ public class GradleReleaseWrapper {
             BuildListener listener) throws IOException, InterruptedException {
         FilePath root = build.getModuleRoot();
         debuggingLogger.fine("Root directory is: " + root.getRemote());
-        String[] modules = release.getVersionProperties();
+        String[] modules = release.getReleaseProperties();
         Map<String, String> modulesByName = Maps.newHashMap();
         for (String module : modules) {
             String version = releaseVersion ? release.getReleaseVersionFor(module) :
-                    release.getNextVersionFor(module);
+                    release.getCurrentVersionFor(module);
             modulesByName.put(module, version);
         }
 
-        String[] additionalModuleProperties = release.getAdditionalProperties();
+        String[] additionalModuleProperties = release.getNextIntegProperties();
         for (String property : additionalModuleProperties) {
             String version = releaseVersion ? release.getReleaseVersionFor(property) :
                     release.getNextVersionFor(property);

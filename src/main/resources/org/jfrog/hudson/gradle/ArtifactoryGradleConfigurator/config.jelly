@@ -187,13 +187,13 @@
                                    default="REL-BRANCH-"/>
                     </f:entry>
                     <!--</j:if>-->
-                    <f:entry title="Version property keys"
-                             help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-versionPropKeys.html">
-                        <f:textbox name="versionPropKeys" value="${releaseWrapper.versionPropKeys}"/>
+                    <f:entry title="Release properties"
+                             help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-releasePropsKeys.html">
+                        <f:textbox name="releasePropsKeys" value="${releaseWrapper.releasePropsKeys}"/>
                     </f:entry>
-                    <f:entry title="Additional property keys"
-                             help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-additionalPropKeys.html">
-                        <f:textbox name="additionalPropKeys" value="${releaseWrapper.additionalPropKeys}"/>
+                    <f:entry title="Next-integration properties"
+                             help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-nextIntegPropsKeys.html">
+                        <f:textbox name="nextIntegPropsKeys" value="${releaseWrapper.nextIntegPropsKeys}"/>
                     </f:entry>
 
                     <f:entry title="Alternative Gradle tasks and options"
