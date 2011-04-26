@@ -179,9 +179,7 @@ public class GradleReleaseAction extends ReleaseAction {
     }
 
     /**
-     * Try to extract a numeric version from a collection of strings. Iterate over all the strings, stripping a snapshot
-     * suffix if any, then split the string using '.' as the separator character, then iterate over the split to see
-     * that all parts are numeric. if they are, return the value.
+     * Try to extract a numeric version from a collection of strings.
      *
      * @param versionStrings Collection of string properties.
      * @return The version string if exists in the collection.
