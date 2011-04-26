@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2011 JFrog Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jfrog.hudson.util;
 
 import com.google.common.collect.MapDifference;
@@ -25,6 +41,7 @@ import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
+import org.jfrog.build.client.ClientProperties;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -345,6 +362,11 @@ public class ExtractorUtils {
         // add build variables
         Map<String, String> buildVariables = build.getBuildVariables();
         configuration.fillFromProperties(buildVariables);
+        for (Map.Entry<String, String> entry : buildVariables.entrySet()) {
+            if (entry.getKey().startsWith(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX)) {
+                configuration.publisher.addMatrixParam(entry.getKey(), entry.getValue());
+            }
+        }
         Map<String, String> filteredBuildVars = Maps.newHashMap();
 
         MapDifference<String, String> buildVarDifference = Maps.difference(buildVariables, filteredBuildVars);
