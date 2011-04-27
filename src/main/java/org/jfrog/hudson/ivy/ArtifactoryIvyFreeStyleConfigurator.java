@@ -72,7 +72,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private ServerDetails details;
     private boolean deployArtifacts;
     private final Credentials overridingDeployerCredentials;
-    public final boolean deployIvy;
     public final String remotePluginLocation;
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
@@ -94,14 +93,13 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     @DataBoundConstructor
     public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
+            boolean deployArtifacts, String remotePluginLocation,
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts, String matrixParams) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
-        this.deployIvy = deployIvy;
         this.deployArtifacts = deployArtifacts;
         this.remotePluginLocation = remotePluginLocation;
         this.includeEnvVars = includeEnvVars;
@@ -208,10 +206,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     public boolean isDeployArtifacts() {
         return deployArtifacts;
-    }
-
-    public boolean isDeployIvy() {
-        return deployIvy;
     }
 
     public boolean isNotM2Compatible() {

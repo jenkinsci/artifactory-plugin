@@ -101,11 +101,6 @@
                                  inline="true"
                                  checked="${h.defaultToTrue(instance.deployArtifacts)}"
                                  title="Publish artifacts to Artifactory">
-                    <f:entry field="deployIvy"
-                             help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployIvy.html">
-                        <f:checkbox default="false" checked="${instance.deployIvy}"/>
-                        <label class="attach-previous">${%Publish Ivy descriptors (ivy.xml)}</label>
-                    </f:entry>
                     <f:block>
                         <table style="width:100%">
                             <f:optionalBlock field="notM2Compatible" negative="true"
