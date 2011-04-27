@@ -176,8 +176,11 @@ public class GradleReleaseAction extends ReleaseAction {
             version = extractNumericVersion(nextIntegProps.values());
         }
         if (StringUtils.isBlank(version)) {
-            return releaseProps.values().isEmpty() ?
-            releaseProps.values().iterator().next() : nextIntegProps.values().iterator().next();
+            if (!releaseProps.values().isEmpty()) {
+                version = releaseProps.values().iterator().next();
+            } else if (!nextIntegProps.values().isEmpty()) {
+                version = nextIntegProps.values().iterator().next();
+            }
         }
         return version;
     }
