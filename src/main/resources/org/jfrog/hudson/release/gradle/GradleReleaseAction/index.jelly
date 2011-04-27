@@ -17,7 +17,7 @@
                     </f:invisibleEntry>
                     <j:forEach var="prop" items="${it.releaseProperties}">
                         <f:section title="${prop}">
-                            <f:entry title="Release version"
+                            <f:entry title="Release value"
                                      help="/plugin/artifactory/help/release/gradle/GradleReleaseAction/help-releaseVersion.html">
                                 <f:textbox name="release.${prop}"
                                            value="${it.calculateReleaseVersion(prop)}"/>
