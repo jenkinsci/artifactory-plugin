@@ -167,7 +167,7 @@ public class BuildInfoDeployer {
         infoBuilder.licenseControl(licenseControl);
         BuildRetention buildRetention = new BuildRetention(publisher.isDiscardBuildArtifacts());
         if (publisher.isDiscardOldBuilds()) {
-            buildRetention = BuildRetentionFactory.createBuildRetention(build);
+            buildRetention = BuildRetentionFactory.createBuildRetention(build, publisher.isDiscardBuildArtifacts());
         }
         infoBuilder.buildRetention(buildRetention);
 

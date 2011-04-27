@@ -16,11 +16,12 @@ public class BuildRetentionFactory {
     /**
      * Create a Build retention object out of the build
      *
-     * @param build The build to create the build retention out of
+     * @param build               The build to create the build retention out of
+     * @param discardOldArtifacts Flag whether to discard artifacts of those builds that are to be discarded.
      * @return a new Build retention
      */
-    public static BuildRetention createBuildRetention(AbstractBuild build) {
-        BuildRetention buildRetention = new BuildRetention(true);
+    public static BuildRetention createBuildRetention(AbstractBuild build, boolean discardOldArtifacts) {
+        BuildRetention buildRetention = new BuildRetention(discardOldArtifacts);
         LogRotator rotator = build.getProject().getLogRotator();
         if (rotator == null) {
             return buildRetention;
