@@ -383,7 +383,7 @@ public class ExtractorUtils {
         if (StringUtils.isBlank(matrixParams)) {
             return;
         }
-        String[] keyValuePairs = StringUtils.split(matrixParams, ", ");
+        String[] keyValuePairs = StringUtils.split(matrixParams, "; ");
         if (keyValuePairs == null) {
             return;
         }
