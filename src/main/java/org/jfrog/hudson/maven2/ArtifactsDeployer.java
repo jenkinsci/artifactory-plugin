@@ -69,6 +69,7 @@ public class ArtifactsDeployer {
     private final boolean isArchiveJenkinsVersion;
     private final Map<String, String> env;
     private final String[] matrixParams;
+    protected final AbstractBuild<?,?> rootBuild;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
             MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) throws IOException, InterruptedException {
@@ -90,6 +91,8 @@ public class ArtifactsDeployer {
             this.patterns = IncludeExcludePatterns.EMPTY;
         }
         this.matrixParams = StringUtils.split(artifactoryPublisher.getMatrixParams(), "; ");
+        debuggingLogger.fine("Getting root build");
+        this.rootBuild = BuildUniqueIdentifierHelper.getRootBuild(mavenModuleSetBuild);
         this.isArchiveJenkinsVersion = Hudson.getVersion().isNewerThan(new VersionNumber(
                 HIGHEST_VERSION_BEFORE_ARCHIVE_FIX));
     }
@@ -154,12 +157,14 @@ public class ArtifactsDeployer {
                 .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
-
+        debuggingLogger.fine("Finding if root build needs unique identifier");
         if (downstreamIdentifier && ActionableHelper.getUpstreamCause(mavenBuild) == null) {
+            debuggingLogger.fine("Adding unique identifier to artifact:" + builder);
             BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder, env);
         }
-        AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(mavenModuleSetBuild);
+        debuggingLogger.fine("Finding if root has enabled isolation");
         if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
+            debuggingLogger.fine("Adding build.root from root build");
             BuildUniqueIdentifierHelper.addUpstreamIdentifier(builder, rootBuild);
         }
 
