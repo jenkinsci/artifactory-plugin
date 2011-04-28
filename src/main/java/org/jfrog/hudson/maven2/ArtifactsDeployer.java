@@ -89,7 +89,7 @@ public class ArtifactsDeployer {
         } else {
             this.patterns = IncludeExcludePatterns.EMPTY;
         }
-        this.matrixParams = StringUtils.split(artifactoryPublisher.getMatrixParams(), ", ");
+        this.matrixParams = StringUtils.split(artifactoryPublisher.getMatrixParams(), "; ");
         this.isArchiveJenkinsVersion = Hudson.getVersion().isNewerThan(new VersionNumber(
                 HIGHEST_VERSION_BEFORE_ARCHIVE_FIX));
     }
