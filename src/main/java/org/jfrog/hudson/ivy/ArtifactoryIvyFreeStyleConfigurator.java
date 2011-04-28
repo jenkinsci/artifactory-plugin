@@ -228,7 +228,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyFreeStyleConfigurator.this,
                 isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                 isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
+                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
                 getMatrixParams());
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
