@@ -157,7 +157,7 @@
                             </f:section>
                         </table>
                     </f:block>
-                    <f:entry title="Deployment matrix params" field="matrixParams"
+                    <f:entry title="Deployment properties" field="matrixParams"
                              help="/plugin/artifactory/help/common/help-matrixParams.html">
                         <f:textbox value="${instance.matrixParams}"/>
                     </f:entry>
