@@ -49,10 +49,9 @@ import java.net.URLDecoder;
 import java.util.List;
 
 /**
- * Maven3 builder.
+ * Maven3 builder. Hudson 1.392 added native support for maven 3 but this one is useful for free style.
  *
  * @author Yossi Shaul
- * @deprecated Hudson 1.392 added native support for maven 3
  */
 public class Maven3Builder extends Builder {
 
