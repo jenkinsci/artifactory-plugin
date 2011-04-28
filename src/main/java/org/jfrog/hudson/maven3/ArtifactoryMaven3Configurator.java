@@ -234,38 +234,17 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             build.setResult(Result.FAILURE);
             throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
-        final Maven maven = getLastMaven(build.getProject());
-        String mavenOpts = getMavenOpts(maven);
-        String targets = getMavenTargets(maven);
-        final File classWorldsFile = File.createTempFile("classworlds", "conf");
-        final BuildContext context = new BuildContext(getDetails(), ArtifactoryMaven3Configurator.this, isRunChecks(),
+           final BuildContext context = new BuildContext(getDetails(), ArtifactoryMaven3Configurator.this, isRunChecks(),
                 isIncludePublishArtifacts(), getViolationRecipients(), getScopes(), isLicenseAutoDiscovery(),
                 isDiscardOldBuilds(), isDeployArtifacts(), getArtifactDeploymentPatterns(), skipBuildInfoDeploy,
                 isIncludeEnvVars(), isDiscardBuildArtifacts(), getMatrixParams());
-        URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-freestyle.conf");
-        final String classworldsConfPath = ExtractorUtils.copyClassWorldsFile(build, resource, classWorldsFile);
-        final String finalMavenOpts = mavenOpts;
-        final String finalTargets = targets;
-        if (maven != null) {
-            FilePath mavenHomeDir =
-                    ExtractorUtils.getMavenHomeDir(build, listener, build.getEnvironment(listener), maven.getMaven());
-            setOptsField(maven,
-                    createNewMavenOpts(finalMavenOpts, build, classworldsConfPath, mavenHomeDir, listener));
-            setTargetsField(maven, finalTargets + " " + "-Dclassworlds.conf=" + classworldsConfPath);
-        }
         build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 try {
-                    ExtractorUtils.addCustomClassworlds(env, classworldsConfPath);
                     ExtractorUtils.addBuilderInfoArguments(env, build, artifactoryServer, context);
                 } catch (Exception e) {
-                    listener.getLogger().
-                            format("Failed to collect Artifactory Build Info to properties file: %s", e.getMessage()).
-                            println();
-                    build.setResult(Result.FAILURE);
-                    org.apache.commons.io.FileUtils.deleteQuietly(classWorldsFile);
                     throw new RuntimeException(e);
                 }
             }
@@ -273,89 +252,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
-                org.apache.commons.io.FileUtils.deleteQuietly(classWorldsFile);
-                if (maven != null) {
-                    setOptsField(maven, finalMavenOpts);
-                    setTargetsField(maven, finalTargets);
-                }
-                Result result = build.getResult();
-                if (result == null || result.isWorseThan(Result.SUCCESS)) {
-                    return false;
-                }
                 if (deployBuildInfo) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
                 }
                 return true;
             }
         };
-    }
-
-    private Maven getLastMaven(AbstractProject project) {
-        if (project instanceof Project) {
-            List<Maven> mavens = ActionableHelper.getBuilder((Project) project, Maven.class);
-            return Iterables.getLast(mavens, null);
-        }
-        return null;
-    }
-
-
-    private String createNewMavenOpts(String originalMavenOpts, AbstractBuild build, String classWorldsConfPath,
-            FilePath mavenHomeDir, BuildListener listener) throws IOException, InterruptedException {
-        StringBuilder builder = new StringBuilder(originalMavenOpts).append(" ");
-        builder.append("classworlds.conf=").append(classWorldsConfPath).append(" ");
-        builder.append(appendNewMavenOpts(build, originalMavenOpts)).append(" ");
-        return builder.toString();
-    }
-
-
-    private String getMavenOpts(Maven maven) {
-        if (maven != null && StringUtils.isNotBlank(maven.jvmOptions)) {
-            return maven.jvmOptions;
-        }
-        return "";
-    }
-
-    private String getMavenTargets(Maven maven) {
-        if (maven != null && StringUtils.isNotBlank(maven.targets)) {
-            return maven.targets;
-        }
-        return "";
-    }
-
-    private void setOptsField(Maven builder, String opts) {
-        try {
-            Field targetsField = builder.getClass().getDeclaredField("jvmOptions");
-            targetsField.setAccessible(true);
-            targetsField.set(builder, opts);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String appendNewMavenOpts(AbstractBuild build, String opts) throws IOException {
-        StringBuilder mavenOpts = new StringBuilder();
-        if (StringUtils.contains(opts, "-Dm3plugin.lib")) {
-            return mavenOpts.toString();
-        }
-        File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
-        try {
-            FilePath actualDependencyDirectory =
-                    PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
-            mavenOpts.append(" -Dm3plugin.lib=").append(actualDependencyDirectory.getRemote());
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return mavenOpts.toString();
-    }
-
-    private void setTargetsField(Maven builder, String targets) {
-        try {
-            Field targetsField = builder.getClass().getDeclaredField("targets");
-            targetsField.setAccessible(true);
-            targetsField.set(builder, targets);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -377,7 +279,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         @Override
         public String getDisplayName() {
-            return "Maven3-Artifactory Integration (deprecated)";
+            return "Maven3-Artifactory Integration";
         }
 
         @Override

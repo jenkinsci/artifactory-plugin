@@ -22,21 +22,13 @@ import com.google.common.collect.Maps;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Computer;
-import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
-import hudson.remoting.VirtualChannel;
-import hudson.slaves.NodeProperty;
-import hudson.slaves.NodePropertyDescriptor;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.LogRotator;
-import hudson.tasks.Maven;
-import hudson.tools.ToolLocationNodeProperty;
-import hudson.util.DescribableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
@@ -77,81 +69,6 @@ public class ExtractorUtils {
             revision = env.get("GIT_COMMIT");
         }
         return revision;
-    }
-
-    /**
-     * Get the Maven home directory from where to execute Maven from. This is primarily used when running an external
-     * Maven invocation outside of Jenkins, can will return a slave Maven home if Maven is on slave according to the
-     * maven installation.
-     *
-     * @return The maven home
-     */
-    public static FilePath getMavenHomeDir(AbstractBuild<?, ?> build, BuildListener listener, Map<String, String> env,
-            Maven.MavenInstallation mavenInstallation) {
-        Computer computer = Computer.currentComputer();
-        VirtualChannel virtualChannel = computer.getChannel();
-
-        String mavenHome = null;
-
-        //Check for a node defined tool if we are on a slave
-        if (computer instanceof SlaveComputer) {
-            mavenHome = getNodeDefinedMavenHome(build);
-        }
-
-        //Either we are on the master or that no node tool was defined
-        if (StringUtils.isBlank(mavenHome)) {
-            mavenHome = getJobDefinedMavenInstallation(listener, mavenInstallation);
-        }
-
-        //Try to find the home via the env vars
-        if (StringUtils.isBlank(mavenHome)) {
-            mavenHome = getEnvDefinedMavenHome(env);
-        }
-        return new FilePath(virtualChannel, mavenHome);
-    }
-
-    private static String getJobDefinedMavenInstallation(BuildListener listener,
-            Maven.MavenInstallation mavenInstallation) {
-        if (mavenInstallation == null) {
-            listener.error("Maven version is not configured for this project. Can't determine which Maven to run");
-            throw new Run.RunnerAbortedException();
-        }
-        String mvnHome = mavenInstallation.getHome();
-        if (mvnHome == null) {
-            listener.error("Maven '%s' doesn't have its home set", mavenInstallation.getName());
-            throw new Run.RunnerAbortedException();
-        }
-        return mvnHome;
-    }
-
-    private static String getNodeDefinedMavenHome(AbstractBuild<?, ?> build) {
-        Node currentNode = build.getBuiltOn();
-        DescribableList<NodeProperty<?>, NodePropertyDescriptor> properties = currentNode.getNodeProperties();
-        ToolLocationNodeProperty toolLocation = properties.get(ToolLocationNodeProperty.class);
-        if (toolLocation != null) {
-
-            List<ToolLocationNodeProperty.ToolLocation> locations = toolLocation.getLocations();
-            if (locations != null) {
-                for (ToolLocationNodeProperty.ToolLocation location : locations) {
-                    if (location.getType().isSubTypeOf(Maven.MavenInstallation.class)) {
-                        String installationHome = location.getHome();
-                        if (StringUtils.isNotBlank(installationHome)) {
-                            return installationHome;
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    private static String getEnvDefinedMavenHome(Map<String, String> env) {
-        String mavenHome = env.get("MAVEN_HOME");
-        if (StringUtils.isNotBlank(mavenHome)) {
-            return mavenHome;
-        }
-
-        return env.get("M2_HOME");
     }
 
     /**
