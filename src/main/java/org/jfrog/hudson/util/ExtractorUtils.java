@@ -280,7 +280,7 @@ public class ExtractorUtils {
 
     public static void addBuildRootIfNeeded(AbstractBuild build, ArtifactoryClientConfiguration configuration) {
         AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(build);
-        if (BuildUniqueIdentifierHelper.isPassIdentifiedDownstream(rootBuild)) {
+        if (rootBuild != null) {
             String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(rootBuild);
             configuration.info.setBuildRoot(identifier);
         }

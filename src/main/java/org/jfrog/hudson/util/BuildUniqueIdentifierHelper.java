@@ -65,41 +65,37 @@ public class BuildUniqueIdentifierHelper {
      * away from the current build which has the isPassIdentifiedDownstream active
      *
      * @param currentBuild The current build.
-     * @return The root build with isPassIdentifiedDownstream active.
+     * @return The root build with isPassIdentifiedDownstream active. Null if no upstream or non is found.
      */
     public static AbstractBuild<?, ?> getRootBuild(AbstractBuild<?, ?> currentBuild) {
         AbstractBuild<?, ?> rootBuild = null;
-        while (ActionableHelper.getUpstreamCause(currentBuild) != null) {
-            debuggingLogger.fine("Getting upstream cause for build: "+ currentBuild);
-            Cause.UpstreamCause cause = ActionableHelper.getUpstreamCause(currentBuild);
-            AbstractProject<?, ?> project = getProject(cause.getUpstreamProject());
-            if (project == null) {
-                throw new RuntimeException("No project found answering for the name: " + cause.getUpstreamProject());
+        AbstractBuild<?, ?> parentBuild = getUpstreamBuild(currentBuild);
+        while (parentBuild != null) {
+            if (isPassIdentifiedDownstream(parentBuild)) {
+                rootBuild = parentBuild;
             }
-            rootBuild = getBuildByNumber(project, cause.getUpstreamBuild());
-            if (rootBuild == null) {
-                throw new RuntimeException(
-                        "No build with name: " + project.getName() + " and number: " + cause.getUpstreamBuild());
-            }
-            if (isPassIdentifiedDownstream(rootBuild)) {
-                currentBuild = rootBuild;
-            }
-        }
-        if (rootBuild == null) {
-            return currentBuild;
+            parentBuild = getUpstreamBuild(parentBuild);
         }
         return rootBuild;
     }
 
-    /**
-     * Get a build according to the build's name (which is actually the project's name) and the build number.
-     *
-     * @param project     The project from which to get the build's name.
-     * @param buildNumber The build number.
-     * @return The build which answers for the name and number.
-     */
-    private static AbstractBuild<?, ?> getBuildByNumber(AbstractProject<?, ?> project, int buildNumber) {
-        return project.getBuildByNumber(buildNumber);
+    private static AbstractBuild<?, ?> getUpstreamBuild(AbstractBuild<?, ?> build) {
+        AbstractBuild<?, ?> upstreamBuild;
+        Cause.UpstreamCause cause = ActionableHelper.getUpstreamCause(build);
+        if (cause == null) {
+            return null;
+        }
+        AbstractProject<?, ?> upstreamProject = getProject(cause.getUpstreamProject());
+        if (upstreamProject == null) {
+            debuggingLogger.fine("No project found answering for the name: " + cause.getUpstreamProject());
+            return null;
+        }
+        upstreamBuild = upstreamProject.getBuildByNumber(cause.getUpstreamBuild());
+        if (upstreamBuild == null) {
+            debuggingLogger.fine(
+                    "No build with name: " + upstreamProject.getName() + " and number: " + cause.getUpstreamBuild());
+        }
+        return upstreamBuild;
     }
 
     /**
