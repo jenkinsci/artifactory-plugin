@@ -15,6 +15,7 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
 
 import java.util.Map;
+import java.util.logging.Logger;
 
 
 /**
@@ -23,6 +24,8 @@ import java.util.Map;
  * @author Tomer Cohen
  */
 public class BuildUniqueIdentifierHelper {
+    private static Logger debuggingLogger = Logger.getLogger(BuildUniqueIdentifierHelper.class.getName());
+
     private static final String BUILD_ID_PROPERTY = "${JOB_NAME}-${BUILD_NUMBER}";
 
     private BuildUniqueIdentifierHelper() {
@@ -67,6 +70,7 @@ public class BuildUniqueIdentifierHelper {
     public static AbstractBuild<?, ?> getRootBuild(AbstractBuild<?, ?> currentBuild) {
         AbstractBuild<?, ?> rootBuild = null;
         while (ActionableHelper.getUpstreamCause(currentBuild) != null) {
+            debuggingLogger.fine("Getting upstream cause for build: "+ currentBuild);
             Cause.UpstreamCause cause = ActionableHelper.getUpstreamCause(currentBuild);
             AbstractProject<?, ?> project = getProject(cause.getUpstreamProject());
             if (project == null) {
