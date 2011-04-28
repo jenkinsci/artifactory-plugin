@@ -317,6 +317,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 context.setIvyPattern(getIvyPattern());
                 context.setDeployIvy(isDeployIvy());
                 context.setDeployMaven(isDeployMaven());
+                context.setMaven2Compatible(isM2Compatible());
                 try {
                     ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
                 } catch (Exception e) {

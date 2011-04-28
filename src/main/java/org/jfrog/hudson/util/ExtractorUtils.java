@@ -156,7 +156,7 @@ public class ExtractorUtils {
         if (StringUtils.isNotBlank(context.getIvyPattern())) {
             configuration.publisher.setIvyPattern(context.getIvyPattern());
         }
-
+        configuration.publisher.setM2Compatible(context.isMaven2Compatible());
         String buildUrl = ActionableHelper.getBuildUrl(build);
         if (StringUtils.isNotBlank(buildUrl)) {
             configuration.info.setBuildUrl(buildUrl);

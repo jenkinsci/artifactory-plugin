@@ -46,6 +46,7 @@ public class BuildContext {
     private String artifactsPattern = "";
     private String ivyPattern = "";
     private final String matrixParams;
+    private boolean isMaven2Compatible;
 
     public BuildContext(ServerDetails details, DeployerOverrider deployerOverrider, boolean runChecks,
             boolean includePublishArtifacts, String violationRecipients, String scopes, boolean licenseAutoDiscovery,
@@ -169,5 +170,13 @@ public class BuildContext {
 
     private String getCleanString(String stringToClean) {
         return StringUtils.removeEnd(StringUtils.removeStart(stringToClean, "\""), "\"");
+    }
+
+    public boolean isMaven2Compatible() {
+        return isMaven2Compatible;
+    }
+
+    public void setMaven2Compatible(boolean maven2Compatible) {
+        isMaven2Compatible = maven2Compatible;
     }
 }
