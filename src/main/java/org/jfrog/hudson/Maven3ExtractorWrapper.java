@@ -128,7 +128,7 @@ public class Maven3ExtractorWrapper extends BuildWrapper {
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    @Extension(optional = true)
+    //@Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         public DescriptorImpl() {
             super(Maven3ExtractorWrapper.class);
