@@ -97,7 +97,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-            boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts, String matrixParams) {
+            boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts,
+            String matrixParams) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -326,7 +327,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
         @Override
         public String getDisplayName() {
-            return "Ant/Ivy Integration";
+            return "Ant/Ivy-Artifactory Integration";
         }
 
         @Override
