@@ -195,7 +195,7 @@
                              help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-releasePropsKeys.html">
                         <f:textbox name="releasePropsKeys" value="${releaseWrapper.releasePropsKeys}"/>
                     </f:entry>
-                    <f:entry title="Next-integration properties"
+                    <f:entry title="Next integration properties"
                              help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-nextIntegPropsKeys.html">
                         <f:textbox name="nextIntegPropsKeys" value="${releaseWrapper.nextIntegPropsKeys}"/>
                     </f:entry>
