@@ -189,7 +189,6 @@ public class ExtractorUtils {
         configuration.setTimeout(selectedArtifactoryServer.getTimeout());
         configuration.publisher.setRepoKey(context.getDetails().repositoryKey);
         if (StringUtils.isNotBlank(context.getDetails().downloadRepositoryKey)) {
-            configuration.resolver.setEnabled(true);
             configuration.resolver.setRepoKey(context.getDetails().downloadRepositoryKey);
         }
         configuration.publisher.setSnapshotRepoKey(context.getDetails().snapshotsRepositoryKey);
