@@ -29,7 +29,7 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.ArtifactoryPluginUtils;
+import org.jfrog.build.extractor.gradle.GradlePluginUtils;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
@@ -292,7 +292,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 tasks = gradleBuild.getTasks() + "";
             }
             setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
-            setTargetsField(gradleBuild, "tasks", tasks + " " + ArtifactoryPluginUtils.BUILD_INFO_TASK_NAME);
+            setTargetsField(gradleBuild, "tasks", tasks + " " + GradlePluginUtils.BUILD_INFO_TASK_NAME);
         } else {
             listener.getLogger().println("[Warning] No Gradle build configured");
         }
