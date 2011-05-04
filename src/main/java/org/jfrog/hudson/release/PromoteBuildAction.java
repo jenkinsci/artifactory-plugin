@@ -237,22 +237,30 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
             }
         }
 
+        /**
+         * Checks the status and return true on success
+         *
+         * @param response
+         * @param dryRun
+         * @param listener
+         * @return
+         */
         private boolean checkSuccess(HttpResponse response, boolean dryRun, TaskListener listener) {
             StatusLine status = response.getStatusLine();
-            if (status.getStatusCode() != 200) {
-                if (dryRun) {
-                    listener.error("Promotion failed during dry run (no change in Artifactory was done): " + status);
-                } else {
-                    listener.error("Promotion failed. View Artifactory logs for more details: " + status);
-                }
-                return false;
-            }
-
-            boolean failed = false;
             try {
-                HttpEntity entity = response.getEntity();
-                InputStream is = entity.getContent();
-                String content = IOUtils.toString(is, "UTF-8");
+                String content = entityToString(response);
+                if (status.getStatusCode() != 200) {
+                    if (dryRun) {
+                        listener.error(
+                                "Promotion failed during dry run (no change in Artifactory was done): " + status +
+                                        "\n" + content);
+                    } else {
+                        listener.error(
+                                "Promotion failed. View Artifactory logs for more details: " + status + "\n" + content);
+                    }
+                    return false;
+                }
+
                 JSONObject json = JSONObject.fromObject(content);
                 JSONArray messages = json.getJSONArray("messages");
                 for (Object messageObj : messages) {
@@ -263,15 +271,20 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
                     if ((level.equals("WARNING") || level.equals("ERROR")) &&
                             !message.startsWith("No items were")) {
                         listener.error("Received " + level + ": " + message);
-                        failed = true;
+                        return false;
                     }
                 }
+                return true;
             } catch (IOException e) {
                 e.printStackTrace(listener.error("Failed parsing promotion response:"));
-                failed = true;
+                return false;
             }
+        }
 
-            return !failed;
+        private String entityToString(HttpResponse response) throws IOException {
+            HttpEntity entity = response.getEntity();
+            InputStream is = entity.getContent();
+            return IOUtils.toString(is, "UTF-8");
         }
     }
 }

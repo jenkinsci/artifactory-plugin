@@ -4,7 +4,7 @@
     <l:layout>
         <l:main-panel>
             <f:form method="post" action="submit">
-                <f:section title="Artifactory Release Promotion">
+                <f:section title="Artifactory Pro Release Promotion">
                     <f:entry title="${%Target status}" field="targetStatus"
                              help="/plugin/artifactory/help/release/PromoteBuildAction/help-targetStatus.html">
                         <select class="setting-input" name="targetStatus">
