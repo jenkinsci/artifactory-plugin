@@ -20,6 +20,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.Cause;
 import org.jfrog.hudson.ArtifactoryPlugin;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.kohsuke.stapler.StaplerRequest;
@@ -49,6 +50,8 @@ public abstract class ReleaseAction implements Action {
      * Next (development) version to change the model to if using one global version.
      */
     protected String nextVersion;
+
+    Boolean pro;
 
 
     boolean createVcsTag;
@@ -130,6 +133,10 @@ public abstract class ReleaseAction implements Action {
 
     public String latestVersioningSelection() {
         return VERSIONING.GLOBAL.name();
+    }
+
+    public boolean isArtifactoryPro() {
+        return getArtifactoryServer().isArtifactoryPro();
     }
 
     protected String getBaseTagUrlAccordingToScm(String baseTagUrl) {
@@ -218,6 +225,8 @@ public abstract class ReleaseAction implements Action {
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public abstract List<String> getRepositoryKeys();
+
+    public abstract ArtifactoryServer getArtifactoryServer();
 
     // prefer the release repository defined in artifactory publisher
     public abstract String lastStagingRepository();

@@ -86,7 +86,7 @@
                     </f:block>
                     <f:entry title="${%Repository to stage the release to}" field="repositoryKey"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-stagingRepository.html">
-                        <select class="setting-input" name="repositoryKey">
+                        <select class="setting-input" name="repositoryKey" disabled="${!it.artifactoryPro}">
                             <j:forEach var="r" items="${it.repositoryKeys}">
                                 <f:option selected="${r==it.defaultStagingRepository}" value="${r}">${r}</f:option>
                             </j:forEach>
@@ -94,7 +94,7 @@
                     </f:entry>
                     <f:entry field="stagingComment" title="Staging comment"
                              help="/plugin/artifactory/help/release/PromoteBuildAction/help-stagingComment.html">
-                        <f:textbox name="stagingComment" value="${it.defaultStagingComment}"/>
+                        <f:textbox name="stagingComment" value="${it.defaultStagingComment}" disabled="${!it.artifactoryPro}"/>
                     </f:entry>
                     <tr>
                         <td colspan="3">

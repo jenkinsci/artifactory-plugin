@@ -22,6 +22,7 @@ import hudson.model.FreeStyleProject;
 import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -132,12 +133,21 @@ public class GradleReleaseAction extends ReleaseAction {
     @Override
     @SuppressWarnings({"UnusedDeclaration"})
     public List<String> getRepositoryKeys() {
-        ArtifactoryGradleConfigurator configurator = getGradleWrapper();
-        if (configurator != null) {
-            return configurator.getArtifactoryServer().getReleaseRepositoryKeysFirst();
+        ArtifactoryServer server = getArtifactoryServer();
+        if (server != null) {
+            return getArtifactoryServer().getReleaseRepositoryKeysFirst();
         } else {
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    public ArtifactoryServer getArtifactoryServer() {
+        ArtifactoryGradleConfigurator configurator = getGradleWrapper();
+        if (configurator != null) {
+            return configurator.getArtifactoryServer();
+        }
+        return null;
     }
 
     @Override

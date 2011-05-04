@@ -160,10 +160,8 @@ public class ArtifactoryServer {
         return virtualRepositories;
     }
 
-    public boolean isPowerPack() {
-
+    public boolean isArtifactoryPro() {
         Credentials resolvingCredentials = getResolvingCredentials();
-
         try {
             ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, resolvingCredentials.getUsername(),
                     resolvingCredentials.getPassword(), new NullLog());

@@ -22,6 +22,7 @@ import hudson.maven.MavenModuleSet;
 import hudson.maven.ModuleName;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.kohsuke.stapler.StaplerRequest;
@@ -101,6 +102,15 @@ public class MavenReleaseAction extends ReleaseAction {
         } else {
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    public ArtifactoryServer getArtifactoryServer() {
+        ArtifactoryRedeployPublisher artifactoryPublisher = getPublisher();
+        if (artifactoryPublisher != null) {
+            return artifactoryPublisher.getArtifactoryServer();
+        }
+        return null;
     }
 
     @Override
