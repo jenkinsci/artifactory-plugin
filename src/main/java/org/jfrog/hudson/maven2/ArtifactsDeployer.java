@@ -80,8 +80,15 @@ public class ArtifactsDeployer {
         this.artifactoryServer = artifactoryPublisher.getArtifactoryServer();
         // release action might change the target releases repository
         ReleaseAction releaseAction = ActionableHelper.getLatestAction(mavenModuleSetBuild, ReleaseAction.class);
-        this.targetReleasesRepository = releaseAction != null ? releaseAction.getStagingRepositoryKey() :
-                artifactoryPublisher.getRepositoryKey();
+        if (releaseAction != null) {
+            String stagingRepoKey = releaseAction.getStagingRepositoryKey();
+            if (StringUtils.isBlank(stagingRepoKey)) {
+                stagingRepoKey = artifactoryPublisher.getRepositoryKey();
+            }
+            this.targetReleasesRepository = stagingRepoKey;
+        } else {
+            this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
+        }
         this.targetSnapshotsRepository = artifactoryPublisher.getSnapshotsRepositoryKey();
         this.downstreamIdentifier = artifactoryPublisher.isPassIdentifiedDownstream();
         IncludesExcludes patterns = artifactoryPublisher.getArtifactDeploymentPatterns();

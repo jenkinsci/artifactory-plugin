@@ -303,9 +303,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             public void buildEnvVars(Map<String, String> env) {
                 ServerDetails serverDetails = getDetails();
                 ReleaseAction releaseAction = ActionableHelper.getLatestAction(build, ReleaseAction.class);
-                if (releaseAction != null && StringUtils.isNotBlank(releaseAction.getStagingRepositoryKey())) {
+                if (releaseAction != null) {
+                    String stagingRepository = releaseAction.getStagingRepositoryKey();
+                    if (StringUtils.isBlank(stagingRepository)) {
+                        stagingRepository = getRepositoryKey();
+                    }
                     serverDetails = new ServerDetails(
-                            serverDetails.artifactoryName, releaseAction.getStagingRepositoryKey(),
+                            serverDetails.artifactoryName, stagingRepository,
                             serverDetails.snapshotsRepositoryKey, serverDetails.downloadRepositoryKey);
                 }
                 final BuildContext context = new BuildContext(serverDetails, ArtifactoryGradleConfigurator.this,

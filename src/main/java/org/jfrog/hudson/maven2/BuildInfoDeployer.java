@@ -174,10 +174,14 @@ public class BuildInfoDeployer {
         // add staging status if it is a release build
         ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
         if (release != null) {
+            String stagingRepoKey = release.getStagingRepositoryKey();
+            if (StringUtils.isBlank(stagingRepoKey)) {
+                stagingRepoKey = publisher.getRepositoryKey();
+            }
             infoBuilder.addStatus(new PromotionStatusBuilder(Promotion.STAGED)
                     .timestampDate(startedTimestamp.getTime())
                     .comment(release.getStagingComment())
-                    .repository(release.getStagingRepositoryKey())
+                    .repository(stagingRepoKey)
                     .ciUser(userCause).user(artifactoryPrincipal).build());
         }
 
