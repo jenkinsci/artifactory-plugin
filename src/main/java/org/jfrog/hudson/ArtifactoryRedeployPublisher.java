@@ -19,6 +19,7 @@ package org.jfrog.hudson;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenBuild;
@@ -29,7 +30,6 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
-import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
 import hudson.model.Hudson;
 import hudson.model.Result;
@@ -41,12 +41,12 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.BuildInfoDeployer;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
@@ -241,7 +241,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
-        if (isExtractorUsed(build)) {
+        if (isExtractorUsed(build.getEnvironment(listener))) {
             return true;
         }
 
@@ -299,9 +299,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         });
     }
 
-    private boolean isExtractorUsed(AbstractBuild build) {
-        BuildableItemWithBuildWrappers project = (BuildableItemWithBuildWrappers) build.getProject();
-        return ActionableHelper.getBuildWrapper(project, Maven3ExtractorWrapper.class) != null;
+    private boolean isExtractorUsed(EnvVars env) {
+        return Boolean.parseBoolean(env.get(ExtractorUtils.EXTRACTOR_USED));
     }
 
 

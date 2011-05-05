@@ -51,6 +51,13 @@ import java.util.Map;
  * @author Tomer Cohen
  */
 public class ExtractorUtils {
+
+    /**
+     * Flag to indicate whether an external extractor was used, and the work doesn't need to be done from inside
+     * Jenkins.
+     */
+    public static final String EXTRACTOR_USED = "extractor.used";
+
     private ExtractorUtils() {
         // utility class
         throw new IllegalAccessError();
