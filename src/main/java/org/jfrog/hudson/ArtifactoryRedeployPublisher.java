@@ -242,7 +242,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
 
         if (isExtractorUsed(build.getEnvironment(listener))) {
-            build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
+            if (!skipBuildInfoDeploy) {
+                build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
+            }
             return true;
         }
 
