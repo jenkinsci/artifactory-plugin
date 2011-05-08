@@ -31,6 +31,7 @@ import hudson.util.VersionNumber;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.jfrog.build.api.BuildInfoFields;
+import org.jfrog.build.api.util.FileChecksumCalculator;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.build.client.IncludeExcludePatterns;
@@ -46,6 +47,7 @@ import org.jfrog.hudson.util.IncludesExcludes;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -57,6 +59,8 @@ import java.util.logging.Logger;
 public class ArtifactsDeployer {
     private static Logger debuggingLogger = Logger.getLogger(ArtifactsDeployer.class.getName());
     private static final String HIGHEST_VERSION_BEFORE_ARCHIVE_FIX = "1.404";
+    private static final String MD5 = "MD5";
+    private static final String SHA1 = "SHA1";
 
     private final ArtifactoryServer artifactoryServer;
     private final String targetReleasesRepository;
@@ -104,7 +108,7 @@ public class ArtifactsDeployer {
                 HIGHEST_VERSION_BEFORE_ARCHIVE_FIX));
     }
 
-    public void deploy() throws IOException, InterruptedException {
+    public void deploy() throws IOException, InterruptedException, NoSuchAlgorithmException {
         listener.getLogger().println("Deploying artifacts to " + artifactoryServer.getUrl());
         Map<MavenModule, MavenBuild> mavenBuildMap = mavenModuleSetBuild.getModuleLastBuilds();
 
@@ -145,7 +149,7 @@ public class ArtifactsDeployer {
     }
 
     private void deployArtifact(MavenBuild mavenBuild, MavenArtifact mavenArtifact)
-            throws IOException, InterruptedException {
+            throws IOException, InterruptedException, NoSuchAlgorithmException {
         String artifactPath = buildArtifactPath(mavenArtifact);
 
         if (PatternMatcher.pathConflicts(artifactPath, patterns)) {
@@ -155,12 +159,12 @@ public class ArtifactsDeployer {
         }
 
         File artifactFile = getArtifactFile(mavenBuild, mavenArtifact);
-
+        Map<String, String> checksums = FileChecksumCalculator.calculateChecksums(artifactFile, MD5, SHA1);
         DeployDetails.Builder builder = new DeployDetails.Builder()
                 .file(artifactFile)
                 .artifactPath(artifactPath)
                 .targetRepository(getTargetRepository(mavenArtifact.version))
-                .md5(mavenArtifact.md5sum)
+                .md5(checksums.get(MD5)).sha1(checksums.get(SHA1))
                 .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
