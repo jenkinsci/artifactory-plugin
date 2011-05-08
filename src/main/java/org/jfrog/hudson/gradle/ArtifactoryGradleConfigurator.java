@@ -292,7 +292,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 tasks = gradleBuild.getTasks() + "";
             }
             setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
-            setTargetsField(gradleBuild, "tasks", tasks + " " + GradlePluginUtils.BUILD_INFO_TASK_NAME);
+            if (!StringUtils.contains(originalTasks, GradlePluginUtils.BUILD_INFO_TASK_NAME)) {
+                setTargetsField(gradleBuild, "tasks", tasks + " " + GradlePluginUtils.BUILD_INFO_TASK_NAME);
+            }
         } else {
             listener.getLogger().println("[Warning] No Gradle build configured");
         }
