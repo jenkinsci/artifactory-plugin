@@ -59,7 +59,6 @@ import java.util.logging.Logger;
 public class ArtifactsDeployer {
     private static Logger debuggingLogger = Logger.getLogger(ArtifactsDeployer.class.getName());
     private static final String HIGHEST_VERSION_BEFORE_ARCHIVE_FIX = "1.404";
-    private static final String MD5 = "MD5";
     private static final String SHA1 = "SHA1";
 
     private final ArtifactoryServer artifactoryServer;
