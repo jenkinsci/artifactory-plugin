@@ -159,12 +159,13 @@ public class ArtifactsDeployer {
         }
 
         File artifactFile = getArtifactFile(mavenBuild, mavenArtifact);
-        Map<String, String> checksums = FileChecksumCalculator.calculateChecksums(artifactFile, MD5, SHA1);
+        // calculate the sha1 checksum that is not given by Jenkins and add it to the deploy details
+        Map<String, String> checksums = FileChecksumCalculator.calculateChecksums(artifactFile, SHA1);
         DeployDetails.Builder builder = new DeployDetails.Builder()
                 .file(artifactFile)
                 .artifactPath(artifactPath)
                 .targetRepository(getTargetRepository(mavenArtifact.version))
-                .md5(checksums.get(MD5)).sha1(checksums.get(SHA1))
+                .md5(mavenArtifact.md5sum).sha1(checksums.get(SHA1))
                 .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
