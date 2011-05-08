@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson;
+package org.jfrog.hudson.maven3;
 
 import hudson.Extension;
 import hudson.FilePath;
@@ -29,6 +29,8 @@ import hudson.remoting.Which;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
+import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.PluginDependencyHelper;
@@ -39,10 +41,14 @@ import java.net.URL;
 import java.util.Map;
 
 /**
+ * Build listener that sets up an environment for a native Maven build. If a native Maven build is configured and
+ * archiving is <b>disabled</b> then the external extractor is used with the environment that was taken from the
+ * publisher.
+ *
  * @author Tomer Cohen
  */
 @Extension
-public class Maven3ExtractorWrapper extends RunListener<AbstractBuild> {
+public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
 
     @Override
     public Environment setUpEnvironment(final AbstractBuild build, Launcher launcher, final BuildListener listener)
