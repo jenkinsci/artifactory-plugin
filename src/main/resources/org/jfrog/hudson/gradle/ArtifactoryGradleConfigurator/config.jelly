@@ -29,6 +29,15 @@
         </f:dropdownList>
         <f:block>
             <table style="width:100%">
+                <f:optionalBlock field="skipInjectInitScript"
+                                 help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-injectInitScript.html"
+                                 inline="true" checked="${instance.skipInjectInitScript}"
+                                 title="Project uses the Artifactory Gradle Plugin">
+                </f:optionalBlock>
+            </table>
+        </f:block>
+        <f:block>
+            <table style="width:100%">
                 <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
                 <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
                                  title="Override default deployer credentials"

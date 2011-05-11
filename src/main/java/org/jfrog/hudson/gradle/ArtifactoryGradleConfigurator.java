@@ -90,6 +90,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final GradleReleaseWrapper releaseWrapper;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
+    private final boolean skipInjectInitScript;
 
 
     @DataBoundConstructor
@@ -99,7 +100,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
-            boolean discardBuildArtifacts, String matrixParams) {
+            boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -122,6 +123,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.releaseWrapper = releaseWrapper;
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.matrixParams = matrixParams;
+        this.skipInjectInitScript = skipInjectInitScript;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
     }
 
@@ -147,6 +149,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public boolean isDiscardOldBuilds() {
         return discardOldBuilds;
+    }
+
+    public boolean isSkipInjectInitScript() {
+        return skipInjectInitScript;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -260,25 +266,30 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return new Environment() {
             };
         }
-        GradleInitScriptWriter writer = new GradleInitScriptWriter(build);
-        FilePath workspace = build.getWorkspace();
-        FilePath initScript;
-        try {
-            initScript = workspace.createTextTempFile("init-artifactory", "gradle", writer.generateInitScript(), false);
-        } catch (Exception e) {
-            listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
-            build.setResult(Result.FAILURE);
-            return new Environment() {
-            };
-        }
-
-        String initScriptPath = initScript.getRemote();
-        initScriptPath = initScriptPath.replace('\\', '/');
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
-        String originalTasks = null;
         String switches = null;
+        if (!skipInjectInitScript) {
+            GradleInitScriptWriter writer = new GradleInitScriptWriter(build);
+            FilePath workspace = build.getWorkspace();
+            FilePath initScript;
+            try {
+                initScript =
+                        workspace.createTextTempFile("init-artifactory", "gradle", writer.generateInitScript(), false);
+            } catch (Exception e) {
+                listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
+                build.setResult(Result.FAILURE);
+                return new Environment() {
+                };
+            }
+            String initScriptPath = initScript.getRemote();
+            initScriptPath = initScriptPath.replace('\\', '/');
+            if (gradleBuild != null) {
+                switches = gradleBuild.getSwitches() + "";
+                setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
+            }
+        }
+        String originalTasks = null;
         if (gradleBuild != null) {
-            switches = gradleBuild.getSwitches() + "";
             originalTasks = gradleBuild.getTasks() + "";
             final String tasks;
             if (isRelease(build)) {
@@ -291,7 +302,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             } else {
                 tasks = gradleBuild.getTasks() + "";
             }
-            setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
             if (!StringUtils.contains(originalTasks, GradlePluginUtils.BUILD_INFO_TASK_NAME)) {
                 setTargetsField(gradleBuild, "tasks", tasks + " " + GradlePluginUtils.BUILD_INFO_TASK_NAME);
             }
