@@ -119,7 +119,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
                 configuration.setContextUrl(artifactoryServer.getUrl());
                 configuration.resolver.setRepoKey(getDownloadRepositoryKey());
-                configuration.resolver.setUserName(preferredResolver.getUsername());
+                configuration.resolver.setUsername(preferredResolver.getUsername());
                 configuration.resolver.setPassword(preferredResolver.getPassword());
                 ExtractorUtils.addBuildRootIfNeeded(build, configuration);
                 env.putAll(configuration.getAllProperties());

@@ -19,6 +19,7 @@ package org.jfrog.hudson.util;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import com.google.common.io.Closeables;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.AbstractBuild;
@@ -41,11 +42,13 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author Tomer Cohen
@@ -57,6 +60,8 @@ public class ExtractorUtils {
      * Jenkins.
      */
     public static final String EXTRACTOR_USED = "extractor.used";
+    public static final String CLASSWORLDS_CONF_KEY = "classworlds.conf";
+    public static final String MAVEN_PLUGIN_OPTS = "-Dm3plugin.lib";
 
     private ExtractorUtils() {
         // utility class
@@ -117,7 +122,7 @@ public class ExtractorUtils {
      * @return The path of the classworlds.conf file
      */
     public static void addCustomClassworlds(Map<String, String> env, String classworldsConfPath) {
-        env.put("classworlds.conf", classworldsConfPath);
+        env.put(CLASSWORLDS_CONF_KEY, classworldsConfPath);
     }
 
     /**
@@ -202,7 +207,7 @@ public class ExtractorUtils {
         Credentials preferredDeployer =
                 CredentialResolver.getPreferredDeployer(context.getDeployerOverrider(), selectedArtifactoryServer);
         if (StringUtils.isNotBlank(preferredDeployer.getUsername())) {
-            configuration.publisher.setUserName(preferredDeployer.getUsername());
+            configuration.publisher.setUsername(preferredDeployer.getUsername());
             configuration.publisher.setPassword(preferredDeployer.getPassword());
         }
         configuration.info.licenseControl.setRunChecks(context.isRunChecks());
@@ -294,10 +299,28 @@ public class ExtractorUtils {
 
     public static void persistConfiguration(AbstractBuild build, ArtifactoryClientConfiguration configuration,
             Map<String, String> env) throws IOException, InterruptedException {
-        FilePath tempFile = build.getWorkspace().createTextTempFile("buildInfo", "properties", "", false);
-        configuration.setPropertiesFile(tempFile.getRemote());
+        FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", "properties", "", false);
         env.putAll(configuration.getAllRootConfig());
-        configuration.persistToPropertiesFile();
+        configuration.setPropertiesFile(propertiesFile.getRemote());
+        if (!(Computer.currentComputer() instanceof SlaveComputer)) {
+            configuration.persistToPropertiesFile();
+        } else {
+            try {
+                Properties properties = new Properties();
+                properties.putAll(configuration.getAllRootConfig());
+                properties.putAll(configuration.getAllProperties());
+                File tempFile = File.createTempFile("buildInfo", "properties");
+                FileOutputStream stream = new FileOutputStream(tempFile);
+                try {
+                    properties.store(stream, "");
+                } finally {
+                    Closeables.closeQuietly(stream);
+                }
+                propertiesFile.copyFrom(tempFile.toURI().toURL());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private static void addMatrixParams(BuildContext context, ArtifactoryClientConfiguration.PublisherHandler publisher,
