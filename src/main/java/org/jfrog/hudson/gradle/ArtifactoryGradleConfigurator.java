@@ -115,7 +115,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.scopes = scopes;
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.ivyPattern = ivyPattern;
-        this.artifactPattern = artifactPattern;
+        this.artifactPattern = cleanString(artifactPattern);
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.discardOldBuilds = discardOldBuilds;
@@ -168,7 +168,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public String getArtifactPattern() {
-        return artifactPattern;
+        return cleanString(artifactPattern);
     }
 
     public String getIvyPattern() {
@@ -237,6 +237,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public boolean isM2Compatible() {
         return !notM2Compatible;
+    }
+
+    private String cleanString(String artifactPattern) {
+        return StringUtils.removeEnd(StringUtils.removeStart(artifactPattern, "\""), "\"");
     }
 
     @Override
