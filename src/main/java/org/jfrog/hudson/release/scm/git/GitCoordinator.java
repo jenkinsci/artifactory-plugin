@@ -91,8 +91,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
         if (modifiedFilesForReleaseVersion) {
             // commit local changes
             log(String.format("Committing release version on branch '%s'", state.currentWorkingBranch));
-            String releaseVersion = releaseAction.getReleaseVersion();
-            scmManager.commitWorkingCopy("Release version " + releaseVersion);
+            scmManager.commitWorkingCopy(releaseAction.getDefaultReleaseComment());
         }
 
         if (releaseAction.isCreateVcsTag()) {

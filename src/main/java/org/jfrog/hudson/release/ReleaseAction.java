@@ -155,8 +155,8 @@ public abstract class ReleaseAction implements Action {
 
     public abstract String getDefaultReleaseBranch();
 
-    public String getDefaultTagComment() {
-        return SubversionManager.COMMENT_PREFIX + "Creating release tag for version " + calculateReleaseVersion();
+    public String getDefaultReleaseComment() {
+        return SubversionManager.COMMENT_PREFIX + "Release version " + calculateReleaseVersion();
     }
 
     public String getDefaultNextDevelCommitMessage() {

@@ -215,8 +215,8 @@ public class GradleReleaseAction extends ReleaseAction {
     }
 
     @Override
-    public String getDefaultTagComment() {
-        return SubversionManager.COMMENT_PREFIX + "Creating release tag for version " + super.calculateReleaseVersion(
+    public String getDefaultReleaseComment() {
+        return SubversionManager.COMMENT_PREFIX + "Release version " + super.calculateReleaseVersion(
                 getCurrentVersion());
     }
 
