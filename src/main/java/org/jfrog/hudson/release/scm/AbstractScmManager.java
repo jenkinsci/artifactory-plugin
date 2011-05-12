@@ -53,6 +53,6 @@ public abstract class AbstractScmManager<T extends SCM> implements ScmManager {
     }
 
     public String getDefaultNextDevelCommitMessage() {
-        return COMMENT_PREFIX + "Committing next development version";
+        return COMMENT_PREFIX + "Next development version";
     }
 }
