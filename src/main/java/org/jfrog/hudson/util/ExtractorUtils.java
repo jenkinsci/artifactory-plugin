@@ -300,8 +300,8 @@ public class ExtractorUtils {
     public static void persistConfiguration(AbstractBuild build, ArtifactoryClientConfiguration configuration,
             Map<String, String> env) throws IOException, InterruptedException {
         FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", "properties", "", false);
-        env.putAll(configuration.getAllRootConfig());
         configuration.setPropertiesFile(propertiesFile.getRemote());
+        env.putAll(configuration.getAllRootConfig());
         if (!(Computer.currentComputer() instanceof SlaveComputer)) {
             configuration.persistToPropertiesFile();
         } else {
