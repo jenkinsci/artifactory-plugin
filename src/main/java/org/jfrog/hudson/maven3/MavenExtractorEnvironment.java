@@ -84,9 +84,6 @@ public class MavenExtractorEnvironment extends Environment {
     @Override
     public boolean tearDown(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
         project.setMavenOpts(originalMavenOpts);
-        if (!buildContext.isSkipBuildInfoDeploy() && build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
-            build.getActions().add(0, new BuildInfoResultAction(buildContext.getArtifactoryName(), build));
-        }
         FileUtils.deleteQuietly(classWorldsFile);
         return true;
     }
