@@ -5,9 +5,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.maven.MavenInformation;
 import hudson.maven.MavenModuleSet;
-import hudson.maven.MavenVersionCallable;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
@@ -98,9 +96,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         EnvVars envVars = build.getEnvironment(listener);
         // get the maven installation
         Maven.MavenInstallation mavenInstallation = getMavenInstallation(project, envVars, listener);
-        MavenInformation information = build.getWorkspace().act(new MavenVersionCallable(mavenInstallation.getHome()));
+        boolean isValid =
+                build.getWorkspace().act(new MavenVersionCallable(mavenInstallation.getHome(), MINIMUM_MAVEN_VERSION));
         // if the installation is not the minimal required version do nothing.
-        if (!(isValidMavenVersion(information.getVersion()))) {
+        if (!(isValid)) {
             return new Environment() {
                 // return the empty environment
             };
@@ -142,20 +141,6 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 return super.tearDown(build, listener);
             }
         };
-    }
-
-
-    private boolean isValidMavenVersion(String version) {
-        String[] versionSplit = StringUtils.split(version, ".");
-        if (Integer.parseInt(versionSplit[0]) == 2) {
-            return false;
-        }
-        if (versionSplit.length == 3) {
-            if (Integer.parseInt(versionSplit[2]) < 2) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**
