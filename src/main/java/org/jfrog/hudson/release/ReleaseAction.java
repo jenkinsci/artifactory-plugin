@@ -159,6 +159,10 @@ public abstract class ReleaseAction implements Action {
         return SubversionManager.COMMENT_PREFIX + "Creating release tag for version " + calculateReleaseVersion();
     }
 
+    public String getDefaultNextDevelCommitMessage() {
+        return SubversionManager.COMMENT_PREFIX + "Next development version";
+    }
+
     public boolean isGit() {
         return AbstractScmCoordinator.isGitScm(project);
     }

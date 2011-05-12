@@ -66,17 +66,16 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
      * @param commitMessage@return The commit info upon successful operation.
      * @throws IOException On IO of SVN failure
      */
-    public SVNCommitInfo commitWorkingCopy(String commitMessage) throws IOException, InterruptedException {
-        final String finalCommitMessage = getCommitMessage(commitMessage, getDefaultNextDevelCommitMessage());
+    public SVNCommitInfo commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
         return build.getWorkspace().act(new FilePath.FileCallable<SVNCommitInfo>() {
             public SVNCommitInfo invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 SubversionSCM.ModuleLocation location = getLocation();
                 File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
                 try {
                     SVNCommitClient commitClient = new SVNCommitClient(createAuthenticationManager(), null);
-                    log(finalCommitMessage);
+                    log(commitMessage);
                     SVNCommitInfo commitInfo = commitClient.doCommit(new File[]{workingCopy}, true,
-                            finalCommitMessage, null, null, true, true, SVNDepth.INFINITY);
+                            commitMessage, null, null, true, true, SVNDepth.INFINITY);
                     SVNErrorMessage errorMessage = commitInfo.getErrorMessage();
                     if (errorMessage != null) {
                         throw new IOException("Failed to commit working copy: " + errorMessage.getFullMessage());

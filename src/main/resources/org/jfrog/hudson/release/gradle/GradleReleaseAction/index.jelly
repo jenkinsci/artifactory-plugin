@@ -67,7 +67,7 @@
                         <f:entry title="${%Next development version commit comment}" field="nextDevelCommitComment"
                                  help="/plugin/artifactory/help/release/ReleaseAction/help-nextDevelopmentComment.html">
                             <f:textarea rows="3" name="nextDevelCommitComment"
-                                        default="[artifactory-release] Next development version"/>
+                                        default="${it.defaultNextDevelCommitMessage}"/>
                         </f:entry>
                     </f:section>
                     <f:block>

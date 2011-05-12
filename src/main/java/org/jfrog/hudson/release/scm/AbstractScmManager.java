@@ -44,15 +44,4 @@ public abstract class AbstractScmManager<T extends SCM> implements ScmManager {
     protected void log(String message) {
         buildListener.getLogger().println("[RELEASE] " + message);
     }
-
-    protected String getCommitMessage(String commitMessage, String defaultMessage) {
-        if (StringUtils.isBlank(commitMessage)) {
-            return defaultMessage;
-        }
-        return commitMessage;
-    }
-
-    public String getDefaultNextDevelCommitMessage() {
-        return COMMENT_PREFIX + "Next development version";
-    }
 }
