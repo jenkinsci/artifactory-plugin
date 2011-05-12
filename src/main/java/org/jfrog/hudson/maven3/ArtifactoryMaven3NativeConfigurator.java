@@ -1,5 +1,7 @@
 package org.jfrog.hudson.maven3;
 
+import hudson.AbortException;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -10,11 +12,13 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.Computer;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.tasks.Maven;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -88,13 +92,18 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             throws IOException, InterruptedException {
         final MavenModuleSet project = (MavenModuleSet) build.getProject();
         try {
-            if (!isValidMavenVersion(
-                    MavenEmbedderUtils.getMavenVersion(project.getMaven().getHomeDir()).getVersion())) {
+            Maven.MavenInstallation mavenInstallation = project.getMaven();
+            if (mavenInstallation == null) {
+                throw new AbortException("A Maven installation needs to be available for this project to be built.\n" +
+                        "Either your server has no Maven installations defined, or the requested Maven version does not exist.");
+            }
+            EnvVars envVars = build.getEnvironment(listener);
+            mavenInstallation = mavenInstallation.forEnvironment(envVars).forNode(Computer.currentComputer().getNode(), listener);
+            if (!(MavenEmbedderUtils.isAtLeastMavenVersion(mavenInstallation.getHomeDir(), "3.0.2"))) {
                 return new Environment() {
                     // return the empty environment
                 };
             }
-
         } catch (MavenEmbedderException e) {
             throw new RuntimeException(e);
         }
@@ -156,20 +165,6 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         }
         return mavenOpts.toString();
     }
-
-    private boolean isValidMavenVersion(String version) {
-        String[] versionSplit = StringUtils.split(version, ".");
-        if (Integer.parseInt(versionSplit[0]) == 2) {
-            return false;
-        }
-        if (versionSplit.length == 3) {
-            if (Integer.parseInt(versionSplit[2]) < 2) {
-                return false;
-            }
-        }
-        return true;
-    }
-
 
     public ArtifactoryServer getArtifactoryServer() {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();

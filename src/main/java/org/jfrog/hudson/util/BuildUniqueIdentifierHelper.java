@@ -62,7 +62,8 @@ public class BuildUniqueIdentifierHelper {
 
     /**
      * Get the root build which triggered the current build. The build root is considered to be the one furthest one
-     * away from the current build which has the isPassIdentifiedDownstream active
+     * away from the current build which has the isPassIdentifiedDownstream active, if no parent build exists, check
+     * that the current build needs an upstream identifier, if it does return it.
      *
      * @param currentBuild The current build.
      * @return The root build with isPassIdentifiedDownstream active. Null if no upstream or non is found.
@@ -75,6 +76,9 @@ public class BuildUniqueIdentifierHelper {
                 rootBuild = parentBuild;
             }
             parentBuild = getUpstreamBuild(parentBuild);
+        }
+        if (rootBuild == null && isPassIdentifiedDownstream(currentBuild)) {
+            return currentBuild;
         }
         return rootBuild;
     }
