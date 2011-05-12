@@ -83,13 +83,12 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         });
     }
 
-    public String commitWorkingCopy(final String commitMessageSuffix) throws IOException, InterruptedException {
+    public String commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
         return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
                     GitAPI git = createGitAPI(ws);
                     // commit all the modified files
-                    String commitMessage = COMMENT_PREFIX + commitMessageSuffix;
                     String commitOutput = git.launchCommand("commit", "--all", "-m", commitMessage);
                     debuggingLogger.fine(String.format("Reset command output:%n%s", commitOutput));
                     return commitOutput;

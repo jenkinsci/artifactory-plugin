@@ -57,6 +57,7 @@ public abstract class ReleaseAction implements Action {
     boolean createVcsTag;
     String tagUrl;
     String tagComment;
+    String nextDevelCommitComment;
     String stagingRepositoryKey;
     String stagingComment;
 
@@ -113,6 +114,10 @@ public abstract class ReleaseAction implements Action {
 
     public String getTagComment() {
         return tagComment;
+    }
+
+    public String getNextDevelCommitComment() {
+        return nextDevelCommitComment;
     }
 
     public boolean isCreateReleaseBranch() {
@@ -255,7 +260,7 @@ public abstract class ReleaseAction implements Action {
             tagUrl = req.getParameter("tagUrl");
             tagComment = req.getParameter("tagComment");
         }
-
+        nextDevelCommitComment = req.getParameter("nextDevelCommitComment");
         createReleaseBranch = req.getParameter("createReleaseBranch") != null;
         if (createReleaseBranch) {
             releaseBranch = req.getParameter("releaseBranch");

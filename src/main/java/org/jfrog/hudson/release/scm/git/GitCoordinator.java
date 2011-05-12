@@ -126,7 +126,11 @@ public class GitCoordinator extends AbstractScmCoordinator {
         super.afterDevelopmentVersionChange(modified);
         if (modified) {
             log(String.format("Committing next development version on branch '%s'", state.currentWorkingBranch));
-            scmManager.commitWorkingCopy("Committing next development version");
+            String nextDevelCommitComment = releaseAction.getNextDevelCommitComment();
+            if (StringUtils.isBlank(nextDevelCommitComment)) {
+                nextDevelCommitComment = scmManager.getDefaultNextDevelCommitMessage();
+            }
+            scmManager.commitWorkingCopy(nextDevelCommitComment);
         }
     }
 

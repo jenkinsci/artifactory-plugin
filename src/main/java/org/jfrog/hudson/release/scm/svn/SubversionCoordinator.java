@@ -58,7 +58,7 @@ public class SubversionCoordinator extends AbstractScmCoordinator {
     public void afterDevelopmentVersionChange(boolean modified) throws IOException, InterruptedException {
         super.afterDevelopmentVersionChange(modified);
         if (modified) {
-            scmManager.commitWorkingCopy("Committing next development version");
+            scmManager.commitWorkingCopy(releaseAction.getNextDevelCommitComment());
         }
     }
 

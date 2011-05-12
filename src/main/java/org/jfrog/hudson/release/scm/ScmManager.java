@@ -25,7 +25,7 @@ import java.io.IOException;
  */
 public interface ScmManager {
 
-    Object commitWorkingCopy(String commitMessageSuffix) throws IOException, InterruptedException;
+    Object commitWorkingCopy(String commitMessage) throws IOException, InterruptedException;
 
     Object createTag(String tagUrl, String commitMessage)
             throws IOException, InterruptedException;

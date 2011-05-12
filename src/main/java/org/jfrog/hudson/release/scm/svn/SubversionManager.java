@@ -63,22 +63,20 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     /**
      * Commits the working copy.
      *
-     * @param commitMessageSuffix Suffix of the commit message (prefixed by '[artifactory-release]')
-     * @return The commit info upon successful operation.
+     * @param commitMessage@return The commit info upon successful operation.
      * @throws IOException On IO of SVN failure
      */
-    public SVNCommitInfo commitWorkingCopy(final String commitMessageSuffix) throws IOException, InterruptedException {
+    public SVNCommitInfo commitWorkingCopy(String commitMessage) throws IOException, InterruptedException {
+        final String finalCommitMessage = getCommitMessage(commitMessage, getDefaultNextDevelCommitMessage());
         return build.getWorkspace().act(new FilePath.FileCallable<SVNCommitInfo>() {
             public SVNCommitInfo invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
                 SubversionSCM.ModuleLocation location = getLocation();
                 File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
-
                 try {
                     SVNCommitClient commitClient = new SVNCommitClient(createAuthenticationManager(), null);
-                    String commitMessage = COMMENT_PREFIX + commitMessageSuffix;
-                    log(commitMessageSuffix);
+                    log(finalCommitMessage);
                     SVNCommitInfo commitInfo = commitClient.doCommit(new File[]{workingCopy}, true,
-                            commitMessage, null, null, true, true, SVNDepth.INFINITY);
+                            finalCommitMessage, null, null, true, true, SVNDepth.INFINITY);
                     SVNErrorMessage errorMessage = commitInfo.getErrorMessage();
                     if (errorMessage != null) {
                         throw new IOException("Failed to commit working copy: " + errorMessage.getFullMessage());
