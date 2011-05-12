@@ -49,6 +49,11 @@ import java.util.Map;
  */
 public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements ResolverOverrider {
 
+    /**
+     * The minimum Maven version that is required for the {@link AbstractRepositoryListener} to be
+     * present.
+     */
+    private static final String MINIMUM_MAVEN_VERSION = "3.0.2";
     private final ServerDetails details;
     private final Credentials overridingResolverCredentials;
 
@@ -91,15 +96,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
         final MavenModuleSet project = (MavenModuleSet) build.getProject();
+        EnvVars envVars = build.getEnvironment(listener);
         try {
-            Maven.MavenInstallation mavenInstallation = project.getMaven();
-            if (mavenInstallation == null) {
-                throw new AbortException("A Maven installation needs to be available for this project to be built.\n" +
-                        "Either your server has no Maven installations defined, or the requested Maven version does not exist.");
-            }
-            EnvVars envVars = build.getEnvironment(listener);
-            mavenInstallation = mavenInstallation.forEnvironment(envVars).forNode(Computer.currentComputer().getNode(), listener);
-            if (!(MavenEmbedderUtils.isAtLeastMavenVersion(mavenInstallation.getHomeDir(), "3.0.2"))) {
+            // get the maven installation
+            Maven.MavenInstallation mavenInstallation = getMavenInstallation(project, envVars, listener);
+            // if the installation is not the minimal required version do nothing.
+            if (!(MavenEmbedderUtils.isAtLeastMavenVersion(mavenInstallation.getHomeDir(), MINIMUM_MAVEN_VERSION))) {
                 return new Environment() {
                     // return the empty environment
                 };
@@ -144,6 +146,28 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 return super.tearDown(build, listener);
             }
         };
+    }
+
+    /**
+     * Get the {@link hudson.model.EnvironmentSpecific} and {@link hudson.slaves.NodeSpecific} Maven installation. First
+     * get the descriptor from the global Jenkins. Then populate it accordingly from the specific environment node that
+     * the process is currently running in e.g. the MAVEN_HOME variable may be defined only in the remote node and
+     * Jenkins is not persisting it as part of its installations.
+     *
+     * @param project  The Maven project that the maven installation is taken from.
+     * @param vars     The build's environment variables.
+     * @param listener The build's event listener
+     * @throws AbortException If the {@link Maven.MavenInstallation} that is taken from the project is {@code null} then
+     *                        this exception is thrown.
+     */
+    private Maven.MavenInstallation getMavenInstallation(MavenModuleSet project, EnvVars vars, BuildListener listener)
+            throws IOException, InterruptedException {
+        Maven.MavenInstallation mavenInstallation = project.getMaven();
+        if (mavenInstallation == null) {
+            throw new AbortException("A Maven installation needs to be available for this project to be built.\n" +
+                    "Either your server has no Maven installations defined, or the requested Maven version does not exist.");
+        }
+        return mavenInstallation.forEnvironment(vars).forNode(Computer.currentComputer().getNode(), listener);
     }
 
     private String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build) throws IOException {
