@@ -5,9 +5,9 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.maven.MavenEmbedderException;
-import hudson.maven.MavenEmbedderUtils;
+import hudson.maven.MavenInformation;
 import hudson.maven.MavenModuleSet;
+import hudson.maven.MavenVersionCallable;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
@@ -50,8 +50,7 @@ import java.util.Map;
 public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements ResolverOverrider {
 
     /**
-     * The minimum Maven version that is required for the {@link AbstractRepositoryListener} to be
-     * present.
+     * The minimum Maven version that is required for the {@link AbstractRepositoryListener} to be present.
      */
     private static final String MINIMUM_MAVEN_VERSION = "3.0.2";
     private final ServerDetails details;
@@ -97,17 +96,14 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             throws IOException, InterruptedException {
         final MavenModuleSet project = (MavenModuleSet) build.getProject();
         EnvVars envVars = build.getEnvironment(listener);
-        try {
-            // get the maven installation
-            Maven.MavenInstallation mavenInstallation = getMavenInstallation(project, envVars, listener);
-            // if the installation is not the minimal required version do nothing.
-            if (!(MavenEmbedderUtils.isAtLeastMavenVersion(mavenInstallation.getHomeDir(), MINIMUM_MAVEN_VERSION))) {
-                return new Environment() {
-                    // return the empty environment
-                };
-            }
-        } catch (MavenEmbedderException e) {
-            throw new RuntimeException(e);
+        // get the maven installation
+        Maven.MavenInstallation mavenInstallation = getMavenInstallation(project, envVars, listener);
+        MavenInformation information = build.getWorkspace().act(new MavenVersionCallable(mavenInstallation.getHome()));
+        // if the installation is not the minimal required version do nothing.
+        if (!(isValidMavenVersion(information.getVersion()))) {
+            return new Environment() {
+                // return the empty environment
+            };
         }
         final String mavenOpts = project.getMavenOpts();
         try {
@@ -146,6 +142,20 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 return super.tearDown(build, listener);
             }
         };
+    }
+
+
+    private boolean isValidMavenVersion(String version) {
+        String[] versionSplit = StringUtils.split(version, ".");
+        if (Integer.parseInt(versionSplit[0]) == 2) {
+            return false;
+        }
+        if (versionSplit.length == 3) {
+            if (Integer.parseInt(versionSplit[2]) < 2) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
