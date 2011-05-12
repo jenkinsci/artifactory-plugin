@@ -144,7 +144,8 @@ public class GradleReleaseWrapper {
     }
 
     public boolean tearDown(AbstractBuild build, BuildListener listener) {
-        if (build.getResult().isWorseThan(Result.SUCCESS)) {
+        Result result = build.getResult();
+        if (result == null || result.isWorseThan(Result.SUCCESS)) {
             // revert will happen by the listener
             return true;
         }
