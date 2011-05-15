@@ -6,6 +6,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
+import hudson.maven.MavenModuleSetBuild;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
@@ -30,6 +31,7 @@ import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.MavenVersionHelper;
 import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -47,10 +49,6 @@ import java.util.Map;
  */
 public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements ResolverOverrider {
 
-    /**
-     * The minimum Maven version that is required for the {@link AbstractRepositoryListener} to be present.
-     */
-    private static final String MINIMUM_MAVEN_VERSION = "3.0.2";
     private final ServerDetails details;
     private final Credentials overridingResolverCredentials;
 
@@ -92,18 +90,16 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
-        final MavenModuleSet project = (MavenModuleSet) build.getProject();
         EnvVars envVars = build.getEnvironment(listener);
-        // get the maven installation
-        Maven.MavenInstallation mavenInstallation = getMavenInstallation(project, envVars, listener);
         boolean isValid =
-                build.getWorkspace().act(new MavenVersionCallable(mavenInstallation.getHome(), MINIMUM_MAVEN_VERSION));
+                MavenVersionHelper.isAtLeastResolutionCapableVersion((MavenModuleSetBuild) build, envVars, listener);
         // if the installation is not the minimal required version do nothing.
         if (!(isValid)) {
             return new Environment() {
                 // return the empty environment
             };
         }
+        final MavenModuleSet project = (MavenModuleSet) build.getProject();
         final String mavenOpts = project.getMavenOpts();
         try {
             project.setMavenOpts(appendNewMavenOpts(project, build));

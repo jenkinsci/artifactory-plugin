@@ -16,20 +16,21 @@
 
 package org.jfrog.hudson.maven3;
 
+import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.maven.MavenModuleSet;
+import hudson.maven.MavenModuleSetBuild;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
-import hudson.model.Result;
 import hudson.remoting.Which;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
-import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.MavenVersionHelper;
 import org.jfrog.hudson.util.PluginDependencyHelper;
 
 import java.io.File;
@@ -38,8 +39,8 @@ import java.net.URL;
 import java.util.Map;
 
 /**
- * Class for setting up the {@link Environment} for a {@link MavenModuleSet} project.
- * Responsible for adding the new maven opts with the location of the plugin.
+ * Class for setting up the {@link Environment} for a {@link MavenModuleSet} project. Responsible for adding the new
+ * maven opts with the location of the plugin.
  *
  * @author Tomer Cohen
  */
@@ -52,19 +53,35 @@ public class MavenExtractorEnvironment extends Environment {
     private final AbstractBuild build;
     private final File classWorldsFile;
     private boolean setup;
+    private final BuildListener buildListener;
+    private final EnvVars envVars;
 
-    public MavenExtractorEnvironment(MavenModuleSet project, ArtifactoryRedeployPublisher publisher,
-            BuildContext buildContext, AbstractBuild build) throws IOException {
-        this.project = project;
+    public MavenExtractorEnvironment(MavenModuleSetBuild build, ArtifactoryRedeployPublisher publisher,
+            BuildContext buildContext, BuildListener buildListener) throws IOException, InterruptedException {
+        this.buildListener = buildListener;
+        this.project = build.getProject();
         this.build = build;
         this.publisher = publisher;
         this.buildContext = buildContext;
         this.originalMavenOpts = project.getMavenOpts();
+        this.envVars = build.getEnvironment(buildListener);
         this.classWorldsFile = File.createTempFile("classworlds", "conf");
     }
 
     @Override
     public void buildEnvVars(Map<String, String> env) {
+        boolean isValid;
+        try {
+            isValid = MavenVersionHelper
+                    .isAtLeastResolutionCapableVersion((MavenModuleSetBuild) build, envVars, buildListener);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+
+        }
+        // if not valid Maven version return empty environment
+        if (!isValid) {
+            return;
+        }
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
         if (setup) {
             return;
@@ -101,7 +118,8 @@ public class MavenExtractorEnvironment extends Environment {
         try {
             FilePath actualDependencyDirectory =
                     PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
-            mavenOpts.append(" ").append(ExtractorUtils.MAVEN_PLUGIN_OPTS).append("=").append(actualDependencyDirectory.getRemote());
+            mavenOpts.append(" ").append(ExtractorUtils.MAVEN_PLUGIN_OPTS).append("=")
+                    .append(actualDependencyDirectory.getRemote());
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

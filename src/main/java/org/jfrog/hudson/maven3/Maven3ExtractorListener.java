@@ -16,9 +16,11 @@
 
 package org.jfrog.hudson.maven3;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
+import hudson.maven.MavenModuleSetBuild;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
@@ -26,6 +28,7 @@ import hudson.model.Result;
 import hudson.model.listeners.RunListener;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.util.BuildContext;
+import org.jfrog.hudson.util.MavenVersionHelper;
 
 import java.io.IOException;
 
@@ -43,16 +46,12 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
     public Environment setUpEnvironment(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
         // if not a native maven project return empty env.
-        if (!(build.getProject() instanceof MavenModuleSet)) {
+        if (!(build instanceof MavenModuleSetBuild)) {
             return new Environment() {
             };
         }
+
         final MavenModuleSet project = (MavenModuleSet) build.getProject();
-        // if archiving is enabled return empty env.
-        if (!project.isArchivingDisabled()) {
-            return new Environment() {
-            };
-        }
         final ArtifactoryRedeployPublisher publisher = project.getPublishers().get(ArtifactoryRedeployPublisher.class);
         // if the artifactory publisher is not active, return empty env.
         if (publisher == null) {
@@ -60,7 +59,7 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
             };
         }
         build.setResult(Result.SUCCESS);
-        return new MavenExtractorEnvironment(project, publisher, createBuildContextFromPublisher(publisher), build);
+        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher, createBuildContextFromPublisher(publisher), listener);
     }
 
     private BuildContext createBuildContextFromPublisher(ArtifactoryRedeployPublisher publisher) {
