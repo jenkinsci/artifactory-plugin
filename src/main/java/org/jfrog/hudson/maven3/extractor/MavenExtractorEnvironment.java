@@ -38,7 +38,7 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-public class MavenExtractorEnvironment extends BaseMavenEnvironment {
+public class MavenExtractorEnvironment extends Environment {
 
     private final MavenModuleSet project;
     private final String originalMavenOpts;
@@ -85,7 +85,7 @@ public class MavenExtractorEnvironment extends BaseMavenEnvironment {
                 classworldsConf = ExtractorUtils.copyClassWorldsFile(build, resource);
                 ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
             }
-            project.setMavenOpts(appendNewMavenOpts(project, build));
+            ExtractorUtils.appendNewMavenOpts(project, build);
             ExtractorUtils.addBuilderInfoArguments(env, build, publisher.getArtifactoryServer(), buildContext);
             setup = true;
         } catch (Exception e) {
