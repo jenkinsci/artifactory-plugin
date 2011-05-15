@@ -84,6 +84,7 @@ public class ArtifactoryMaven3NativeConfigurator extends MavenResolutionWrapper 
                 MavenVersionHelper.isAtLeastResolutionCapableVersion((MavenModuleSetBuild) build, envVars, listener);
         // if the installation is not the minimal required version do nothing.
         if (!(isValid)) {
+            listener.getLogger().println("[Jenkins] Maven 3.0.2 or higher is required for repository enforcement.");
             return new Environment() {
                 // return the empty environment
             };
