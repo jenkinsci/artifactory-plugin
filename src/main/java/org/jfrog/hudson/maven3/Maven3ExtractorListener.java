@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson.maven3;
 
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
@@ -27,8 +26,8 @@ import hudson.model.Environment;
 import hudson.model.Result;
 import hudson.model.listeners.RunListener;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.maven3.extractor.MavenExtractorEnvironment;
 import org.jfrog.hudson.util.BuildContext;
-import org.jfrog.hudson.util.MavenVersionHelper;
 
 import java.io.IOException;
 

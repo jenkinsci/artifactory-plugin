@@ -1,9 +1,7 @@
 package org.jfrog.hudson.maven3;
 
-import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
@@ -11,43 +9,30 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
-import hudson.model.Computer;
 import hudson.model.Hudson;
 import hudson.model.Result;
-import hudson.remoting.Which;
-import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.tasks.Maven;
 import net.sf.json.JSONObject;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.ArtifactoryClientConfiguration;
-import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.maven3.extractor.MavenResolutionWrapper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.MavenVersionHelper;
-import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Tomer Cohen
  */
-public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements ResolverOverrider {
+public class ArtifactoryMaven3NativeConfigurator extends MavenResolutionWrapper implements ResolverOverrider {
 
     private final ServerDetails details;
     private final Credentials overridingResolverCredentials;
@@ -90,6 +75,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
+        if (!(build instanceof MavenModuleSetBuild)) {
+            return new Environment() {
+            };
+        }
         EnvVars envVars = build.getEnvironment(listener);
         boolean isValid =
                 MavenVersionHelper.isAtLeastResolutionCapableVersion((MavenModuleSetBuild) build, envVars, listener);
@@ -99,86 +88,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 // return the empty environment
             };
         }
-        final MavenModuleSet project = (MavenModuleSet) build.getProject();
-        final String mavenOpts = project.getMavenOpts();
-        try {
-            project.setMavenOpts(appendNewMavenOpts(project, build));
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to manipulate maven_opts for project: " + project, e);
-        }
-        final File classWorldsFile = File.createTempFile("classworlds", "conf");
-        URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-native.conf");
-        final String classworldsConfPath = ExtractorUtils.copyClassWorldsFile(build, resource, classWorldsFile);
         build.setResult(Result.SUCCESS);
-        return new Environment() {
-            @Override
-            public void buildEnvVars(Map<String, String> env) {
-                super.buildEnvVars(env);
-                final ArtifactoryServer artifactoryServer = getArtifactoryServer();
-                Credentials preferredResolver = CredentialResolver
-                        .getPreferredResolver(ArtifactoryMaven3NativeConfigurator.this, artifactoryServer);
+        Credentials preferredResolver = CredentialResolver
+                .getPreferredResolver(ArtifactoryMaven3NativeConfigurator.this, getArtifactoryServer());
+        return new MavenResolutionEnvironment(getArtifactoryServer(), preferredResolver,
+                getDownloadRepositoryKey(), (MavenModuleSetBuild) build);
 
-                ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
-                configuration.setContextUrl(artifactoryServer.getUrl());
-                configuration.resolver.setRepoKey(getDownloadRepositoryKey());
-                configuration.resolver.setUsername(preferredResolver.getUsername());
-                configuration.resolver.setPassword(preferredResolver.getPassword());
-                ExtractorUtils.addBuildRootIfNeeded(build, configuration);
-                env.putAll(configuration.getAllProperties());
-                ExtractorUtils.addCustomClassworlds(env, classworldsConfPath);
-            }
-
-            @Override
-            public boolean tearDown(AbstractBuild build, BuildListener listener)
-                    throws IOException, InterruptedException {
-                final MavenModuleSet project = (MavenModuleSet) build.getProject();
-                project.setMavenOpts(mavenOpts);
-                FileUtils.deleteQuietly(classWorldsFile);
-                return super.tearDown(build, listener);
-            }
-        };
-    }
-
-    /**
-     * Get the {@link hudson.model.EnvironmentSpecific} and {@link hudson.slaves.NodeSpecific} Maven installation. First
-     * get the descriptor from the global Jenkins. Then populate it accordingly from the specific environment node that
-     * the process is currently running in e.g. the MAVEN_HOME variable may be defined only in the remote node and
-     * Jenkins is not persisting it as part of its installations.
-     *
-     * @param project  The Maven project that the maven installation is taken from.
-     * @param vars     The build's environment variables.
-     * @param listener The build's event listener
-     * @throws AbortException If the {@link Maven.MavenInstallation} that is taken from the project is {@code null} then
-     *                        this exception is thrown.
-     */
-    private Maven.MavenInstallation getMavenInstallation(MavenModuleSet project, EnvVars vars, BuildListener listener)
-            throws IOException, InterruptedException {
-        Maven.MavenInstallation mavenInstallation = project.getMaven();
-        if (mavenInstallation == null) {
-            throw new AbortException("A Maven installation needs to be available for this project to be built.\n" +
-                    "Either your server has no Maven installations defined, or the requested Maven version does not exist.");
-        }
-        return mavenInstallation.forEnvironment(vars).forNode(Computer.currentComputer().getNode(), listener);
-    }
-
-    private String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build) throws IOException {
-        StringBuilder mavenOpts = new StringBuilder();
-        String opts = project.getMavenOpts();
-        if (StringUtils.isNotBlank(opts)) {
-            mavenOpts.append(opts);
-        }
-        if (StringUtils.contains(mavenOpts.toString(), "-Dm3plugin.lib")) {
-            return mavenOpts.toString();
-        }
-        File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
-        try {
-            FilePath actualDependencyDirectory =
-                    PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
-            mavenOpts.append(" -Dm3plugin.lib=").append(actualDependencyDirectory.getRemote());
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return mavenOpts.toString();
     }
 
     public ArtifactoryServer getArtifactoryServer() {

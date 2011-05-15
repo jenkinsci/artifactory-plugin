@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.maven3;
+package org.jfrog.hudson.maven3.extractor;
 
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -23,17 +23,11 @@ import hudson.maven.MavenModuleSetBuild;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
-import hudson.remoting.Which;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.MavenVersionHelper;
-import org.jfrog.hudson.util.PluginDependencyHelper;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
@@ -44,17 +38,17 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-public class MavenExtractorEnvironment extends Environment {
+public class MavenExtractorEnvironment extends BaseMavenEnvironment {
 
     private final MavenModuleSet project;
     private final String originalMavenOpts;
     private final ArtifactoryRedeployPublisher publisher;
     private final BuildContext buildContext;
     private final AbstractBuild build;
-    private final File classWorldsFile;
-    private boolean setup;
     private final BuildListener buildListener;
     private final EnvVars envVars;
+    private FilePath classworldsConf;
+    private boolean setup;
 
     public MavenExtractorEnvironment(MavenModuleSetBuild build, ArtifactoryRedeployPublisher publisher,
             BuildContext buildContext, BuildListener buildListener) throws IOException, InterruptedException {
@@ -65,7 +59,6 @@ public class MavenExtractorEnvironment extends Environment {
         this.buildContext = buildContext;
         this.originalMavenOpts = project.getMavenOpts();
         this.envVars = build.getEnvironment(buildListener);
-        this.classWorldsFile = File.createTempFile("classworlds", "conf");
     }
 
     @Override
@@ -88,10 +81,12 @@ public class MavenExtractorEnvironment extends Environment {
         }
         try {
             URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-native.conf");
-            String classworldsConfPath = ExtractorUtils.copyClassWorldsFile(build, resource, classWorldsFile);
+            if (!env.containsKey(ExtractorUtils.CLASSWORLDS_CONF_KEY)) {
+                classworldsConf = ExtractorUtils.copyClassWorldsFile(build, resource);
+                ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
+            }
             project.setMavenOpts(appendNewMavenOpts(project, build));
             ExtractorUtils.addBuilderInfoArguments(env, build, publisher.getArtifactoryServer(), buildContext);
-            ExtractorUtils.addCustomClassworlds(env, classworldsConfPath);
             setup = true;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -101,28 +96,9 @@ public class MavenExtractorEnvironment extends Environment {
     @Override
     public boolean tearDown(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
         project.setMavenOpts(originalMavenOpts);
-        FileUtils.deleteQuietly(classWorldsFile);
+        if (classworldsConf != null) {
+            classworldsConf.delete();
+        }
         return true;
-    }
-
-    private String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build) throws IOException {
-        StringBuilder mavenOpts = new StringBuilder();
-        String opts = project.getMavenOpts();
-        if (StringUtils.isNotBlank(opts)) {
-            mavenOpts.append(opts);
-        }
-        if (StringUtils.contains(mavenOpts.toString(), ExtractorUtils.MAVEN_PLUGIN_OPTS)) {
-            return mavenOpts.toString();
-        }
-        File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
-        try {
-            FilePath actualDependencyDirectory =
-                    PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
-            mavenOpts.append(" ").append(ExtractorUtils.MAVEN_PLUGIN_OPTS).append("=")
-                    .append(actualDependencyDirectory.getRemote());
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return mavenOpts.toString();
     }
 }
