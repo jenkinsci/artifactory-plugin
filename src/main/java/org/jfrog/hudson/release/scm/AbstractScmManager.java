@@ -19,7 +19,6 @@ package org.jfrog.hudson.release.scm;
 import hudson.model.AbstractBuild;
 import hudson.model.TaskListener;
 import hudson.scm.SCM;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * Abstract shared implementation f an {@link ScmManager}.
@@ -42,6 +41,10 @@ public abstract class AbstractScmManager<T extends SCM> implements ScmManager {
     }
 
     protected void log(String message) {
+        log(buildListener, message);
+    }
+
+    protected static void log(TaskListener buildListener, String message) {
         buildListener.getLogger().println("[RELEASE] " + message);
     }
 }

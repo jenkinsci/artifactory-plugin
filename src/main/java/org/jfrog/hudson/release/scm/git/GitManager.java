@@ -47,209 +47,69 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     public String getCurrentCommitHash() throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    GitAPI git = createGitAPI(ws);
-                    // commit all the modified files
-                    String baseCommit = git.launchCommand("rev-parse", "--verify", "HEAD").trim();
-                    debuggingLogger.fine(String.format("Base commit hash%s", baseCommit));
-                    return baseCommit;
-                } catch (GitException e) {
-                    throw new IOException("Failed retrieving current commit hash: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        return workspace.act(new CurrentCommitCallable(createGitAPI(workspace)));
     }
 
     public String checkoutBranch(final String branch, final boolean create) throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    GitAPI git = createGitAPI(ws);
-                    // commit all the modified files
-                    ArgumentListBuilder args = new ArgumentListBuilder("checkout");
-                    if (create) {
-                        args.add("-b"); // force create new branch
-                    }
-                    args.add(branch);
-                    String checkoutResult = git.launchCommand(args);
-                    debuggingLogger.fine(String.format("Checkout result: %s", checkoutResult));
-                    return checkoutResult;
-                } catch (GitException e) {
-                    throw new IOException("Failed checkout branch: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        return workspace.act(new CheckoutBranchCallable(createGitAPI(workspace), create, branch));
     }
 
-    public String commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    GitAPI git = createGitAPI(ws);
-                    // commit all the modified files
-                    String commitOutput = git.launchCommand("commit", "--all", "-m", commitMessage);
-                    debuggingLogger.fine(String.format("Reset command output:%n%s", commitOutput));
-                    return commitOutput;
-                } catch (GitException e) {
-                    throw new IOException("Git working copy commit failed: " + e.getMessage());
-                }
-            }
-        });
+    public void commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
+        FilePath workspace = build.getWorkspace();
+        workspace.act(new CommitWorkingCopyCallable(createGitAPI(workspace), commitMessage));
     }
 
-    public String createTag(final String tagName, final String commitMessage)
+    public void createTag(final String tagName, final String commitMessage)
             throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    String escapedTagName = tagName.replace(' ', '_');
-                    log(String.format("Creating tag '%s'", escapedTagName));
-                    GitAPI git = createGitAPI(ws);
-                    if (git.tagExists(escapedTagName)) {
-                        throw new IOException("Git tag '" + escapedTagName + "' already exists");
-                    }
-                    String tagOutput = git.launchCommand("tag", "-a", escapedTagName, "-m", commitMessage);
-                    debuggingLogger.fine(String.format("Tag command output:%n%s", tagOutput));
-                    return tagOutput;
-                } catch (GitException e) {
-                    throw new IOException("Git tag creation failed: " + e.getMessage());
-                }
-            }
-        });
+        build.getWorkspace()
+                .act(new CreateTagCallable(createGitAPI(build.getWorkspace()), tagName, commitMessage, buildListener));
     }
 
     public String push(final String remoteRepository, final String branch) throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    GitAPI git = createGitAPI(workspace);
-                    log(String.format("Pushing branch '%s' to '%s'", branch, remoteRepository));
-                    String pushOutput = git.launchCommand("push", remoteRepository, "refs/heads/" + branch);
-                    debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
-                    return pushOutput;
-                } catch (GitException e) {
-                    throw new IOException("Failed to push: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        return workspace.act(new PushCallable(createGitAPI(workspace), branch, remoteRepository, buildListener));
     }
 
     public String pushTag(final String remoteRepository, final String tagName)
             throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    String escapedTagName = tagName.replace(' ', '_');
-                    GitAPI git = createGitAPI(workspace);
-                    log(String.format("Pushing tag '%s' to '%s'", tagName, remoteRepository));
-                    String pushOutput = git.launchCommand("push", remoteRepository, "refs/tags/" + escapedTagName);
-                    debuggingLogger.fine(String.format("Push tag command output:%n%s", pushOutput));
-                    return pushOutput;
-                } catch (GitException e) {
-                    throw new IOException("Failed to push tag: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        return workspace.act(new PushTagCallable(createGitAPI(workspace), tagName, remoteRepository, buildListener));
     }
 
     public String pull(final String remoteRepository, final String branch) throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    GitAPI git = createGitAPI(workspace);
-                    log("Pulling changes");
-                    String pushOutput = git.launchCommand("pull", remoteRepository, branch);
-                    debuggingLogger.fine(String.format("Pull command output:%n%s", pushOutput));
-                    return pushOutput;
-                } catch (GitException e) {
-                    throw new IOException("Failed to pull: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        return workspace.act(new PullCallable(createGitAPI(workspace), remoteRepository, branch, buildListener));
     }
 
     public void revertWorkingCopy(final String commitIsh) throws IOException, InterruptedException {
-        build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    GitAPI git = createGitAPI(workspace);
-                    log("Reverting git working copy back to initial commit: " + commitIsh);
-                    String resetOutput = git.launchCommand("reset", "--hard", commitIsh);
-                    debuggingLogger.fine(String.format("Reset command output:%n%s", resetOutput));
-                    return resetOutput;
-                } catch (GitException e) {
-                    throw new IOException("Failed to reset working copy: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        workspace.act(new RevertCallable(createGitAPI(workspace), commitIsh, buildListener));
     }
 
     public String deleteLocalBranch(final String branch) throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    log("Deleting local git branch: " + branch);
-                    GitAPI git = createGitAPI(workspace);
-                    String output = git.launchCommand("branch", "-D", branch);
-                    debuggingLogger.fine(String.format("Delete branch output:%n%s", output));
-                    return output;
-                } catch (GitException e) {
-                    throw new IOException("Git branch deletion failed: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        return workspace.act(new DeleteLocalBranchCallable(createGitAPI(workspace), branch, buildListener));
     }
 
     public String deleteRemoteBranch(final String remoteRepository, final String branch)
             throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File workspace, VirtualChannel channel) throws IOException {
-                try {
-                    GitAPI git = createGitAPI(workspace);
-                    log(String.format("Deleting remote branch '%s' on '%s'", branch, remoteRepository));
-                    String pushOutput = git.launchCommand("push", remoteRepository, ":refs/heads/" + branch);
-                    debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
-                    return pushOutput;
-                } catch (GitException e) {
-                    throw new IOException("Failed to push: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        return workspace
+                .act(new DeleteRemoteBranchCallable(createGitAPI(workspace), branch, remoteRepository, buildListener));
     }
 
     public String deleteLocalTag(final String tag) throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    log("Deleting local tag: " + tag);
-                    GitAPI git = createGitAPI(workspace);
-                    String output = git.launchCommand("tag", "-d", tag);
-                    debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
-                    return output;
-                } catch (GitException e) {
-                    throw new IOException("Git tag deletion failed: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        return workspace.act(new DeleteLocalTagCallable(createGitAPI(workspace), tag, buildListener));
     }
 
     public String deleteRemoteTag(final String remoteRepository, final String tag)
             throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    log(String.format("Deleting remote tag '%s' from '%s'", tag, remoteRepository));
-                    GitAPI git = createGitAPI(workspace);
-                    String output = git.launchCommand("push", remoteRepository, ":refs/tags/" + tag);
-                    debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
-                    return output;
-                } catch (GitException e) {
-                    throw new IOException("Git tag deletion failed: " + e.getMessage());
-                }
-            }
-        });
+        FilePath workspace = build.getWorkspace();
+        return workspace
+                .act(new DeleteRemoteTagCallable(createGitAPI(workspace), tag, remoteRepository, buildListener));
     }
 
     public String getRemoteUrl() {
@@ -258,9 +118,9 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         return uri.toPrivateString();
     }
 
-    private GitAPI createGitAPI(File workspace) throws IOException {
+    private GitAPI createGitAPI(FilePath workspace) throws IOException {
         GitSCM gitSCM = getHudsonScm();
-        File workingCopy = getWorkingDirectory(workspace);
+        File workingCopy = getWorkingDirectory(new File(workspace.getRemote()));
         String gitExe = gitSCM.getGitExe(build.getBuiltOn(), buildListener);
 
         EnvVars gitEnvironment;
@@ -289,5 +149,298 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         GitSCM gitSCM = getHudsonScm();
         String relativeTargetDir = gitSCM.getRelativeTargetDir() == null ? "" : gitSCM.getRelativeTargetDir();
         return new File(ws, relativeTargetDir).getCanonicalFile();
+    }
+
+    private static class CurrentCommitCallable implements FilePath.FileCallable<String> {
+        private final GitAPI git;
+
+        private CurrentCommitCallable(GitAPI git) {
+            this.git = git;
+        }
+
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                // commit all the modified files
+                String baseCommit = git.launchCommand("rev-parse", "--verify", "HEAD").trim();
+                debuggingLogger.fine(String.format("Base commit hash%s", baseCommit));
+                return baseCommit;
+            } catch (GitException e) {
+                throw new IOException("Failed retrieving current commit hash: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class CheckoutBranchCallable implements FilePath.FileCallable<String> {
+        private final boolean create;
+        private final String branch;
+        private GitAPI git;
+
+        public CheckoutBranchCallable(GitAPI git, boolean create, String branch) {
+            this.create = create;
+            this.branch = branch;
+            this.git = git;
+        }
+
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                // commit all the modified files
+                ArgumentListBuilder args = new ArgumentListBuilder("checkout");
+                if (create) {
+                    args.add("-b"); // force create new branch
+                }
+                args.add(branch);
+                String checkoutResult = git.launchCommand(args);
+                debuggingLogger.fine(String.format("Checkout result: %s", checkoutResult));
+                return checkoutResult;
+            } catch (GitException e) {
+                throw new IOException("Failed checkout branch: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class CommitWorkingCopyCallable implements FilePath.FileCallable<String> {
+        private GitAPI git;
+        private final String commitMessage;
+
+        public CommitWorkingCopyCallable(GitAPI git, String commitMessage) {
+            this.commitMessage = commitMessage;
+            this.git = git;
+        }
+
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                // commit all the modified files
+                String commitOutput = git.launchCommand("commit", "--all", "-m", commitMessage);
+                debuggingLogger.fine(String.format("Reset command output:%n%s", commitOutput));
+                return commitOutput;
+            } catch (GitException e) {
+                throw new IOException("Git working copy commit failed: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class CreateTagCallable implements FilePath.FileCallable<String> {
+        private final String tagName;
+        private final String commitMessage;
+        private GitAPI git;
+        private final TaskListener listener;
+
+        public CreateTagCallable(GitAPI git, String tagName, String commitMessage, TaskListener listener) {
+            this.tagName = tagName;
+            this.commitMessage = commitMessage;
+            this.git = git;
+            this.listener = listener;
+        }
+
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                String escapedTagName = tagName.replace(' ', '_');
+                log(listener, String.format("Creating tag '%s'", escapedTagName));
+                if (git.tagExists(escapedTagName)) {
+                    throw new IOException("Git tag '" + escapedTagName + "' already exists");
+                }
+                String tagOutput = git.launchCommand("tag", "-a", escapedTagName, "-m", commitMessage);
+                debuggingLogger.fine(String.format("Tag command output:%n%s", tagOutput));
+                return tagOutput;
+            } catch (GitException e) {
+                throw new IOException("Git tag creation failed: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class PushCallable implements FilePath.FileCallable<String> {
+        private final String branch;
+        private final String remoteRepository;
+        private GitAPI git;
+        private TaskListener taskListener;
+
+        public PushCallable(GitAPI git, String branch, String remoteRepository, TaskListener taskListener) {
+            this.branch = branch;
+            this.remoteRepository = remoteRepository;
+            this.git = git;
+            this.taskListener = taskListener;
+        }
+
+        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                log(taskListener, String.format("Pushing branch '%s' to '%s'", branch, remoteRepository));
+                String pushOutput = git.launchCommand("push", remoteRepository, "refs/heads/" + branch);
+                debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
+                return pushOutput;
+            } catch (GitException e) {
+                throw new IOException("Failed to push: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class PushTagCallable implements FilePath.FileCallable<String> {
+        private final GitAPI git;
+        private final String tagName;
+        private final String remoteRepository;
+        private final TaskListener taskListener;
+
+        public PushTagCallable(GitAPI git, String tagName, String remoteRepository, TaskListener taskListener) {
+            this.git = git;
+            this.tagName = tagName;
+            this.remoteRepository = remoteRepository;
+            this.taskListener = taskListener;
+        }
+
+        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                String escapedTagName = tagName.replace(' ', '_');
+                log(taskListener, String.format("Pushing tag '%s' to '%s'", tagName, remoteRepository));
+                String pushOutput = git.launchCommand("push", remoteRepository, "refs/tags/" + escapedTagName);
+                debuggingLogger.fine(String.format("Push tag command output:%n%s", pushOutput));
+                return pushOutput;
+            } catch (GitException e) {
+                throw new IOException("Failed to push tag: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class PullCallable implements FilePath.FileCallable<String> {
+        private final GitAPI git;
+        private final String remoteRepository;
+        private final String branch;
+        private final TaskListener taskListener;
+
+        public PullCallable(GitAPI git, String remoteRepository, String branch, TaskListener taskListener) {
+            this.git = git;
+            this.remoteRepository = remoteRepository;
+            this.branch = branch;
+            this.taskListener = taskListener;
+        }
+
+        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                log(taskListener, "Pulling changes");
+                String pushOutput = git.launchCommand("pull", remoteRepository, branch);
+                debuggingLogger.fine(String.format("Pull command output:%n%s", pushOutput));
+                return pushOutput;
+            } catch (GitException e) {
+                throw new IOException("Failed to pull: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class RevertCallable implements FilePath.FileCallable<String> {
+        private final GitAPI git;
+        private final String commitIsh;
+        private final TaskListener taskListener;
+
+        public RevertCallable(GitAPI git, String commitIsh, TaskListener taskListener) {
+            this.git = git;
+            this.commitIsh = commitIsh;
+            this.taskListener = taskListener;
+        }
+
+        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                log(taskListener, "Reverting git working copy back to initial commit: " + commitIsh);
+                String resetOutput = git.launchCommand("reset", "--hard", commitIsh);
+                debuggingLogger.fine(String.format("Reset command output:%n%s", resetOutput));
+                return resetOutput;
+            } catch (GitException e) {
+                throw new IOException("Failed to reset working copy: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class DeleteLocalBranchCallable implements FilePath.FileCallable<String> {
+        private final GitAPI git;
+        private final String branch;
+        private final TaskListener taskListener;
+
+        public DeleteLocalBranchCallable(GitAPI git, String branch, TaskListener taskListener) {
+            this.git = git;
+            this.branch = branch;
+            this.taskListener = taskListener;
+        }
+
+        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                log(taskListener, "Deleting local git branch: " + branch);
+                String output = git.launchCommand("branch", "-D", branch);
+                debuggingLogger.fine(String.format("Delete branch output:%n%s", output));
+                return output;
+            } catch (GitException e) {
+                throw new IOException("Git branch deletion failed: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class DeleteRemoteBranchCallable implements FilePath.FileCallable<String> {
+        private final GitAPI git;
+        private final String branch;
+        private final String remoteRepository;
+        private final TaskListener taskListener;
+
+        public DeleteRemoteBranchCallable(GitAPI git, String branch, String remoteRepository,
+                TaskListener taskListener) {
+            this.git = git;
+            this.branch = branch;
+            this.remoteRepository = remoteRepository;
+            this.taskListener = taskListener;
+        }
+
+        public String invoke(File workspace, VirtualChannel channel) throws IOException {
+            try {
+                log(taskListener, String.format("Deleting remote branch '%s' on '%s'", branch, remoteRepository));
+                String pushOutput = git.launchCommand("push", remoteRepository, ":refs/heads/" + branch);
+                debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
+                return pushOutput;
+            } catch (GitException e) {
+                throw new IOException("Failed to push: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class DeleteLocalTagCallable implements FilePath.FileCallable<String> {
+        private final GitAPI git;
+        private final String tag;
+        private final TaskListener taskListener;
+
+        public DeleteLocalTagCallable(GitAPI git, String tag, TaskListener taskListener) {
+            this.git = git;
+            this.tag = tag;
+            this.taskListener = taskListener;
+        }
+
+        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                log(taskListener, "Deleting local tag: " + tag);
+                String output = git.launchCommand("tag", "-d", tag);
+                debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
+                return output;
+            } catch (GitException e) {
+                throw new IOException("Git tag deletion failed: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class DeleteRemoteTagCallable implements FilePath.FileCallable<String> {
+        private final GitAPI git;
+        private final String tag;
+        private final String remoteRepository;
+        private final TaskListener taskListener;
+
+        public DeleteRemoteTagCallable(GitAPI git, String tag, String remoteRepository, TaskListener taskListener) {
+            this.git = git;
+            this.tag = tag;
+            this.remoteRepository = remoteRepository;
+            this.taskListener = taskListener;
+        }
+
+        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                log(taskListener, String.format("Deleting remote tag '%s' from '%s'", tag, remoteRepository));
+                String output = git.launchCommand("push", remoteRepository, ":refs/tags/" + tag);
+                debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
+                return output;
+            } catch (GitException e) {
+                throw new IOException("Git tag deletion failed: " + e.getMessage());
+            }
+        }
     }
 }
