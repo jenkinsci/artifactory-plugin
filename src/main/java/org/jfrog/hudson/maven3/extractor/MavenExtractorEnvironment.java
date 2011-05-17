@@ -44,7 +44,7 @@ public class MavenExtractorEnvironment extends Environment {
     private final String originalMavenOpts;
     private final ArtifactoryRedeployPublisher publisher;
     private final BuildContext buildContext;
-    private final AbstractBuild build;
+    private final MavenModuleSetBuild build;
     private final BuildListener buildListener;
     private final EnvVars envVars;
     private FilePath classworldsConf;
@@ -85,7 +85,7 @@ public class MavenExtractorEnvironment extends Environment {
                 classworldsConf = ExtractorUtils.copyClassWorldsFile(build, resource);
                 ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
             }
-            ExtractorUtils.appendNewMavenOpts(project, build);
+            build.getProject().setMavenOpts(ExtractorUtils.appendNewMavenOpts(project, build));
             ExtractorUtils.addBuilderInfoArguments(env, build, publisher.getArtifactoryServer(), buildContext);
             setup = true;
         } catch (Exception e) {
