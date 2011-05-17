@@ -21,7 +21,7 @@ import com.google.common.io.Files;
 import hudson.maven.ModuleName;
 import org.jdom.Document;
 import org.jdom.output.XMLOutputter;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import java.io.File;
 import java.net.URL;
@@ -29,16 +29,16 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests the pom version change transformations.
  *
  * @author Yossi Shaul
  */
-@Test
 public class PomTransformerTest {
 
+    @Test
     public void transformSimplePom() throws Exception {
         File pomFile = getResourceAsFile("/poms/parentonly/pom.xml");
         HashMap<ModuleName, String> modules = Maps.newHashMap();
@@ -51,9 +51,10 @@ public class PomTransformerTest {
                 getResourceAsFile("/poms/parentonly/pom.expected.xml"));
         String expectedStr = new XMLOutputter().outputString(expected);
 
-        assertEquals(pomStr, expectedStr);
+        assertEquals(expectedStr, pomStr);
     }
 
+    @Test
     public void transformMultiPom() throws Exception {
         File pomFile = getResourceAsFile("/poms/multi/pom.xml");
         Map<ModuleName, String> modules = Maps.newHashMap();
@@ -67,9 +68,10 @@ public class PomTransformerTest {
         Document expected = PomTransformer.createSaxBuilder().build(getResourceAsFile("/poms/multi/pom.expected.xml"));
         String expectedStr = new XMLOutputter().outputString(expected);
 
-        assertEquals(pomStr, expectedStr);
+        assertEquals(expectedStr, pomStr);
     }
 
+    @Test
     public void transformScm() throws Exception {
         File pomFile = getResourceAsFile("/poms/scm/pom.xml");
         HashMap<ModuleName, String> modules = Maps.newHashMap();
@@ -83,7 +85,7 @@ public class PomTransformerTest {
                 getResourceAsFile("/poms/scm/pom.expected.xml"));
         String expectedStr = new XMLOutputter().outputString(expected);
 
-        assertEquals(pomStr, expectedStr);
+        assertEquals(expectedStr, pomStr);
     }
 
     private File getResourceAsFile(String path) {

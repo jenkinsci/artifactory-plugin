@@ -14,7 +14,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
@@ -66,7 +67,7 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jvnet.hudson.plugins</groupId>
@@ -182,9 +183,9 @@
             <version>1.1</version>
         </dependency>
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>5.14.6</version>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -195,6 +196,16 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <goals>deploy</goals>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.8.1</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/InjectedTest.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
