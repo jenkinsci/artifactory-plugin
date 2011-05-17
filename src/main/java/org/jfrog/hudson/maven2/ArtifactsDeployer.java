@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.maven2;
 
+import hudson.EnvVars;
 import hudson.Util;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
@@ -43,6 +44,7 @@ import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.IncludesExcludes;
+import org.jfrog.hudson.util.MavenVersionHelper;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -70,7 +72,7 @@ public class ArtifactsDeployer {
     private final IncludeExcludePatterns patterns;
     private final boolean downstreamIdentifier;
     private final boolean isArchiveJenkinsVersion;
-    private final Map<String, String> env;
+    private final EnvVars env;
     private final String[] matrixParams;
     private final AbstractBuild<?, ?> rootBuild;
 
@@ -239,8 +241,25 @@ public class ArtifactsDeployer {
         File file = new File(new File(new File(new File(build.getArtifactsDir(), mavenArtifact.groupId),
                 mavenArtifact.artifactId), mavenArtifact.version), fileName);
         if (!file.exists()) {
-            throw new FileNotFoundException("Archived artifact is missing: " + file);
+            throw new FileNotFoundException("Archived artifact is missing: " + file + " " + getAdditionalMessage());
         }
         return file;
+    }
+
+    /**
+     * @return An additional error message to be attached to the exception
+     */
+    private String getAdditionalMessage() throws IOException {
+        try {
+            String mavenVersion = MavenVersionHelper.getMavenVersion(mavenModuleSetBuild, env, listener);
+            if (StringUtils.isBlank(mavenVersion)) {
+                return "";
+            }
+            return mavenVersion.startsWith("2") ?
+                    "\nDisabling the automatic arching and using the external Maven extractor is compatible with Maven 3.0.2 and up" :
+                    "";
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Unable to get maven version", e);
+        }
     }
 }

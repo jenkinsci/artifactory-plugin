@@ -18,13 +18,18 @@ package org.jfrog.hudson.util;
 
 import hudson.AbortException;
 import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.maven.MavenEmbedderException;
+import hudson.maven.MavenEmbedderUtils;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.model.BuildListener;
 import hudson.model.Computer;
+import hudson.remoting.VirtualChannel;
 import hudson.tasks.Maven;
 import org.jfrog.hudson.maven3.MavenVersionCallable;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -37,6 +42,21 @@ public class MavenVersionHelper {
      * Minimal Maven version that works with {@link AbstractRepositoryListener}
      */
     private static final String MINIMUM_MAVEN_VERSION = "3.0.2";
+
+    public static String getMavenVersion(MavenModuleSetBuild build, EnvVars vars,
+            BuildListener listener) throws IOException, InterruptedException {
+        final Maven.MavenInstallation installation = getMavenInstallation(build.getProject(), vars, listener);
+        build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    return MavenEmbedderUtils.getMavenVersion(new File(installation.getHome())).getVersion();
+                } catch (MavenEmbedderException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        return "";
+    }
 
     /**
      * @return True if the Maven version of this build is at least {@link MavenVersionHelper#MINIMUM_MAVEN_VERSION}
@@ -70,8 +90,7 @@ public class MavenVersionHelper {
      *                               is {@code null} then this exception is thrown.
      */
     private static Maven.MavenInstallation getMavenInstallation(MavenModuleSet project, EnvVars vars,
-            BuildListener listener)
-            throws IOException, InterruptedException {
+            BuildListener listener) throws IOException, InterruptedException {
         Maven.MavenInstallation mavenInstallation = project.getMaven();
         if (mavenInstallation == null) {
             throw new AbortException("A Maven installation needs to be available for this project to be built.\n" +
