@@ -256,7 +256,7 @@ public class ArtifactsDeployer {
                 return "";
             }
             return mavenVersion.startsWith("2") ?
-                    "\nDisabling the automatic arching and using the external Maven extractor is compatible with Maven 3.0.2 and up" :
+                    "\nDisabling the automatic archiving and using the external Maven extractor is compatible with Maven 3.0.2 and up" :
                     "";
         } catch (InterruptedException e) {
             throw new RuntimeException("Unable to get maven version", e);
