@@ -48,68 +48,73 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
     public String getCurrentCommitHash() throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        return workspace.act(new CurrentCommitCallable(createGitAPI(workspace)));
+        return workspace.act(new CurrentCommitCallable(workspace, getHudsonScm(), build, buildListener));
     }
 
     public String checkoutBranch(final String branch, final boolean create) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        return workspace.act(new CheckoutBranchCallable(createGitAPI(workspace), create, branch));
+        return workspace
+                .act(new CheckoutBranchCallable(create, branch, getHudsonScm(), buildListener, workspace, build));
     }
 
     public void commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        workspace.act(new CommitWorkingCopyCallable(createGitAPI(workspace), commitMessage));
+        workspace.act(new CommitWorkingCopyCallable(commitMessage, getHudsonScm(), buildListener, workspace, build));
     }
 
     public void createTag(final String tagName, final String commitMessage)
             throws IOException, InterruptedException {
-        build.getWorkspace()
-                .act(new CreateTagCallable(createGitAPI(build.getWorkspace()), tagName, commitMessage, buildListener));
+        FilePath workspace = build.getWorkspace();
+        workspace.act(new CreateTagCallable(tagName, commitMessage, getHudsonScm(), buildListener, workspace, build));
     }
 
     public String push(final String remoteRepository, final String branch) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        return workspace.act(new PushCallable(createGitAPI(workspace), branch, remoteRepository, buildListener));
+        return workspace
+                .act(new PushCallable(branch, remoteRepository, getHudsonScm(), buildListener, workspace, build));
     }
 
     public String pushTag(final String remoteRepository, final String tagName)
             throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        return workspace.act(new PushTagCallable(createGitAPI(workspace), tagName, remoteRepository, buildListener));
+        return workspace
+                .act(new PushTagCallable(tagName, remoteRepository, getHudsonScm(), buildListener, workspace, build));
     }
 
     public String pull(final String remoteRepository, final String branch) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        return workspace.act(new PullCallable(createGitAPI(workspace), remoteRepository, branch, buildListener));
+        return workspace
+                .act(new PullCallable(remoteRepository, branch, getHudsonScm(), buildListener, workspace, build));
     }
 
     public void revertWorkingCopy(final String commitIsh) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        workspace.act(new RevertCallable(createGitAPI(workspace), commitIsh, buildListener));
+        workspace.act(new RevertCallable(commitIsh, getHudsonScm(), buildListener, workspace, build));
     }
 
     public String deleteLocalBranch(final String branch) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        return workspace.act(new DeleteLocalBranchCallable(createGitAPI(workspace), branch, buildListener));
+        return workspace.act(new DeleteLocalBranchCallable(branch, getHudsonScm(), buildListener, workspace, build));
     }
 
     public String deleteRemoteBranch(final String remoteRepository, final String branch)
             throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
         return workspace
-                .act(new DeleteRemoteBranchCallable(createGitAPI(workspace), branch, remoteRepository, buildListener));
+                .act(new DeleteRemoteBranchCallable(branch, remoteRepository, getHudsonScm(), buildListener, workspace,
+                        build));
     }
 
     public String deleteLocalTag(final String tag) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        return workspace.act(new DeleteLocalTagCallable(createGitAPI(workspace), tag, buildListener));
+        return workspace.act(new DeleteLocalTagCallable(tag, getHudsonScm(), buildListener, workspace, build));
     }
 
     public String deleteRemoteTag(final String remoteRepository, final String tag)
             throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        return workspace
-                .act(new DeleteRemoteTagCallable(createGitAPI(workspace), tag, remoteRepository, buildListener));
+        return workspace.act(
+                new DeleteRemoteTagCallable(tag, remoteRepository, getHudsonScm(), buildListener, workspace, build));
     }
 
     public String getRemoteUrl() {
@@ -118,17 +123,9 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         return uri.toPrivateString();
     }
 
-    private GitAPI createGitAPI(FilePath workspace) throws IOException {
-        GitSCM gitSCM = getHudsonScm();
-        File workingCopy = getWorkingDirectory(new File(workspace.getRemote()));
-        String gitExe = gitSCM.getGitExe(build.getBuiltOn(), buildListener);
-
-        EnvVars gitEnvironment;
-        try {
-            gitEnvironment = build.getEnvironment(buildListener);
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Failed to get environment", e);
-        }
+    private static GitAPI createGitAPI(FilePath workspace, GitSCM gitSCM, EnvVars gitEnvironment,
+            TaskListener buildListener, String gitExe) throws IOException {
+        File workingCopy = getWorkingDirectory(gitSCM, new File(workspace.getRemote()));
         String confName = gitSCM.getGitConfigNameToUse();
         if (StringUtils.isNotBlank(confName)) {
             gitEnvironment.put("GIT_COMMITTER_NAME", confName);
@@ -139,27 +136,35 @@ public class GitManager extends AbstractScmManager<GitSCM> {
             gitEnvironment.put("GIT_COMMITTER_EMAIL", confEmail);
             gitEnvironment.put("GIT_AUTHOR_EMAIL", confEmail);
         }
-
         GitAPI git = new GitAPI(gitExe, new FilePath(workingCopy), buildListener, new EnvVars());
         return git;
     }
 
-    private File getWorkingDirectory(File ws) throws IOException {
+    private static File getWorkingDirectory(GitSCM gitSCM, File ws) throws IOException {
         // working directory might be relative to the workspace
-        GitSCM gitSCM = getHudsonScm();
         String relativeTargetDir = gitSCM.getRelativeTargetDir() == null ? "" : gitSCM.getRelativeTargetDir();
         return new File(ws, relativeTargetDir).getCanonicalFile();
     }
 
     private static class CurrentCommitCallable implements FilePath.FileCallable<String> {
-        private final GitAPI git;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        private CurrentCommitCallable(GitAPI git) {
-            this.git = git;
+        private CurrentCommitCallable(FilePath workspace, GitSCM gitSCM, AbstractBuild build, TaskListener listener)
+                throws IOException, InterruptedException {
+            this.workspace = workspace;
+            this.gitSCM = gitSCM;
+            this.listener = listener;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
         }
 
         public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 // commit all the modified files
                 String baseCommit = git.launchCommand("rev-parse", "--verify", "HEAD").trim();
                 debuggingLogger.fine(String.format("Base commit hash%s", baseCommit));
@@ -173,12 +178,21 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     private static class CheckoutBranchCallable implements FilePath.FileCallable<String> {
         private final boolean create;
         private final String branch;
-        private GitAPI git;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        public CheckoutBranchCallable(GitAPI git, boolean create, String branch) {
+        public CheckoutBranchCallable(boolean create, String branch, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace, AbstractBuild build) throws IOException, InterruptedException {
             this.create = create;
             this.branch = branch;
-            this.git = git;
+            this.gitSCM = gitSCM;
+            this.listener = listener;
+            this.workspace = workspace;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
         }
 
         public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
@@ -189,6 +203,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
                     args.add("-b"); // force create new branch
                 }
                 args.add(branch);
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String checkoutResult = git.launchCommand(args);
                 debuggingLogger.fine(String.format("Checkout result: %s", checkoutResult));
                 return checkoutResult;
@@ -199,17 +214,27 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private static class CommitWorkingCopyCallable implements FilePath.FileCallable<String> {
-        private GitAPI git;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
         private final String commitMessage;
 
-        public CommitWorkingCopyCallable(GitAPI git, String commitMessage) {
+        public CommitWorkingCopyCallable(String commitMessage, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace, AbstractBuild build) throws IOException, InterruptedException {
             this.commitMessage = commitMessage;
-            this.git = git;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
+            this.gitSCM = gitSCM;
+            this.listener = listener;
+            this.workspace = workspace;
         }
 
         public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
                 // commit all the modified files
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String commitOutput = git.launchCommand("commit", "--all", "-m", commitMessage);
                 debuggingLogger.fine(String.format("Reset command output:%n%s", commitOutput));
                 return commitOutput;
@@ -222,20 +247,28 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     private static class CreateTagCallable implements FilePath.FileCallable<String> {
         private final String tagName;
         private final String commitMessage;
-        private GitAPI git;
+        private final GitSCM gitSCM;
         private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        public CreateTagCallable(GitAPI git, String tagName, String commitMessage, TaskListener listener) {
+        public CreateTagCallable(String tagName, String commitMessage, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace, AbstractBuild build) throws IOException, InterruptedException {
             this.tagName = tagName;
             this.commitMessage = commitMessage;
-            this.git = git;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
             this.listener = listener;
+            this.gitSCM = gitSCM;
+            this.workspace = workspace;
         }
 
         public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
                 String escapedTagName = tagName.replace(' ', '_');
                 log(listener, String.format("Creating tag '%s'", escapedTagName));
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 if (git.tagExists(escapedTagName)) {
                     throw new IOException("Git tag '" + escapedTagName + "' already exists");
                 }
@@ -251,19 +284,28 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     private static class PushCallable implements FilePath.FileCallable<String> {
         private final String branch;
         private final String remoteRepository;
-        private GitAPI git;
-        private TaskListener taskListener;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        public PushCallable(GitAPI git, String branch, String remoteRepository, TaskListener taskListener) {
+
+        public PushCallable(String branch, String remoteRepository, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace, AbstractBuild build) throws IOException, InterruptedException {
             this.branch = branch;
             this.remoteRepository = remoteRepository;
-            this.git = git;
-            this.taskListener = taskListener;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
+            this.listener = listener;
+            this.gitSCM = gitSCM;
+            this.workspace = workspace;
         }
 
-        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
-                log(taskListener, String.format("Pushing branch '%s' to '%s'", branch, remoteRepository));
+                log(listener, String.format("Pushing branch '%s' to '%s'", branch, remoteRepository));
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String pushOutput = git.launchCommand("push", remoteRepository, "refs/heads/" + branch);
                 debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
                 return pushOutput;
@@ -274,22 +316,30 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private static class PushTagCallable implements FilePath.FileCallable<String> {
-        private final GitAPI git;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
         private final String tagName;
         private final String remoteRepository;
-        private final TaskListener taskListener;
 
-        public PushTagCallable(GitAPI git, String tagName, String remoteRepository, TaskListener taskListener) {
-            this.git = git;
+        public PushTagCallable(String tagName, String remoteRepository, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace, AbstractBuild build) throws IOException, InterruptedException {
             this.tagName = tagName;
             this.remoteRepository = remoteRepository;
-            this.taskListener = taskListener;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
+            this.gitSCM = gitSCM;
+            this.workspace = workspace;
+            this.listener = listener;
         }
 
-        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
                 String escapedTagName = tagName.replace(' ', '_');
-                log(taskListener, String.format("Pushing tag '%s' to '%s'", tagName, remoteRepository));
+                log(listener, String.format("Pushing tag '%s' to '%s'", tagName, remoteRepository));
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String pushOutput = git.launchCommand("push", remoteRepository, "refs/tags/" + escapedTagName);
                 debuggingLogger.fine(String.format("Push tag command output:%n%s", pushOutput));
                 return pushOutput;
@@ -300,21 +350,29 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private static class PullCallable implements FilePath.FileCallable<String> {
-        private final GitAPI git;
         private final String remoteRepository;
         private final String branch;
-        private final TaskListener taskListener;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        public PullCallable(GitAPI git, String remoteRepository, String branch, TaskListener taskListener) {
-            this.git = git;
+        public PullCallable(String remoteRepository, String branch, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace, AbstractBuild build) throws IOException, InterruptedException {
             this.remoteRepository = remoteRepository;
             this.branch = branch;
-            this.taskListener = taskListener;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
+            this.gitSCM = gitSCM;
+            this.listener = listener;
+            this.workspace = workspace;
         }
 
-        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
-                log(taskListener, "Pulling changes");
+                log(listener, "Pulling changes");
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String pushOutput = git.launchCommand("pull", remoteRepository, branch);
                 debuggingLogger.fine(String.format("Pull command output:%n%s", pushOutput));
                 return pushOutput;
@@ -325,19 +383,27 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private static class RevertCallable implements FilePath.FileCallable<String> {
-        private final GitAPI git;
         private final String commitIsh;
-        private final TaskListener taskListener;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        public RevertCallable(GitAPI git, String commitIsh, TaskListener taskListener) {
-            this.git = git;
+        public RevertCallable(String commitIsh, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace, AbstractBuild build) throws IOException, InterruptedException {
             this.commitIsh = commitIsh;
-            this.taskListener = taskListener;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
+            this.gitSCM = gitSCM;
+            this.listener = listener;
+            this.workspace = workspace;
         }
 
-        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
-                log(taskListener, "Reverting git working copy back to initial commit: " + commitIsh);
+                log(listener, "Reverting git working copy back to initial commit: " + commitIsh);
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String resetOutput = git.launchCommand("reset", "--hard", commitIsh);
                 debuggingLogger.fine(String.format("Reset command output:%n%s", resetOutput));
                 return resetOutput;
@@ -348,19 +414,27 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private static class DeleteLocalBranchCallable implements FilePath.FileCallable<String> {
-        private final GitAPI git;
         private final String branch;
-        private final TaskListener taskListener;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        public DeleteLocalBranchCallable(GitAPI git, String branch, TaskListener taskListener) {
-            this.git = git;
+        public DeleteLocalBranchCallable(String branch, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace, AbstractBuild build) throws IOException, InterruptedException {
             this.branch = branch;
-            this.taskListener = taskListener;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
+            this.workspace = workspace;
+            this.listener = listener;
+            this.gitSCM = gitSCM;
         }
 
-        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
-                log(taskListener, "Deleting local git branch: " + branch);
+                log(listener, "Deleting local git branch: " + branch);
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String output = git.launchCommand("branch", "-D", branch);
                 debuggingLogger.fine(String.format("Delete branch output:%n%s", output));
                 return output;
@@ -371,22 +445,29 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private static class DeleteRemoteBranchCallable implements FilePath.FileCallable<String> {
-        private final GitAPI git;
         private final String branch;
         private final String remoteRepository;
-        private final TaskListener taskListener;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        public DeleteRemoteBranchCallable(GitAPI git, String branch, String remoteRepository,
-                TaskListener taskListener) {
-            this.git = git;
+        public DeleteRemoteBranchCallable(String branch, String remoteRepository, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace, AbstractBuild build) throws IOException, InterruptedException {
             this.branch = branch;
             this.remoteRepository = remoteRepository;
-            this.taskListener = taskListener;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
+            this.gitSCM = gitSCM;
+            this.listener = listener;
+            this.workspace = workspace;
         }
 
-        public String invoke(File workspace, VirtualChannel channel) throws IOException {
+        public String invoke(File ws, VirtualChannel channel) throws IOException {
             try {
-                log(taskListener, String.format("Deleting remote branch '%s' on '%s'", branch, remoteRepository));
+                log(listener, String.format("Deleting remote branch '%s' on '%s'", branch, remoteRepository));
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String pushOutput = git.launchCommand("push", remoteRepository, ":refs/heads/" + branch);
                 debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
                 return pushOutput;
@@ -397,19 +478,27 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private static class DeleteLocalTagCallable implements FilePath.FileCallable<String> {
-        private final GitAPI git;
         private final String tag;
-        private final TaskListener taskListener;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        public DeleteLocalTagCallable(GitAPI git, String tag, TaskListener taskListener) {
-            this.git = git;
+        public DeleteLocalTagCallable(String tag, GitSCM gitSCM, TaskListener listener, FilePath workspace,
+                AbstractBuild build) throws IOException, InterruptedException {
             this.tag = tag;
-            this.taskListener = taskListener;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
+            this.gitSCM = gitSCM;
+            this.listener = listener;
+            this.workspace = workspace;
         }
 
-        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
-                log(taskListener, "Deleting local tag: " + tag);
+                log(listener, "Deleting local tag: " + tag);
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String output = git.launchCommand("tag", "-d", tag);
                 debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
                 return output;
@@ -420,21 +509,30 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private static class DeleteRemoteTagCallable implements FilePath.FileCallable<String> {
-        private final GitAPI git;
         private final String tag;
         private final String remoteRepository;
-        private final TaskListener taskListener;
+        private final GitSCM gitSCM;
+        private final TaskListener listener;
+        private final FilePath workspace;
+        private final EnvVars envVars;
+        private final String gitExe;
 
-        public DeleteRemoteTagCallable(GitAPI git, String tag, String remoteRepository, TaskListener taskListener) {
-            this.git = git;
+        public DeleteRemoteTagCallable(String tag, String remoteRepository, GitSCM gitSCM, TaskListener listener,
+                FilePath workspace,
+                AbstractBuild build) throws IOException, InterruptedException {
             this.tag = tag;
             this.remoteRepository = remoteRepository;
-            this.taskListener = taskListener;
+            this.envVars = build.getEnvironment(listener);
+            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
+            this.gitSCM = gitSCM;
+            this.listener = listener;
+            this.workspace = workspace;
         }
 
-        public String invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             try {
-                log(taskListener, String.format("Deleting remote tag '%s' from '%s'", tag, remoteRepository));
+                log(listener, String.format("Deleting remote tag '%s' from '%s'", tag, remoteRepository));
+                GitAPI git = createGitAPI(workspace, gitSCM, envVars, listener, gitExe);
                 String output = git.launchCommand("push", remoteRepository, ":refs/tags/" + tag);
                 debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
                 return output;
