@@ -133,7 +133,14 @@ public class MavenReleaseWrapper extends BuildWrapper {
             scmCoordinator.beforeReleaseVersionChange();
             // change to release version
             String vcsUrl = releaseAction.isCreateVcsTag() ? getTagPrefix() : null;
-            boolean modified = changeVersions(mavenBuild, releaseAction, true, vcsUrl);
+            boolean modified;
+            try {
+                modified = changeVersions(mavenBuild, releaseAction, true, vcsUrl);
+            } catch (SnapshotNotAllowedException e) {
+                log(listener, "ERROR: " + e.getMessage());
+                // abort the build
+                return null;
+            }
             scmCoordinator.afterReleaseVersionChange(modified);
         }
 
@@ -197,7 +204,8 @@ public class MavenReleaseWrapper extends BuildWrapper {
             String pomRelativePath = StringUtils.isBlank(relativePath) ? "pom.xml" : relativePath + "/pom.xml";
             FilePath pomPath = new FilePath(moduleRoot, pomRelativePath);
             debuggingLogger.fine("Changing version of pom: " + pomPath);
-            modified |= pomPath.act(new PomTransformer(mavenModule.getModuleName(), modulesByName, scmUrl));
+            modified |= pomPath.act(
+                    new PomTransformer(mavenModule.getModuleName(), modulesByName, scmUrl, releaseVersion));
         }
         return modified;
     }

@@ -29,7 +29,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests the pom version change transformations.
@@ -86,6 +86,72 @@ public class PomTransformerTest {
         String expectedStr = new XMLOutputter().outputString(expected);
 
         assertEquals(expectedStr, pomStr);
+    }
+
+    @Test
+    public void snapshotsModule() throws Exception {
+        File pomFile = getResourceAsFile("/poms/snapshots/pom-snapshot.xml");
+        Map<ModuleName, String> modules = Maps.newHashMap();
+        modules.put(new ModuleName("org.jfrog.test", "one"), "2.2-SNAPSHOT");
+        try {
+            new PomTransformer(new ModuleName("org.jfrog.test", "one"), modules, "", true).invoke(pomFile, null);
+            fail("Pom contains module with snapshot version and should fail");
+        } catch (SnapshotNotAllowedException e) {
+            String message = e.getMessage();
+            assertTrue("Unexpected error message: " + message, message.contains("org.jfrog.test:one:2.2-SNAPSHOT"));
+        }
+    }
+
+    @Test
+    public void snapshotsInParent() throws Exception {
+        File pomFile = getResourceAsFile("/poms/snapshots/pom-snapshot-parent.xml");
+        Map<ModuleName, String> modules = Maps.newHashMap();
+        try {
+            new PomTransformer(new ModuleName("org.jfrog.test", "one"), modules, "", true).invoke(pomFile, null);
+            fail("Pom contains snapshot in the parent and should fail");
+        } catch (SnapshotNotAllowedException e) {
+            String message = e.getMessage();
+            assertTrue("Unexpected error message: " + message,
+                    message.contains("org.jfrog.test:parent:2.1-SNAPSHOT"));
+        }
+    }
+
+    @Test
+    public void snapshotsInDependenciesManagement() throws Exception {
+        File pomFile = getResourceAsFile("/poms/snapshots/pom-snapshots-in-dep-management.xml");
+        Map<ModuleName, String> modules = Maps.newHashMap();
+        modules.put(new ModuleName("org.jfrog.test.nested", "nested1"), "3.6");
+        modules.put(new ModuleName("org.jfrog.test.nested", "nested2"), "3.6");
+        modules.put(new ModuleName("org.jfrog.test.nested", "four"), "3.6");
+
+        try {
+            new PomTransformer(new ModuleName("org.jfrog.test.nested", "four"), modules, "", true).invoke(pomFile,
+                    null);
+            fail("Pom contains snapshot in the dependency management and should fail");
+        } catch (SnapshotNotAllowedException e) {
+            String message = e.getMessage();
+            assertTrue("Unexpected error message: " + message,
+                    message.contains("org.jfrog.test.nested:nestedX:2.0-SNAPSHOT"));
+        }
+    }
+
+    @Test
+    public void snapshotsInDependencies() throws Exception {
+        File pomFile = getResourceAsFile("/poms/snapshots/pom-snapshots-in-dependencies.xml");
+        Map<ModuleName, String> modules = Maps.newHashMap();
+        modules.put(new ModuleName("org.jfrog.test.nested", "nested1"), "3.6");
+        modules.put(new ModuleName("org.jfrog.test.nested", "nested2"), "3.6");
+        modules.put(new ModuleName("org.jfrog.test.nested", "four"), "3.6");
+
+        try {
+            new PomTransformer(new ModuleName("org.jfrog.test.nested", "four"), modules, "", true).invoke(pomFile,
+                    null);
+            fail("Pom contains snapshot in the dependencies and should fail");
+        } catch (SnapshotNotAllowedException e) {
+            String message = e.getMessage();
+            assertTrue("Unexpected error message: " + message,
+                    message.contains("org.jfrog.test.nested:nestedX:3.2-SNAPSHOT"));
+        }
     }
 
     private File getResourceAsFile(String path) {
