@@ -19,6 +19,7 @@ package org.jfrog.hudson.util;
 import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
 import hudson.FilePath;
+import hudson.remoting.VirtualChannel;
 import org.jfrog.hudson.release.gradle.GradleModule;
 
 import java.io.File;
@@ -52,7 +53,8 @@ public class PropertyUtils {
      *         value.
      * @throws IOException In case an error occurs while reading the properties file, this exception is thrown.
      */
-    public static Map<String, String> getModulesPropertiesFromPropFile(FilePath gradlePropPath, String[] propKeys) {
+    public static Map<String, String> getModulesPropertiesFromPropFile(FilePath gradlePropPath, String[] propKeys)
+            throws IOException, InterruptedException {
         Properties gradleProps = loadGradleProperties(gradlePropPath);
         Map<String, String> versionsByPropKey = Maps.newLinkedHashMap();
         for (String propKey : propKeys) {
@@ -70,23 +72,28 @@ public class PropertyUtils {
      * @return The loaded properties.
      * @throws IOException In case an error occurs while reading the properties file, this exception is thrown.
      */
-    private static Properties loadGradleProperties(FilePath gradlePropertiesFilePath) {
-        File gradlePropertiesFile = new File(gradlePropertiesFilePath.getRemote());
-        Properties gradleProps = new Properties();
-        if (gradlePropertiesFile.exists()) {
-            debuggingLogger.fine("Gradle properties file exists at: " + gradlePropertiesFile.getAbsolutePath());
-            FileInputStream stream = null;
-            try {
-                stream = new FileInputStream(gradlePropertiesFile);
-                gradleProps.load(stream);
-            } catch (IOException e) {
-                debuggingLogger.fine("IO exception occurred while trying to read properties file from: " +
-                        gradlePropertiesFile.getAbsolutePath());
-                throw new RuntimeException(e);
-            } finally {
-                Closeables.closeQuietly(stream);
+    private static Properties loadGradleProperties(FilePath gradlePropertiesFilePath)
+            throws IOException, InterruptedException {
+        return gradlePropertiesFilePath.act(new FilePath.FileCallable<Properties>() {
+            public Properties invoke(File gradlePropertiesFile, VirtualChannel channel) throws IOException, InterruptedException {
+                Properties gradleProps = new Properties();
+                if (gradlePropertiesFile.exists()) {
+                    debuggingLogger.fine("Gradle properties file exists at: " + gradlePropertiesFile.getAbsolutePath());
+                    FileInputStream stream = null;
+                    try {
+                        stream = new FileInputStream(gradlePropertiesFile);
+                        gradleProps.load(stream);
+                    } catch (IOException e) {
+                        debuggingLogger.fine("IO exception occurred while trying to read properties file from: " +
+                                gradlePropertiesFile.getAbsolutePath());
+                        throw new RuntimeException(e);
+                    } finally {
+                        Closeables.closeQuietly(stream);
+                    }
+                }
+                return gradleProps;
             }
-        }
-        return gradleProps;
+        });
+
     }
 }
