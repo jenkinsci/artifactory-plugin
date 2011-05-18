@@ -306,7 +306,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             } else {
                 tasks = gradleBuild.getTasks() + "";
             }
-            if (!StringUtils.contains(originalTasks, GradlePluginUtils.BUILD_INFO_TASK_NAME)) {
+            if (!StringUtils.contains(tasks, GradlePluginUtils.BUILD_INFO_TASK_NAME)) {
                 setTargetsField(gradleBuild, "tasks", tasks + " " + GradlePluginUtils.BUILD_INFO_TASK_NAME);
             }
         } else {
