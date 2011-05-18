@@ -28,6 +28,7 @@ import hudson.model.Computer;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.Maven;
 import org.apache.commons.lang.StringUtils;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.jfrog.hudson.maven3.MavenVersionCallable;
 
 import java.io.File;
@@ -51,12 +52,9 @@ public class MavenVersionHelper {
         if (StringUtils.isBlank(version)) {
             return true;
         }
-        String[] split = StringUtils.split(version, ".");
-        if (StringUtils.isNumeric(split[0])) {
-            int majorVersion = Integer.parseInt(split[0]);
-            return majorVersion < 3;
-        }
-        return true;
+        ComparableVersion foundVersion = new ComparableVersion(version);
+        ComparableVersion neededVersion = new ComparableVersion(MINIMUM_MAVEN_VERSION);
+        return foundVersion.compareTo(neededVersion) < 0;
     }
 
     /**
