@@ -251,15 +251,12 @@ public class ArtifactsDeployer {
      */
     private String getAdditionalMessage() throws IOException {
         try {
-            String mavenVersion = MavenVersionHelper.getMavenVersion(mavenModuleSetBuild, env, listener);
-            if (StringUtils.isBlank(mavenVersion)) {
-                return "";
+            if (MavenVersionHelper.isLowerThanMaven3(mavenModuleSetBuild, env, listener)) {
+                return "\nDisabling the automatic archiving and using the external Maven extractor is compatible with Maven 3.0.2 and up";
             }
-            return mavenVersion.startsWith("2") ?
-                    "\nDisabling the automatic archiving and using the external Maven extractor is compatible with Maven 3.0.2 and up" :
-                    "";
+            return "";
         } catch (InterruptedException e) {
-            throw new RuntimeException("Unable to get maven version", e);
+            throw new RuntimeException("Unable to determine Maven version", e);
         }
     }
 }

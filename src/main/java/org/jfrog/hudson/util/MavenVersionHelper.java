@@ -27,6 +27,7 @@ import hudson.model.BuildListener;
 import hudson.model.Computer;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.Maven;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.maven3.MavenVersionCallable;
 
 import java.io.File;
@@ -43,19 +44,19 @@ public class MavenVersionHelper {
      */
     private static final String MINIMUM_MAVEN_VERSION = "3.0.2";
 
-    public static String getMavenVersion(MavenModuleSetBuild build, EnvVars vars,
-            BuildListener listener) throws IOException, InterruptedException {
-        final Maven.MavenInstallation installation = getMavenInstallation(build.getProject(), vars, listener);
-        build.getWorkspace().act(new FilePath.FileCallable<String>() {
-            public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    return MavenEmbedderUtils.getMavenVersion(new File(installation.getHome())).getVersion();
-                } catch (MavenEmbedderException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-        return "";
+
+    public static boolean isLowerThanMaven3(MavenModuleSetBuild build, EnvVars vars, BuildListener listener)
+            throws IOException, InterruptedException {
+        String version = getMavenVersion(build, vars, listener);
+        if (StringUtils.isBlank(version)) {
+            return true;
+        }
+        String[] split = StringUtils.split(version, ".");
+        if (StringUtils.isNumeric(split[0])) {
+            int majorVersion = Integer.parseInt(split[0]);
+            return majorVersion < 3;
+        }
+        return true;
     }
 
     /**
@@ -102,5 +103,19 @@ public class MavenVersionHelper {
     private static boolean isAtLeast(MavenModuleSetBuild build, String mavenHome, String version)
             throws IOException, InterruptedException {
         return build.getWorkspace().act(new MavenVersionCallable(mavenHome, version));
+    }
+
+    private static String getMavenVersion(MavenModuleSetBuild build, EnvVars vars,
+            BuildListener listener) throws IOException, InterruptedException {
+        final Maven.MavenInstallation installation = getMavenInstallation(build.getProject(), vars, listener);
+        return build.getWorkspace().act(new FilePath.FileCallable<String>() {
+            public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    return MavenEmbedderUtils.getMavenVersion(new File(installation.getHome())).getVersion();
+                } catch (MavenEmbedderException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
     }
 }
