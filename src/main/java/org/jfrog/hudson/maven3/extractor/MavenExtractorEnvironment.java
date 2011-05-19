@@ -23,6 +23,7 @@ import hudson.maven.MavenModuleSetBuild;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
+import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -48,6 +49,7 @@ public class MavenExtractorEnvironment extends Environment {
     private final BuildListener buildListener;
     private final EnvVars envVars;
     private FilePath classworldsConf;
+    private boolean activateExtractor;
     private boolean setup;
 
     public MavenExtractorEnvironment(MavenModuleSetBuild build, ArtifactoryRedeployPublisher publisher,
@@ -65,10 +67,9 @@ public class MavenExtractorEnvironment extends Environment {
     public void buildEnvVars(Map<String, String> env) {
         boolean isValid;
         try {
-            isValid = MavenVersionHelper
-                    .isAtLeastResolutionCapableVersion((MavenModuleSetBuild) build, envVars, buildListener);
+            isValid = MavenVersionHelper.isAtLeastResolutionCapableVersion(build, envVars, buildListener);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Unable to determine Maven version", e);
 
         }
         // if not valid Maven version return empty environment
@@ -77,6 +78,12 @@ public class MavenExtractorEnvironment extends Environment {
         }
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
         if (setup) {
+            // Re-put the activate recorder env variable in case the env vars construction is called again from
+            // another setUp of a wrapper.
+            env.put(BuildInfoConfigProperties.ACTIVATE_RECORDER, Boolean.toString(activateExtractor));
+             if (!env.containsKey(ExtractorUtils.CLASSWORLDS_CONF_KEY)) {
+                 ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
+             }
             return;
         }
         try {
@@ -87,6 +94,7 @@ public class MavenExtractorEnvironment extends Environment {
             }
             build.getProject().setMavenOpts(ExtractorUtils.appendNewMavenOpts(project, build));
             ExtractorUtils.addBuilderInfoArguments(env, build, publisher.getArtifactoryServer(), buildContext);
+            activateExtractor = true;
             setup = true;
         } catch (Exception e) {
             throw new RuntimeException(e);
