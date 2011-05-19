@@ -85,7 +85,7 @@ public class MavenExtractorEnvironment extends Environment {
             // file and the location of the properties file to populate the configuration inside the extractor.
             env.put(BuildInfoConfigProperties.ACTIVATE_RECORDER, Boolean.toString(activateExtractor));
             ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
-            env.put(BuildInfoConfigProperties.PROPERTIES_FILE, propertiesFilePath);
+            env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
             return;
         }
         try {
