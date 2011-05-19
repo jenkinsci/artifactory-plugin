@@ -23,7 +23,6 @@ import hudson.maven.MavenModuleSetBuild;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
-import hudson.model.Result;
 import hudson.model.listeners.RunListener;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.maven3.extractor.MavenExtractorEnvironment;
@@ -57,8 +56,8 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
             return new Environment() {
             };
         }
-        build.setResult(Result.SUCCESS);
-        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher, createBuildContextFromPublisher(publisher), listener);
+        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher,
+                createBuildContextFromPublisher(publisher), listener);
     }
 
     private BuildContext createBuildContextFromPublisher(ArtifactoryRedeployPublisher publisher) {

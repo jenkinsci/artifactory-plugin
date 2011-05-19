@@ -50,9 +50,11 @@ public class MavenExtractorEnvironment extends Environment {
     private final BuildListener buildListener;
     private final EnvVars envVars;
     private FilePath classworldsConf;
-    private boolean activateExtractor;
     private String propertiesFilePath;
-    private boolean setup;
+
+    // the build env vars method may be called again from another setUp of a wrapper so we need this flag to
+    // attempt only once certain operations (like copying file or changing maven opts).
+    private boolean initialized;
 
     public MavenExtractorEnvironment(MavenModuleSetBuild build, ArtifactoryRedeployPublisher publisher,
             BuildContext buildContext, BuildListener buildListener) throws IOException, InterruptedException {
@@ -72,30 +74,29 @@ public class MavenExtractorEnvironment extends Environment {
             return;
         }
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
-        if (setup) {
-            // Re-put the activate recorder env variables in case the env vars construction is called again from
-            // another setUp of a wrapper need the indicator to use the extractor, the location of the classworlds
-            // file and the location of the properties file to populate the configuration inside the extractor.
-            env.put(BuildInfoConfigProperties.ACTIVATE_RECORDER, Boolean.toString(activateExtractor));
-            ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
-            env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
-            return;
-        }
-        try {
+
+        if (classworldsConf == null && !env.containsKey(ExtractorUtils.CLASSWORLDS_CONF_KEY)) {
             URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-native.conf");
-            if (!env.containsKey(ExtractorUtils.CLASSWORLDS_CONF_KEY)) {
-                classworldsConf = ExtractorUtils.copyClassWorldsFile(build, resource);
-                ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
-            }
-            build.getProject().setMavenOpts(ExtractorUtils.appendNewMavenOpts(project, build));
-            ArtifactoryClientConfiguration configuration =
-                    ExtractorUtils.addBuilderInfoArguments(env, build, publisher.getArtifactoryServer(), buildContext);
-            this.propertiesFilePath = configuration.getPropertiesFile();
-            activateExtractor = true;
-            setup = true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            classworldsConf = ExtractorUtils.copyClassWorldsFile(build, resource);
         }
+
+        if (classworldsConf != null) {
+            ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
+        }
+
+        if (!initialized) {
+            try {
+                build.getProject().setMavenOpts(ExtractorUtils.appendNewMavenOpts(project, build));
+                ArtifactoryClientConfiguration configuration = ExtractorUtils.addBuilderInfoArguments(
+                        env, build, publisher.getArtifactoryServer(), buildContext);
+                propertiesFilePath = configuration.getPropertiesFile();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            initialized = true;
+        }
+
+        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
     }
 
     private boolean isMavenVersionValid() {
@@ -103,7 +104,6 @@ public class MavenExtractorEnvironment extends Environment {
             return MavenVersionHelper.isAtLeastResolutionCapableVersion(build, envVars, buildListener);
         } catch (Exception e) {
             throw new RuntimeException("Unable to determine Maven version", e);
-
         }
     }
 

@@ -141,7 +141,7 @@ public class ExtractorUtils {
      * BuildInfoConfigProperties#PROP_PROPS_FILE} for the extractor to read.
      *
      * @param env                       A map of the environment variables that are to be persisted into the
-     *                                  buildinfo.properties file
+     *                                  buildinfo.properties file. NOTE: nothing should be added to the env in this method
      * @param build                     The build from which to get build/project related information from (e.g build
      *                                  name and build number).
      * @param selectedArtifactoryServer The Artifactory server that is to be used during the build for resolution/
