@@ -19,6 +19,7 @@ package org.jfrog.hudson.release.scm.svn;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 
@@ -68,9 +69,21 @@ public class SubversionCoordinator extends AbstractScmCoordinator {
             //run.getActions().remove(releaseBadge);
             scmManager.safeRevertWorkingCopy();
             if (tagCreated) {
-                scmManager.safeRevertTag(releaseAction.getTagUrl(), "Reverting vcs tag: " + releaseAction.getTagUrl());
+                scmManager.safeRevertTag(releaseAction.getTagUrl(), getRevertTagMessage());
             }
         }
+    }
+
+    /**
+     * @return The message to delete the tag with, if the user has inputted a custom message to commit the tag, then a
+     *         <b>Reverting:</b> message will prepended to the custom message to use when deleting the tag. Otherwise,
+     *         the default message will be used.
+     */
+    private String getRevertTagMessage() {
+        if (StringUtils.equals(releaseAction.getTagComment(), releaseAction.getDefaultReleaseComment())) {
+            return releaseAction.getDefaultReleaseComment();
+        }
+        return SubversionManager.COMMENT_PREFIX + "Reverting: " + releaseAction.getTagComment();
     }
 
     public String getRemoteUrlForPom() {
