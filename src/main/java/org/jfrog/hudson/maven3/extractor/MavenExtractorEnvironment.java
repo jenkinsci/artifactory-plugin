@@ -24,6 +24,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
 import org.jfrog.build.api.BuildInfoConfigProperties;
+import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -50,6 +51,7 @@ public class MavenExtractorEnvironment extends Environment {
     private final EnvVars envVars;
     private FilePath classworldsConf;
     private boolean activateExtractor;
+    private String propertiesFilePath;
     private boolean setup;
 
     public MavenExtractorEnvironment(MavenModuleSetBuild build, ArtifactoryRedeployPublisher publisher,
@@ -78,12 +80,12 @@ public class MavenExtractorEnvironment extends Environment {
         }
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
         if (setup) {
-            // Re-put the activate recorder env variable in case the env vars construction is called again from
-            // another setUp of a wrapper.
+            // Re-put the activate recorder env variables in case the env vars construction is called again from
+            // another setUp of a wrapper need the indicator to use the extractor, the location of the classworlds
+            // file and the location of the properties file to populate the configuration inside the extractor.
             env.put(BuildInfoConfigProperties.ACTIVATE_RECORDER, Boolean.toString(activateExtractor));
-             if (!env.containsKey(ExtractorUtils.CLASSWORLDS_CONF_KEY)) {
-                 ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
-             }
+            ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
+            env.put(BuildInfoConfigProperties.PROPERTIES_FILE, propertiesFilePath);
             return;
         }
         try {
@@ -93,7 +95,9 @@ public class MavenExtractorEnvironment extends Environment {
                 ExtractorUtils.addCustomClassworlds(env, classworldsConf.getRemote());
             }
             build.getProject().setMavenOpts(ExtractorUtils.appendNewMavenOpts(project, build));
-            ExtractorUtils.addBuilderInfoArguments(env, build, publisher.getArtifactoryServer(), buildContext);
+            ArtifactoryClientConfiguration configuration =
+                    ExtractorUtils.addBuilderInfoArguments(env, build, publisher.getArtifactoryServer(), buildContext);
+            this.propertiesFilePath = configuration.getPropertiesFile();
             activateExtractor = true;
             setup = true;
         } catch (Exception e) {
