@@ -67,15 +67,8 @@ public class MavenExtractorEnvironment extends Environment {
 
     @Override
     public void buildEnvVars(Map<String, String> env) {
-        boolean isValid;
-        try {
-            isValid = MavenVersionHelper.isAtLeastResolutionCapableVersion(build, envVars, buildListener);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to determine Maven version", e);
-
-        }
         // if not valid Maven version return empty environment
-        if (!isValid) {
+        if (!isMavenVersionValid()) {
             return;
         }
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
@@ -102,6 +95,15 @@ public class MavenExtractorEnvironment extends Environment {
             setup = true;
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isMavenVersionValid() {
+        try {
+            return MavenVersionHelper.isAtLeastResolutionCapableVersion(build, envVars, buildListener);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to determine Maven version", e);
+
         }
     }
 
