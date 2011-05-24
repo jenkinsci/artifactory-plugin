@@ -64,7 +64,7 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
         BuildContext context = new BuildContext(publisher.getDetails(), publisher, publisher.isRunChecks(),
                 publisher.isIncludePublishArtifacts(), publisher.getViolationRecipients(), publisher.getScopes(),
                 publisher.isLicenseAutoDiscovery(), publisher.isDiscardOldBuilds(), publisher.isDeployArtifacts(),
-                publisher.getArtifactDeploymentPatterns(), publisher.isSkipBuildInfoDeploy(),
+                publisher.getArtifactDeploymentPatterns(), !publisher.isDeployBuildInfo(),
                 publisher.isIncludeEnvVars(), publisher.isDiscardBuildArtifacts(), publisher.getMatrixParams());
         context.setEvenIfUnstable(publisher.isEvenIfUnstable());
         return context;
