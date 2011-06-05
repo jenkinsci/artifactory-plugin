@@ -158,6 +158,8 @@ public class ArtifactoryBuilder extends Builder {
             return artifactoryServers;
         }
 
+        // Required by external plugins.
+        @SuppressWarnings({"UnusedDeclaration"})
         public void setArtifactoryServers(List<ArtifactoryServer> artifactoryServers) {
             this.artifactoryServers = artifactoryServers;
         }
