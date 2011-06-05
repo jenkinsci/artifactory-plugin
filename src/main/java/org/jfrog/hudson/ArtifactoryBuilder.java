@@ -157,5 +157,9 @@ public class ArtifactoryBuilder extends Builder {
         public List<ArtifactoryServer> getArtifactoryServers() {
             return artifactoryServers;
         }
+
+        public void setArtifactoryServers(List<ArtifactoryServer> artifactoryServers) {
+            this.artifactoryServers = artifactoryServers;
+        }
     }
 }
