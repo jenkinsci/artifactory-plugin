@@ -15,12 +15,8 @@
 
 package org.jfrog.hudson.release.gradle;
 
-import hudson.AbortException;
-import hudson.FilePath;
-import hudson.remoting.VirtualChannel;
 import org.apache.commons.io.IOUtils;
-import org.apache.tools.ant.util.FileUtils;
-import org.codehaus.plexus.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,27 +28,28 @@ import java.io.StringReader;
 import java.util.Map;
 
 /**
- * Rewrites the project properties in the {@code gradle.properties}.
+ * Rewrites the given properties in the input properties file.
  *
  * @author Tomer Cohen
  */
-public class PropertiesTransformer implements FilePath.FileCallable<Boolean> {
+public class PropertiesTransformer {
 
-
+    private final File propertiesFile;
     private final Map<String, String> versionsByName;
 
-    public PropertiesTransformer(Map<String, String> versionsByName) {
+    public PropertiesTransformer(File propertiesFile, Map<String, String> versionsByName) {
+        this.propertiesFile = propertiesFile;
         this.versionsByName = versionsByName;
     }
 
     /**
      * {@inheritDoc}
      *
-     * @return {@code True} in case the properties file was modified during the transformation. {@code false} otherwise
+     * @return True in case the properties file was modified during the transformation. False otherwise.
      */
-    public Boolean invoke(File propertiesFile, VirtualChannel channel) throws IOException, InterruptedException {
+    public Boolean transform() throws IOException, InterruptedException {
         if (!propertiesFile.exists()) {
-            throw new AbortException("Couldn't find properties file: " + propertiesFile.getAbsolutePath());
+            throw new IllegalArgumentException("Couldn't find properties file: " + propertiesFile.getAbsolutePath());
         }
         String properties;
         InputStream inputStream = new FileInputStream(propertiesFile);
@@ -80,7 +77,7 @@ public class PropertiesTransformer implements FilePath.FileCallable<Boolean> {
             result.append(line).append("\n");
         }
         if (modified) {
-            FileUtils.delete(propertiesFile);
+            propertiesFile.delete();
             FileOutputStream outputStream = new FileOutputStream(propertiesFile);
             try {
                 IOUtils.write(result.toString(), outputStream);
@@ -90,7 +87,6 @@ public class PropertiesTransformer implements FilePath.FileCallable<Boolean> {
         }
         return modified;
     }
-
 
     // escape the value of the properties file so it will be in accordance with the properties spec.
     private static String escape(String str, boolean isKey) {
@@ -132,7 +128,7 @@ public class PropertiesTransformer implements FilePath.FileCallable<Boolean> {
 
     private static String unescape(String str) {
         StringBuilder result = new StringBuilder(str.length());
-        for (int index = 0; index < str.length();) {
+        for (int index = 0; index < str.length(); ) {
             char c = str.charAt(index++);
             if (c == '\\') {
                 c = str.charAt(index++);
