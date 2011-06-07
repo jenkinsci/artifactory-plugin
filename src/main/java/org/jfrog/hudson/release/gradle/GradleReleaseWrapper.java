@@ -188,7 +188,7 @@ public class GradleReleaseWrapper {
         String next = releaseVersion ? "release" : "development";
         log(listener,
                 "Changing gradle.properties at " + gradlePropertiesFilePath.getRemote() + " for " + next + " version");
-        return gradlePropertiesFilePath.act(new PropertiesTransformer(modulesByName));
+        return gradlePropertiesFilePath.act(new GradlePropertiesTransformer(modulesByName));
     }
 
     private void log(BuildListener listener, String message) {
