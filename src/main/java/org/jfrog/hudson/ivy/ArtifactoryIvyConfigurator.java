@@ -237,6 +237,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 licenseAutoDiscovery, isDiscardOldBuilds(), isDeployArtifacts(),
                 getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
                 getMatrixParams());
+        context.setArtifactsPattern(getArtifactPattern());
+        context.setIvyPattern(getIvyPattern());
         context.setMaven2Compatible(isM2Compatible());
         build.setResult(Result.SUCCESS);
         return new AntIvyBuilderEnvironment() {

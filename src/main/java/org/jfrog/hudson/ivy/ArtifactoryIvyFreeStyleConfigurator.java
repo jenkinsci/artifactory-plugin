@@ -232,6 +232,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
                 getMatrixParams());
         context.setMaven2Compatible(isM2Compatible());
+        context.setArtifactsPattern(getArtifactPattern());
+        context.setIvyPattern(getIvyPattern());
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
