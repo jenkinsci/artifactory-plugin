@@ -200,7 +200,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
                 }
                 return null;
             } catch (SVNException e) {
-                throw new IOException(e);
+                throw new IOException(e.getMessage());
             }
         }
 
@@ -268,7 +268,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
                 wcClient.doRevert(new File[]{workingCopy}, SVNDepth.INFINITY, null);
                 return null;
             } catch (SVNException e) {
-                throw new IOException(e);
+                throw new IOException(e.getMessage());
             }
         }
     }
@@ -289,13 +289,13 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
             File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
             try {
                 log(listener, "Cleanup working copy: " + workingCopy);
-                 ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
+                ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
                 sam.setAuthenticationProvider(authProvider);
                 SVNWCClient wcClient = new SVNWCClient(sam, null);
                 wcClient.doCleanup(workingCopy);
                 return null;
             } catch (SVNException e) {
-                throw new IOException(e);
+                throw new IOException(e.getMessage());
             }
         }
     }
