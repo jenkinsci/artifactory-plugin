@@ -52,7 +52,7 @@ public class ArtifactoryServer {
     private final Credentials deployerCredentials;
     private Credentials resolverCredentials;
 
-    // Network timeout in milliseconds to use both for connection establishment and for unanswered requests
+    // Network timeout in seconds to use both for connection establishment and for unanswered requests
     private int timeout = DEFAULT_CONNECTION_TIMEOUT;
     private boolean bypassProxy;
 
