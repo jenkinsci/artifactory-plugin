@@ -66,26 +66,9 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
      * @param commitMessage@return The commit info upon successful operation.
      * @throws IOException On IO of SVN failure
      */
-    public SVNCommitInfo commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<SVNCommitInfo>() {
-            public SVNCommitInfo invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-                SubversionSCM.ModuleLocation location = getLocation();
-                File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
-                try {
-                    SVNCommitClient commitClient = new SVNCommitClient(createAuthenticationManager(), null);
-                    log(commitMessage);
-                    SVNCommitInfo commitInfo = commitClient.doCommit(new File[]{workingCopy}, true,
-                            commitMessage, null, null, true, true, SVNDepth.INFINITY);
-                    SVNErrorMessage errorMessage = commitInfo.getErrorMessage();
-                    if (errorMessage != null) {
-                        throw new IOException("Failed to commit working copy: " + errorMessage.getFullMessage());
-                    }
-                    return commitInfo;
-                } catch (SVNException e) {
-                    throw new IOException(e);
-                }
-            }
-        });
+    public void commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
+        build.getWorkspace().act(new SVNCommitWorkingCopyCallable(commitMessage, getLocation(),
+                getSvnAuthenticationProvider(), buildListener));
     }
 
     /**
@@ -96,51 +79,19 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
      * @return The commit info upon successful operation.
      * @throws IOException On IO of SVN failure
      */
-    public SVNCommitInfo createTag(final String tagUrl, final String commitMessage)
+    public void createTag(final String tagUrl, final String commitMessage)
             throws IOException, InterruptedException {
-        return build.getWorkspace().act(new FilePath.FileCallable<SVNCommitInfo>() {
-            public SVNCommitInfo invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-                SubversionSCM.ModuleLocation moduleLocation = getLocation();
-                File workingCopy = new File(ws, moduleLocation.getLocalDir()).getCanonicalFile();
-                try {
-                    SVNURL svnUrl = SVNURL.parseURIEncoded(tagUrl);
-                    SVNCopyClient copyClient = new SVNCopyClient(createAuthenticationManager(), null);
-
-                    log("Creating subversion tag: " + tagUrl);
-                    SVNCopySource source = new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING, workingCopy);
-                    SVNCommitInfo commitInfo = copyClient.doCopy(new SVNCopySource[]{source},
-                            svnUrl, false, true, true, commitMessage, new SVNProperties());
-
-                    SVNErrorMessage errorMessage = commitInfo.getErrorMessage();
-                    if (errorMessage != null) {
-                        throw new IOException("Failed to create tag: " + errorMessage.getFullMessage());
-                    }
-                    return commitInfo;
-                } catch (SVNException e) {
-                    throw new IOException("Subversion tag creation failed: " + e.getMessage());
-                }
-            }
-        });
+        build.getWorkspace()
+                .act(new SVNCreateTagCallable(tagUrl, commitMessage, getLocation(), getSvnAuthenticationProvider(),
+                        buildListener));
     }
 
     /**
      * Revert all the working copy changes.
      */
     public void revertWorkingCopy() throws IOException, InterruptedException {
-        build.getWorkspace().act(new FilePath.FileCallable<Object>() {
-            public Object invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-                SubversionSCM.ModuleLocation location = getLocation();
-                File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
-                try {
-                    log("Reverting working copy: " + workingCopy);
-                    SVNWCClient wcClient = new SVNWCClient(createAuthenticationManager(), null);
-                    wcClient.doRevert(new File[]{workingCopy}, SVNDepth.INFINITY, null);
-                    return null;
-                } catch (SVNException e) {
-                    throw new IOException(e);
-                }
-            }
-        });
+        build.getWorkspace()
+                .act(new RevertWorkingCopyCallable(getLocation(), getSvnAuthenticationProvider(), buildListener));
     }
 
     /**
@@ -177,20 +128,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     }
 
     private void cleanupWorkingCopy() throws IOException, InterruptedException {
-        build.getWorkspace().act(new FilePath.FileCallable<Object>() {
-            public Object invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-                SubversionSCM.ModuleLocation location = getLocation();
-                File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
-                try {
-                    log("Cleanup working copy: " + workingCopy);
-                    SVNWCClient wcClient = new SVNWCClient(createAuthenticationManager(), null);
-                    wcClient.doCleanup(workingCopy);
-                    return null;
-                } catch (SVNException e) {
-                    throw new IOException(e);
-                }
-            }
-        });
+        build.getWorkspace().act(new CleanupCallable(getLocation(), getSvnAuthenticationProvider(), buildListener));
     }
 
     public void safeRevertTag(String tagUrl, String commitMessageSuffix) {
@@ -218,13 +156,147 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     }
 
     private ISVNAuthenticationManager createAuthenticationManager() {
+        ISVNAuthenticationProvider sap = getSvnAuthenticationProvider();
+        ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
+        sam.setAuthenticationProvider(sap);
+        return sam;
+    }
+
+    private ISVNAuthenticationProvider getSvnAuthenticationProvider() {
         ISVNAuthenticationProvider sap = getHudsonScm().getDescriptor().createAuthenticationProvider();
         if (sap == null) {
             throw new AbortException("Subversion authentication info is not set.");
         }
+        return sap;
+    }
 
-        ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
-        sam.setAuthenticationProvider(sap);
-        return sam;
+    private static class SVNCommitWorkingCopyCallable implements FilePath.FileCallable<Object> {
+        private final String commitMessage;
+        private final SubversionSCM.ModuleLocation location;
+        private final ISVNAuthenticationProvider authProvider;
+        private final TaskListener buildListener;
+
+        public SVNCommitWorkingCopyCallable(String commitMessage, SubversionSCM.ModuleLocation location,
+                ISVNAuthenticationProvider provider, TaskListener listener) {
+            this.commitMessage = commitMessage;
+            this.location = location;
+            authProvider = provider;
+            buildListener = listener;
+        }
+
+        public Object invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
+            File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
+            try {
+                ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
+                sam.setAuthenticationProvider(authProvider);
+                SVNCommitClient commitClient = new SVNCommitClient(sam, null);
+                buildListener.getLogger().println("[RELEASE] " + commitMessage);
+                debuggingLogger.fine(String.format("Committing working copy: '%s'", workingCopy));
+                SVNCommitInfo commitInfo = commitClient.doCommit(new File[]{workingCopy}, true,
+                        commitMessage, null, null, true, true, SVNDepth.INFINITY);
+                SVNErrorMessage errorMessage = commitInfo.getErrorMessage();
+                if (errorMessage != null) {
+                    throw new IOException("Failed to commit working copy: " + errorMessage.getFullMessage());
+                }
+                return null;
+            } catch (SVNException e) {
+                throw new IOException(e.getMessage());
+            }
+        }
+
+        private static final long serialVersionUID = 1L;
+    }
+
+    private static class SVNCreateTagCallable implements FilePath.FileCallable<Object> {
+        private final String tagUrl;
+        private final String commitMessage;
+        private final SubversionSCM.ModuleLocation location;
+        private final ISVNAuthenticationProvider authProvider;
+        private final TaskListener buildListener;
+
+        public SVNCreateTagCallable(String tagUrl, String commitMessage, SubversionSCM.ModuleLocation location,
+                ISVNAuthenticationProvider provider, TaskListener listener) {
+            this.tagUrl = tagUrl;
+            this.commitMessage = commitMessage;
+            this.location = location;
+            authProvider = provider;
+            buildListener = listener;
+        }
+
+        public Object invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
+            File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
+            try {
+                SVNURL svnUrl = SVNURL.parseURIEncoded(tagUrl);
+                ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
+                sam.setAuthenticationProvider(authProvider);
+                SVNCopyClient copyClient = new SVNCopyClient(sam, null);
+                buildListener.getLogger().println("[RELEASE] Creating subversion tag: " + tagUrl);
+                SVNCopySource source = new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING, workingCopy);
+                SVNCommitInfo commitInfo = copyClient.doCopy(new SVNCopySource[]{source},
+                        svnUrl, false, true, true, commitMessage, new SVNProperties());
+                SVNErrorMessage errorMessage = commitInfo.getErrorMessage();
+                if (errorMessage != null) {
+                    throw new IOException("Failed to create tag: " + errorMessage.getFullMessage());
+                }
+                return null;
+            } catch (SVNException e) {
+                throw new IOException("Subversion tag creation failed: " + e.getMessage());
+            }
+        }
+    }
+
+    private static class RevertWorkingCopyCallable implements FilePath.FileCallable<Object> {
+        private final SubversionSCM.ModuleLocation location;
+        private final ISVNAuthenticationProvider authProvider;
+        private final TaskListener listener;
+
+        public RevertWorkingCopyCallable(SubversionSCM.ModuleLocation location, ISVNAuthenticationProvider authProvider,
+                TaskListener listener) {
+            this.location = location;
+            this.authProvider = authProvider;
+            this.listener = listener;
+        }
+
+
+        public Object invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
+            File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
+            try {
+                log(listener, "Reverting working copy: " + workingCopy);
+                ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
+                sam.setAuthenticationProvider(authProvider);
+                SVNWCClient wcClient = new SVNWCClient(sam, null);
+                wcClient.doRevert(new File[]{workingCopy}, SVNDepth.INFINITY, null);
+                return null;
+            } catch (SVNException e) {
+                throw new IOException(e.getMessage());
+            }
+        }
+    }
+
+    private static class CleanupCallable implements FilePath.FileCallable<Object> {
+        private final SubversionSCM.ModuleLocation location;
+        private final ISVNAuthenticationProvider authProvider;
+        private final TaskListener listener;
+
+        private CleanupCallable(SubversionSCM.ModuleLocation location, ISVNAuthenticationProvider authProvider,
+                TaskListener listener) {
+            this.location = location;
+            this.authProvider = authProvider;
+            this.listener = listener;
+        }
+
+        public Object invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
+            File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
+            try {
+                log(listener, "Cleanup working copy: " + workingCopy);
+                ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
+                sam.setAuthenticationProvider(authProvider);
+                SVNWCClient wcClient = new SVNWCClient(sam, null);
+                wcClient.doCleanup(workingCopy);
+                return null;
+            } catch (SVNException e) {
+                throw new IOException(e.getMessage());
+            }
+        }
     }
 }

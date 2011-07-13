@@ -69,13 +69,13 @@ public class OverridingDeployerCredentialsConverter<T extends DeployerOverrider>
                 overridingCredentialsField.set(deployerOverrider, new Credentials(oldUsername, oldPassword));
             }
         } catch (NoSuchFieldException e) {
-            throw new RuntimeException(getConvertionErrorMessage(deployerOverrider), e);
+            throw new RuntimeException(getConversionErrorMessage(deployerOverrider), e);
         } catch (IllegalAccessException e) {
-            throw new RuntimeException(getConvertionErrorMessage(deployerOverrider), e);
+            throw new RuntimeException(getConversionErrorMessage(deployerOverrider), e);
         }
     }
 
-    private String getConvertionErrorMessage(T deployerOverrider) {
+    private String getConversionErrorMessage(T deployerOverrider) {
         return String.format("Could not convert the class '%s' to use the new overriding deployer credential storage " +
                 "format.", deployerOverrider.getClass().getName());
     }

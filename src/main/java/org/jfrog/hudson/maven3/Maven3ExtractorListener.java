@@ -19,12 +19,13 @@ package org.jfrog.hudson.maven3;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
+import hudson.maven.MavenModuleSetBuild;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
-import hudson.model.Result;
 import hudson.model.listeners.RunListener;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.maven3.extractor.MavenExtractorEnvironment;
 import org.jfrog.hudson.util.BuildContext;
 
 import java.io.IOException;
@@ -43,31 +44,27 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
     public Environment setUpEnvironment(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
         // if not a native maven project return empty env.
-        if (!(build.getProject() instanceof MavenModuleSet)) {
+        if (!(build instanceof MavenModuleSetBuild)) {
             return new Environment() {
             };
         }
+
         final MavenModuleSet project = (MavenModuleSet) build.getProject();
-        // if archiving is enabled return empty env.
-        if (!project.isArchivingDisabled()) {
-            return new Environment() {
-            };
-        }
         final ArtifactoryRedeployPublisher publisher = project.getPublishers().get(ArtifactoryRedeployPublisher.class);
         // if the artifactory publisher is not active, return empty env.
         if (publisher == null) {
             return new Environment() {
             };
         }
-        build.setResult(Result.SUCCESS);
-        return new MavenExtractorEnvironment(project, publisher, createBuildContextFromPublisher(publisher), build);
+        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher,
+                createBuildContextFromPublisher(publisher), listener);
     }
 
     private BuildContext createBuildContextFromPublisher(ArtifactoryRedeployPublisher publisher) {
         BuildContext context = new BuildContext(publisher.getDetails(), publisher, publisher.isRunChecks(),
                 publisher.isIncludePublishArtifacts(), publisher.getViolationRecipients(), publisher.getScopes(),
                 publisher.isLicenseAutoDiscovery(), publisher.isDiscardOldBuilds(), publisher.isDeployArtifacts(),
-                publisher.getArtifactDeploymentPatterns(), publisher.isSkipBuildInfoDeploy(),
+                publisher.getArtifactDeploymentPatterns(), !publisher.isDeployBuildInfo(),
                 publisher.isIncludeEnvVars(), publisher.isDiscardBuildArtifacts(), publisher.getMatrixParams());
         context.setEvenIfUnstable(publisher.isEvenIfUnstable());
         return context;

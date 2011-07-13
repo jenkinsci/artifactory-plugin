@@ -270,30 +270,29 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return new Environment() {
             };
         }
-        final Gradle gradleBuild = getLastGradleBuild(build.getProject());
         String switches = null;
-        if (!skipInjectInitScript) {
-            GradleInitScriptWriter writer = new GradleInitScriptWriter(build);
-            FilePath workspace = build.getWorkspace();
-            FilePath initScript;
-            try {
-                initScript =
-                        workspace.createTextTempFile("init-artifactory", "gradle", writer.generateInitScript(), false);
-            } catch (Exception e) {
-                listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
-                build.setResult(Result.FAILURE);
-                return new Environment() {
-                };
-            }
-            String initScriptPath = initScript.getRemote();
-            initScriptPath = initScriptPath.replace('\\', '/');
-            if (gradleBuild != null) {
-                switches = gradleBuild.getSwitches() + "";
+        String originalTasks = null;
+        final Gradle gradleBuild = getLastGradleBuild(build.getProject());
+        if (gradleBuild != null) {
+            switches = gradleBuild.getSwitches() + "";
+            if (!skipInjectInitScript) {
+                GradleInitScriptWriter writer = new GradleInitScriptWriter(build);
+                FilePath workspace = build.getWorkspace();
+                FilePath initScript;
+                try {
+                    initScript =
+                            workspace.createTextTempFile("init-artifactory", "gradle", writer.generateInitScript(),
+                                    false);
+                } catch (Exception e) {
+                    listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
+                    build.setResult(Result.FAILURE);
+                    return new Environment() {
+                    };
+                }
+                String initScriptPath = initScript.getRemote();
+                initScriptPath = initScriptPath.replace('\\', '/');
                 setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
             }
-        }
-        String originalTasks = null;
-        if (gradleBuild != null) {
             originalTasks = gradleBuild.getTasks() + "";
             final String tasks;
             if (isRelease(build)) {
@@ -306,7 +305,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             } else {
                 tasks = gradleBuild.getTasks() + "";
             }
-            if (!StringUtils.contains(originalTasks, GradlePluginUtils.BUILD_INFO_TASK_NAME)) {
+            if (!StringUtils.contains(tasks, GradlePluginUtils.BUILD_INFO_TASK_NAME)) {
                 setTargetsField(gradleBuild, "tasks", tasks + " " + GradlePluginUtils.BUILD_INFO_TASK_NAME);
             }
         } else {

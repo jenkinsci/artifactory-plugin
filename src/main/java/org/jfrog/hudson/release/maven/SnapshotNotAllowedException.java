@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.release.scm;
-
-import java.io.IOException;
+package org.jfrog.hudson.release.maven;
 
 /**
- * An interface for SCM actions required in the release process.
+ * This exception is thrown when a snapshot version is detected inside a pom when working in release mode.
  *
  * @author Yossi Shaul
  */
-public interface ScmManager {
+public class SnapshotNotAllowedException extends RuntimeException {
 
-    void commitWorkingCopy(String commitMessage) throws IOException, InterruptedException;
-
-    void createTag(String tagUrl, String commitMessage)
-            throws IOException, InterruptedException;
-
-    String getRemoteUrl();
+    public SnapshotNotAllowedException(String message) {
+        super(message);
+    }
 }

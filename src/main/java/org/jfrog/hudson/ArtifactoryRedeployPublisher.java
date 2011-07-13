@@ -19,6 +19,7 @@ package org.jfrog.hudson;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
@@ -49,7 +50,6 @@ import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
-import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -78,7 +78,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      * Include environment variables in the generated build info
      */
     private final boolean includeEnvVars;
-    private final boolean skipBuildInfoDeploy;
+
+    private boolean deployBuildInfo;
 
     /**
      * Deploy even if the build is unstable (failed tests)
@@ -125,7 +126,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.matrixParams = matrixParams;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
-        this.skipBuildInfoDeploy = !deployBuildInfo;
+        this.deployBuildInfo = deployBuildInfo;
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -168,8 +169,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    public boolean isSkipBuildInfoDeploy() {
-        return skipBuildInfoDeploy;
+    public boolean isDeployBuildInfo() {
+        return deployBuildInfo;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -185,6 +186,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return includeEnvVars;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     public boolean isDisableLicenseAutoDiscovery() {
         return disableLicenseAutoDiscovery;
     }
@@ -242,7 +244,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
 
         if (isExtractorUsed(build.getEnvironment(listener))) {
-            if (!skipBuildInfoDeploy) {
+            if (deployBuildInfo) {
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
             }
             return true;
@@ -277,7 +279,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             if (deployArtifacts) {
                 new ArtifactsDeployer(this, client, mavenBuild, listener).deploy();
             }
-            if (!skipBuildInfoDeploy) {
+            if (deployBuildInfo) {
                 new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
                 // add the result action (prefer always the same index)
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
@@ -372,6 +374,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             //return Messages.RedeployPublisher_getDisplayName();
         }
 
+        @SuppressWarnings({"UnusedDeclaration"})
         public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
             return FormValidations.validateEmails(value);
         }
@@ -388,24 +391,26 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
     }
 
-    /**
-     * Convert any remaining local credential variables to a credentials object
-     */
-    public static final class ConverterImpl extends OverridingDeployerCredentialsConverter {
+    @SuppressWarnings({"UnusedDeclaration"})
+    public static final class ConverterImpl extends XStream2.PassthruConverter<ArtifactoryRedeployPublisher> {
+
         public ConverterImpl(XStream2 xstream) {
             super(xstream);
+        }
+
+        @Override
+        protected void callback(ArtifactoryRedeployPublisher publisher, UnmarshallingContext context) {
+            // field skipBuildInfoDeploy was replaced by the opposite deployBuildInfo
+            if (publisher.skipBuildInfoDeploy != null) {
+                publisher.deployBuildInfo = !publisher.skipBuildInfoDeploy;
+            }
         }
     }
 
     /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     * @deprecated: Use org.jfrog.hudson.ArtifactoryRedeployPublisher#deployBuildInfo
      */
     @Deprecated
-    private transient String username;
+    private transient Boolean skipBuildInfoDeploy;
 
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String scrambledPassword;
 }

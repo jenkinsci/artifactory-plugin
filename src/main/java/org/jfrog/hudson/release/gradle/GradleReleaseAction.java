@@ -30,6 +30,7 @@ import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -74,7 +75,7 @@ public class GradleReleaseAction extends ReleaseAction {
      * Initialize the version properties map from the gradle.properties file, and the additional properties from the
      * gradle.properties file.
      */
-    public void init() {
+    public void init() throws IOException, InterruptedException {
         FilePath workspace = getRootLocationPath(project.getSomeWorkspace());
         if (workspace == null) {
             throw new IllegalStateException("No workspace found, cannot perform staging");

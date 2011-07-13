@@ -17,44 +17,47 @@
 package org.jfrog.hudson.release;
 
 import org.jfrog.hudson.release.maven.MavenReleaseAction;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.Before;
+import org.junit.Test;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests the {@link ReleaseAction}.
  *
  * @author Yossi Shaul
  */
-@Test
 public class ReleaseActionTest {
 
     private ReleaseAction action;
 
-    @BeforeMethod
+    @Before
     public void setup() {
         action = new MavenReleaseAction(null);
     }
 
 
+    @Test
     public void nextVersionSimpleMinor() {
-        assertEquals(action.calculateNextVersion("1.2"), "1.3-SNAPSHOT");
-        assertEquals(action.calculateNextVersion("3.2.12"), "3.2.13-SNAPSHOT");
+        assertEquals("1.3-SNAPSHOT", action.calculateNextVersion("1.2"));
+        assertEquals("3.2.13-SNAPSHOT", action.calculateNextVersion("3.2.12"));
     }
 
+    @Test
     public void nextVersionNoMinor() {
-        assertEquals(action.calculateNextVersion("1"), "2-SNAPSHOT");
-        assertEquals(action.calculateNextVersion("938"), "939-SNAPSHOT");
+        assertEquals("2-SNAPSHOT", action.calculateNextVersion("1"));
+        assertEquals("939-SNAPSHOT", action.calculateNextVersion("938"));
     }
 
+    @Test
     public void nextVersionCompoundMinor() {
-        assertEquals(action.calculateNextVersion("1.2.3-4"), "1.2.3-5-SNAPSHOT");
+        assertEquals("1.2.3-5-SNAPSHOT", action.calculateNextVersion("1.2.3-4"));
     }
 
+    @Test
     public void unsupportedVersions() {
         // currently unsupported until custom/improved logic implementation
-        assertEquals(action.calculateNextVersion("1-beta"), "1-beta");
-        assertEquals(action.calculateNextVersion("1.2-alpha"), "1.2-alpha");
+        assertEquals("1-beta", action.calculateNextVersion("1-beta"));
+        assertEquals("1.2-alpha", action.calculateNextVersion("1.2-alpha"));
     }
 }

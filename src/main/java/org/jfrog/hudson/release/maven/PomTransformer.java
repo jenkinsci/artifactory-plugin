@@ -45,7 +45,10 @@ public class PomTransformer implements FilePath.FileCallable<Boolean> {
     private final String scmUrl;
     private final ModuleName currentModule;
     private final Map<ModuleName, String> versionsByModule;
+    private final boolean failOnSnapshot;
+
     private boolean modified;
+    private File pomFile;
 
     /**
      * Transforms single pom file.
@@ -55,9 +58,23 @@ public class PomTransformer implements FilePath.FileCallable<Boolean> {
      * @param scmUrl           Scm url to use if scm element exists in the pom file
      */
     public PomTransformer(ModuleName currentModule, Map<ModuleName, String> versionsByModule, String scmUrl) {
+        this(currentModule, versionsByModule, scmUrl, false);
+    }
+
+    /**
+     * Transforms single pom file.
+     *
+     * @param currentModule    The current module we work on
+     * @param versionsByModule Map of module names to module version
+     * @param scmUrl           Scm url to use if scm element exists in the pom file
+     * @param failOnSnapshot   If true, fail with IllegalStateException if the pom contains snapshot version after the version changes
+     */
+    public PomTransformer(ModuleName currentModule, Map<ModuleName, String> versionsByModule, String scmUrl,
+            boolean failOnSnapshot) {
         this.currentModule = currentModule;
         this.versionsByModule = versionsByModule;
         this.scmUrl = scmUrl;
+        this.failOnSnapshot = failOnSnapshot;
     }
 
     /**
@@ -66,6 +83,7 @@ public class PomTransformer implements FilePath.FileCallable<Boolean> {
      * @return True if the file was modified.
      */
     public Boolean invoke(File pomFile, VirtualChannel channel) throws IOException, InterruptedException {
+        this.pomFile = pomFile;
         if (!pomFile.exists()) {
             throw new AbortException("Couldn't find pom file: " + pomFile);
         }
@@ -83,7 +101,7 @@ public class PomTransformer implements FilePath.FileCallable<Boolean> {
 
         changeParentVersion(rootElement, ns);
 
-        changeVersion(rootElement, ns);
+        changeCurrentModuleVersion(rootElement, ns);
 
         //changePropertiesVersion(rootElement, ns);
 
@@ -114,16 +132,15 @@ public class PomTransformer implements FilePath.FileCallable<Boolean> {
         }
 
         ModuleName parentName = extractModuleName(parentElement, ns);
-        if (!versionsByModule.containsKey(parentName)) {
-            // parent is not part of the currently built project
-            return;
+        if (versionsByModule.containsKey(parentName)) {
+            setVersion(parentElement, ns, versionsByModule.get(parentName));
         }
-
-        setVersion(parentElement, ns, versionsByModule.get(parentName));
+        verifyNonSnapshotVersion(parentName, parentElement, ns);
     }
 
-    private void changeVersion(Element rootElement, Namespace ns) {
+    private void changeCurrentModuleVersion(Element rootElement, Namespace ns) {
         setVersion(rootElement, ns, versionsByModule.get(currentModule));
+        verifyNonSnapshotVersion(currentModule, rootElement, ns);
     }
 
     private void changeDependencyManagementVersions(Element rootElement, Namespace ns) {
@@ -160,6 +177,7 @@ public class PomTransformer implements FilePath.FileCallable<Boolean> {
         if (versionsByModule.containsKey(moduleName)) {
             setVersion(dependency, ns, versionsByModule.get(moduleName));
         }
+        verifyNonSnapshotVersion(moduleName, dependency, ns);
     }
 
     private void changeScm(Element rootElement, Namespace ns) {
@@ -188,6 +206,20 @@ public class PomTransformer implements FilePath.FileCallable<Boolean> {
             if (!version.equals(currentVersion)) {
                 versionElement.setText(version);
                 modified = true;
+            }
+        }
+    }
+
+    private void verifyNonSnapshotVersion(ModuleName moduleName, Element element, Namespace ns) {
+        if (!failOnSnapshot) {
+            return;
+        }
+        Element versionElement = element.getChild("version", ns);
+        if (versionElement != null) {
+            String currentVersion = versionElement.getText();
+            if (currentVersion.endsWith("-SNAPSHOT")) {
+                throw new SnapshotNotAllowedException(String.format("Snapshot detected in file '%s': %s:%s",
+                        pomFile.getAbsolutePath(), moduleName, currentVersion));
             }
         }
     }

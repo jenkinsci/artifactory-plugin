@@ -22,21 +22,22 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
 import hudson.FilePath;
 import hudson.Util;
+import hudson.maven.MavenModuleSet;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Computer;
-import hudson.model.Result;
 import hudson.model.Run;
+import hudson.remoting.Which;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.LogRotator;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.build.client.ClientProperties;
+import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -69,6 +70,30 @@ public class ExtractorUtils {
     }
 
     /**
+     * Append custom Maven opts to the existing to the already existing ones. The opt that will be appended is the
+     * location Of the plugin for the Maven process to use.
+     */
+    public static String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build) throws IOException {
+        StringBuilder mavenOpts = new StringBuilder();
+        String opts = project.getMavenOpts();
+        if (StringUtils.isNotBlank(opts)) {
+            mavenOpts.append(opts);
+        }
+        if (StringUtils.contains(mavenOpts.toString(), MAVEN_PLUGIN_OPTS)) {
+            return mavenOpts.toString();
+        }
+        File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
+        try {
+            FilePath actualDependencyDirectory =
+                    PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
+            mavenOpts.append(" ").append(MAVEN_PLUGIN_OPTS).append("=").append(actualDependencyDirectory.getRemote());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return mavenOpts.toString();
+    }
+
+    /**
      * Get the VCS revision from the Jenkins build environment. The search will first be for an "SVN_REVISION" in the
      * environment. If it is not found then a search will be for a "GIT_COMMIT".
      *
@@ -89,30 +114,15 @@ public class ExtractorUtils {
      *
      * @return The path of the classworlds.conf file
      */
-    public static String copyClassWorldsFile(AbstractBuild<?, ?> build, URL resource, File classWorldsFile) {
-        String classworldsConfPath;
-        if (Computer.currentComputer() instanceof SlaveComputer) {
-            try {
-                FilePath remoteClassworlds =
-                        build.getWorkspace().createTextTempFile("classworlds", "conf", "", false);
-                remoteClassworlds.copyFrom(resource);
-                classworldsConfPath = remoteClassworlds.getRemote();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            classworldsConfPath = classWorldsFile.getAbsolutePath();
-            File classWorldsConf = new File(resource.getFile());
-            try {
-                FileUtils.copyFile(classWorldsConf, classWorldsFile);
-            } catch (IOException e) {
-                build.setResult(Result.FAILURE);
-                throw new RuntimeException(
-                        "Unable to copy classworlds file: " + classWorldsConf.getAbsolutePath() + " to: " +
-                                classWorldsFile.getAbsolutePath(), e);
-            }
+    public static FilePath copyClassWorldsFile(AbstractBuild<?, ?> build, URL resource) {
+        try {
+            FilePath remoteClassworlds =
+                    build.getWorkspace().createTextTempFile("classworlds", "conf", "", false);
+            remoteClassworlds.copyFrom(resource);
+            return remoteClassworlds;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        return classworldsConfPath;
     }
 
     /**
@@ -131,7 +141,7 @@ public class ExtractorUtils {
      * BuildInfoConfigProperties#PROP_PROPS_FILE} for the extractor to read.
      *
      * @param env                       A map of the environment variables that are to be persisted into the
-     *                                  buildinfo.properties file
+     *                                  buildinfo.properties file. NOTE: nothing should be added to the env in this method
      * @param build                     The build from which to get build/project related information from (e.g build
      *                                  name and build number).
      * @param selectedArtifactoryServer The Artifactory server that is to be used during the build for resolution/

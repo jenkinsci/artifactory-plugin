@@ -229,9 +229,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
-        final ArtifactoryServer artifactoryServer = getArtifactoryServer();
-        build.setResult(Result.SUCCESS);
-
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
@@ -240,7 +237,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 licenseAutoDiscovery, isDiscardOldBuilds(), isDeployArtifacts(),
                 getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
                 getMatrixParams());
+        context.setArtifactsPattern(getArtifactPattern());
+        context.setIvyPattern(getIvyPattern());
         context.setMaven2Compatible(isM2Compatible());
+        build.setResult(Result.SUCCESS);
         return new AntIvyBuilderEnvironment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
