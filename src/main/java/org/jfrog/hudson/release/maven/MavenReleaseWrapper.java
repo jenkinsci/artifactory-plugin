@@ -132,7 +132,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
         if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
             scmCoordinator.beforeReleaseVersionChange();
             // change to release version
-            String vcsUrl = releaseAction.isCreateVcsTag() ? getTagPrefix() : null;
+            String vcsUrl = releaseAction.isCreateVcsTag() ? releaseAction.getTagUrl() : null;
             boolean modified;
             try {
                 modified = changeVersions(mavenBuild, releaseAction, true, vcsUrl);
