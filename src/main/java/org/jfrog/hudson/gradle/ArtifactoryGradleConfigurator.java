@@ -29,7 +29,7 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.extractor.gradle.GradlePluginUtils;
+import org.jfrog.gradle.plugin.artifactory.extractor.GradlePluginUtils;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;

@@ -20,6 +20,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import hudson.maven.ModuleName;
 import org.jdom.Document;
+import org.jdom.input.SAXBuilder;
 import org.jdom.output.XMLOutputter;
 import org.junit.Test;
 
@@ -44,10 +45,10 @@ public class PomTransformerTest {
         HashMap<ModuleName, String> modules = Maps.newHashMap();
         modules.put(new ModuleName("org.jfrog.test", "parent"), "2.2");
 
-        new PomTransformer(new ModuleName("org.jfrog.test", "one"), modules, "").invoke(pomFile, null);
+        new PomTransformer(new ModuleName("org.jfrog.test", "one"), modules, "", false).invoke(pomFile, null);
 
         String pomStr = Files.toString(pomFile, Charset.defaultCharset());
-        Document expected = PomTransformer.createSaxBuilder().build(
+        Document expected = createSaxBuilder().build(
                 getResourceAsFile("/poms/parentonly/pom.expected.xml"));
         String expectedStr = new XMLOutputter().outputString(expected);
 
@@ -62,10 +63,10 @@ public class PomTransformerTest {
         modules.put(new ModuleName("org.jfrog.test.nested", "nested2"), "3.6");
         modules.put(new ModuleName("org.jfrog.test.nested", "two"), "3.6");
 
-        new PomTransformer(new ModuleName("org.jfrog.test.nested", "two"), modules, "").invoke(pomFile, null);
+        new PomTransformer(new ModuleName("org.jfrog.test.nested", "two"), modules, "", false).invoke(pomFile, null);
 
         String pomStr = Files.toString(pomFile, Charset.defaultCharset());
-        Document expected = PomTransformer.createSaxBuilder().build(getResourceAsFile("/poms/multi/pom.expected.xml"));
+        Document expected = createSaxBuilder().build(getResourceAsFile("/poms/multi/pom.expected.xml"));
         String expectedStr = new XMLOutputter().outputString(expected);
 
         assertEquals(expectedStr, pomStr);
@@ -78,10 +79,10 @@ public class PomTransformerTest {
         modules.put(new ModuleName("org.jfrog.test", "parent"), "1");
 
         new PomTransformer(new ModuleName("org.jfrog.test", "one"), modules,
-                "http://subversion.jfrog.org/test/tags/1").invoke(pomFile, null);
+                "http://subversion.jfrog.org/test/tags/1", false).invoke(pomFile, null);
 
         String pomStr = Files.toString(pomFile, Charset.defaultCharset());
-        Document expected = PomTransformer.createSaxBuilder().build(
+        Document expected = createSaxBuilder().build(
                 getResourceAsFile("/poms/scm/pom.expected.xml"));
         String expectedStr = new XMLOutputter().outputString(expected);
 
@@ -160,5 +161,16 @@ public class PomTransformerTest {
             throw new IllegalArgumentException("Resource not found: " + path);
         }
         return new File(resource.getFile());
+    }
+
+
+    private SAXBuilder createSaxBuilder() {
+        SAXBuilder sb = new SAXBuilder();
+        // don't validate and don't load dtd
+        sb.setValidation(false);
+        sb.setFeature("http://xml.org/sax/features/validation", false);
+        sb.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false);
+        sb.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        return sb;
     }
 }
