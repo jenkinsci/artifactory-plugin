@@ -22,6 +22,7 @@ import hudson.maven.ModuleName;
 import org.jdom.Document;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.XMLOutputter;
+import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
 import org.junit.Test;
 
 import java.io.File;
