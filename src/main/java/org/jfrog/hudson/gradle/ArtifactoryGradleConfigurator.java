@@ -353,6 +353,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     releaseSuccess = releaseWrapper.tearDown(build, listener);
                 }
                 if (gradleBuild != null) {
+                    // restore the original configuration
                     setTargetsField(gradleBuild, "switches", finalSwitches);
                     setTargetsField(gradleBuild, "tasks", finalOriginalTasks);
                 }
