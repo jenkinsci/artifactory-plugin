@@ -86,7 +86,8 @@ public class ExtractorUtils {
         try {
             FilePath actualDependencyDirectory =
                     PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
-            mavenOpts.append(" ").append(MAVEN_PLUGIN_OPTS).append("=").append(actualDependencyDirectory.getRemote());
+            mavenOpts.append(" ").append(MAVEN_PLUGIN_OPTS).append("=")
+                    .append(quote(actualDependencyDirectory.getRemote()));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -375,5 +376,17 @@ public class ExtractorUtils {
         Map<String, String> filteredBuildVarDifferences = buildVarDifference.entriesOnlyOnLeft();
 
         configuration.info.addBuildVariables(filteredBuildVarDifferences);
+    }
+
+    /**
+     * Adds quotes around strings containing spaces.
+     */
+    private static String quote(String arg) {
+
+        if (StringUtils.isNotBlank(arg) && arg.indexOf(' ') >= 0) {
+            return "\"" + arg + "\"";
+        } else {
+            return arg;
+        }
     }
 }
