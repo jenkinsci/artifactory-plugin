@@ -144,7 +144,7 @@ public class Maven3Builder extends Builder {
         args.add("-classpath");
         //String cpSeparator = launcher.isUnix() ? ":" : ";";
 
-        args.add(new StringBuilder().append(classWorldsJar.getRemote()).toString());
+        args.add(classWorldsJar.getRemote());
 
         // maven opts
         args.addTokenized(getMavenOpts());
@@ -152,12 +152,11 @@ public class Maven3Builder extends Builder {
         String buildInfoPropertiesFile = env.get(BuildInfoConfigProperties.PROP_PROPS_FILE);
         boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
         if (artifactoryIntegration) {
-            args.add(new StringBuilder("-D").append(BuildInfoConfigProperties.PROP_PROPS_FILE + "=").append(
-                    buildInfoPropertiesFile).toString());
+            args.addKeyValuePair("-D", BuildInfoConfigProperties.PROP_PROPS_FILE, buildInfoPropertiesFile, false);
         }
 
         // maven home
-        args.add("-Dmaven.home=" + mavenHome.getRemote());
+        args.addKeyValuePair("-D", "maven.home", mavenHome.getRemote(), false);
 
         String classworldsConfPath;
         if (artifactoryIntegration) {
@@ -167,7 +166,7 @@ public class Maven3Builder extends Builder {
             FilePath actualDependencyDirectory =
                     PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
 
-            args.add("-Dm3plugin.lib=" + actualDependencyDirectory.getRemote());
+            args.addKeyValuePair("-D", "m3plugin.lib", actualDependencyDirectory.getRemote(), false);
 
             URL classworldsResource =
                     getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-freestyle.conf");
@@ -192,7 +191,7 @@ public class Maven3Builder extends Builder {
             classworldsConfPath = new FilePath(mavenHome, "bin/m2.conf").getRemote();
         }
 
-        args.add("-Dclassworlds.conf=" + classworldsConfPath);
+        args.addKeyValuePair("-D", "classworlds.conf", classworldsConfPath, false);
 
         // maven opts
         String mavenOpts = Util.replaceMacro(getMavenOpts(), build.getBuildVariableResolver());

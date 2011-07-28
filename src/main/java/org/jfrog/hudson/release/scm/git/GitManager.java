@@ -26,9 +26,9 @@ import hudson.plugins.git.GitSCM;
 import hudson.remoting.VirtualChannel;
 import hudson.util.ArgumentListBuilder;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
-import org.spearce.jgit.transport.RemoteConfig;
-import org.spearce.jgit.transport.URIish;
 
 import java.io.File;
 import java.io.IOException;

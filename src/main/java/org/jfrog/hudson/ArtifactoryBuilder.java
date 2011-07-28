@@ -117,14 +117,16 @@ public class ArtifactoryBuilder extends Builder {
             } else {
                 client = new ArtifactoryBuildInfoClient(value, new NullLog());
             }
+            client.setConnectionTimeout(10);
+            ArtifactoryHttpClient.Version version;
             try {
-                ArtifactoryHttpClient.Version version = client.verifyCompatibleArtifactoryVersion();
+                version = client.verifyCompatibleArtifactoryVersion();
             } catch (UnsupportedOperationException uoe) {
                 return FormValidation.warning(uoe.getMessage());
             } catch (Exception e) {
                 return FormValidation.error(e.getMessage());
             }
-            return FormValidation.ok();
+            return FormValidation.ok("Found Artifactory "+version.toString());
         }
 
         @Override

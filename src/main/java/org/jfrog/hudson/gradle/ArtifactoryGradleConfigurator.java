@@ -29,7 +29,7 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.extractor.gradle.GradlePluginUtils;
+import org.jfrog.gradle.plugin.artifactory.extractor.GradlePluginUtils;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
@@ -353,6 +353,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     releaseSuccess = releaseWrapper.tearDown(build, listener);
                 }
                 if (gradleBuild != null) {
+                    // restore the original configuration
                     setTargetsField(gradleBuild, "switches", finalSwitches);
                     setTargetsField(gradleBuild, "tasks", finalOriginalTasks);
                 }

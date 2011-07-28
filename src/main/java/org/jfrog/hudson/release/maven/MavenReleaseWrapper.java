@@ -36,6 +36,7 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -132,7 +133,8 @@ public class MavenReleaseWrapper extends BuildWrapper {
         if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
             scmCoordinator.beforeReleaseVersionChange();
             // change to release version
-            String vcsUrl = releaseAction.isCreateVcsTag() ? getTagPrefix() : null;
+            String vcsUrl = releaseAction.isCreateVcsTag() && AbstractScmCoordinator.isSvn(build.getProject())
+                    ? releaseAction.getTagUrl() : null;
             boolean modified;
             try {
                 modified = changeVersions(mavenBuild, releaseAction, true, vcsUrl);
@@ -171,7 +173,9 @@ public class MavenReleaseWrapper extends BuildWrapper {
                     if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
                         scmCoordinator.beforeDevelopmentVersionChange();
                         // change poms versions to next development version
-                        String scmUrl = releaseAction.isCreateVcsTag() ? scmCoordinator.getRemoteUrlForPom() : null;
+                        String scmUrl = releaseAction.isCreateVcsTag() &&
+                                AbstractScmCoordinator.isSvn(build.getProject())
+                                ? scmCoordinator.getRemoteUrlForPom() : null;
                         boolean modified = changeVersions(mavenBuild, releaseAction, false, scmUrl);
                         scmCoordinator.afterDevelopmentVersionChange(modified);
                     }

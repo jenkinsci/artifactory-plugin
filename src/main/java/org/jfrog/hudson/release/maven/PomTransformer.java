@@ -16,23 +16,13 @@
 
 package org.jfrog.hudson.release.maven;
 
-import hudson.AbortException;
+import com.google.common.collect.Maps;
 import hudson.FilePath;
 import hudson.maven.ModuleName;
 import hudson.remoting.VirtualChannel;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.jdom.Document;
-import org.jdom.Element;
-import org.jdom.JDOMException;
-import org.jdom.Namespace;
-import org.jdom.input.SAXBuilder;
-import org.jdom.output.XMLOutputter;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,20 +36,6 @@ public class PomTransformer implements FilePath.FileCallable<Boolean> {
     private final ModuleName currentModule;
     private final Map<ModuleName, String> versionsByModule;
     private final boolean failOnSnapshot;
-
-    private boolean modified;
-    private File pomFile;
-
-    /**
-     * Transforms single pom file.
-     *
-     * @param currentModule    The current module we work on
-     * @param versionsByModule Map of module names to module version
-     * @param scmUrl           Scm url to use if scm element exists in the pom file
-     */
-    public PomTransformer(ModuleName currentModule, Map<ModuleName, String> versionsByModule, String scmUrl) {
-        this(currentModule, versionsByModule, scmUrl, false);
-    }
 
     /**
      * Transforms single pom file.
@@ -83,165 +59,20 @@ public class PomTransformer implements FilePath.FileCallable<Boolean> {
      * @return True if the file was modified.
      */
     public Boolean invoke(File pomFile, VirtualChannel channel) throws IOException, InterruptedException {
-        this.pomFile = pomFile;
-        if (!pomFile.exists()) {
-            throw new AbortException("Couldn't find pom file: " + pomFile);
+
+        org.jfrog.build.extractor.maven.reader.ModuleName current = new org.jfrog.build.extractor.maven.reader.ModuleName(
+                currentModule.groupId, currentModule.artifactId);
+
+        Map<org.jfrog.build.extractor.maven.reader.ModuleName, String> modules = Maps.newLinkedHashMap();
+        for (Map.Entry<ModuleName, String> entry : versionsByModule.entrySet()) {
+            modules.put(new org.jfrog.build.extractor.maven.reader.ModuleName(
+                    entry.getKey().groupId, entry.getKey().artifactId), entry.getValue());
         }
 
-        SAXBuilder saxBuilder = createSaxBuilder();
-        Document document;
-        try {
-            document = saxBuilder.build(pomFile);
-        } catch (JDOMException e) {
-            throw new IOException("Failed to parse pom: " + pomFile.getAbsolutePath());
-        }
+        org.jfrog.build.extractor.maven.transformer.PomTransformer transformer =
+                new org.jfrog.build.extractor.maven.transformer.PomTransformer(current, modules, scmUrl,
+                        failOnSnapshot);
 
-        Element rootElement = document.getRootElement();
-        Namespace ns = rootElement.getNamespace();
-
-        changeParentVersion(rootElement, ns);
-
-        changeCurrentModuleVersion(rootElement, ns);
-
-        //changePropertiesVersion(rootElement, ns);
-
-        changeDependencyManagementVersions(rootElement, ns);
-
-        changeDependencyVersions(rootElement, ns);
-
-        if (scmUrl != null) {
-            changeScm(rootElement, ns);
-        }
-
-        if (modified) {
-            FileWriter fileWriter = new FileWriter(pomFile);
-            try {
-                new XMLOutputter().output(document, fileWriter);
-            } finally {
-                IOUtils.closeQuietly(fileWriter);
-            }
-        }
-
-        return modified;
+        return transformer.transform(pomFile);
     }
-
-    private void changeParentVersion(Element root, Namespace ns) {
-        Element parentElement = root.getChild("parent", ns);
-        if (parentElement == null) {
-            return;
-        }
-
-        ModuleName parentName = extractModuleName(parentElement, ns);
-        if (versionsByModule.containsKey(parentName)) {
-            setVersion(parentElement, ns, versionsByModule.get(parentName));
-        }
-        verifyNonSnapshotVersion(parentName, parentElement, ns);
-    }
-
-    private void changeCurrentModuleVersion(Element rootElement, Namespace ns) {
-        setVersion(rootElement, ns, versionsByModule.get(currentModule));
-        verifyNonSnapshotVersion(currentModule, rootElement, ns);
-    }
-
-    private void changeDependencyManagementVersions(Element rootElement, Namespace ns) {
-        Element dependencyManagement = rootElement.getChild("dependencyManagement", ns);
-        if (dependencyManagement == null) {
-            return;
-        }
-
-        Element dependenciesElement = dependencyManagement.getChild("dependencies", ns);
-        if (dependenciesElement == null) {
-            return;
-        }
-
-        List<Element> dependencies = dependenciesElement.getChildren("dependency", ns);
-        for (Element dependency : dependencies) {
-            changeDependencyVersion(ns, dependency);
-        }
-    }
-
-    private void changeDependencyVersions(Element rootElement, Namespace ns) {
-        Element dependenciesElement = rootElement.getChild("dependencies", ns);
-        if (dependenciesElement == null) {
-            return;
-        }
-
-        List<Element> dependencies = dependenciesElement.getChildren("dependency", ns);
-        for (Element dependency : dependencies) {
-            changeDependencyVersion(ns, dependency);
-        }
-    }
-
-    private void changeDependencyVersion(Namespace ns, Element dependency) {
-        ModuleName moduleName = extractModuleName(dependency, ns);
-        if (versionsByModule.containsKey(moduleName)) {
-            setVersion(dependency, ns, versionsByModule.get(moduleName));
-        }
-        verifyNonSnapshotVersion(moduleName, dependency, ns);
-    }
-
-    private void changeScm(Element rootElement, Namespace ns) {
-        Element scm = rootElement.getChild("scm", ns);
-        if (scm == null) {
-            return;
-        }
-        Element connection = scm.getChild("connection", ns);
-        if (connection != null) {
-            connection.setText("scm:svn:" + scmUrl);
-        }
-        Element developerConnection = scm.getChild("developerConnection", ns);
-        if (developerConnection != null) {
-            developerConnection.setText("scm:svn:" + scmUrl);
-        }
-        Element url = scm.getChild("url", ns);
-        if (url != null) {
-            url.setText(scmUrl);
-        }
-    }
-
-    private void setVersion(Element element, Namespace ns, String version) {
-        Element versionElement = element.getChild("version", ns);
-        if (versionElement != null) {
-            String currentVersion = versionElement.getText();
-            if (!version.equals(currentVersion)) {
-                versionElement.setText(version);
-                modified = true;
-            }
-        }
-    }
-
-    private void verifyNonSnapshotVersion(ModuleName moduleName, Element element, Namespace ns) {
-        if (!failOnSnapshot) {
-            return;
-        }
-        Element versionElement = element.getChild("version", ns);
-        if (versionElement != null) {
-            String currentVersion = versionElement.getText();
-            if (currentVersion.endsWith("-SNAPSHOT")) {
-                throw new SnapshotNotAllowedException(String.format("Snapshot detected in file '%s': %s:%s",
-                        pomFile.getAbsolutePath(), moduleName, currentVersion));
-            }
-        }
-    }
-
-    private ModuleName extractModuleName(Element element, Namespace ns) {
-        String groupId = element.getChildText("groupId", ns);
-        String artifactId = element.getChildText("artifactId", ns);
-        if (StringUtils.isBlank(groupId) || StringUtils.isBlank(artifactId)) {
-            throw new IllegalArgumentException("Couldn't extract module key from: " + element);
-        }
-        return new ModuleName(groupId, artifactId);
-    }
-
-
-    static SAXBuilder createSaxBuilder() {
-        SAXBuilder sb = new SAXBuilder();
-        // don't validate and don't load dtd
-        sb.setValidation(false);
-        sb.setFeature("http://xml.org/sax/features/validation", false);
-        sb.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false);
-        sb.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        return sb;
-    }
-
 }
