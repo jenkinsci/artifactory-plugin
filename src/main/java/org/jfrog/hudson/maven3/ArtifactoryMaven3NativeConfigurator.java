@@ -109,8 +109,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
 
         final String originalMavenOpts = mavenBuild.getProject().getMavenOpts();
-        mavenBuild.getProject().setMavenOpts(
-                ExtractorUtils.appendNewMavenOpts(mavenBuild.getProject(), build, listener));
+        if (!isExtractorUsed(envVars)) {
+            // change maven opts only if extractor is not used (the extractor will do it)
+            mavenBuild.getProject().setMavenOpts(
+                    ExtractorUtils.appendNewMavenOpts(mavenBuild.getProject(), build, listener));
+        }
 
         return new Environment() {
             @Override
@@ -157,6 +160,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
+    }
+
+    private boolean isExtractorUsed(EnvVars env) {
+        return Boolean.parseBoolean(env.get(ExtractorUtils.EXTRACTOR_USED));
     }
 
     @Extension(optional = true)

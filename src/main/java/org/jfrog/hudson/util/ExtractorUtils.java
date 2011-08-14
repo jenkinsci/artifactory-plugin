@@ -81,7 +81,8 @@ public class ExtractorUtils {
         if (StringUtils.contains(opts, MAVEN_PLUGIN_OPTS)) {
             listener.getLogger().println(
                     "Property '" + MAVEN_PLUGIN_OPTS + "' is already part of MAVEN_OPTS. This is usually a leftover of " +
-                            "previous build which was forcibly stopped. Replacing the value with an updated one.");
+                            "previous build which was forcibly stopped. Replacing the value with an updated one. " +
+                            "Please remove it from the job configuration.");
             // this regex will remove the property and the value (the value either ends with a space or surrounded by quotes
             opts = opts.replaceAll(MAVEN_PLUGIN_OPTS + "=([^\\s\"]+)|" + MAVEN_PLUGIN_OPTS + "=\"([^\"]*)\"",
                     "").trim();
