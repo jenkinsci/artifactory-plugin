@@ -24,8 +24,12 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
 import hudson.model.listeners.RunListener;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.extractor.MavenExtractorEnvironment;
+import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildContext;
 
 import java.io.IOException;
@@ -57,11 +61,22 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
             };
         }
         return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher,
-                createBuildContextFromPublisher(publisher), listener);
+                createBuildContextFromPublisher(publisher, build), listener);
     }
 
-    private BuildContext createBuildContextFromPublisher(ArtifactoryRedeployPublisher publisher) {
-        BuildContext context = new BuildContext(publisher.getDetails(), publisher, publisher.isRunChecks(),
+    private BuildContext createBuildContextFromPublisher(ArtifactoryRedeployPublisher publisher, AbstractBuild build) {
+        ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
+        ServerDetails server = publisher.getDetails();
+        if (release != null) {
+            // staging build might change the target deployment repository
+            String stagingRepoKey = release.getStagingRepositoryKey();
+            if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
+                server = new ServerDetails(server.artifactoryName, stagingRepoKey,
+                        server.snapshotsRepositoryKey, server.downloadRepositoryKey);
+            }
+        }
+
+        BuildContext context = new BuildContext(server, publisher, publisher.isRunChecks(),
                 publisher.isIncludePublishArtifacts(), publisher.getViolationRecipients(), publisher.getScopes(),
                 publisher.isLicenseAutoDiscovery(), publisher.isDiscardOldBuilds(), publisher.isDeployArtifacts(),
                 publisher.getArtifactDeploymentPatterns(), !publisher.isDeployBuildInfo(),
