@@ -28,7 +28,9 @@ public class PluginDependencyHelper {
             //Trim the plugin version in case we're working on a snapshot version (contains illegal chars)
             pluginVersion = StringUtils.split(pluginVersion, " ")[0];
         }
-        FilePath remoteDependencyDir = new FilePath(build.getWorkspace(), pluginVersion);
+
+        FilePath remoteDependencyDir = new FilePath(build.getWorkspace().getParent(),
+                "artifactory-plugin/" + pluginVersion);
 
         if (!remoteDependencyDir.exists()) {
             remoteDependencyDir.mkdirs();

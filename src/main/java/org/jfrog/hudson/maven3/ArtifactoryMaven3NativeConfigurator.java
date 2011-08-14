@@ -109,8 +109,8 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
 
         final String originalMavenOpts = mavenBuild.getProject().getMavenOpts();
-        mavenBuild.getProject().setMavenOpts(ExtractorUtils.appendNewMavenOpts(mavenBuild.getProject(), build));
-
+        mavenBuild.getProject().setMavenOpts(
+                ExtractorUtils.appendNewMavenOpts(mavenBuild.getProject(), build, listener));
 
         return new Environment() {
             @Override

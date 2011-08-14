@@ -24,6 +24,7 @@ import hudson.FilePath;
 import hudson.Util;
 import hudson.maven.MavenModuleSet;
 import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Computer;
@@ -73,13 +74,17 @@ public class ExtractorUtils {
      * Append custom Maven opts to the existing to the already existing ones. The opt that will be appended is the
      * location Of the plugin for the Maven process to use.
      */
-    public static String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build) throws IOException {
+    public static String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build, BuildListener listener)
+            throws IOException {
         StringBuilder mavenOpts = new StringBuilder();
         String opts = project.getMavenOpts();
         if (StringUtils.isNotBlank(opts)) {
             mavenOpts.append(opts);
         }
         if (StringUtils.contains(mavenOpts.toString(), MAVEN_PLUGIN_OPTS)) {
+            listener.getLogger().println(
+                    "Property '" + MAVEN_PLUGIN_OPTS + "' is already part of MAVEN_OPTS. If this is " +
+                            "a leftover of previously failed build please remove this property in the job configuration.");
             return mavenOpts.toString();
         }
         File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);

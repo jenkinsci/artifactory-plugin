@@ -86,7 +86,7 @@ public class MavenExtractorEnvironment extends Environment {
 
         if (!initialized) {
             try {
-                build.getProject().setMavenOpts(ExtractorUtils.appendNewMavenOpts(project, build));
+                build.getProject().setMavenOpts(ExtractorUtils.appendNewMavenOpts(project, build, buildListener));
                 ArtifactoryClientConfiguration configuration = ExtractorUtils.addBuilderInfoArguments(
                         env, build, publisher.getArtifactoryServer(), buildContext);
                 propertiesFilePath = configuration.getPropertiesFile();
