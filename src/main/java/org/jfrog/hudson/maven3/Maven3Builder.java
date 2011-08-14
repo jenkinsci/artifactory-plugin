@@ -163,7 +163,7 @@ public class Maven3Builder extends Builder {
             FilePath actualDependencyDirectory =
                     PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
 
-            if (StringUtils.isNotBlank(getMavenOpts()) && !getMavenOpts().contains("m3plugin.lib")) {
+            if (getMavenOpts() == null || !getMavenOpts().contains("-Dm3plugin.lib")) {
                 args.addKeyValuePair("-D", "m3plugin.lib", actualDependencyDirectory.getRemote(), false);
             }
 
