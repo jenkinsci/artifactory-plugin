@@ -76,17 +76,22 @@ public class ExtractorUtils {
      */
     public static String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build, BuildListener listener)
             throws IOException {
-        StringBuilder mavenOpts = new StringBuilder();
         String opts = project.getMavenOpts();
+
+        if (StringUtils.contains(opts, MAVEN_PLUGIN_OPTS)) {
+            listener.getLogger().println(
+                    "Property '" + MAVEN_PLUGIN_OPTS + "' is already part of MAVEN_OPTS. This is usually a leftover of " +
+                            "previous build which was forcibly stopped. Replacing the value with an updated one.");
+            // this regex will remove the property and the value (the value either ends with a space or surrounded by quotes
+            opts = opts.replaceAll(MAVEN_PLUGIN_OPTS + "=([^\\s\"]+)|" + MAVEN_PLUGIN_OPTS + "=\"([^\"]*)\"",
+                    "").trim();
+        }
+
+        StringBuilder mavenOpts = new StringBuilder();
         if (StringUtils.isNotBlank(opts)) {
             mavenOpts.append(opts);
         }
-        if (StringUtils.contains(mavenOpts.toString(), MAVEN_PLUGIN_OPTS)) {
-            listener.getLogger().println(
-                    "Property '" + MAVEN_PLUGIN_OPTS + "' is already part of MAVEN_OPTS. If this is " +
-                            "a leftover of previously failed build please remove this property in the job configuration.");
-            return mavenOpts.toString();
-        }
+
         File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
         try {
             FilePath actualDependencyDirectory =
