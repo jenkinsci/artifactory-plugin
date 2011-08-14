@@ -146,9 +146,6 @@ public class Maven3Builder extends Builder {
 
         args.add(classWorldsJar.getRemote());
 
-        // maven opts
-        args.addTokenized(getMavenOpts());
-
         String buildInfoPropertiesFile = env.get(BuildInfoConfigProperties.PROP_PROPS_FILE);
         boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
         if (artifactoryIntegration) {
@@ -166,7 +163,9 @@ public class Maven3Builder extends Builder {
             FilePath actualDependencyDirectory =
                     PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
 
-            args.addKeyValuePair("-D", "m3plugin.lib", actualDependencyDirectory.getRemote(), false);
+            if (StringUtils.isNotBlank(getMavenOpts()) && !getMavenOpts().contains("m3plugin.lib")) {
+                args.addKeyValuePair("-D", "m3plugin.lib", actualDependencyDirectory.getRemote(), false);
+            }
 
             URL classworldsResource =
                     getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-freestyle.conf");
@@ -194,8 +193,8 @@ public class Maven3Builder extends Builder {
         args.addKeyValuePair("-D", "classworlds.conf", classworldsConfPath, false);
 
         // maven opts
-        String mavenOpts = Util.replaceMacro(getMavenOpts(), build.getBuildVariableResolver());
-        if (StringUtils.isNotBlank(mavenOpts)) {
+        if (StringUtils.isNotBlank(getMavenOpts())) {
+            String mavenOpts = Util.replaceMacro(getMavenOpts(), build.getBuildVariableResolver());
             args.add(mavenOpts);
         }
 
