@@ -19,9 +19,7 @@ package org.jfrog.hudson.release.maven;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import hudson.maven.ModuleName;
-import org.jdom.Document;
 import org.jdom.input.SAXBuilder;
-import org.jdom.output.XMLOutputter;
 import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
 import org.junit.Test;
 
@@ -49,9 +47,8 @@ public class PomTransformerTest {
         new PomTransformer(new ModuleName("org.jfrog.test", "one"), modules, "", false).invoke(pomFile, null);
 
         String pomStr = Files.toString(pomFile, Charset.defaultCharset());
-        Document expected = createSaxBuilder().build(
-                getResourceAsFile("/poms/parentonly/pom.expected.xml"));
-        String expectedStr = new XMLOutputter().outputString(expected);
+        String expectedStr = Files.toString(getResourceAsFile("/poms/parentonly/pom.expected.xml"),
+                Charset.defaultCharset());
 
         assertEquals(expectedStr, pomStr);
     }
@@ -67,8 +64,9 @@ public class PomTransformerTest {
         new PomTransformer(new ModuleName("org.jfrog.test.nested", "two"), modules, "", false).invoke(pomFile, null);
 
         String pomStr = Files.toString(pomFile, Charset.defaultCharset());
-        Document expected = createSaxBuilder().build(getResourceAsFile("/poms/multi/pom.expected.xml"));
-        String expectedStr = new XMLOutputter().outputString(expected);
+        ;
+        String expectedStr = Files.toString(getResourceAsFile("/poms/multi/pom.expected.xml"),
+                Charset.defaultCharset());
 
         assertEquals(expectedStr, pomStr);
     }
@@ -83,9 +81,7 @@ public class PomTransformerTest {
                 "http://subversion.jfrog.org/test/tags/1", false).invoke(pomFile, null);
 
         String pomStr = Files.toString(pomFile, Charset.defaultCharset());
-        Document expected = createSaxBuilder().build(
-                getResourceAsFile("/poms/scm/pom.expected.xml"));
-        String expectedStr = new XMLOutputter().outputString(expected);
+        String expectedStr = Files.toString(getResourceAsFile("/poms/scm/pom.expected.xml"), Charset.defaultCharset());
 
         assertEquals(expectedStr, pomStr);
     }
