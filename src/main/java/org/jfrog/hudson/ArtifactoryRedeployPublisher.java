@@ -250,12 +250,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
-        if (!(build instanceof MavenModuleSetBuild)) {
+        MavenModuleSetBuild mavenBuild = getMavenBuild(build);
+        if (mavenBuild == null) {
             listener.getLogger().format("Non maven build type: %s", build.getClass()).println();
             build.setResult(Result.FAILURE);
             return true;
         }
-        MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
         if (getArtifactoryServer() == null) {
             listener.getLogger().format("No Artifactory server configured for %s. " +
                     "Please check your configuration.", getArtifactoryName()).println();
@@ -314,6 +314,17 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         // will be thrown, and no deployment will commence.
         client.verifyCompatibleArtifactoryVersion();
     }
+
+     /**
+      * Obtains the {@link MavenModuleSetBuild} that we'll work on, or null.
+      * <p>
+      * This allows promoted-builds plugin to reuse the code for delayed deployment.
+      */
+    protected MavenModuleSetBuild getMavenBuild(AbstractBuild<?, ?> build) {
+        return (build instanceof MavenModuleSetBuild)
+            ? (MavenModuleSetBuild) build
+            : null;
+     }
 
     protected List<MavenAbstractArtifactRecord> getArtifactRecordActions(MavenModuleSetBuild build) {
         List<MavenAbstractArtifactRecord> actions = Lists.newArrayList();
