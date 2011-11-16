@@ -27,6 +27,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryHttpClient;
+import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -165,7 +166,7 @@ public class ArtifactoryServer {
         try {
             ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, resolvingCredentials.getUsername(),
                     resolvingCredentials.getPassword(), new NullLog());
-            ArtifactoryHttpClient.Version version = client.getVersion();
+            ArtifactoryVersion version = client.getVersion();
             return version.hasAddons();
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
