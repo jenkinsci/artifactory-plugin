@@ -219,7 +219,9 @@ public class ExtractorUtils {
         configuration.info.setPrincipal(userName);
         configuration.info.setAgentName("Jenkins");
         configuration.info.setAgentVersion(build.getHudsonVersion());
-        configuration.setContextUrl(selectedArtifactoryServer.getUrl());
+        // note: we set the context url for both the publisher and resolver for backward compatibility
+        configuration.publisher.setContextUrl(selectedArtifactoryServer.getUrl());
+        configuration.resolver.setContextUrl(selectedArtifactoryServer.getUrl());
         configuration.setTimeout(selectedArtifactoryServer.getTimeout());
         configuration.publisher.setRepoKey(context.getDetails().repositoryKey);
         if (StringUtils.isNotBlank(context.getDetails().downloadRepositoryKey)) {
@@ -321,7 +323,7 @@ public class ExtractorUtils {
 
     public static void persistConfiguration(AbstractBuild build, ArtifactoryClientConfiguration configuration,
             Map<String, String> env) throws IOException, InterruptedException {
-        FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", "properties", "", false);
+        FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", ".properties", "", false);
         configuration.setPropertiesFile(propertiesFile.getRemote());
         env.putAll(configuration.getAllRootConfig());
         if (!(Computer.currentComputer() instanceof SlaveComputer)) {
@@ -331,7 +333,7 @@ public class ExtractorUtils {
                 Properties properties = new Properties();
                 properties.putAll(configuration.getAllRootConfig());
                 properties.putAll(configuration.getAllProperties());
-                File tempFile = File.createTempFile("buildInfo", "properties");
+                File tempFile = File.createTempFile("buildInfo", ".properties");
                 FileOutputStream stream = new FileOutputStream(tempFile);
                 try {
                     properties.store(stream, "");

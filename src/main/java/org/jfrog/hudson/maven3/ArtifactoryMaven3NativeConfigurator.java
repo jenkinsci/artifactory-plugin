@@ -120,7 +120,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             public void buildEnvVars(Map<String, String> env) {
                 super.buildEnvVars(env);
                 ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
-                configuration.setContextUrl(getArtifactoryServer().getUrl());
+                configuration.resolver.setContextUrl(getArtifactoryServer().getUrl());
                 configuration.resolver.setRepoKey(getDownloadRepositoryKey());
                 final Credentials preferredResolver = CredentialResolver
                         .getPreferredResolver(ArtifactoryMaven3NativeConfigurator.this, getArtifactoryServer());
