@@ -197,11 +197,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return details != null ? details.repositoryKey : null;
     }
 
-    //TODO: [by YS] not used?
-    public String getDownloadRepositoryKey() {
-        return details != null ? details.downloadRepositoryKey : null;
-    }
-
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
     }

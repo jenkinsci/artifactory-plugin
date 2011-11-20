@@ -59,11 +59,6 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         return details != null ? details.artifactoryName : null;
     }
 
-    //TODO: [by YS] not used?
-    public String getRepositoryKey() {
-        return details != null ? details.repositoryKey : null;
-    }
-
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return Collections.emptyList();
