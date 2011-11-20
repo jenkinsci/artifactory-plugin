@@ -37,13 +37,13 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.jfrog.hudson.util.PluginDependencyHelper;
+import org.jfrog.hudson.util.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -232,7 +232,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
-        final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyConfigurator.this,
+        final PublisherContext context = new PublisherContext(getArtifactoryServer(), getDetails(),
+                ArtifactoryIvyConfigurator.this,
                 isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                 licenseAutoDiscovery, isDiscardOldBuilds(), isDeployArtifacts(),
                 getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
@@ -245,7 +246,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

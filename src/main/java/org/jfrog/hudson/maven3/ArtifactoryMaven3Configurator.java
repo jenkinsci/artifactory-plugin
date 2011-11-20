@@ -37,12 +37,12 @@ import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
+import org.jfrog.hudson.util.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -224,7 +224,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             build.setResult(Result.FAILURE);
             throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
-        final BuildContext context = new BuildContext(getDetails(), ArtifactoryMaven3Configurator.this, isRunChecks(),
+        final PublisherContext context = new PublisherContext(artifactoryServer, getDetails(),
+                ArtifactoryMaven3Configurator.this, isRunChecks(),
                 isIncludePublishArtifacts(), getViolationRecipients(), getScopes(), isLicenseAutoDiscovery(),
                 isDiscardOldBuilds(), isDeployArtifacts(), getArtifactDeploymentPatterns(), skipBuildInfoDeploy,
                 isIncludeEnvVars(), isDiscardBuildArtifacts(), getMatrixParams());
@@ -233,7 +234,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, artifactoryServer, context);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

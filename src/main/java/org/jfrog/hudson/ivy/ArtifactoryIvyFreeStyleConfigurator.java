@@ -42,13 +42,13 @@ import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.jfrog.hudson.util.PluginDependencyHelper;
+import org.jfrog.hudson.util.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -197,6 +197,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return details != null ? details.repositoryKey : null;
     }
 
+    //TODO: [by YS] not used?
     public String getDownloadRepositoryKey() {
         return details != null ? details.downloadRepositoryKey : null;
     }
@@ -226,7 +227,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
 
-        final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyFreeStyleConfigurator.this,
+        final PublisherContext context = new PublisherContext(getArtifactoryServer(), getDetails(),
+                ArtifactoryIvyFreeStyleConfigurator.this,
                 isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                 isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
                 getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
@@ -250,7 +252,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             public void buildEnvVars(Map<String, String> env) {
                 super.buildEnvVars(env);
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

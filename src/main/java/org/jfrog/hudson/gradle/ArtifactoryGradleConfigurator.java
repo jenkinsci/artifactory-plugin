@@ -41,12 +41,12 @@ import org.jfrog.hudson.release.GradlePromoteBuildAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
-import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
+import org.jfrog.hudson.util.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -327,7 +327,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             serverDetails.artifactoryName, stagingRepository,
                             serverDetails.snapshotsRepositoryKey, serverDetails.downloadRepositoryKey);
                 }
-                final BuildContext context = new BuildContext(serverDetails, ArtifactoryGradleConfigurator.this,
+                final PublisherContext context = new PublisherContext(getArtifactoryServer(), serverDetails,
+                        ArtifactoryGradleConfigurator.this,
                         isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
                         isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
                         getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(),
@@ -338,7 +339,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 context.setDeployMaven(isDeployMaven());
                 context.setMaven2Compatible(isM2Compatible());
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

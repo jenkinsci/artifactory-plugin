@@ -17,6 +17,7 @@
 package org.jfrog.hudson.util;
 
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 
@@ -25,8 +26,9 @@ import org.jfrog.hudson.ServerDetails;
  *
  * @author Tomer Cohen
  */
-public class BuildContext {
+public class PublisherContext {
 
+    private final ArtifactoryServer artifactoryServer;
     private final ServerDetails details;
     private final DeployerOverrider deployerOverrider;
     private final boolean runChecks;
@@ -48,10 +50,12 @@ public class BuildContext {
     private final String matrixParams;
     private boolean isMaven2Compatible;
 
-    public BuildContext(ServerDetails details, DeployerOverrider deployerOverrider, boolean runChecks,
+    public PublisherContext(ArtifactoryServer artifactoryServer, ServerDetails details,
+            DeployerOverrider deployerOverrider, boolean runChecks,
             boolean includePublishArtifacts, String violationRecipients, String scopes, boolean licenseAutoDiscovery,
             boolean discardOldBuilds, boolean deployArtifacts, IncludesExcludes includesExcludes,
             boolean skipBuildInfoDeploy, boolean includeEnvVars, boolean discardBuildArtifacts, String matrixParams) {
+        this.artifactoryServer = artifactoryServer;
         this.details = details;
         this.deployerOverrider = deployerOverrider;
         this.runChecks = runChecks;
@@ -66,6 +70,10 @@ public class BuildContext {
         this.includeEnvVars = includeEnvVars;
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.matrixParams = matrixParams;
+    }
+
+    public ArtifactoryServer getArtifactoryServer() {
+        return artifactoryServer;
     }
 
     public String getArtifactsPattern() {

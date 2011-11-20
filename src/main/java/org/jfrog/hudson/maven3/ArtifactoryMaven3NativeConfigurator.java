@@ -2,7 +2,6 @@ package org.jfrog.hudson.maven3;
 
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
@@ -14,13 +13,10 @@ import hudson.model.Hudson;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
-import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.MavenVersionHelper;
@@ -28,14 +24,15 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
- * A wrapper that takes over artifacts resolution and using the configured repository for resolution.
+ * A wrapper that takes over artifacts resolution and using the configured repository for resolution.<p/>
+ * The {@link org.jfrog.hudson.maven3.Maven3ExtractorListener} is doing the heavy lifting. This class now just holds
+ * the configuration.
  *
  * @author Tomer Cohen
  */
@@ -62,6 +59,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         return details != null ? details.artifactoryName : null;
     }
 
+    //TODO: [by YS] not used?
     public String getRepositoryKey() {
         return details != null ? details.repositoryKey : null;
     }
@@ -97,51 +95,15 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             };
         }
 
-        // copy the classwordls only if not already exist in the environment (for instance when the listener
-        // already copied it)
-        FilePath classworldsConf = null;
-        if (!envVars.containsKey(ExtractorUtils.CLASSWORLDS_CONF_KEY)) {
-            URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-native.conf");
-            classworldsConf = ExtractorUtils.copyClassWorldsFile(build, resource);
-        }
-        final FilePath classworldsConfFinal = classworldsConf;
-
-        MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) build;
-
-        final String originalMavenOpts = mavenBuild.getProject().getMavenOpts();
-        if (!isExtractorUsed(envVars)) {
-            // change maven opts only if extractor is not used (the extractor will do it)
-            mavenBuild.getProject().setMavenOpts(
-                    ExtractorUtils.appendNewMavenOpts(mavenBuild.getProject(), build, listener));
-        }
-
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 super.buildEnvVars(env);
-                ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
-                configuration.resolver.setContextUrl(getArtifactoryServer().getUrl());
-                configuration.resolver.setRepoKey(getDownloadRepositoryKey());
-                final Credentials preferredResolver = CredentialResolver
-                        .getPreferredResolver(ArtifactoryMaven3NativeConfigurator.this, getArtifactoryServer());
-                configuration.resolver.setUsername(preferredResolver.getUsername());
-                configuration.resolver.setPassword(preferredResolver.getPassword());
-                ExtractorUtils.addBuildRootIfNeeded(build, configuration);
-                env.putAll(configuration.getAllProperties());
-                if (classworldsConfFinal != null) {
-                    ExtractorUtils.addCustomClassworlds(env, classworldsConfFinal.getRemote());
-                }
-
             }
 
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
-                final MavenModuleSet project = (MavenModuleSet) build.getProject();
-                project.setMavenOpts(originalMavenOpts);
-                if (classworldsConfFinal != null) {
-                    classworldsConfFinal.delete();
-                }
                 return super.tearDown(build, listener);
             }
         };
