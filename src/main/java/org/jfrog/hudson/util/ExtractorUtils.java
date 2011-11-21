@@ -84,7 +84,8 @@ public class ExtractorUtils {
      * BuildInfoConfigProperties#PROP_PROPS_FILE} for the extractor to read.
      *
      * @param env                       A map of the environment variables that are to be persisted into the
-     *                                  buildinfo.properties file. NOTE: nothing should be added to the env in this method
+     *                                  buildinfo.properties file. NOTE: nothing should be added to the env in this
+     *                                  method
      * @param build                     The build from which to get build/project related information from (e.g build
      *                                  name and build number).
      * @param selectedArtifactoryServer The Artifactory server that is to be used during the build for resolution/
@@ -285,7 +286,7 @@ public class ExtractorUtils {
             Map<String, String> env) throws IOException, InterruptedException {
         FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", ".properties", "", false);
         configuration.setPropertiesFile(propertiesFile.getRemote());
-        env.putAll(configuration.getAllRootConfig());
+        env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());
         if (!(Computer.currentComputer() instanceof SlaveComputer)) {
             configuration.persistToPropertiesFile();
         } else {
