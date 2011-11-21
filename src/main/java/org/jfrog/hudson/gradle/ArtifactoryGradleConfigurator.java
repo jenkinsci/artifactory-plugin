@@ -327,17 +327,18 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             serverDetails.artifactoryName, stagingRepository,
                             serverDetails.snapshotsRepositoryKey, serverDetails.downloadRepositoryKey);
                 }
-                final PublisherContext context = new PublisherContext(getArtifactoryServer(), serverDetails,
-                        ArtifactoryGradleConfigurator.this,
-                        isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
-                        isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                        getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(),
-                        isDiscardBuildArtifacts(), getMatrixParams());
-                context.setArtifactsPattern(getArtifactPattern());
-                context.setIvyPattern(getIvyPattern());
-                context.setDeployIvy(isDeployIvy());
-                context.setDeployMaven(isDeployMaven());
-                context.setMaven2Compatible(isM2Compatible());
+                PublisherContext context = new PublisherContext.Builder()
+                        .artifactoryServer(getArtifactoryServer()).serverDetails(serverDetails)
+                        .deployerOverrider(ArtifactoryGradleConfigurator.this).runChecks(isRunChecks())
+                        .includePublishArtifacts(isIncludePublishArtifacts())
+                        .violationRecipients(getViolationRecipients()).scopes(getScopes())
+                        .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
+                        .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+                        .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
+                        .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
+                        .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
+                        .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
+                        .build();
                 try {
                     ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
                 } catch (Exception e) {

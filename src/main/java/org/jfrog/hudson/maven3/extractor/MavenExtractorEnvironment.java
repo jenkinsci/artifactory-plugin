@@ -157,13 +157,17 @@ public class MavenExtractorEnvironment extends Environment {
             }
         }
 
-        PublisherContext context = new PublisherContext(publisher.getArtifactoryServer(), server, publisher,
-                publisher.isRunChecks(),
-                publisher.isIncludePublishArtifacts(), publisher.getViolationRecipients(), publisher.getScopes(),
-                publisher.isLicenseAutoDiscovery(), publisher.isDiscardOldBuilds(), publisher.isDeployArtifacts(),
-                publisher.getArtifactDeploymentPatterns(), !publisher.isDeployBuildInfo(),
-                publisher.isIncludeEnvVars(), publisher.isDiscardBuildArtifacts(), publisher.getMatrixParams());
-        context.setEvenIfUnstable(publisher.isEvenIfUnstable());
+        PublisherContext context = new PublisherContext.Builder().artifactoryServer(publisher.getArtifactoryServer())
+                .serverDetails(server).deployerOverrider(publisher).runChecks(publisher.isRunChecks())
+                .includePublishArtifacts(publisher.isIncludePublishArtifacts())
+                .violationRecipients(publisher.getViolationRecipients()).scopes(publisher.getScopes())
+                .licenseAutoDiscovery(publisher.isLicenseAutoDiscovery())
+                .discardOldBuilds(publisher.isDiscardOldBuilds()).deployArtifacts(publisher.isDeployArtifacts())
+                .includesExcludes(publisher.getArtifactDeploymentPatterns())
+                .skipBuildInfoDeploy(!publisher.isDeployBuildInfo())
+                .includeEnvVars(publisher.isIncludeEnvVars()).discardBuildArtifacts(publisher.isDiscardBuildArtifacts())
+                .matrixParams(publisher.getMatrixParams()).evenIfUnstable(publisher.isEvenIfUnstable())
+                .build();
 
         return context;
     }

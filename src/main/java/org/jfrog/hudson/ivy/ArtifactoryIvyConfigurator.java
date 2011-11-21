@@ -232,15 +232,15 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
-        final PublisherContext context = new PublisherContext(getArtifactoryServer(), getDetails(),
-                ArtifactoryIvyConfigurator.this,
-                isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
-                licenseAutoDiscovery, isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
-                getMatrixParams());
-        context.setArtifactsPattern(getArtifactPattern());
-        context.setIvyPattern(getIvyPattern());
-        context.setMaven2Compatible(isM2Compatible());
+        final PublisherContext context = new PublisherContext.Builder().artifactoryServer(getArtifactoryServer())
+                .serverDetails(getDetails()).deployerOverrider(ArtifactoryIvyConfigurator.this).runChecks(isRunChecks())
+                .includePublishArtifacts(isIncludePublishArtifacts()).violationRecipients(getViolationRecipients())
+                .scopes(getScopes()).licenseAutoDiscovery(licenseAutoDiscovery).discardOldBuilds(isDiscardOldBuilds())
+                .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+                .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
+                .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern()).maven2Compatible(isM2Compatible())
+                .build();
         build.setResult(Result.SUCCESS);
         return new AntIvyBuilderEnvironment() {
             @Override

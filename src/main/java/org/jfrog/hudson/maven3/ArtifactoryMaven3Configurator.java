@@ -224,11 +224,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             build.setResult(Result.FAILURE);
             throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
-        final PublisherContext context = new PublisherContext(artifactoryServer, getDetails(),
-                ArtifactoryMaven3Configurator.this, isRunChecks(),
-                isIncludePublishArtifacts(), getViolationRecipients(), getScopes(), isLicenseAutoDiscovery(),
-                isDiscardOldBuilds(), isDeployArtifacts(), getArtifactDeploymentPatterns(), skipBuildInfoDeploy,
-                isIncludeEnvVars(), isDiscardBuildArtifacts(), getMatrixParams());
+        final PublisherContext context = new PublisherContext.Builder().artifactoryServer(artifactoryServer)
+                .serverDetails(getDetails()).deployerOverrider(ArtifactoryMaven3Configurator.this)
+                .runChecks(isRunChecks()).includePublishArtifacts(isIncludePublishArtifacts())
+                .violationRecipients(getViolationRecipients()).scopes(getScopes())
+                .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
+                .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+                .skipBuildInfoDeploy(skipBuildInfoDeploy).includeEnvVars(isIncludeEnvVars())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams()).build();
         build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override

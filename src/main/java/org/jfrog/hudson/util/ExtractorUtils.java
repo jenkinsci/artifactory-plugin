@@ -189,13 +189,13 @@ public class ExtractorUtils {
         }
         configuration.setTimeout(artifactoryServer.getTimeout());
         configuration.publisher.setContextUrl(artifactoryServer.getUrl());
-        configuration.publisher.setRepoKey(context.getDetails().repositoryKey);
-        configuration.publisher.setSnapshotRepoKey(context.getDetails().snapshotsRepositoryKey);
+        configuration.publisher.setRepoKey(context.getServerDetails().repositoryKey);
+        configuration.publisher.setSnapshotRepoKey(context.getServerDetails().snapshotsRepositoryKey);
 
         // note: we set the context url for both the publisher and resolver for backward compatibility
         configuration.resolver.setContextUrl(artifactoryServer.getUrl());
-        if (StringUtils.isNotBlank(context.getDetails().downloadRepositoryKey)) {
-            configuration.resolver.setRepoKey(context.getDetails().downloadRepositoryKey);
+        if (StringUtils.isNotBlank(context.getServerDetails().downloadRepositoryKey)) {
+            configuration.resolver.setRepoKey(context.getServerDetails().downloadRepositoryKey);
         }
 
         configuration.info.licenseControl.setRunChecks(context.isRunChecks());

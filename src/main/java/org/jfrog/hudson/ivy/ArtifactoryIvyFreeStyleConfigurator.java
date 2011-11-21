@@ -222,15 +222,17 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
 
-        final PublisherContext context = new PublisherContext(getArtifactoryServer(), getDetails(),
-                ArtifactoryIvyFreeStyleConfigurator.this,
-                isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
-                isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
-                getMatrixParams());
-        context.setMaven2Compatible(isM2Compatible());
-        context.setArtifactsPattern(getArtifactPattern());
-        context.setIvyPattern(getIvyPattern());
+        final PublisherContext context = new PublisherContext.Builder().artifactoryServer(getArtifactoryServer())
+                .serverDetails(getDetails()).deployerOverrider(ArtifactoryIvyFreeStyleConfigurator.this)
+                .runChecks(isRunChecks()).includePublishArtifacts(isIncludePublishArtifacts())
+                .violationRecipients(getViolationRecipients()).scopes(getScopes())
+                .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
+                .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+                .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
+                .maven2Compatible(isM2Compatible()).artifactsPattern(getArtifactPattern())
+                .ivyPattern(getIvyPattern())
+                .build();
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);

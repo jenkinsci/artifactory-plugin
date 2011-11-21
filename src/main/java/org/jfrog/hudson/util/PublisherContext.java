@@ -28,48 +28,29 @@ import org.jfrog.hudson.ServerDetails;
  */
 public class PublisherContext {
 
-    private final ArtifactoryServer artifactoryServer;
-    private final ServerDetails details;
-    private final DeployerOverrider deployerOverrider;
-    private final boolean runChecks;
-    private final boolean includePublishArtifacts;
-    private final String violationRecipients;
-    private final String scopes;
-    private final boolean licenseAutoDiscovery;
-    private final boolean discardOldBuilds;
-    private final boolean discardBuildArtifacts;
-    private final boolean deployArtifacts;
-    private final IncludesExcludes includesExcludes;
-    private final boolean skipBuildInfoDeploy;
-    private final boolean includeEnvVars;
+    private ArtifactoryServer artifactoryServer;
+    private ServerDetails serverDetails;
+    private DeployerOverrider deployerOverrider;
+    private boolean runChecks;
+    private boolean includePublishArtifacts;
+    private String violationRecipients;
+    private String scopes;
+    private boolean licenseAutoDiscovery;
+    private boolean discardOldBuilds;
+    private boolean discardBuildArtifacts;
+    private boolean deployArtifacts;
+    private IncludesExcludes includesExcludes;
+    private boolean skipBuildInfoDeploy;
+    private boolean includeEnvVars;
     private boolean evenIfUnstable;
     private boolean deployMaven;
     private boolean deployIvy;
     private String artifactsPattern = "";
     private String ivyPattern = "";
-    private final String matrixParams;
-    private boolean isMaven2Compatible;
+    private String matrixParams;
+    private boolean maven2Compatible;
 
-    public PublisherContext(ArtifactoryServer artifactoryServer, ServerDetails details,
-            DeployerOverrider deployerOverrider, boolean runChecks,
-            boolean includePublishArtifacts, String violationRecipients, String scopes, boolean licenseAutoDiscovery,
-            boolean discardOldBuilds, boolean deployArtifacts, IncludesExcludes includesExcludes,
-            boolean skipBuildInfoDeploy, boolean includeEnvVars, boolean discardBuildArtifacts, String matrixParams) {
-        this.artifactoryServer = artifactoryServer;
-        this.details = details;
-        this.deployerOverrider = deployerOverrider;
-        this.runChecks = runChecks;
-        this.includePublishArtifacts = includePublishArtifacts;
-        this.violationRecipients = violationRecipients;
-        this.scopes = scopes;
-        this.licenseAutoDiscovery = licenseAutoDiscovery;
-        this.discardOldBuilds = discardOldBuilds;
-        this.deployArtifacts = deployArtifacts;
-        this.includesExcludes = includesExcludes;
-        this.skipBuildInfoDeploy = skipBuildInfoDeploy;
-        this.includeEnvVars = includeEnvVars;
-        this.discardBuildArtifacts = discardBuildArtifacts;
-        this.matrixParams = matrixParams;
+    private PublisherContext() {
     }
 
     public ArtifactoryServer getArtifactoryServer() {
@@ -84,10 +65,6 @@ public class PublisherContext {
         return matrixParams;
     }
 
-    public void setArtifactsPattern(String artifactsPattern) {
-        this.artifactsPattern = artifactsPattern;
-    }
-
     public String getIvyPattern() {
         return getCleanString(ivyPattern);
     }
@@ -96,12 +73,8 @@ public class PublisherContext {
         return discardBuildArtifacts;
     }
 
-    public void setIvyPattern(String ivyPattern) {
-        this.ivyPattern = ivyPattern;
-    }
-
-    public ServerDetails getDetails() {
-        return details;
+    public ServerDetails getServerDetails() {
+        return serverDetails;
     }
 
     public IncludesExcludes getIncludesExcludes() {
@@ -149,31 +122,19 @@ public class PublisherContext {
     }
 
     public final String getArtifactoryName() {
-        return details != null ? details.artifactoryName : null;
+        return serverDetails != null ? serverDetails.artifactoryName : null;
     }
 
     public boolean isDeployMaven() {
         return deployMaven;
     }
 
-    public void setDeployMaven(boolean deployMaven) {
-        this.deployMaven = deployMaven;
-    }
-
     public boolean isDeployIvy() {
         return deployIvy;
     }
 
-    public void setDeployIvy(boolean deployIvy) {
-        this.deployIvy = deployIvy;
-    }
-
     public boolean isEvenIfUnstable() {
         return evenIfUnstable;
-    }
-
-    public void setEvenIfUnstable(boolean evenIfUnstable) {
-        this.evenIfUnstable = evenIfUnstable;
     }
 
     private String getCleanString(String stringToClean) {
@@ -181,10 +142,125 @@ public class PublisherContext {
     }
 
     public boolean isMaven2Compatible() {
-        return isMaven2Compatible;
+        return maven2Compatible;
     }
 
-    public void setMaven2Compatible(boolean maven2Compatible) {
-        isMaven2Compatible = maven2Compatible;
+    public static class Builder {
+        PublisherContext publisher = new PublisherContext();
+
+        public PublisherContext build() {
+            if (publisher.artifactoryServer == null) {
+                throw new IllegalArgumentException("artifactoryServer cannot be null");
+            }
+            if (publisher.serverDetails == null) {
+                throw new IllegalArgumentException("serverDetails cannot be null");
+            }
+            return publisher;
+        }
+
+        public Builder artifactoryServer(ArtifactoryServer artifactoryServer) {
+            publisher.artifactoryServer = artifactoryServer;
+            return this;
+        }
+
+        public Builder serverDetails(ServerDetails serverDetails) {
+            publisher.serverDetails = serverDetails;
+            return this;
+        }
+
+        public Builder deployerOverrider(DeployerOverrider deployerOverrider) {
+            publisher.deployerOverrider = deployerOverrider;
+            return this;
+        }
+
+        public Builder runChecks(boolean runChecks) {
+            publisher.runChecks = runChecks;
+            return this;
+        }
+
+        public Builder includePublishArtifacts(boolean includePublishArtifacts) {
+            publisher.includePublishArtifacts = includePublishArtifacts;
+            return this;
+        }
+
+        public Builder violationRecipients(String violationRecipients) {
+            publisher.violationRecipients = violationRecipients;
+            return this;
+        }
+
+        public Builder scopes(String scopes) {
+            publisher.scopes = scopes;
+            return this;
+        }
+
+        public Builder licenseAutoDiscovery(boolean licenseAutoDiscovery) {
+            publisher.licenseAutoDiscovery = licenseAutoDiscovery;
+            return this;
+        }
+
+        public Builder discardOldBuilds(boolean discardOldBuilds) {
+            publisher.discardOldBuilds = discardOldBuilds;
+            return this;
+        }
+
+        public Builder deployArtifacts(boolean deployArtifacts) {
+            publisher.deployArtifacts = deployArtifacts;
+            return this;
+        }
+
+        public Builder includesExcludes(IncludesExcludes includesExcludes) {
+            publisher.includesExcludes = includesExcludes;
+            return this;
+        }
+
+        public Builder skipBuildInfoDeploy(boolean skipBuildInfoDeploy) {
+            publisher.skipBuildInfoDeploy = skipBuildInfoDeploy;
+            return this;
+        }
+
+        public Builder includeEnvVars(boolean includeEnvVars) {
+            publisher.includeEnvVars = includeEnvVars;
+            return this;
+        }
+
+        public Builder discardBuildArtifacts(boolean discardBuildArtifacts) {
+            publisher.discardBuildArtifacts = discardBuildArtifacts;
+            return this;
+        }
+
+        public Builder matrixParams(String matrixParams) {
+            publisher.matrixParams = matrixParams;
+            return this;
+        }
+
+        public Builder artifactsPattern(String artifactsPattern) {
+            publisher.artifactsPattern = artifactsPattern;
+            return this;
+        }
+
+        public Builder ivyPattern(String ivyPattern) {
+            publisher.ivyPattern = ivyPattern;
+            return this;
+        }
+
+        public Builder deployMaven(boolean deployMaven) {
+            publisher.deployMaven = deployMaven;
+            return this;
+        }
+
+        public Builder deployIvy(boolean deployIvy) {
+            publisher.deployIvy = deployIvy;
+            return this;
+        }
+
+        public Builder evenIfUnstable(boolean evenIfUnstable) {
+            publisher.evenIfUnstable = evenIfUnstable;
+            return this;
+        }
+
+        public Builder maven2Compatible(boolean maven2Compatible) {
+            publisher.maven2Compatible = maven2Compatible;
+            return this;
+        }
     }
 }
