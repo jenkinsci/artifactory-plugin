@@ -61,7 +61,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Builds and deploys the build info.
+ * Builds and deploys the build info. This class is used only when the Maven 3 extractor is not active.
  *
  * @author Yossi Shaul
  */
