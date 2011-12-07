@@ -53,6 +53,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Freestyle Maven 3 configurator. Currently for publishing only.
+ *
  * @author Noam Y. Tenne
  */
 public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider {
@@ -244,9 +246,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             }
 
             @Override
-            public boolean tearDown(AbstractBuild build, BuildListener listener)
-                    throws IOException, InterruptedException {
-                if (deployBuildInfo) {
+            public boolean tearDown(AbstractBuild build, BuildListener listener) {
+                Result result = build.getResult();
+                if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
                 }
                 return true;
