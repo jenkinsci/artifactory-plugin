@@ -287,6 +287,7 @@ public class ExtractorUtils {
         FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", ".properties", "", false);
         configuration.setPropertiesFile(propertiesFile.getRemote());
         env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());
+        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFile.getRemote());
         if (!(Computer.currentComputer() instanceof SlaveComputer)) {
             configuration.persistToPropertiesFile();
         } else {

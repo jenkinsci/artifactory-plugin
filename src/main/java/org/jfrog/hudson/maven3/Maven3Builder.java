@@ -146,17 +146,16 @@ public class Maven3Builder extends Builder {
 
         args.add(classWorldsJar.getRemote());
 
-        String buildInfoPropertiesFile = env.get(BuildInfoConfigProperties.PROP_PROPS_FILE);
-        boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
-        if (artifactoryIntegration) {
-            args.addKeyValuePair("-D", BuildInfoConfigProperties.PROP_PROPS_FILE, buildInfoPropertiesFile, false);
-        }
-
         // maven home
         args.addKeyValuePair("-D", "maven.home", mavenHome.getRemote(), false);
 
+        String buildInfoPropertiesFile = env.get(BuildInfoConfigProperties.PROP_PROPS_FILE);
+        boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
+        listener.getLogger().println("Artifactory integration is " + (artifactoryIntegration ? "enabled" : "disabled"));
         String classworldsConfPath;
         if (artifactoryIntegration) {
+
+            args.addKeyValuePair("-D", BuildInfoConfigProperties.PROP_PROPS_FILE, buildInfoPropertiesFile, false);
 
             // use the classworlds conf packaged with this plugin and resolve the extractor libs
             File maven3ExtractorJar = Which.jarFile(Maven3BuildInfoLogger.class);
