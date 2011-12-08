@@ -21,6 +21,7 @@ import hudson.model.BuildBadgeAction;
 import hudson.model.TaskAction;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
+import hudson.model.User;
 import hudson.security.ACL;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -176,11 +177,16 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
 
         private final ArtifactoryServer artifactoryServer;
         private final Credentials deployer;
+        private final String ciUser;
 
         public PromoteWorkerThread(ArtifactoryServer artifactoryServer, Credentials deployer) {
             super(PromoteBuildAction.this, ListenerAndText.forMemory(null));
             this.artifactoryServer = artifactoryServer;
             this.deployer = deployer;
+            // current user is bound to the thread and will be lost in the perform method
+            User user = User.current();
+            this.ciUser = (user == null) ? "anonymous" : user.getId();
+
         }
 
         @Override
@@ -192,13 +198,11 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
 
                 client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword());
 
-                String username = ActionableHelper.getUserCausePrincipal(build);
-
                 // do a dry run first
                 PromotionBuilder promotionBuilder = new PromotionBuilder()
                         .status(targetStatus)
                         .comment(comment)
-                        .ciUser(username)
+                        .ciUser(ciUser)
                         .targetRepo(repositoryKey)
                         .dependencies(includeDependencies)
                         .copy(useCopy)
