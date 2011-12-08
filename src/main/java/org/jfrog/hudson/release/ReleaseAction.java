@@ -274,7 +274,7 @@ public abstract class ReleaseAction implements Action {
         stagingComment = req.getParameter("stagingComment");
 
         // schedule release build
-        if (project.scheduleBuild(0, new Cause.UserCause(), this)) {
+        if (project.scheduleBuild(0, new Cause.UserIdCause(), this)) {
             // redirect to the project page
             resp.sendRedirect(project.getAbsoluteUrl());
         }

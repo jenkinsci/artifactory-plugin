@@ -24,7 +24,6 @@ import hudson.FilePath;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
-import hudson.model.CauseAction;
 import hudson.model.Computer;
 import hudson.model.Run;
 import hudson.slaves.SlaveComputer;
@@ -158,7 +157,7 @@ public class ExtractorUtils {
             configuration.info.setBuildUrl(buildUrl);
         }
 
-        String userName = "unknown";
+        String userName = null;
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
         if (parent != null) {
             String parentProject = parent.getUpstreamProject();
@@ -170,14 +169,8 @@ public class ExtractorUtils {
             userName = "auto";
         }
 
-        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
-        if (action != null) {
-            for (Cause cause : action.getCauses()) {
-                if (cause instanceof Cause.UserCause) {
-                    userName = ((Cause.UserCause) cause).getUserName();
-                }
-            }
-        }
+        userName = ActionableHelper.getUserCausePrincipal(build, userName);
+
         configuration.info.setPrincipal(userName);
         configuration.info.setAgentName("Jenkins");
         configuration.info.setAgentVersion(build.getHudsonVersion());

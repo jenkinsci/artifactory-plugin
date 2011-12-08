@@ -18,7 +18,6 @@ package org.jfrog.hudson.release;
 import com.google.common.collect.Lists;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildBadgeAction;
-import hudson.model.Cause;
 import hudson.model.TaskAction;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
@@ -193,11 +192,7 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
 
                 client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword());
 
-                Cause.UserCause userCause = ActionableHelper.getUserCause(build);
-                String username = null;
-                if (userCause != null) {
-                    username = userCause.getUserName();
-                }
+                String username = ActionableHelper.getUserCausePrincipal(build);
 
                 // do a dry run first
                 PromotionBuilder promotionBuilder = new PromotionBuilder()
