@@ -210,7 +210,7 @@ public class ArtifactoryServer {
     /**
      * Decides what are the preferred credentials to use for resolving the repo keys of the server
      *
-     * @return Preferred credentials for repo resolving
+     * @return Preferred credentials for repo resolving. Never null.
      */
     public Credentials getResolvingCredentials() {
         if (getResolverCredentials() != null) {
