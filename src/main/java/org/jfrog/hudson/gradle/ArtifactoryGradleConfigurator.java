@@ -47,6 +47,7 @@ import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.jfrog.hudson.util.PublisherContext;
+import org.jfrog.hudson.util.ResolverContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -327,7 +328,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             serverDetails.artifactoryName, stagingRepository,
                             serverDetails.snapshotsRepositoryKey, serverDetails.downloadRepositoryKey);
                 }
-                PublisherContext context = new PublisherContext.Builder()
+                PublisherContext publisherContext = new PublisherContext.Builder()
                         .artifactoryServer(getArtifactoryServer()).serverDetails(serverDetails)
                         .deployerOverrider(ArtifactoryGradleConfigurator.this).runChecks(isRunChecks())
                         .includePublishArtifacts(isIncludePublishArtifacts())
@@ -339,8 +340,23 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
                         .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
                         .build();
+
+                ResolverContext resolverContext = null;
+                if (StringUtils.isNotBlank(serverDetails.downloadRepositoryKey)) {
+                    // Resolution server and overriding credentials are currently shared by the deployer and resolver in
+                    // the UI. So here we use the same server details and for credentials we try deployer override and
+                    // then default resolver
+                    Credentials resolverCredentials;
+                    if (isOverridingDefaultDeployer()) {
+                        resolverCredentials = getOverridingDeployerCredentials();
+                    } else {
+                        resolverCredentials = getArtifactoryServer().getResolvingCredentials();
+                    }
+                    resolverContext = new ResolverContext(getArtifactoryServer(), serverDetails, resolverCredentials);
+                }
+
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, publisherContext, resolverContext);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
