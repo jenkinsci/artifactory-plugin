@@ -185,7 +185,7 @@ public abstract class ReleaseAction implements Action {
     	String releaseVersion;
     	
     	try {
-    		releaseVersion = new GenericArtifactVersion(fromVersion).upgradeLeastSignificantNumber().setBuildSpecifier("SNAPSHOT").toString(); 
+    		releaseVersion = new GenericArtifactVersion(fromVersion).setBuildSpecifier(null).toString(); 
     	}
     	catch (IllegalArgumentException e) {
     		// if 'fromVersion' cannot be parsed, use it as the default release version
