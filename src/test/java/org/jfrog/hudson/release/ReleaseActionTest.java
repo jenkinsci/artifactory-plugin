@@ -28,6 +28,10 @@ import static org.junit.Assert.assertEquals;
  * @author Yossi Shaul
  */
 public class ReleaseActionTest {
+	
+	// TODO: Tests checking the calculation of the next dev versions should be removed. 
+	// That logic is now covered in GenericArtifactVersion, which has its own unit test.
+
 
     private ReleaseAction action;
 
@@ -55,9 +59,14 @@ public class ReleaseActionTest {
     }
 
     @Test
-    public void unsupportedVersions() {
-        // currently unsupported until custom/improved logic implementation
-        assertEquals("1-beta", action.calculateNextVersion("1-beta"));
-        assertEquals("1.2-alpha", action.calculateNextVersion("1.2-alpha"));
+    public void complexVersions() {
+        assertEquals("2-beta-SNAPSHOT", action.calculateNextVersion("1-beta"));
+        assertEquals("1.3-alpha-SNAPSHOT", action.calculateNextVersion("1.2-alpha"));
     }
+    
+    @Test
+    public void unsupportedVersions() {
+        assertEquals("1.2-3_4.5_my_weird_version_scheme-SHOTSNAP", action.calculateNextVersion("1.2-3_4.5_my_weird_version_scheme-SHOTSNAP"));
+    }
+
 }

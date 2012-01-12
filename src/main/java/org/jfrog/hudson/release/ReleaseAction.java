@@ -16,19 +16,22 @@
 
 package org.jfrog.hudson.release;
 
-import hudson.model.AbstractProject;
 import hudson.model.Action;
+import hudson.model.AbstractProject;
 import hudson.model.Cause;
+
+import java.io.IOException;
+import java.util.List;
+
+import javax.servlet.ServletException;
+
 import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
+import org.jfrog.hudson.util.GenericArtifactVersion;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
-
-import javax.servlet.ServletException;
-import java.io.IOException;
-import java.util.List;
 
 /**
  * This action leads to execution of the release wrapper. It will collect information from the user about the release
@@ -179,7 +182,17 @@ public abstract class ReleaseAction implements Action {
     public abstract String getCurrentVersion();
 
     public String calculateReleaseVersion(String fromVersion) {
-        return fromVersion.replace("-SNAPSHOT", "");
+    	String releaseVersion;
+    	
+    	try {
+    		releaseVersion = new GenericArtifactVersion(fromVersion).upgradeLeastSignificantNumber().setBuildSpecifier("SNAPSHOT").toString(); 
+    	}
+    	catch (IllegalArgumentException e) {
+    		// if 'fromVersion' cannot be parsed, use it as the default release version
+    		releaseVersion = fromVersion;
+    	}
+    	
+    	return releaseVersion;
     }
 
     /**
@@ -199,35 +212,18 @@ public abstract class ReleaseAction implements Action {
      * @return The next calculated development (snapshot) version
      */
     public String calculateNextVersion(String fromVersion) {
-        // first turn it to release version
-        fromVersion = calculateReleaseVersion(fromVersion);
-        String nextVersion;
-        int lastDotIndex = fromVersion.lastIndexOf('.');
-        try {
-            if (lastDotIndex != -1) {
-                // probably a major minor version e.g., 2.1.1
-                String minorVersionToken = fromVersion.substring(lastDotIndex + 1);
-                String nextMinorVersion;
-                int lastDashIndex = minorVersionToken.lastIndexOf('-');
-                if (lastDashIndex != -1) {
-                    // probably a minor-buildNum e.g., 2.1.1-4 (should change to 2.1.1-5)
-                    String buildNumber = minorVersionToken.substring(lastDashIndex + 1);
-                    int nextBuildNumber = Integer.parseInt(buildNumber) + 1;
-                    nextMinorVersion = minorVersionToken.substring(0, lastDashIndex + 1) + nextBuildNumber;
-                } else {
-                    nextMinorVersion = Integer.parseInt(minorVersionToken) + 1 + "";
-                }
-                nextVersion = fromVersion.substring(0, lastDotIndex + 1) + nextMinorVersion;
-            } else {
-                // maybe it's just a major version; try to parse as an int
-                int nextMajorVersion = Integer.parseInt(fromVersion) + 1;
-                nextVersion = nextMajorVersion + "";
-            }
-        } catch (NumberFormatException e) {
-            return fromVersion;
-        }
-        return nextVersion + "-SNAPSHOT";
-    }
+    	String nextVersion;
+    	
+    	try {
+    		nextVersion = new GenericArtifactVersion(fromVersion).upgradeLeastSignificantNumber().setBuildSpecifier("SNAPSHOT").toString(); 
+    	}
+    	catch (IllegalArgumentException e) {
+    		// if 'fromVersion' cannot be parsed, use it as the default next dev version.
+    		nextVersion = fromVersion;
+    	}
+    	
+    	return nextVersion;
+   	}
 
     /**
      * @return List of target repositories for deployment (release repositories first). Called from the UI.
