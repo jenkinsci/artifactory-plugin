@@ -24,12 +24,7 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.ModuleName;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Result;
-import hudson.model.TaskListener;
+import hudson.model.*;
 import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -69,7 +64,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
 
     @DataBoundConstructor
     public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeGoals,
-            String defaultVersioning) {
+                               String defaultVersioning) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeGoals = alternativeGoals;
@@ -190,7 +185,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
     }
 
     private boolean changeVersions(MavenModuleSetBuild mavenBuild, ReleaseAction release, boolean releaseVersion,
-            String scmUrl) throws IOException, InterruptedException {
+                                   String scmUrl) throws IOException, InterruptedException {
         FilePath moduleRoot = mavenBuild.getModuleRoot();
         // get the active modules only
         Collection<MavenModule> modules = mavenBuild.getProject().getDisabledModules(false);
@@ -208,6 +203,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
             String pomRelativePath = StringUtils.isBlank(relativePath) ? "pom.xml" : relativePath + "/pom.xml";
             FilePath pomPath = new FilePath(moduleRoot, pomRelativePath);
             debuggingLogger.fine("Changing version of pom: " + pomPath);
+            scmCoordinator.edit(pomPath);
             modified |= pomPath.act(
                     new PomTransformer(mavenModule.getModuleName(), modulesByName, scmUrl, releaseVersion));
         }

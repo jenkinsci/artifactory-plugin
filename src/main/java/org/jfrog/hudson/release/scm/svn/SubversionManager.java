@@ -23,21 +23,10 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.SubversionSCM;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
-import org.tmatesoft.svn.core.SVNCommitInfo;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
-import org.tmatesoft.svn.core.wc.SVNCommitClient;
-import org.tmatesoft.svn.core.wc.SVNCopyClient;
-import org.tmatesoft.svn.core.wc.SVNCopySource;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNWCClient;
-import org.tmatesoft.svn.core.wc.SVNWCUtil;
+import org.tmatesoft.svn.core.wc.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -152,7 +141,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     }
 
     public SubversionSCM.ModuleLocation getLocation() {
-        return getHudsonScm().getLocations()[0];
+        return getJenkinsScm().getLocations()[0];
     }
 
     private ISVNAuthenticationManager createAuthenticationManager() {
@@ -163,7 +152,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     }
 
     private ISVNAuthenticationProvider getSvnAuthenticationProvider() {
-        ISVNAuthenticationProvider sap = getHudsonScm().getDescriptor().createAuthenticationProvider();
+        ISVNAuthenticationProvider sap = getJenkinsScm().getDescriptor().createAuthenticationProvider();
         if (sap == null) {
             throw new AbortException("Subversion authentication info is not set.");
         }
@@ -177,7 +166,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
         private final TaskListener buildListener;
 
         public SVNCommitWorkingCopyCallable(String commitMessage, SubversionSCM.ModuleLocation location,
-                ISVNAuthenticationProvider provider, TaskListener listener) {
+                                            ISVNAuthenticationProvider provider, TaskListener listener) {
             this.commitMessage = commitMessage;
             this.location = location;
             authProvider = provider;
@@ -215,7 +204,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
         private final TaskListener buildListener;
 
         public SVNCreateTagCallable(String tagUrl, String commitMessage, SubversionSCM.ModuleLocation location,
-                ISVNAuthenticationProvider provider, TaskListener listener) {
+                                    ISVNAuthenticationProvider provider, TaskListener listener) {
             this.tagUrl = tagUrl;
             this.commitMessage = commitMessage;
             this.location = location;
@@ -251,7 +240,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
         private final TaskListener listener;
 
         public RevertWorkingCopyCallable(SubversionSCM.ModuleLocation location, ISVNAuthenticationProvider authProvider,
-                TaskListener listener) {
+                                         TaskListener listener) {
             this.location = location;
             this.authProvider = authProvider;
             this.listener = listener;
@@ -279,7 +268,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
         private final TaskListener listener;
 
         private CleanupCallable(SubversionSCM.ModuleLocation location, ISVNAuthenticationProvider authProvider,
-                TaskListener listener) {
+                                TaskListener listener) {
             this.location = location;
             this.authProvider = authProvider;
             this.listener = listener;

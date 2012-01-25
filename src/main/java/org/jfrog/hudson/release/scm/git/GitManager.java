@@ -48,14 +48,14 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
     public String getCurrentCommitHash() throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getHudsonScm();
+        GitSCM gitSCM = getJenkinsScm();
         return workspace
                 .act(new CurrentCommitCallable(gitSCM, getWorkingDirectory(gitSCM, workspace), build, buildListener));
     }
 
     public String checkoutBranch(final String branch, final boolean create) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getHudsonScm();
+        GitSCM gitSCM = getJenkinsScm();
         FilePath workingDirectory = getWorkingDirectory(gitSCM, workspace);
         return workspace
                 .act(new CheckoutBranchCallable(create, branch, gitSCM, buildListener, build, workingDirectory));
@@ -63,7 +63,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
     public void commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getHudsonScm();
+        GitSCM gitSCM = getJenkinsScm();
         FilePath workingDirectory = getWorkingDirectory(gitSCM, workspace);
         workspace.act(new CommitWorkingCopyCallable(commitMessage, gitSCM, buildListener, build,
                 workingDirectory));
@@ -72,14 +72,14 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     public void createTag(final String tagName, final String commitMessage)
             throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getHudsonScm();
+        GitSCM gitSCM = getJenkinsScm();
         FilePath workingDirectory = getWorkingDirectory(gitSCM, workspace);
         workspace.act(new CreateTagCallable(tagName, commitMessage, gitSCM, buildListener, build, workingDirectory));
     }
 
     public String push(final String remoteRepository, final String branch) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getHudsonScm();
+        GitSCM gitSCM = getJenkinsScm();
         FilePath workingDirectory = getWorkingDirectory(gitSCM, workspace);
         return workspace
                 .act(new PushCallable(branch, remoteRepository, gitSCM, buildListener, build, workingDirectory));
@@ -88,7 +88,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     public String pushTag(final String remoteRepository, final String tagName)
             throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getHudsonScm();
+        GitSCM gitSCM = getJenkinsScm();
         FilePath directory = getWorkingDirectory(gitSCM, workspace);
         return workspace
                 .act(new PushTagCallable(tagName, remoteRepository, gitSCM, buildListener, build, directory));
@@ -96,56 +96,56 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
     public String pull(final String remoteRepository, final String branch) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getHudsonScm(), workspace);
+        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
         return workspace
-                .act(new PullCallable(remoteRepository, branch, getHudsonScm(), buildListener, build,
+                .act(new PullCallable(remoteRepository, branch, getJenkinsScm(), buildListener, build,
                         directory));
     }
 
     public void revertWorkingCopy(final String commitIsh) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getHudsonScm(), workspace);
-        workspace.act(new RevertCallable(commitIsh, getHudsonScm(), buildListener, build, directory));
+        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
+        workspace.act(new RevertCallable(commitIsh, getJenkinsScm(), buildListener, build, directory));
     }
 
     public String deleteLocalBranch(final String branch) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getHudsonScm(), workspace);
-        return workspace.act(new DeleteLocalBranchCallable(branch, getHudsonScm(), buildListener, build, directory));
+        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
+        return workspace.act(new DeleteLocalBranchCallable(branch, getJenkinsScm(), buildListener, build, directory));
     }
 
     public String deleteRemoteBranch(final String remoteRepository, final String branch)
             throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getHudsonScm(), workspace);
+        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
         return workspace
-                .act(new DeleteRemoteBranchCallable(branch, remoteRepository, getHudsonScm(), buildListener,
+                .act(new DeleteRemoteBranchCallable(branch, remoteRepository, getJenkinsScm(), buildListener,
                         build, directory));
     }
 
     public String deleteLocalTag(final String tag) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getHudsonScm(), workspace);
-        return workspace.act(new DeleteLocalTagCallable(tag, getHudsonScm(), buildListener, build,
+        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
+        return workspace.act(new DeleteLocalTagCallable(tag, getJenkinsScm(), buildListener, build,
                 directory));
     }
 
     public String deleteRemoteTag(final String remoteRepository, final String tag)
             throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getHudsonScm(), workspace);
+        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
         return workspace.act(
-                new DeleteRemoteTagCallable(tag, remoteRepository, getHudsonScm(), buildListener, build, directory));
+                new DeleteRemoteTagCallable(tag, remoteRepository, getJenkinsScm(), buildListener, build, directory));
     }
 
     public String getRemoteUrl() {
-        RemoteConfig remoteConfig = getHudsonScm().getRepositories().get(0);
+        RemoteConfig remoteConfig = getJenkinsScm().getRepositories().get(0);
         URIish uri = remoteConfig.getURIs().get(0);
         return uri.toPrivateString();
     }
 
     private static GitAPI createGitAPI(EnvVars gitEnvironment,
-            TaskListener buildListener, String gitExe, FilePath workingCopy, String confName, String confEmail)
+                                       TaskListener buildListener, String gitExe, FilePath workingCopy, String confName, String confEmail)
             throws IOException {
         if (StringUtils.isNotBlank(confName)) {
             gitEnvironment.put("GIT_COMMITTER_NAME", confName);
@@ -174,7 +174,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String confEmail;
 
         private CurrentCommitCallable(GitSCM gitSCM, FilePath workingCopy, AbstractBuild build,
-                TaskListener listener) throws IOException, InterruptedException {
+                                      TaskListener listener) throws IOException, InterruptedException {
             this.workingCopy = workingCopy;
             this.listener = listener;
             this.confName = gitSCM.getGitConfigNameToUse();
@@ -207,7 +207,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String email;
 
         public CheckoutBranchCallable(boolean create, String branch, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                                      AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.create = create;
             this.branch = branch;
             this.listener = listener;
@@ -246,7 +246,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String email;
 
         public CommitWorkingCopyCallable(String commitMessage, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                                         AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.commitMessage = commitMessage;
             this.workingCopy = workingCopy;
             this.confName = gitSCM.getGitConfigNameToUse();
@@ -280,7 +280,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String gitExe;
 
         public CreateTagCallable(String tagName, String commitMessage, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                                 AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.tagName = tagName;
             this.commitMessage = commitMessage;
             this.workingCopy = workingCopy;
@@ -319,7 +319,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String gitExe;
 
         public PushCallable(String branch, String remoteRepository, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                            AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.branch = branch;
             this.remoteRepository = remoteRepository;
             this.workingCopy = workingCopy;
@@ -355,7 +355,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
 
         public PushTagCallable(String tagName, String remoteRepository, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                               AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.tagName = tagName;
             this.remoteRepository = remoteRepository;
             this.workingCopy = workingCopy;
@@ -391,7 +391,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String email;
 
         public PullCallable(String remoteRepository, String branch, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                            AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.remoteRepository = remoteRepository;
             this.branch = branch;
             this.workingCopy = workingCopy;
@@ -425,7 +425,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String email;
 
         public RevertCallable(String commitIsh, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                              AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.commitIsh = commitIsh;
             this.workingCopy = workingCopy;
             this.envVars = build.getEnvironment(listener);
@@ -458,7 +458,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String email;
 
         public DeleteLocalBranchCallable(String branch, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                                         AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.branch = branch;
             this.workingCopy = workingCopy;
             this.envVars = build.getEnvironment(listener);
@@ -493,7 +493,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
 
         public DeleteRemoteBranchCallable(String branch, String remoteRepository, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                                          AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.branch = branch;
             this.remoteRepository = remoteRepository;
             this.workingCopy = workingCopy;
@@ -527,7 +527,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String email;
 
         public DeleteLocalTagCallable(String tag, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                                      AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.tag = tag;
             this.workingCopy = workingCopy;
             this.envVars = build.getEnvironment(listener);
@@ -561,7 +561,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         private final String email;
 
         public DeleteRemoteTagCallable(String tag, String remoteRepository, GitSCM gitSCM, TaskListener listener,
-                AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
+                                       AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
             this.tag = tag;
             this.remoteRepository = remoteRepository;
             this.workingCopy = workingCopy;
