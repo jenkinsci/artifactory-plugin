@@ -26,32 +26,37 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Revert the local changes.
+ * Deletes (unlocked) perforce label.
  *
  * @author Yossi Shaul
- * @see <a href="http://www.perforce.com/perforce/doc.current/manuals/cmdref/revert.html">http://www.perforce.com/perforce/doc.current/manuals/cmdref/revert.html</a>
+ * @see <a href="http://www.perforce.com/perforce/doc.current/manuals/cmdref/label.html">http://www.perforce.com/perforce/doc.current/manuals/cmdref/label.html</a>
  */
-public class Revert extends AbstractPerforceTemplate {
-    private static Logger debuggingLogger = Logger.getLogger(Revert.class.getName());
+public class DeleteLabel extends AbstractPerforceTemplate {
+    private static Logger debuggingLogger = Logger.getLogger(DeleteLabel.class.getName());
+    private final String labelName;
 
-    public Revert(Depot depot) {
+    public DeleteLabel(Depot depot, String labelName) {
         super(depot);
+        this.labelName = labelName;
     }
 
     /**
-     * Revert the default change set.
+     * Delete the remote label.
      */
-    public void revert() throws PerforceException {
-        debuggingLogger.log(Level.FINE, "Reverting default changelist");
-        RevertBuilder builder = new RevertBuilder();
+    public void deleteLabel() throws PerforceException {
+        debuggingLogger.log(Level.FINE, "Deleting label: " + labelName);
+        DeleteLabelBuilder builder = new DeleteLabelBuilder();
         saveToPerforce(this, builder);
     }
 
-    public static class RevertBuilder implements Builder<Revert> {
+    public String getLabelName() {
+        return labelName;
+    }
 
-        public String[] getSaveCmd(String p4exe, Revert edit) {
-            // Revert every file open in the default changelist to its pre-opened state.
-            return new String[]{p4exe, "-s", "revert", "-c", "default", "//..."};
+    public static class DeleteLabelBuilder implements Builder<DeleteLabel> {
+
+        public String[] getSaveCmd(String p4exe, DeleteLabel edit) {
+            return new String[]{p4exe, "-s", "label", "-d", edit.getLabelName()};
         }
 
         public boolean requiresStandardInput() {
@@ -62,11 +67,11 @@ public class Revert extends AbstractPerforceTemplate {
             throw new UnsupportedOperationException("Operation not supported");
         }
 
-        public Revert build(StringBuilder sb) throws PerforceException {
+        public DeleteLabel build(StringBuilder sb) throws PerforceException {
             throw new UnsupportedOperationException("Operation not supported");
         }
 
-        public void save(Revert obj, Writer writer) throws PerforceException {
+        public void save(DeleteLabel obj, Writer writer) throws PerforceException {
             throw new UnsupportedOperationException("Operation not supported");
         }
     }

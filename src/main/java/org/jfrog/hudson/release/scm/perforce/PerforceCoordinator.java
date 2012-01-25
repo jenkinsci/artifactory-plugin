@@ -39,6 +39,7 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
 
     private PerforceManager perforceManager;
     private final ReleaseAction releaseAction;
+    private boolean tagCreated;
 
     public PerforceCoordinator(AbstractBuild build, BuildListener listener, ReleaseAction releaseAction) {
         super(build, listener);
@@ -61,15 +62,14 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
 
     public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
         if (modifiedFilesForReleaseVersion) {
-            // commit local changes
             log("Submitting release version changes");
             perforceManager.commitWorkingCopy(releaseAction.getDefaultReleaseComment());
         }
 
         if (releaseAction.isCreateVcsTag()) {
-            // create tag
+            log("Creating label: '" + releaseAction.getTagUrl() + "'");
             perforceManager.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment());
-            //state.tagCreated = true;
+            tagCreated = true;
         }
     }
 
@@ -80,20 +80,33 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
     public void buildCompleted() throws IOException, InterruptedException {
         if (build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
             // submit the next development version
+            log("Submitting next development version changes");
             perforceManager.commitWorkingCopy(releaseAction.getNextDevelCommitComment());
         } else {
             safeRevertWorkingCopy();
+            if (tagCreated) {
+                safeDeleteLabel();
+            }
         }
-
     }
 
     private void safeRevertWorkingCopy() {
-        log("Reverting changelist");
+        log("Reverting local changes");
         try {
             perforceManager.revertWorkingCopy();
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to revert: ", e);
             log("Failed to revert: " + e.getLocalizedMessage());
+        }
+    }
+
+    private void safeDeleteLabel() throws IOException {
+        log("Deleting label '" + releaseAction.getTagUrl() + "'");
+        try {
+            perforceManager.deleteLabel(releaseAction.getTagUrl());
+        } catch (Exception e) {
+            debuggingLogger.log(Level.FINE, "Failed to delete label: ", e);
+            log("Failed to delete label: " + e.getLocalizedMessage());
         }
     }
 

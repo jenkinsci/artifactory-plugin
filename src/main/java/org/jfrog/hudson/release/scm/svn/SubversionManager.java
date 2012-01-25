@@ -196,6 +196,9 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
         private static final long serialVersionUID = 1L;
     }
 
+    /**
+     * Creates a tag directly from the working copy.
+     */
     private static class SVNCreateTagCallable implements FilePath.FileCallable<Object> {
         private final String tagUrl;
         private final String commitMessage;

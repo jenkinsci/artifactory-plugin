@@ -132,6 +132,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                     ? releaseAction.getTagUrl() : null;
             boolean modified;
             try {
+                log(listener, "Changing POMs to release version");
                 modified = changeVersions(mavenBuild, releaseAction, true, vcsUrl);
             } catch (SnapshotNotAllowedException e) {
                 log(listener, "ERROR: " + e.getMessage());
@@ -171,6 +172,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                         String scmUrl = releaseAction.isCreateVcsTag() &&
                                 AbstractScmCoordinator.isSvn(build.getProject())
                                 ? scmCoordinator.getRemoteUrlForPom() : null;
+                        log(listener, "Changing POMs to next development version");
                         boolean modified = changeVersions(mavenBuild, releaseAction, false, scmUrl);
                         scmCoordinator.afterDevelopmentVersionChange(modified);
                     }
