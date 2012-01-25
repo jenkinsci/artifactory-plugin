@@ -25,6 +25,7 @@ import hudson.plugins.perforce.PerforceSCM;
 import hudson.plugins.perforce.PerforceTagAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
+import org.jfrog.hudson.release.scm.perforce.command.DeleteLabel;
 import org.jfrog.hudson.release.scm.perforce.command.Edit;
 import org.jfrog.hudson.release.scm.perforce.command.Revert;
 import org.jfrog.hudson.release.scm.perforce.command.Submit;
@@ -123,6 +124,15 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
             new Revert(depot).revert();
         } catch (PerforceException e) {
             throw new IOException("Failed to revert changelist: " + e.getMessage());
+        }
+    }
+
+    public void deleteLabel(String labelName) throws IOException {
+        try {
+            Depot depot = getDepot();
+            new DeleteLabel(depot, labelName).deleteLabel();
+        } catch (PerforceException e) {
+            throw new IOException("Failed to delete label: " + e.getMessage());
         }
     }
 }
