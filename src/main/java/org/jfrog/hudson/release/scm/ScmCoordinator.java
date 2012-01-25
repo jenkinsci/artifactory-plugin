@@ -16,6 +16,8 @@
 
 package org.jfrog.hudson.release.scm;
 
+import hudson.FilePath;
+
 import java.io.IOException;
 
 /**
@@ -62,6 +64,13 @@ public interface ScmCoordinator {
      * Called after the build has completed and the result was finalized.
      */
     void buildCompleted() throws IOException, InterruptedException;
+
+    /**
+     * Called before a file is modified.
+     *
+     * @param filePath The file path that is about to be modified.
+     */
+    void edit(FilePath filePath) throws IOException, InterruptedException;
 
     String getRemoteUrlForPom();
 }

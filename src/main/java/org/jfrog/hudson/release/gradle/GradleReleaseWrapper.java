@@ -52,7 +52,7 @@ public class GradleReleaseWrapper {
 
     @DataBoundConstructor
     public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeTasks,
-            String releasePropsKeys, String nextIntegPropsKeys) {
+                                String releasePropsKeys, String nextIntegPropsKeys) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeTasks = alternativeTasks;
@@ -166,7 +166,7 @@ public class GradleReleaseWrapper {
     }
 
     private boolean changeProperties(AbstractBuild build, GradleReleaseAction release, boolean releaseVersion,
-            BuildListener listener) throws IOException, InterruptedException {
+                                     BuildListener listener) throws IOException, InterruptedException {
         FilePath root = build.getModuleRoot();
         debuggingLogger.fine("Root directory is: " + root.getRemote());
         String[] modules = release.getReleaseProperties();
@@ -188,6 +188,7 @@ public class GradleReleaseWrapper {
         String next = releaseVersion ? "release" : "development";
         log(listener,
                 "Changing gradle.properties at " + gradlePropertiesFilePath.getRemote() + " for " + next + " version");
+        scmCoordinator.edit(gradlePropertiesFilePath);
         return gradlePropertiesFilePath.act(new GradlePropertiesTransformer(modulesByName));
     }
 

@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.release.scm;
 
+import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -23,6 +24,7 @@ import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.git.GitCoordinator;
+import org.jfrog.hudson.release.scm.perforce.PerforceCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionCoordinator;
 
 import java.io.IOException;
@@ -45,7 +47,7 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
     }
 
     public static ScmCoordinator createScmCoordinator(AbstractBuild build, BuildListener listener,
-            ReleaseAction releaseAction) {
+                                                      ReleaseAction releaseAction) {
         SCM projectScm = build.getProject().getScm();
         if (projectScm instanceof SubversionSCM) {
             return new SubversionCoordinator(build, listener, releaseAction);
@@ -53,6 +55,10 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
         // Git is optional SCM so we cannot use the class here
         if (isGitScm(build.getProject())) {
             return new GitCoordinator(build, listener, releaseAction);
+        }
+        // Perforce is optional SCM so we cannot use the class here
+        if (isPerforceScm(build.getProject())) {
+            return new PerforceCoordinator(build, listener, releaseAction);
         }
         throw new UnsupportedOperationException(
                 "Scm of type: " + projectScm.getClass().getName() + " is not supported");
@@ -71,6 +77,14 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
         return false;
     }
 
+    public static boolean isPerforceScm(AbstractProject project) {
+        SCM scm = project.getScm();
+        if (scm != null) {
+            return scm.getClass().getName().equals("hudson.plugins.perforce.PerforceSCM");
+        }
+        return false;
+    }
+
     protected void log(String message) {
         listener.getLogger().println("[RELEASE] " + message);
     }
@@ -85,5 +99,9 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
 
     public void afterDevelopmentVersionChange(boolean modified) throws IOException, InterruptedException {
         modifiedFilesForDevVersion = modified;
+    }
+
+    public void edit(FilePath filePath) throws IOException, InterruptedException {
+
     }
 }
