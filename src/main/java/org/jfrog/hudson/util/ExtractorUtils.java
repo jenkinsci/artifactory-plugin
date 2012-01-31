@@ -63,16 +63,19 @@ public class ExtractorUtils {
     }
 
     /**
-     * Get the VCS revision from the Jenkins build environment. The search will first be for an "SVN_REVISION" in the
-     * environment. If it is not found then a search will be for a "GIT_COMMIT".
+     * Get the VCS revision from the Jenkins build environment. The search will one of "SVN_REVISION",
+     * "GIT_COMMIT", "P4_CHANGELIST" in the environment.
      *
      * @param env Th Jenkins build environment.
-     * @return The subversion revision if found, or the git revision if found.
+     * @return The vcs revision for supported VCS
      */
     public static String getVcsRevision(Map<String, String> env) {
         String revision = env.get("SVN_REVISION");
         if (StringUtils.isBlank(revision)) {
             revision = env.get("GIT_COMMIT");
+        }
+        if (StringUtils.isBlank(revision)) {
+            revision = env.get("P4_CHANGELIST");
         }
         return revision;
     }
@@ -93,7 +96,7 @@ public class ExtractorUtils {
      * @param resolverContext           A context for resolver settings
      */
     public static ArtifactoryClientConfiguration addBuilderInfoArguments(Map<String, String> env, AbstractBuild build,
-            PublisherContext publisherContext, ResolverContext resolverContext)
+                                                                         PublisherContext publisherContext, ResolverContext resolverContext)
             throws IOException, InterruptedException {
         ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
         addBuildRootIfNeeded(build, configuration);
@@ -123,7 +126,7 @@ public class ExtractorUtils {
      * Set all the parameters relevant for publishing artifacts and build info
      */
     private static void setPublisherInfo(Map<String, String> env, AbstractBuild build,
-            PublisherContext context, ArtifactoryClientConfiguration configuration) {
+                                         PublisherContext context, ArtifactoryClientConfiguration configuration) {
         configuration.setActivateRecorder(Boolean.TRUE);
 
         String buildName = build.getProject().getDisplayName();
@@ -269,7 +272,7 @@ public class ExtractorUtils {
     }
 
     public static void persistConfiguration(AbstractBuild build, ArtifactoryClientConfiguration configuration,
-            Map<String, String> env) throws IOException, InterruptedException {
+                                            Map<String, String> env) throws IOException, InterruptedException {
         FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", ".properties", "", false);
         configuration.setPropertiesFile(propertiesFile.getRemote());
         env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());
@@ -296,8 +299,8 @@ public class ExtractorUtils {
     }
 
     private static void addMatrixParams(PublisherContext context,
-            ArtifactoryClientConfiguration.PublisherHandler publisher,
-            Map<String, String> env) {
+                                        ArtifactoryClientConfiguration.PublisherHandler publisher,
+                                        Map<String, String> env) {
         String matrixParams = context.getMatrixParams();
         if (StringUtils.isBlank(matrixParams)) {
             return;
@@ -316,7 +319,7 @@ public class ExtractorUtils {
     }
 
     private static void addEnvVars(Map<String, String> env, AbstractBuild<?, ?> build,
-            ArtifactoryClientConfiguration configuration) {
+                                   ArtifactoryClientConfiguration configuration) {
         // Write all the deploy (matrix params) properties.
         configuration.fillFromProperties(env);
         //Add only the jenkins specific environment variables
