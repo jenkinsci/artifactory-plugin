@@ -49,7 +49,7 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
         super(build, buildListener);
     }
 
-    public void commitWorkingCopy(String commitMessage) throws IOException, InterruptedException {
+    public void commitWorkingCopy(String commitMessage) throws IOException {
         submit(commitMessage);
     }
 
@@ -64,7 +64,7 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
         }
     }
 
-    public void createTag(String tagUrl, String commitMessage) throws IOException, InterruptedException {
+    public void createTag(String tagUrl, String commitMessage) throws IOException {
         PerforceTagAction perforceTagAction = ActionableHelper.getLatestAction(build, PerforceTagAction.class);
         //perforceTagAction.tagBuild(tagUrl, commitMessage);
         try {
