@@ -60,7 +60,7 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
         });
     }
 
-    public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
+    public void afterSuccessfulReleaseVersionBuild() throws IOException {
         if (modifiedFilesForReleaseVersion) {
             log("Submitting release version changes");
             perforceManager.commitWorkingCopy(releaseAction.getDefaultReleaseComment());
@@ -73,16 +73,19 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
         }
     }
 
-    public void beforeDevelopmentVersionChange() throws IOException, InterruptedException {
+    public void beforeDevelopmentVersionChange() throws IOException {
 
     }
 
+    @Override
+    public void afterDevelopmentVersionChange(boolean modified) throws IOException {
+        // submit the next development version
+        log("Submitting next development version changes");
+        perforceManager.commitWorkingCopy(releaseAction.getNextDevelCommitComment());
+    }
+
     public void buildCompleted() throws IOException, InterruptedException {
-        if (build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
-            // submit the next development version
-            log("Submitting next development version changes");
-            perforceManager.commitWorkingCopy(releaseAction.getNextDevelCommitComment());
-        } else {
+        if (!build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
             safeRevertWorkingCopy();
             if (tagCreated) {
                 safeDeleteLabel();
