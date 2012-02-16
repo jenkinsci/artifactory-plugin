@@ -88,9 +88,10 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
 
     private List<String> parseViewPairs(PerforceTagAction perforceTagAction) throws IOException {
         try {
+            String p4Client = build.getEnvironment(buildListener).get("P4CLIENT");
             Method method = PerforceSCM.class.getDeclaredMethod("parseProjectPath", String.class, String.class);
             method.setAccessible(true);
-            return (List<String>) method.invoke(null, perforceTagAction.getView(), "workspace");
+            return (List<String>) method.invoke(null, perforceTagAction.getView(), p4Client);
         } catch (Exception e) {
             throw new IOException("Failed to parse view pair: " + e.getMessage());
         }
