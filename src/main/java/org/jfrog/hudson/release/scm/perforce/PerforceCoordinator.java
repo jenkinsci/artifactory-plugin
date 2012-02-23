@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.release.scm.perforce;
 
+import com.perforce.p4java.core.IChangelist;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
@@ -23,6 +24,7 @@ import hudson.model.Result;
 import hudson.remoting.VirtualChannel;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
+import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,9 +39,10 @@ import java.util.logging.Logger;
 public class PerforceCoordinator extends AbstractScmCoordinator {
     private static Logger debuggingLogger = Logger.getLogger(PerforceManager.class.getName());
 
-    private PerforceManager perforceManager;
+    private PerforceManager perforce;
     private final ReleaseAction releaseAction;
     private boolean tagCreated;
+    private int currentChangeListId;
 
     public PerforceCoordinator(AbstractBuild build, BuildListener listener, ReleaseAction releaseAction) {
         super(build, listener);
@@ -47,41 +50,55 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
     }
 
     public void prepare() throws IOException, InterruptedException {
-        perforceManager = new PerforceManager(build, listener);
+        perforce = new PerforceManager(build, listener);
+        perforce.prepare();
+    }
+
+    @Override
+    public void beforeReleaseVersionChange() throws IOException {
+        currentChangeListId = perforce.createNewChangeList();
+    }
+
+    public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
+        String labelChangeListId = ExtractorUtils.getVcsRevision(build.getEnvironment(listener));
+        if (modifiedFilesForReleaseVersion) {
+            log("Submitting release version changes");
+            labelChangeListId = currentChangeListId + "";
+            perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultReleaseComment());
+        } else {
+            perforce.deleteChangeList(currentChangeListId);
+            currentChangeListId = perforce.getDefaultChangeListId();
+        }
+
+        if (releaseAction.isCreateVcsTag()) {
+            log("Creating label: '" + releaseAction.getTagUrl() + "' with change list id: " + labelChangeListId);
+            perforce.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment(), labelChangeListId);
+            tagCreated = true;
+        }
+    }
+
+    public void beforeDevelopmentVersionChange() throws IOException, InterruptedException {
+        currentChangeListId = perforce.getDefaultChangeListId();
+    }
+
+    @Override
+    public void afterDevelopmentVersionChange(boolean modified) throws IOException, InterruptedException {
+        super.afterDevelopmentVersionChange(modified);
+        if (modified) {
+            log("Submitting next development version changes");
+            perforce.commitWorkingCopy(currentChangeListId, releaseAction.getNextDevelCommitComment());
+        }
     }
 
     @Override
     public void edit(FilePath filePath) throws IOException, InterruptedException {
         filePath.act(new FilePath.FileCallable<Object>() {
             public Object invoke(File file, VirtualChannel channel) throws IOException, InterruptedException {
-                perforceManager.edit(file);
+                log("Opening file: '" + file.getAbsolutePath() + "' for editing");
+                perforce.edit(currentChangeListId, file);
                 return null;
             }
         });
-    }
-
-    public void afterSuccessfulReleaseVersionBuild() throws IOException {
-        if (modifiedFilesForReleaseVersion) {
-            log("Submitting release version changes");
-            perforceManager.commitWorkingCopy(releaseAction.getDefaultReleaseComment());
-        }
-
-        if (releaseAction.isCreateVcsTag()) {
-            log("Creating label: '" + releaseAction.getTagUrl() + "'");
-            perforceManager.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment());
-            tagCreated = true;
-        }
-    }
-
-    public void beforeDevelopmentVersionChange() throws IOException {
-
-    }
-
-    @Override
-    public void afterDevelopmentVersionChange(boolean modified) throws IOException {
-        // submit the next development version
-        log("Submitting next development version changes");
-        perforceManager.commitWorkingCopy(releaseAction.getNextDevelCommitComment());
     }
 
     public void buildCompleted() throws IOException, InterruptedException {
@@ -96,7 +113,7 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
     private void safeRevertWorkingCopy() {
         log("Reverting local changes");
         try {
-            perforceManager.revertWorkingCopy();
+            perforce.revertWorkingCopy(currentChangeListId);
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to revert: ", e);
             log("Failed to revert: " + e.getLocalizedMessage());
@@ -106,7 +123,7 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
     private void safeDeleteLabel() throws IOException {
         log("Deleting label '" + releaseAction.getTagUrl() + "'");
         try {
-            perforceManager.deleteLabel(releaseAction.getTagUrl());
+            perforce.deleteLabel(releaseAction.getTagUrl());
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to delete label: ", e);
             log("Failed to delete label: " + e.getLocalizedMessage());
