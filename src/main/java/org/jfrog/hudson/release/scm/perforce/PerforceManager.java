@@ -50,15 +50,15 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
         super(build, buildListener);
     }
 
-    public void prepare() throws IOException {
+    public void prepare() throws IOException, InterruptedException {
         builder = new PerforceClient.Builder();
-        Depot perforceDepot = getDepot();
-        String hostAddress = perforceDepot.getPort();
+        PerforceSCM jenkinsScm = getJenkinsScm();
+        String hostAddress = jenkinsScm.getP4Port();
         if (!hostAddress.contains(":")) {
             hostAddress = "localhost:" + hostAddress;
         }
-        builder.hostAddress(hostAddress).client(perforceDepot.getClient());
-        builder.username(perforceDepot.getUser()).password(perforceDepot.getPassword());
+        builder.hostAddress(hostAddress).client(build.getEnvironment(buildListener).get("P4CLIENT"));
+        builder.username(jenkinsScm.getP4User()).password(jenkinsScm.getDecryptedP4Passwd());
         perforce = builder.build();
     }
 
@@ -93,17 +93,6 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
 
     public int getDefaultChangeListId() throws IOException {
         return perforce.getDefaultChangeListId();
-    }
-
-    private Depot getDepot() {
-        try {
-            PerforceTagAction perforceTagAction = ActionableHelper.getLatestAction(build, PerforceTagAction.class);
-            Field depotField = perforceTagAction.getClass().getDeclaredField("depot");
-            depotField.setAccessible(true);
-            return (Depot) depotField.get(perforceTagAction);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to retrieve depot: " + e.getMessage(), e);
-        }
     }
 
     public void commitWorkingCopy(String commitMessage) throws IOException, InterruptedException {
@@ -148,7 +137,8 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
         public String invoke(File file, VirtualChannel channel) throws IOException, InterruptedException {
             log(listener, "Opening file: '" + file.getAbsolutePath() + "' for editing");
             PerforceClient perforce = builder.build();
-            perforce.editFile(currentChangeListId, file);
+            String statusMessage = perforce.editFile(currentChangeListId, file);
+            log(listener, "Got status message: '" + statusMessage + "'");
             perforce.closeConnection();
             return null;
         }
