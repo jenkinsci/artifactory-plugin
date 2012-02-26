@@ -18,10 +18,12 @@ package org.jfrog.hudson.release.scm.perforce;
 
 import com.perforce.p4java.core.IChangelist;
 import com.tek42.perforce.Depot;
+import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.TaskListener;
 import hudson.plugins.perforce.PerforceSCM;
 import hudson.plugins.perforce.PerforceTagAction;
+import hudson.remoting.VirtualChannel;
 import org.jfrog.build.vcs.perforce.PerforceClient;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
@@ -37,6 +39,11 @@ import java.lang.reflect.Field;
  */
 public class PerforceManager extends AbstractScmManager<PerforceSCM> {
 
+    /**
+     * This builder is passed to {@link EditFilesCallable} for creating a new perforce
+     * connection since the operation may occur on remote agents.
+     */
+    private PerforceClient.Builder builder;
     private PerforceClient perforce;
 
     public PerforceManager(AbstractBuild<?, ?> build, TaskListener buildListener) {
@@ -44,7 +51,7 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
     }
 
     public void prepare() throws IOException {
-        PerforceClient.Builder builder = new PerforceClient.Builder();
+        builder = new PerforceClient.Builder();
         Depot perforceDepot = getDepot();
         String hostAddress = perforceDepot.getPort();
         if (!hostAddress.contains(":")) {
@@ -69,10 +76,6 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
 
     public void deleteLabel(String tagUrl) throws IOException {
         perforce.deleteLabel(tagUrl);
-    }
-
-    public void edit(int changeListId, File releaseVersion) throws IOException {
-        perforce.editFile(changeListId, releaseVersion);
     }
 
     /**
@@ -113,5 +116,41 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
 
     public String getRemoteUrl() {
         throw new UnsupportedOperationException("Remote URL not supported");
+    }
+
+    /**
+     * Opens file for editing, this method uses {@link EditFilesCallable} which opens
+     * new connection to perforce server since it may invoke on remote agents.
+     * @param currentChangeListId The current change list id to open the file for editing at
+     * @param filePath The filePath which contains the file we need to edit
+     * @throws IOException Thrown in case of perforce communication errors
+     * @throws InterruptedException
+     */
+    public void edit(int currentChangeListId, FilePath filePath) throws IOException, InterruptedException {
+        filePath.act(new EditFilesCallable(builder, buildListener, currentChangeListId));
+    }
+
+    public void closeConnection() throws IOException {
+        perforce.closeConnection();   
+    }
+
+    private static class EditFilesCallable implements FilePath.FileCallable<String> {
+        private PerforceClient.Builder builder;
+        private int currentChangeListId;
+        private TaskListener listener;
+
+        public EditFilesCallable(PerforceClient.Builder builder, TaskListener buildListener, int currentChangeListId) {
+            this.builder = builder;
+            this.listener = buildListener;
+            this.currentChangeListId = currentChangeListId;
+        }
+
+        public String invoke(File file, VirtualChannel channel) throws IOException, InterruptedException {
+            log(listener, "Opening file: '" + file.getAbsolutePath() + "' for editing");
+            PerforceClient perforce = builder.build();
+            perforce.editFile(currentChangeListId, file);
+            perforce.closeConnection();
+            return null;
+        }
     }
 }

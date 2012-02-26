@@ -21,6 +21,7 @@ import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -92,13 +93,7 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
 
     @Override
     public void edit(FilePath filePath) throws IOException, InterruptedException {
-        filePath.act(new FilePath.FileCallable<Object>() {
-            public Object invoke(File file, VirtualChannel channel) throws IOException, InterruptedException {
-                log("Opening file: '" + file.getAbsolutePath() + "' for editing");
-                perforce.edit(currentChangeListId, file);
-                return null;
-            }
-        });
+        perforce.edit(currentChangeListId, filePath);
     }
 
     public void buildCompleted() throws IOException, InterruptedException {
@@ -107,6 +102,9 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
             if (tagCreated) {
                 safeDeleteLabel();
             }
+        } else {
+            log("Closing connection to perforce server");
+            perforce.closeConnection();
         }
     }
 

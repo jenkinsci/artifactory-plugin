@@ -26,7 +26,7 @@ import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import java.io.IOException;
 
 /**
- * Subversion scm coordinator. Interacts with the {@link SvnManager} to fulfill the release process.
+ * Subversion scm coordinator. Interacts with the {@link SubversionManager} to fulfill the release process.
  *
  * @author Yossi Shaul
  */
