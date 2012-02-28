@@ -516,7 +516,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
         public List<UserPluginInfo> getStagingUserPluginInfo() {
             List<ArtifactoryServer> artifactoryServers = getArtifactoryServers();
-            return artifactoryServers.get(1).getStagingUserPluginInfo();
+            return artifactoryServers.get(0).getStagingUserPluginInfo();
         }
     }
 

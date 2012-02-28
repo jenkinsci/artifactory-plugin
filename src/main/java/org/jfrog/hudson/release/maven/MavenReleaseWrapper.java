@@ -331,7 +331,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             List<ArtifactoryServer> artifactoryServers = descriptor.getArtifactoryServers();
-            return artifactoryServers.get(1).getStagingUserPluginInfo();
+            return artifactoryServers.get(0).getStagingUserPluginInfo();
         }
     }
 
