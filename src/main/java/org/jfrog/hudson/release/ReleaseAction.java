@@ -16,11 +16,16 @@
 
 package org.jfrog.hudson.release;
 
+import com.google.common.collect.Maps;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
+import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
+import hudson.tasks.BuildWrapper;
 import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.StagingPluginSettings;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.kohsuke.stapler.StaplerRequest;
@@ -28,7 +33,9 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This action leads to execution of the release wrapper. It will collect information from the user about the release
@@ -36,9 +43,11 @@ import java.util.List;
  *
  * @author Yossi Shaul
  */
-public abstract class ReleaseAction implements Action {
+public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWithBuildWrappers,
+        W extends BuildWrapper> implements Action {
 
-    private final transient AbstractProject project;
+    protected final transient P project;
+    private Class<W> wrapperClass;
 
     protected VERSIONING versioning;
 
@@ -53,7 +62,6 @@ public abstract class ReleaseAction implements Action {
 
     Boolean pro;
 
-
     boolean createVcsTag;
     String tagUrl;
     String tagComment;
@@ -64,12 +72,34 @@ public abstract class ReleaseAction implements Action {
     boolean createReleaseBranch;
     String releaseBranch;
 
+    protected transient boolean strategyPluginExists;
+    protected transient Map stagingStrategy;
+    protected transient VersionedModule defaultGlobalModule;
+    protected transient Map<String, VersionedModule> defaultModules;
+    protected transient VcsConfig defaultVcsConfig;
+    protected transient PromotionConfig defaultPromotionConfig;
+
     public enum VERSIONING {
         GLOBAL, PER_MODULE, NONE
     }
 
-    public ReleaseAction(AbstractProject project) {
+    public ReleaseAction(P project, Class<W> wrapperClass) {
         this.project = project;
+        this.wrapperClass = wrapperClass;
+    }
+
+    public void init() throws IOException, InterruptedException {
+        StagingPluginSettings selectedStagingPluginSettings = getSelectedStagingPlugin();
+        if (selectedStagingPluginSettings != null) {
+            stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings,
+                    project.getName());
+            strategyPluginExists = (stagingStrategy != null) && !stagingStrategy.isEmpty();
+        }
+
+        prepareDefaultGlobalModule();
+        prepareDefaultModules();
+        prepareDefaultVcsSettings();
+        prepareDefaultPromotionConfig();
     }
 
     public String getIconFileName() {
@@ -144,89 +174,28 @@ public abstract class ReleaseAction implements Action {
         return getArtifactoryServer().isArtifactoryPro();
     }
 
-    protected String getBaseTagUrlAccordingToScm(String baseTagUrl) {
-        if (AbstractScmCoordinator.isSvn(project) && !baseTagUrl.endsWith("/")) {
-            return baseTagUrl + "/";
-        }
-        return baseTagUrl;
+    public String getDefaultGlobalReleaseVersion() {
+        return (defaultGlobalModule != null) ? defaultGlobalModule.getReleaseVersion() : null;
     }
 
-    public abstract String getDefaultTagUrl();
-
-    public abstract String getDefaultReleaseBranch();
-
-    public String getDefaultReleaseComment() {
-        return SubversionManager.COMMENT_PREFIX + "Release version " + calculateReleaseVersion();
+    public String getDefaultGlobalNextDevelopmentVersion() {
+        return (defaultGlobalModule != null) ? defaultGlobalModule.getNextDevelopmentVersion() : null;
     }
 
-    public String getDefaultNextDevelCommitMessage() {
-        return SubversionManager.COMMENT_PREFIX + "Next development version";
+    public Collection<VersionedModule> getDefaultModules() {
+        return defaultModules.values();
     }
 
     public boolean isGit() {
         return AbstractScmCoordinator.isGitScm(project);
     }
 
-    /**
-     * @return The release repository configured in Artifactory publisher.
-     */
-    public abstract String getDefaultStagingRepository();
-
-    public String calculateReleaseVersion() {
-        return calculateReleaseVersion(getCurrentVersion());
+    public VcsConfig getDefaultVcsConfig() {
+        return defaultVcsConfig;
     }
 
-    public abstract String getCurrentVersion();
-
-    public String calculateReleaseVersion(String fromVersion) {
-        return fromVersion.replace("-SNAPSHOT", "");
-    }
-
-    /**
-     * Calculates the next snapshot version based on the current release version
-     *
-     * @return The next calculated development (snapshot) version
-     */
-    @SuppressWarnings({"UnusedDeclaration"})
-    public String calculateNextVersion() {
-        return calculateNextVersion(calculateReleaseVersion());
-    }
-
-    /**
-     * Calculates the next snapshot version based on the current release version
-     *
-     * @param fromVersion The version to bump to next development version
-     * @return The next calculated development (snapshot) version
-     */
-    public String calculateNextVersion(String fromVersion) {
-        // first turn it to release version
-        fromVersion = calculateReleaseVersion(fromVersion);
-        String nextVersion;
-        int lastDotIndex = fromVersion.lastIndexOf('.');
-        try {
-            if (lastDotIndex != -1) {
-                // probably a major minor version e.g., 2.1.1
-                String minorVersionToken = fromVersion.substring(lastDotIndex + 1);
-                String nextMinorVersion;
-                int lastDashIndex = minorVersionToken.lastIndexOf('-');
-                if (lastDashIndex != -1) {
-                    // probably a minor-buildNum e.g., 2.1.1-4 (should change to 2.1.1-5)
-                    String buildNumber = minorVersionToken.substring(lastDashIndex + 1);
-                    int nextBuildNumber = Integer.parseInt(buildNumber) + 1;
-                    nextMinorVersion = minorVersionToken.substring(0, lastDashIndex + 1) + nextBuildNumber;
-                } else {
-                    nextMinorVersion = Integer.parseInt(minorVersionToken) + 1 + "";
-                }
-                nextVersion = fromVersion.substring(0, lastDotIndex + 1) + nextMinorVersion;
-            } else {
-                // maybe it's just a major version; try to parse as an int
-                int nextMajorVersion = Integer.parseInt(fromVersion) + 1;
-                nextVersion = nextMajorVersion + "";
-            }
-        } catch (NumberFormatException e) {
-            return fromVersion;
-        }
-        return nextVersion + "-SNAPSHOT";
+    public PromotionConfig getDefaultPromotionConfig() {
+        return defaultPromotionConfig;
     }
 
     /**
@@ -236,9 +205,6 @@ public abstract class ReleaseAction implements Action {
     public abstract List<String> getRepositoryKeys();
 
     public abstract ArtifactoryServer getArtifactoryServer();
-
-    // prefer the release repository defined in artifactory publisher
-    public abstract String lastStagingRepository();
 
     /**
      * Form submission is calling this method
@@ -280,13 +246,20 @@ public abstract class ReleaseAction implements Action {
         }
     }
 
-    /**
-     * Execute the {@link VERSIONING#PER_MODULE} strategy of the versioning mechanism, which assigns each module its own
-     * version for release and for the next development version
-     *
-     * @param req The request that is coming from the form when staging.
-     */
-    protected abstract void doPerModuleVersioning(StaplerRequest req);
+    public abstract String getReleaseVersionFor(Object moduleName);
+
+    public abstract String getNextVersionFor(Object moduleName);
+
+    protected String getDefaultNextDevelCommitMessage() {
+        return SubversionManager.COMMENT_PREFIX + "Next development version";
+    }
+
+    protected String getBaseTagUrlAccordingToScm(String baseTagUrl) {
+        if (AbstractScmCoordinator.isSvn(project) && !baseTagUrl.endsWith("/")) {
+            return baseTagUrl + "/";
+        }
+        return baseTagUrl;
+    }
 
     /**
      * Execute the {@link VERSIONING#GLOBAL} strategy of the versioning mechanism, which assigns all modules the same
@@ -299,7 +272,141 @@ public abstract class ReleaseAction implements Action {
         nextVersion = req.getParameter("nextVersion");
     }
 
-    public abstract String getReleaseVersionFor(Object moduleName);
+    protected W getWrapper() {
+        return ActionableHelper.getBuildWrapper(project, wrapperClass);
+    }
 
-    public abstract String getNextVersionFor(Object moduleName);
+    protected String calculateReleaseVersion(String fromVersion) {
+        return fromVersion.replace("-SNAPSHOT", "");
+    }
+
+    /**
+     * Calculates the next snapshot version based on the current release version
+     *
+     * @param fromVersion The version to bump to next development version
+     * @return The next calculated development (snapshot) version
+     */
+    protected String calculateNextVersion(String fromVersion) {
+        // first turn it to release version
+        fromVersion = calculateReleaseVersion(fromVersion);
+        String nextVersion;
+        int lastDotIndex = fromVersion.lastIndexOf('.');
+        try {
+            if (lastDotIndex != -1) {
+                // probably a major minor version e.g., 2.1.1
+                String minorVersionToken = fromVersion.substring(lastDotIndex + 1);
+                String nextMinorVersion;
+                int lastDashIndex = minorVersionToken.lastIndexOf('-');
+                if (lastDashIndex != -1) {
+                    // probably a minor-buildNum e.g., 2.1.1-4 (should change to 2.1.1-5)
+                    String buildNumber = minorVersionToken.substring(lastDashIndex + 1);
+                    int nextBuildNumber = Integer.parseInt(buildNumber) + 1;
+                    nextMinorVersion = minorVersionToken.substring(0, lastDashIndex + 1) + nextBuildNumber;
+                } else {
+                    nextMinorVersion = Integer.parseInt(minorVersionToken) + 1 + "";
+                }
+                nextVersion = fromVersion.substring(0, lastDotIndex + 1) + nextMinorVersion;
+            } else {
+                // maybe it's just a major version; try to parse as an int
+                int nextMajorVersion = Integer.parseInt(fromVersion) + 1;
+                nextVersion = nextMajorVersion + "";
+            }
+        } catch (NumberFormatException e) {
+            return fromVersion;
+        }
+        return nextVersion + "-SNAPSHOT";
+    }
+
+    /**
+     * Execute the {@link VERSIONING#PER_MODULE} strategy of the versioning mechanism, which assigns each module its own
+     * version for release and for the next development version
+     *
+     * @param req The request that is coming from the form when staging.
+     */
+    protected abstract void doPerModuleVersioning(StaplerRequest req);
+
+    protected abstract StagingPluginSettings getSelectedStagingPlugin();
+
+    protected abstract void prepareBuilderSpecificDefaultGlobalModule();
+
+    protected abstract void prepareBuilderSpecificDefaultModules();
+
+    protected abstract void prepareBuilderSpecificDefaultVcsConfig();
+
+    protected abstract void prepareBuilderSpecificDefaultPromotionConfig();
+
+    private void prepareDefaultGlobalModule() {
+        if (strategyPluginExists) {
+            if (stagingStrategy.containsKey("defaultModuleVersion")) {
+                Map<String, String> defaultModuleVersion =
+                        (Map<String, String>) stagingStrategy.get("defaultModuleVersion");
+                defaultGlobalModule = new VersionedModule(defaultModuleVersion.get("moduleId"),
+                        defaultModuleVersion.get("nextRelease"), defaultModuleVersion.get("nextDevelopment"));
+            }
+        }
+
+        if (defaultGlobalModule == null) {
+            prepareBuilderSpecificDefaultGlobalModule();
+        }
+    }
+
+    private void prepareDefaultModules() {
+        if (strategyPluginExists) {
+            if (stagingStrategy.containsKey("moduleVersionsMap")) {
+                Map<String, ? extends Map<String, String>> moduleVersionsMap =
+                        (Map<String, ? extends Map<String, String>>) stagingStrategy.get("moduleVersionsMap");
+                defaultModules = Maps.newHashMap();
+                if (!moduleVersionsMap.isEmpty()) {
+                    for (Map<String, String> moduleVersion : moduleVersionsMap.values()) {
+                        String moduleId = moduleVersion.get("moduleId");
+                        defaultModules.put(moduleId, new VersionedModule(moduleId, moduleVersion.get("nextRelease"),
+                                moduleVersion.get("nextDevelopment")));
+                    }
+                }
+            }
+        }
+
+        if (defaultModules == null) {
+            prepareBuilderSpecificDefaultModules();
+        }
+    }
+
+    private void prepareDefaultVcsSettings() {
+        if (strategyPluginExists) {
+            if (stagingStrategy.containsKey("vcsConfig")) {
+                Map<String, Object> vcsConfig = (Map<String, Object>) stagingStrategy.get("vcsConfig");
+                defaultVcsConfig = new VcsConfig(((Boolean) vcsConfig.get("useReleaseBranch")),
+                        getStagingConfigAsString(vcsConfig, "releaseBranchName"),
+                        ((Boolean) vcsConfig.get("createTag")),
+                        getStagingConfigAsString(vcsConfig, "tagUrlOrName"),
+                        getStagingConfigAsString(vcsConfig, "tagComment"),
+                        getStagingConfigAsString(vcsConfig, "nextDevelopmentVersionComment"));
+            }
+        }
+
+        if (defaultVcsConfig == null) {
+            prepareBuilderSpecificDefaultVcsConfig();
+        }
+    }
+
+    private void prepareDefaultPromotionConfig() {
+        if (strategyPluginExists) {
+            if (stagingStrategy.containsKey("promotionConfig")) {
+                Map<String, String> promotionConfig = (Map<String, String>) stagingStrategy.get("promotionConfig");
+                defaultPromotionConfig = new PromotionConfig(promotionConfig.get("targetRepository"),
+                        promotionConfig.get("comment"));
+            }
+        }
+
+        if (defaultPromotionConfig == null) {
+            prepareBuilderSpecificDefaultPromotionConfig();
+        }
+    }
+
+    private String getStagingConfigAsString(Map<String, Object> configMap, String key) {
+        if (configMap.containsKey(key)) {
+            return configMap.get(key).toString();
+        }
+        return null;
+    }
 }

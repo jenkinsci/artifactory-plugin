@@ -80,8 +80,9 @@ public class SubversionCoordinator extends AbstractScmCoordinator {
      *         the default message will be used.
      */
     private String getRevertTagMessage() {
-        if (StringUtils.equals(releaseAction.getTagComment(), releaseAction.getDefaultReleaseComment())) {
-            return releaseAction.getDefaultReleaseComment();
+        String tagComment = releaseAction.getDefaultVcsConfig().getTagComment();
+        if (StringUtils.equals(releaseAction.getTagComment(), tagComment)) {
+            return tagComment;
         }
         return SubversionManager.COMMENT_PREFIX + "Reverting: " + releaseAction.getTagComment();
     }

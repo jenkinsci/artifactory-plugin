@@ -17,6 +17,7 @@
 package org.jfrog.hudson.gradle;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -35,6 +36,8 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.StagingPluginSettings;
+import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.release.GradlePromoteBuildAction;
@@ -448,6 +451,32 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return true;
         }
 
+        @Override
+        public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            ArtifactoryGradleConfigurator wrapper = (ArtifactoryGradleConfigurator) super.newInstance(req, formData);
+            if (formData.has("releaseWrapper")) {
+                JSONObject releaseWrapperObject = formData.getJSONObject("releaseWrapper");
+                if (releaseWrapperObject.has("stagingPlugin")) {
+                    StagingPluginSettings settings = new StagingPluginSettings();
+                    Map<String, String> paramMap = Maps.newHashMap();
+                    JSONObject pluginSettings = releaseWrapperObject.getJSONObject("stagingPlugin");
+                    for (Object settingKey : pluginSettings.keySet()) {
+                        String key = settingKey.toString();
+                        if ("pluginName".equals(key)) {
+                            settings.setPluginName(pluginSettings.getString(key));
+                        } else {
+                            paramMap.put(key, pluginSettings.getString(key));
+                        }
+                    }
+                    if (!paramMap.isEmpty()) {
+                        settings.setParamMap(paramMap);
+                    }
+                    wrapper.getReleaseWrapper().setStagingPlugin(settings);
+                }
+            }
+            return wrapper;
+        }
+
         public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
             return FormValidations.validateEmails(value);
         }
@@ -483,6 +512,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
+        }
+
+        public List<UserPluginInfo> getStagingUserPluginInfo() {
+            List<ArtifactoryServer> artifactoryServers = getArtifactoryServers();
+            return artifactoryServers.get(1).getStagingUserPluginInfo();
         }
     }
 

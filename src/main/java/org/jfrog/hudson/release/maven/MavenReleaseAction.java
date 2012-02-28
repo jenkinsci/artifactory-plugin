@@ -23,11 +23,15 @@ import hudson.maven.ModuleName;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.StagingPluginSettings;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.PromotionConfig;
 import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.release.VcsConfig;
+import org.jfrog.hudson.release.VersionedModule;
+import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -39,8 +43,7 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-public class MavenReleaseAction extends ReleaseAction {
-    private transient final MavenModuleSet project;
+public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenReleaseWrapper> {
 
     /**
      * Map of release versions per module. Only used if versioning is per module
@@ -52,46 +55,12 @@ public class MavenReleaseAction extends ReleaseAction {
     private Map<ModuleName, String> nextVersionPerModule;
 
     public MavenReleaseAction(MavenModuleSet project) {
-        super(project);
-        this.project = project;
-    }
-
-    @SuppressWarnings({"UnusedDeclaration"})
-    public Collection<MavenModule> getModules() {
-        return project.getDisabledModules(false);
+        super(project, MavenReleaseWrapper.class);
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
     public String getDefaultVersioning() {
-        MavenReleaseWrapper wrapper = getReleaseWrapper();
-        return wrapper.getDefaultVersioning();
-    }
-
-    @Override
-    public String getDefaultReleaseBranch() {
-        MavenReleaseWrapper wrapper = getReleaseWrapper();
-        String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
-        StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
-        sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
-        return sb.toString();
-    }
-
-    @Override
-    public String getDefaultTagUrl() {
-        MavenReleaseWrapper wrapper = getReleaseWrapper();
-        String baseTagUrl = wrapper.getTagPrefix();
-        StringBuilder sb = new StringBuilder(getBaseTagUrlAccordingToScm(baseTagUrl));
-        sb.append(getRootModule().getModuleName().artifactId).append("-").append(calculateReleaseVersion());
-        return sb.toString();
-    }
-
-    @Override
-    public String getDefaultStagingRepository() {
-        ArtifactoryRedeployPublisher publisher = getPublisher();
-        if (publisher == null) {
-            return null;
-        }
-        return publisher.getRepositoryKey();
+        return getWrapper().getDefaultVersioning();
     }
 
     @Override
@@ -114,9 +83,8 @@ public class MavenReleaseAction extends ReleaseAction {
     }
 
     @Override
-    public String lastStagingRepository() {
-        ArtifactoryRedeployPublisher artifactoryPublisher = getPublisher();
-        return artifactoryPublisher != null ? artifactoryPublisher.getRepositoryKey() : null;
+    protected StagingPluginSettings getSelectedStagingPlugin() {
+        return getWrapper().getStagingPlugin();
     }
 
     @Override
@@ -163,20 +131,85 @@ public class MavenReleaseAction extends ReleaseAction {
     }
 
     @Override
-    public String getCurrentVersion() {
-        return getRootModule().getVersion();
+    protected void prepareBuilderSpecificDefaultGlobalModule() {
+        if ((project != null) && (getRootModule() != null)) {
+            String releaseVersion = calculateReleaseVersion(getRootModule().getVersion());
+            defaultGlobalModule = new VersionedModule(null, releaseVersion, calculateNextVersion(releaseVersion));
+        }
+    }
+
+    @Override
+    protected void prepareBuilderSpecificDefaultModules() {
+        defaultModules = Maps.newHashMap();
+        if (project != null) {
+            List<MavenModule> modules = project.getDisabledModules(false);
+            for (MavenModule mavenModule : modules) {
+                String version = mavenModule.getVersion();
+                String moduleName = mavenModule.getModuleName().toString();
+                defaultModules.put(moduleName, new VersionedModule(moduleName, calculateReleaseVersion(version),
+                        calculateNextVersion(version)));
+            }
+        }
+    }
+
+    @Override
+    protected void prepareBuilderSpecificDefaultVcsConfig() {
+        String defaultReleaseBranch = getDefaultReleaseBranch();
+        String defaultTagUrl = getDefaultTagUrl();
+        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch), defaultReleaseBranch,
+                StringUtils.isNotBlank(defaultTagUrl), defaultTagUrl, getDefaultTagComment(),
+                getDefaultNextDevelCommitMessage());
+    }
+
+    @Override
+    protected void prepareBuilderSpecificDefaultPromotionConfig() {
+        defaultPromotionConfig = new PromotionConfig(getDefaultStagingRepository(), null);
     }
 
     private MavenModule getRootModule() {
         return project.getRootModule();
     }
 
-    private MavenReleaseWrapper getReleaseWrapper() {
-        return ActionableHelper.getBuildWrapper(project, MavenReleaseWrapper.class);
-    }
-
     private ArtifactoryRedeployPublisher getPublisher() {
         return ActionableHelper.getPublisher(project, ArtifactoryRedeployPublisher.class);
     }
 
+    private String getDefaultReleaseBranch() {
+        MavenReleaseWrapper wrapper = getWrapper();
+        String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
+        StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
+        sb.append(getRootModule().getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
+        return sb.toString();
+    }
+
+    private String getDefaultTagUrl() {
+        MavenReleaseWrapper wrapper = getWrapper();
+        String baseTagUrl = wrapper.getTagPrefix();
+        StringBuilder sb = new StringBuilder(getBaseTagUrlAccordingToScm(baseTagUrl));
+        sb.append(getRootModule().getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
+        return sb.toString();
+    }
+
+    private String getDefaultTagComment() {
+        return SubversionManager.COMMENT_PREFIX + "Release version " + getDefaultReleaseVersion();
+    }
+
+    private String getDefaultReleaseVersion() {
+        if (VERSIONING.GLOBAL.name().equals(getDefaultVersioning())) {
+            return getDefaultGlobalReleaseVersion();
+        } else {
+            if (!defaultModules.isEmpty()) {
+                defaultModules.values().iterator().next().getReleaseVersion();
+            }
+        }
+        return "";
+    }
+
+    private String getDefaultStagingRepository() {
+        ArtifactoryRedeployPublisher publisher = getPublisher();
+        if (publisher == null) {
+            return null;
+        }
+        return publisher.getRepositoryKey();
+    }
 }

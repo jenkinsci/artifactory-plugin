@@ -16,18 +16,14 @@
 
 package org.jfrog.hudson.release.scm.perforce;
 
-import com.perforce.p4java.core.IChangelist;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
-import hudson.model.TaskListener;
-import hudson.remoting.VirtualChannel;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.util.ExtractorUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -65,7 +61,7 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
         if (modifiedFilesForReleaseVersion) {
             log("Submitting release version changes");
             labelChangeListId = currentChangeListId + "";
-            perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultReleaseComment());
+            perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultVcsConfig().getTagComment());
         } else {
             perforce.deleteChangeList(currentChangeListId);
             currentChangeListId = perforce.getDefaultChangeListId();

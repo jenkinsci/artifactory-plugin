@@ -1,3 +1,4 @@
+<!--suppress XmlUnusedNamespaceDeclaration -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:section title="${%Artifactory Configuration}">
@@ -212,6 +213,27 @@
                     <f:entry title="Alternative Gradle tasks and options"
                              help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-alternativeTasks.html">
                         <f:textbox name="alternativeTasks" value="${releaseWrapper.alternativeTasks}"/>
+                    </f:entry>
+                    <f:entry>
+                        <f:dropdownList name="stagingPlugin" title="${%Staging plugins}">
+                            <j:forEach var="stagingPlugin" items="${descriptor.stagingUserPluginInfo}" varStatus="loop">
+                                <f:dropdownListBlock value="${stagingPlugin.pluginName}"
+                                                     title="${stagingPlugin.pluginName}"
+                                                     selected="${stagingPlugin.pluginName==releaseWrapper.stagingPluginName}">
+                                    <f:nested>
+                                        <input type="hidden" name="pluginName" value="${stagingPlugin.pluginName}"/>
+                                        <j:forEach var="pluginParam" items="${stagingPlugin.pluginParams}"
+                                                   varStatus="loop">
+                                            <f:entry title="${pluginParam.key}" field="${pluginParam.key}">
+                                                <f:textbox name="${pluginParam.key}"
+                                                           default="${pluginParam.defaultValue}"
+                                                           value="${releaseWrapper.getPluginParamValue(pluginParam.key)}"/>
+                                            </f:entry>
+                                        </j:forEach>
+                                    </f:nested>
+                                </f:dropdownListBlock>
+                            </j:forEach>
+                        </f:dropdownList>
                     </f:entry>
                 </f:optionalBlock>
             </table>

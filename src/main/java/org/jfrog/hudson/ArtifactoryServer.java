@@ -32,9 +32,11 @@ import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -129,7 +131,20 @@ public class ArtifactoryServer {
         return repositoryKeys;
     }
 
-    private static class RepositoryComparator implements Comparator<String> {
+    public Map getStagingStrategy(StagingPluginSettings selectedStagingPlugin, String buildName) {
+        Credentials resolvingCredentials = getResolvingCredentials();
+        try {
+            ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                    resolvingCredentials.getPassword());
+            return client.getStagingStrategy(selectedStagingPlugin.getPluginName(), buildName,
+                    selectedStagingPlugin.getParamMap());
+        } catch (Exception e) {
+            log.log(Level.WARNING, "Failed to obtain staging strategy: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static class RepositoryComparator implements Comparator<String>, Serializable {
 
         public int compare(String o1, String o2) {
             if (o1.contains("snapshot") && !o2.contains("snapshot")) {
@@ -172,6 +187,28 @@ public class ArtifactoryServer {
             log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
         }
         return false;
+    }
+
+    public List<UserPluginInfo> getStagingUserPluginInfo() {
+        List<UserPluginInfo> infosToReturn = Lists.newArrayList();
+        Credentials resolvingCredentials = getResolvingCredentials();
+        try {
+            ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                    resolvingCredentials.getPassword());
+            Map<String, List<Map>> userPluginInfo = client.getUserPluginInfo();
+            if (userPluginInfo != null && userPluginInfo.containsKey("staging")) {
+                List<Map> stagingUserPluginInfo = userPluginInfo.get("staging");
+                if (stagingUserPluginInfo != null) {
+                    for (Map stagingPluginInfo : stagingUserPluginInfo) {
+                        infosToReturn.add(new UserPluginInfo(stagingPluginInfo));
+                    }
+
+                }
+            }
+        } catch (IOException e) {
+            log.log(Level.WARNING, "Failed to obtain user plugin info: " + e.getMessage());
+        }
+        return infosToReturn;
     }
 
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password) {

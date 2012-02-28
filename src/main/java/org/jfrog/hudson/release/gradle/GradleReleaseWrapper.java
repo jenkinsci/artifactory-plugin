@@ -23,6 +23,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.StagingPluginSettings;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -47,12 +48,13 @@ public class GradleReleaseWrapper {
     private String alternativeTasks;
     private String releasePropsKeys;
     private String nextIntegPropsKeys;
+    private StagingPluginSettings stagingPlugin;
 
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
     public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeTasks,
-                                String releasePropsKeys, String nextIntegPropsKeys) {
+            String releasePropsKeys, String nextIntegPropsKeys) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeTasks = alternativeTasks;
@@ -119,6 +121,22 @@ public class GradleReleaseWrapper {
         return stringToArray(getNextIntegPropsKeys());
     }
 
+    public StagingPluginSettings getStagingPlugin() {
+        return stagingPlugin;
+    }
+
+    public String getStagingPluginName() {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
+    }
+
+    public void setStagingPlugin(StagingPluginSettings stagingPlugin) {
+        this.stagingPlugin = stagingPlugin;
+    }
+
+    public String getPluginParamValue(String paramKey) {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(paramKey) : null;
+    }
+
     private String[] stringToArray(String commaSeparatedString) {
         commaSeparatedString = StringUtils.trimToEmpty(commaSeparatedString);
         return StringUtils.split(commaSeparatedString, ", ");
@@ -166,7 +184,7 @@ public class GradleReleaseWrapper {
     }
 
     private boolean changeProperties(AbstractBuild build, GradleReleaseAction release, boolean releaseVersion,
-                                     BuildListener listener) throws IOException, InterruptedException {
+            BuildListener listener) throws IOException, InterruptedException {
         FilePath root = build.getModuleRoot();
         debuggingLogger.fine("Root directory is: " + root.getRemote());
         String[] modules = release.getReleaseProperties();
