@@ -137,8 +137,7 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
         public String invoke(File file, VirtualChannel channel) throws IOException, InterruptedException {
             log(listener, "Opening file: '" + file.getAbsolutePath() + "' for editing");
             PerforceClient perforce = builder.build();
-            String statusMessage = perforce.editFile(currentChangeListId, file);
-            log(listener, "Got status message: '" + statusMessage + "'");
+            perforce.editFile(currentChangeListId, file);
             perforce.closeConnection();
             return null;
         }
