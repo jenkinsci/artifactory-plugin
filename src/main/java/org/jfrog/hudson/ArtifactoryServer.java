@@ -105,7 +105,12 @@ public class ArtifactoryServer {
                     resolvingCredentials.getPassword());
             repositories = client.getLocalRepositoriesKeys();
         } catch (IOException e) {
-            log.log(Level.WARNING, "Could not obtain local repositories list from '" + url + "': " + e.getMessage());
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.WARNING, "Could not obtain local repositories list from '" + url + "'", e);
+            } else {
+                log.log(Level.WARNING,
+                        "Could not obtain local repositories list from '" + url + "': " + e.getMessage());
+            }
             return Lists.newArrayList();
         }
         return repositories;
@@ -152,7 +157,12 @@ public class ArtifactoryServer {
                 }
             }));
         } catch (IOException e) {
-            log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.WARNING, "Could not obtain virtual repositories list from '" + url + "'", e);
+            } else {
+                log.log(Level.WARNING,
+                        "Could not obtain virtual repositories list from '" + url + "': " + e.getMessage());
+            }
             return Lists.newArrayList();
         }
         virtualRepositories
@@ -169,7 +179,12 @@ public class ArtifactoryServer {
             ArtifactoryVersion version = client.getVersion();
             return version.hasAddons();
         } catch (IOException e) {
-            log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.WARNING, "Could not obtain artifactory version from '" + url + "'", e);
+            } else {
+                log.log(Level.WARNING,
+                        "Could not obtain artifactory version from '" + url + "': " + e.getMessage());
+            }
         }
         return false;
     }
