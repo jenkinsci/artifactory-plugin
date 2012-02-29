@@ -31,7 +31,8 @@ public class UserPluginInfo {
     public List<UserPluginInfoParam> getPluginParams() {
         List<UserPluginInfoParam> pluginParamList = Lists.newArrayList();
         for (Map.Entry<String, String> paramEntry : pluginParams.entrySet()) {
-            pluginParamList.add(new UserPluginInfoParam(paramEntry.getKey(), paramEntry.getValue()));
+            String paramKey = paramEntry.getKey();
+            pluginParamList.add(new UserPluginInfoParam(pluginName + "." + paramKey, paramKey, paramEntry.getValue()));
         }
 
         return pluginParamList;

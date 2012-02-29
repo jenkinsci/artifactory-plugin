@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.release.maven;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
@@ -290,13 +291,21 @@ public class MavenReleaseWrapper extends BuildWrapper {
                 StagingPluginSettings settings = new StagingPluginSettings();
                 Map<String, String> paramMap = Maps.newHashMap();
                 JSONObject pluginSettings = formData.getJSONObject("stagingPlugin");
-                for (Object settingKey : pluginSettings.keySet()) {
-                    String key = settingKey.toString();
-                    if ("pluginName".equals(key)) {
-                        settings.setPluginName(pluginSettings.getString(key));
-                    } else {
-                        paramMap.put(key, pluginSettings.getString(key));
+                String pluginName = pluginSettings.getString("pluginName");
+                settings.setPluginName(pluginName);
+                Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
+                        new Predicate<String>() {
+                            public boolean apply(String input) {
+                                return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
+                            }
+                        });
+                for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
+                    String key = settingsEntry.getKey();
+                    String value = pluginSettings.getString(key);
+                    if (!StringUtils.startsWith(key, pluginName)) {
+                        key = pluginName + "." + key;
                     }
+                    paramMap.put(key, value);
                 }
                 if (!paramMap.isEmpty()) {
                     settings.setParamMap(paramMap);

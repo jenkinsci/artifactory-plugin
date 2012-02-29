@@ -224,7 +224,7 @@
                                         <input type="hidden" name="pluginName" value="${stagingPlugin.pluginName}"/>
                                         <j:forEach var="pluginParam" items="${stagingPlugin.pluginParams}"
                                                    varStatus="loop">
-                                            <f:entry title="${pluginParam.key}" field="${pluginParam.key}">
+                                            <f:entry title="${pluginParam.displayName}" field="${pluginParam.key}">
                                                 <f:textbox name="${pluginParam.key}"
                                                            default="${pluginParam.defaultValue}"
                                                            value="${releaseWrapper.getPluginParamValue(pluginParam.key)}"/>
