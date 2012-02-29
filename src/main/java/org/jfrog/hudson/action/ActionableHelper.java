@@ -123,12 +123,34 @@ public abstract class ActionableHelper {
         return null;
     }
 
-    public static Cause.UserCause getUserCause(AbstractBuild build) {
+    /**
+     * @param build The build
+     * @return The user id caused triggered the build. "anonymous" if not started by a user
+     */
+    public static String getUserCausePrincipal(AbstractBuild build) {
+        return getUserCausePrincipal(build, "anonymous");
+    }
+
+    /**
+     * @param build            The build
+     * @param defaultPrincipal Principal to return if the user who caused the id is not found
+     * @return The user id caused triggered the build of default principal if not found
+     */
+    public static String getUserCausePrincipal(AbstractBuild build, String defaultPrincipal) {
+        Cause.UserIdCause userCause = getUserCause(build);
+        String principal = defaultPrincipal;
+        if (userCause != null && userCause.getUserId() != null) {
+            principal = userCause.getUserId();
+        }
+        return principal;
+    }
+
+    private static Cause.UserIdCause getUserCause(AbstractBuild build) {
         CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
         if (action != null) {
             for (Cause cause : action.getCauses()) {
-                if (cause instanceof Cause.UserCause) {
-                    return (Cause.UserCause) cause;
+                if (cause instanceof Cause.UserIdCause) {
+                    return (Cause.UserIdCause) cause;
                 }
             }
         }
@@ -141,19 +163,6 @@ public abstract class ActionableHelper {
             return "";
         }
         return root + build.getUrl();
-    }
-
-    public static String getHudsonPrincipal(AbstractBuild build) {
-        CauseAction action = getLatestAction(build, CauseAction.class);
-        String principal = "";
-        if (action != null) {
-            for (Cause cause : action.getCauses()) {
-                if (cause instanceof Cause.UserCause) {
-                    principal = (((Cause.UserCause) cause).getUserName());
-                }
-            }
-        }
-        return principal;
     }
 
     /**

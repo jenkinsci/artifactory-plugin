@@ -59,7 +59,7 @@ import java.util.List;
 
 /**
  * {@link Publisher} for {@link hudson.maven.MavenModuleSetBuild} to deploy artifacts to Artifactory only after a build
- * is fully succeeded. `
+ * is fully succeeded.
  *
  * @author Yossi Shaul
  */

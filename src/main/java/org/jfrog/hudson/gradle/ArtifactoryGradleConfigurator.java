@@ -16,7 +16,9 @@
 
 package org.jfrog.hudson.gradle;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -29,24 +31,27 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.gradle.plugin.artifactory.extractor.GradlePluginUtils;
+import org.jfrog.gradle.plugin.artifactory.extractor.BuildInfoTask;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.StagingPluginSettings;
+import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.release.GradlePromoteBuildAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
-import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
+import org.jfrog.hudson.util.PublisherContext;
+import org.jfrog.hudson.util.ResolverContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -305,8 +310,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             } else {
                 tasks = gradleBuild.getTasks() + "";
             }
-            if (!StringUtils.contains(tasks, GradlePluginUtils.BUILD_INFO_TASK_NAME)) {
-                setTargetsField(gradleBuild, "tasks", tasks + " " + GradlePluginUtils.BUILD_INFO_TASK_NAME);
+            if (!StringUtils.contains(tasks, BuildInfoTask.BUILD_INFO_TASK_NAME)) {
+                setTargetsField(gradleBuild, "tasks", tasks + " " + BuildInfoTask.BUILD_INFO_TASK_NAME);
             }
         } else {
             listener.getLogger().println("[Warning] No Gradle build configured");
@@ -327,18 +332,35 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             serverDetails.artifactoryName, stagingRepository,
                             serverDetails.snapshotsRepositoryKey, serverDetails.downloadRepositoryKey);
                 }
-                final BuildContext context = new BuildContext(serverDetails, ArtifactoryGradleConfigurator.this,
-                        isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
-                        isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                        getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(),
-                        isDiscardBuildArtifacts(), getMatrixParams());
-                context.setArtifactsPattern(getArtifactPattern());
-                context.setIvyPattern(getIvyPattern());
-                context.setDeployIvy(isDeployIvy());
-                context.setDeployMaven(isDeployMaven());
-                context.setMaven2Compatible(isM2Compatible());
+                PublisherContext publisherContext = new PublisherContext.Builder()
+                        .artifactoryServer(getArtifactoryServer()).serverDetails(serverDetails)
+                        .deployerOverrider(ArtifactoryGradleConfigurator.this).runChecks(isRunChecks())
+                        .includePublishArtifacts(isIncludePublishArtifacts())
+                        .violationRecipients(getViolationRecipients()).scopes(getScopes())
+                        .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
+                        .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+                        .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
+                        .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
+                        .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
+                        .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
+                        .build();
+
+                ResolverContext resolverContext = null;
+                if (StringUtils.isNotBlank(serverDetails.downloadRepositoryKey)) {
+                    // Resolution server and overriding credentials are currently shared by the deployer and resolver in
+                    // the UI. So here we use the same server details and for credentials we try deployer override and
+                    // then default resolver
+                    Credentials resolverCredentials;
+                    if (isOverridingDefaultDeployer()) {
+                        resolverCredentials = getOverridingDeployerCredentials();
+                    } else {
+                        resolverCredentials = getArtifactoryServer().getResolvingCredentials();
+                    }
+                    resolverContext = new ResolverContext(getArtifactoryServer(), serverDetails, resolverCredentials);
+                }
+
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, publisherContext, resolverContext);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -430,6 +452,40 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return true;
         }
 
+        @Override
+        public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            ArtifactoryGradleConfigurator wrapper = (ArtifactoryGradleConfigurator) super.newInstance(req, formData);
+            if (formData.has("releaseWrapper")) {
+                JSONObject releaseWrapperObject = formData.getJSONObject("releaseWrapper");
+                if (releaseWrapperObject.has("stagingPlugin")) {
+                    StagingPluginSettings settings = new StagingPluginSettings();
+                    Map<String, String> paramMap = Maps.newHashMap();
+                    JSONObject pluginSettings = releaseWrapperObject.getJSONObject("stagingPlugin");
+                    String pluginName = pluginSettings.getString("pluginName");
+                    settings.setPluginName(pluginName);
+                    Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
+                            new Predicate<String>() {
+                                public boolean apply(String input) {
+                                    return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
+                                }
+                            });
+                    for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
+                        String key = settingsEntry.getKey();
+                        String value = pluginSettings.getString(key);
+                        if (!StringUtils.startsWith(key, pluginName)) {
+                            key = pluginName + "." + key;
+                        }
+                        paramMap.put(key, value);
+                    }
+                    if (!paramMap.isEmpty()) {
+                        settings.setParamMap(paramMap);
+                    }
+                    wrapper.getReleaseWrapper().setStagingPlugin(settings);
+                }
+            }
+            return wrapper;
+        }
+
         public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
             return FormValidations.validateEmails(value);
         }
@@ -465,6 +521,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
+        }
+
+        public List<UserPluginInfo> getStagingUserPluginInfo() {
+            List<ArtifactoryServer> artifactoryServers = getArtifactoryServers();
+            return artifactoryServers.get(0).getStagingUserPluginInfo();
         }
     }
 

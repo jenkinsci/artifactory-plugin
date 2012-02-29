@@ -42,13 +42,13 @@ import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
 import org.jfrog.hudson.util.PluginDependencyHelper;
+import org.jfrog.hudson.util.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -197,10 +197,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return details != null ? details.repositoryKey : null;
     }
 
-    public String getDownloadRepositoryKey() {
-        return details != null ? details.downloadRepositoryKey : null;
-    }
-
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
     }
@@ -226,14 +222,17 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
 
-        final BuildContext context = new BuildContext(getDetails(), ArtifactoryIvyFreeStyleConfigurator.this,
-                isRunChecks(), isIncludePublishArtifacts(), getViolationRecipients(), getScopes(),
-                isLicenseAutoDiscovery(), isDiscardOldBuilds(), isDeployArtifacts(),
-                getArtifactDeploymentPatterns(), !isDeployBuildInfo(), isIncludeEnvVars(), isDiscardBuildArtifacts(),
-                getMatrixParams());
-        context.setMaven2Compatible(isM2Compatible());
-        context.setArtifactsPattern(getArtifactPattern());
-        context.setIvyPattern(getIvyPattern());
+        final PublisherContext context = new PublisherContext.Builder().artifactoryServer(getArtifactoryServer())
+                .serverDetails(getDetails()).deployerOverrider(ArtifactoryIvyFreeStyleConfigurator.this)
+                .runChecks(isRunChecks()).includePublishArtifacts(isIncludePublishArtifacts())
+                .violationRecipients(getViolationRecipients()).scopes(getScopes())
+                .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
+                .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+                .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
+                .maven2Compatible(isM2Compatible()).artifactsPattern(getArtifactPattern())
+                .ivyPattern(getIvyPattern())
+                .build();
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
@@ -250,7 +249,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             public void buildEnvVars(Map<String, String> env) {
                 super.buildEnvVars(env);
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, getArtifactoryServer(), context);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

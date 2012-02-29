@@ -25,8 +25,8 @@ import hudson.model.BuildListener;
 import hudson.model.Environment;
 import hudson.model.listeners.RunListener;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.extractor.MavenExtractorEnvironment;
-import org.jfrog.hudson.util.BuildContext;
 
 import java.io.IOException;
 
@@ -49,24 +49,18 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
             };
         }
 
-        final MavenModuleSet project = (MavenModuleSet) build.getProject();
-        final ArtifactoryRedeployPublisher publisher = project.getPublishers().get(ArtifactoryRedeployPublisher.class);
-        // if the artifactory publisher is not active, return empty env.
-        if (publisher == null) {
+        MavenModuleSet project = (MavenModuleSet) build.getProject();
+
+        ArtifactoryRedeployPublisher publisher = ActionableHelper.getPublisher(project,
+                ArtifactoryRedeployPublisher.class);
+        ArtifactoryMaven3NativeConfigurator resolver = ActionableHelper.getBuildWrapper(
+                project, ArtifactoryMaven3NativeConfigurator.class);
+
+        // if the artifactory publisher and resolver are not active, return empty env.
+        if (publisher == null && resolver == null) {
             return new Environment() {
             };
         }
-        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher,
-                createBuildContextFromPublisher(publisher), listener);
-    }
-
-    private BuildContext createBuildContextFromPublisher(ArtifactoryRedeployPublisher publisher) {
-        BuildContext context = new BuildContext(publisher.getDetails(), publisher, publisher.isRunChecks(),
-                publisher.isIncludePublishArtifacts(), publisher.getViolationRecipients(), publisher.getScopes(),
-                publisher.isLicenseAutoDiscovery(), publisher.isDiscardOldBuilds(), publisher.isDeployArtifacts(),
-                publisher.getArtifactDeploymentPatterns(), !publisher.isDeployBuildInfo(),
-                publisher.isIncludeEnvVars(), publisher.isDiscardBuildArtifacts(), publisher.getMatrixParams());
-        context.setEvenIfUnstable(publisher.isEvenIfUnstable());
-        return context;
+        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher, resolver, listener);
     }
 }

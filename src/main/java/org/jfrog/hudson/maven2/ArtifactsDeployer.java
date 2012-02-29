@@ -54,7 +54,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * Deploys artifacts to Artifactory.
+ * Deploys artifacts to Artifactory. This class is used only when the Maven 3 extractor is not active.
  *
  * @author Yossi Shaul
  */

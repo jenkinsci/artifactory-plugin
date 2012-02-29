@@ -30,7 +30,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.build.client.ArtifactoryHttpClient;
+import org.jfrog.build.client.ArtifactoryVersion;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -118,7 +118,7 @@ public class ArtifactoryBuilder extends Builder {
                 client = new ArtifactoryBuildInfoClient(value, new NullLog());
             }
             client.setConnectionTimeout(10);
-            ArtifactoryHttpClient.Version version;
+            ArtifactoryVersion version;
             try {
                 version = client.verifyCompatibleArtifactoryVersion();
             } catch (UnsupportedOperationException uoe) {
@@ -126,7 +126,7 @@ public class ArtifactoryBuilder extends Builder {
             } catch (Exception e) {
                 return FormValidation.error(e.getMessage());
             }
-            return FormValidation.ok("Found Artifactory "+version.toString());
+            return FormValidation.ok("Found Artifactory " + version.toString());
         }
 
         @Override

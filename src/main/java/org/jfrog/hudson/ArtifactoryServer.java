@@ -27,13 +27,16 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryHttpClient;
+import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -133,7 +136,20 @@ public class ArtifactoryServer {
         return repositoryKeys;
     }
 
-    private static class RepositoryComparator implements Comparator<String> {
+    public Map getStagingStrategy(StagingPluginSettings selectedStagingPlugin, String buildName) {
+        Credentials resolvingCredentials = getResolvingCredentials();
+        try {
+            ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                    resolvingCredentials.getPassword());
+            return client.getStagingStrategy(selectedStagingPlugin.getPluginName(), buildName,
+                    selectedStagingPlugin.getParamMap());
+        } catch (Exception e) {
+            log.log(Level.WARNING, "Failed to obtain staging strategy: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static class RepositoryComparator implements Comparator<String>, Serializable {
 
         public int compare(String o1, String o2) {
             if (o1.contains("snapshot") && !o2.contains("snapshot")) {
@@ -175,7 +191,7 @@ public class ArtifactoryServer {
         try {
             ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, resolvingCredentials.getUsername(),
                     resolvingCredentials.getPassword(), new NullLog());
-            ArtifactoryHttpClient.Version version = client.getVersion();
+            ArtifactoryVersion version = client.getVersion();
             return version.hasAddons();
         } catch (IOException e) {
             if (log.isLoggable(Level.FINE)) {
@@ -186,6 +202,28 @@ public class ArtifactoryServer {
             }
         }
         return false;
+    }
+
+    public List<UserPluginInfo> getStagingUserPluginInfo() {
+        List<UserPluginInfo> infosToReturn = Lists.newArrayList();
+        Credentials resolvingCredentials = getResolvingCredentials();
+        try {
+            ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                    resolvingCredentials.getPassword());
+            Map<String, List<Map>> userPluginInfo = client.getUserPluginInfo();
+            if (userPluginInfo != null && userPluginInfo.containsKey("staging")) {
+                List<Map> stagingUserPluginInfo = userPluginInfo.get("staging");
+                if (stagingUserPluginInfo != null) {
+                    for (Map stagingPluginInfo : stagingUserPluginInfo) {
+                        infosToReturn.add(new UserPluginInfo(stagingPluginInfo));
+                    }
+
+                }
+            }
+        } catch (IOException e) {
+            log.log(Level.WARNING, "Failed to obtain user plugin info: " + e.getMessage());
+        }
+        return infosToReturn;
     }
 
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password) {
@@ -224,7 +262,7 @@ public class ArtifactoryServer {
     /**
      * Decides what are the preferred credentials to use for resolving the repo keys of the server
      *
-     * @return Preferred credentials for repo resolving
+     * @return Preferred credentials for repo resolving. Never null.
      */
     public Credentials getResolvingCredentials() {
         if (getResolverCredentials() != null) {

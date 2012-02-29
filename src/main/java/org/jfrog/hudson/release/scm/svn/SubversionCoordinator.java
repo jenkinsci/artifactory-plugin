@@ -26,7 +26,7 @@ import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import java.io.IOException;
 
 /**
- * Subversion scm coordinator. Interacts with the {@link SvnManager} to fulfill the release process.
+ * Subversion scm coordinator. Interacts with the {@link SubversionManager} to fulfill the release process.
  *
  * @author Yossi Shaul
  */
@@ -80,8 +80,9 @@ public class SubversionCoordinator extends AbstractScmCoordinator {
      *         the default message will be used.
      */
     private String getRevertTagMessage() {
-        if (StringUtils.equals(releaseAction.getTagComment(), releaseAction.getDefaultReleaseComment())) {
-            return releaseAction.getDefaultReleaseComment();
+        String tagComment = releaseAction.getDefaultVcsConfig().getTagComment();
+        if (StringUtils.equals(releaseAction.getTagComment(), tagComment)) {
+            return tagComment;
         }
         return SubversionManager.COMMENT_PREFIX + "Reverting: " + releaseAction.getTagComment();
     }

@@ -16,9 +16,7 @@
 
 package org.jfrog.hudson.maven3;
 
-import com.google.common.collect.Iterables;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -26,43 +24,37 @@ import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
-import hudson.model.Project;
 import hudson.model.Result;
-import hudson.remoting.Which;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.tasks.Maven;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.BuildContext;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
-import org.jfrog.hudson.util.PluginDependencyHelper;
+import org.jfrog.hudson.util.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URL;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 /**
+ * Freestyle Maven 3 configurator. Currently for publishing only.
+ *
  * @author Noam Y. Tenne
  */
 public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider {
@@ -234,25 +226,29 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             build.setResult(Result.FAILURE);
             throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
-           final BuildContext context = new BuildContext(getDetails(), ArtifactoryMaven3Configurator.this, isRunChecks(),
-                isIncludePublishArtifacts(), getViolationRecipients(), getScopes(), isLicenseAutoDiscovery(),
-                isDiscardOldBuilds(), isDeployArtifacts(), getArtifactDeploymentPatterns(), skipBuildInfoDeploy,
-                isIncludeEnvVars(), isDiscardBuildArtifacts(), getMatrixParams());
+        final PublisherContext context = new PublisherContext.Builder().artifactoryServer(artifactoryServer)
+                .serverDetails(getDetails()).deployerOverrider(ArtifactoryMaven3Configurator.this)
+                .runChecks(isRunChecks()).includePublishArtifacts(isIncludePublishArtifacts())
+                .violationRecipients(getViolationRecipients()).scopes(getScopes())
+                .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
+                .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+                .skipBuildInfoDeploy(skipBuildInfoDeploy).includeEnvVars(isIncludeEnvVars())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams()).build();
         build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, artifactoryServer, context);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
 
             @Override
-            public boolean tearDown(AbstractBuild build, BuildListener listener)
-                    throws IOException, InterruptedException {
-                if (deployBuildInfo) {
+            public boolean tearDown(AbstractBuild build, BuildListener listener) {
+                Result result = build.getResult();
+                if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
                 }
                 return true;

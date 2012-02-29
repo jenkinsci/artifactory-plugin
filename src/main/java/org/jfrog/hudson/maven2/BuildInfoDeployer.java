@@ -26,7 +26,6 @@ import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
-import hudson.model.CauseAction;
 import hudson.model.Result;
 import hudson.tasks.Fingerprinter;
 import org.apache.commons.lang.StringUtils;
@@ -61,7 +60,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Builds and deploys the build info.
+ * Builds and deploys the build info. This class is used only when the Maven 3 extractor is not active.
  *
  * @author Yossi Shaul
  */
@@ -109,15 +108,9 @@ public class BuildInfoDeployer {
         }
         infoBuilder.artifactoryPrincipal(artifactoryPrincipal);
 
-        String userCause = null;
-        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
-        if (action != null) {
-            for (Cause cause : action.getCauses()) {
-                if (cause instanceof Cause.UserCause) {
-                    userCause = ((Cause.UserCause) cause).getUserName();
-                    infoBuilder.principal(userCause);
-                }
-            }
+        String userCause = ActionableHelper.getUserCausePrincipal(build);
+        if (userCause != null) {
+            infoBuilder.principal(userCause);
         }
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);

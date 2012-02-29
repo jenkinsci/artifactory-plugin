@@ -22,13 +22,10 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
 import hudson.FilePath;
 import hudson.Util;
-import hudson.maven.MavenModuleSet;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
-import hudson.model.CauseAction;
 import hudson.model.Computer;
 import hudson.model.Run;
-import hudson.remoting.Which;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.LogRotator;
 import org.apache.commons.lang.StringUtils;
@@ -37,7 +34,6 @@ import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.build.client.ClientProperties;
-import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -45,7 +41,6 @@ import org.jfrog.hudson.release.ReleaseAction;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +56,6 @@ public class ExtractorUtils {
      * Jenkins.
      */
     public static final String EXTRACTOR_USED = "extractor.used";
-    public static final String CLASSWORLDS_CONF_KEY = "classworlds.conf";
-    public static final String MAVEN_PLUGIN_OPTS = "-Dm3plugin.lib";
 
     private ExtractorUtils() {
         // utility class
@@ -70,70 +63,21 @@ public class ExtractorUtils {
     }
 
     /**
-     * Append custom Maven opts to the existing to the already existing ones. The opt that will be appended is the
-     * location Of the plugin for the Maven process to use.
-     */
-    public static String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build) throws IOException {
-        StringBuilder mavenOpts = new StringBuilder();
-        String opts = project.getMavenOpts();
-        if (StringUtils.isNotBlank(opts)) {
-            mavenOpts.append(opts);
-        }
-        if (StringUtils.contains(mavenOpts.toString(), MAVEN_PLUGIN_OPTS)) {
-            return mavenOpts.toString();
-        }
-        File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
-        try {
-            FilePath actualDependencyDirectory =
-                    PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
-            mavenOpts.append(" ").append(MAVEN_PLUGIN_OPTS).append("=")
-                    .append(quote(actualDependencyDirectory.getRemote()));
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return mavenOpts.toString();
-    }
-
-    /**
-     * Get the VCS revision from the Jenkins build environment. The search will first be for an "SVN_REVISION" in the
-     * environment. If it is not found then a search will be for a "GIT_COMMIT".
+     * Get the VCS revision from the Jenkins build environment. The search will one of "SVN_REVISION",
+     * "GIT_COMMIT", "P4_CHANGELIST" in the environment.
      *
      * @param env Th Jenkins build environment.
-     * @return The subversion revision if found, or the git revision if found.
+     * @return The vcs revision for supported VCS
      */
     public static String getVcsRevision(Map<String, String> env) {
         String revision = env.get("SVN_REVISION");
         if (StringUtils.isBlank(revision)) {
             revision = env.get("GIT_COMMIT");
         }
-        return revision;
-    }
-
-    /**
-     * Copies a classworlds file to a temporary location either on the local filesystem or on a slave depending on the
-     * node type.
-     *
-     * @return The path of the classworlds.conf file
-     */
-    public static FilePath copyClassWorldsFile(AbstractBuild<?, ?> build, URL resource) {
-        try {
-            FilePath remoteClassworlds =
-                    build.getWorkspace().createTextTempFile("classworlds", "conf", "", false);
-            remoteClassworlds.copyFrom(resource);
-            return remoteClassworlds;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (StringUtils.isBlank(revision)) {
+            revision = env.get("P4_CHANGELIST");
         }
-    }
-
-    /**
-     * Add a custom {@code classworlds.conf} file that will be read by the Maven build. Adds an environment variable
-     * {@code classwordls.conf} with the location of the classworlds file for Maven.
-     *
-     * @return The path of the classworlds.conf file
-     */
-    public static void addCustomClassworlds(Map<String, String> env, String classworldsConfPath) {
-        env.put(CLASSWORLDS_CONF_KEY, classworldsConfPath);
+        return revision;
     }
 
     /**
@@ -142,17 +86,47 @@ public class ExtractorUtils {
      * BuildInfoConfigProperties#PROP_PROPS_FILE} for the extractor to read.
      *
      * @param env                       A map of the environment variables that are to be persisted into the
-     *                                  buildinfo.properties file. NOTE: nothing should be added to the env in this method
+     *                                  buildinfo.properties file. NOTE: nothing should be added to the env in this
+     *                                  method
      * @param build                     The build from which to get build/project related information from (e.g build
      *                                  name and build number).
      * @param selectedArtifactoryServer The Artifactory server that is to be used during the build for resolution/
      *                                  deployment
-     * @param context                   A container object for build related data.
+     * @param publisherContext          A context for publisher settings
+     * @param resolverContext           A context for resolver settings
      */
     public static ArtifactoryClientConfiguration addBuilderInfoArguments(Map<String, String> env, AbstractBuild build,
-            ArtifactoryServer selectedArtifactoryServer, BuildContext context)
+                                                                         PublisherContext publisherContext, ResolverContext resolverContext)
             throws IOException, InterruptedException {
         ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
+        addBuildRootIfNeeded(build, configuration);
+
+        if (publisherContext != null) {
+            setPublisherInfo(env, build, publisherContext, configuration);
+        }
+
+        if (resolverContext != null) {
+            setResolverInfo(configuration, resolverContext);
+        }
+
+        addEnvVars(env, build, configuration);
+        persistConfiguration(build, configuration, env);
+        return configuration;
+    }
+
+    private static void setResolverInfo(ArtifactoryClientConfiguration configuration, ResolverContext context) {
+        configuration.setTimeout(context.getServer().getTimeout());
+        configuration.resolver.setContextUrl(context.getServer().getUrl());
+        configuration.resolver.setRepoKey(context.getServerDetails().downloadRepositoryKey);
+        configuration.resolver.setUsername(context.getCredentials().getUsername());
+        configuration.resolver.setPassword(context.getCredentials().getPassword());
+    }
+
+    /**
+     * Set all the parameters relevant for publishing artifacts and build info
+     */
+    private static void setPublisherInfo(Map<String, String> env, AbstractBuild build,
+                                         PublisherContext context, ArtifactoryClientConfiguration configuration) {
         configuration.setActivateRecorder(Boolean.TRUE);
 
         String buildName = build.getProject().getDisplayName();
@@ -185,7 +159,7 @@ public class ExtractorUtils {
             configuration.info.setBuildUrl(buildUrl);
         }
 
-        String userName = "unknown";
+        String userName = null;
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
         if (parent != null) {
             String parentProject = parent.getUpstreamProject();
@@ -197,30 +171,23 @@ public class ExtractorUtils {
             userName = "auto";
         }
 
-        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
-        if (action != null) {
-            for (Cause cause : action.getCauses()) {
-                if (cause instanceof Cause.UserCause) {
-                    userName = ((Cause.UserCause) cause).getUserName();
-                }
-            }
-        }
+        userName = ActionableHelper.getUserCausePrincipal(build, userName);
+
         configuration.info.setPrincipal(userName);
         configuration.info.setAgentName("Jenkins");
         configuration.info.setAgentVersion(build.getHudsonVersion());
-        configuration.setContextUrl(selectedArtifactoryServer.getUrl());
-        configuration.setTimeout(selectedArtifactoryServer.getTimeout());
-        configuration.publisher.setRepoKey(context.getDetails().repositoryKey);
-        if (StringUtils.isNotBlank(context.getDetails().downloadRepositoryKey)) {
-            configuration.resolver.setRepoKey(context.getDetails().downloadRepositoryKey);
-        }
-        configuration.publisher.setSnapshotRepoKey(context.getDetails().snapshotsRepositoryKey);
+        ArtifactoryServer artifactoryServer = context.getArtifactoryServer();
         Credentials preferredDeployer =
-                CredentialResolver.getPreferredDeployer(context.getDeployerOverrider(), selectedArtifactoryServer);
+                CredentialResolver.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
         if (StringUtils.isNotBlank(preferredDeployer.getUsername())) {
             configuration.publisher.setUsername(preferredDeployer.getUsername());
             configuration.publisher.setPassword(preferredDeployer.getPassword());
         }
+        configuration.setTimeout(artifactoryServer.getTimeout());
+        configuration.publisher.setContextUrl(artifactoryServer.getUrl());
+        configuration.publisher.setRepoKey(context.getServerDetails().repositoryKey);
+        configuration.publisher.setSnapshotRepoKey(context.getServerDetails().snapshotsRepositoryKey);
+
         configuration.info.licenseControl.setRunChecks(context.isRunChecks());
         configuration.info.licenseControl.setIncludePublishedArtifacts(context.isIncludePublishArtifacts());
         configuration.info.licenseControl.setAutoDiscover(context.isLicenseAutoDiscovery());
@@ -268,13 +235,9 @@ public class ExtractorUtils {
                 configuration.info.setReleaseComment(comment);
             }
         }
-        addBuildRootIfNeeded(build, configuration);
         configuration.publisher.setPublishBuildInfo(!context.isSkipBuildInfoDeploy());
         configuration.setIncludeEnvVars(context.isIncludeEnvVars());
         addMatrixParams(context, configuration.publisher, env);
-        addEnvVars(env, build, configuration);
-        persistConfiguration(build, configuration, env);
-        return configuration;
     }
 
     /**
@@ -309,10 +272,11 @@ public class ExtractorUtils {
     }
 
     public static void persistConfiguration(AbstractBuild build, ArtifactoryClientConfiguration configuration,
-            Map<String, String> env) throws IOException, InterruptedException {
-        FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", "properties", "", false);
+                                            Map<String, String> env) throws IOException, InterruptedException {
+        FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", ".properties", "", false);
         configuration.setPropertiesFile(propertiesFile.getRemote());
-        env.putAll(configuration.getAllRootConfig());
+        env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());
+        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFile.getRemote());
         if (!(Computer.currentComputer() instanceof SlaveComputer)) {
             configuration.persistToPropertiesFile();
         } else {
@@ -320,7 +284,7 @@ public class ExtractorUtils {
                 Properties properties = new Properties();
                 properties.putAll(configuration.getAllRootConfig());
                 properties.putAll(configuration.getAllProperties());
-                File tempFile = File.createTempFile("buildInfo", "properties");
+                File tempFile = File.createTempFile("buildInfo", ".properties");
                 FileOutputStream stream = new FileOutputStream(tempFile);
                 try {
                     properties.store(stream, "");
@@ -334,8 +298,9 @@ public class ExtractorUtils {
         }
     }
 
-    private static void addMatrixParams(BuildContext context, ArtifactoryClientConfiguration.PublisherHandler publisher,
-            Map<String, String> env) {
+    private static void addMatrixParams(PublisherContext context,
+                                        ArtifactoryClientConfiguration.PublisherHandler publisher,
+                                        Map<String, String> env) {
         String matrixParams = context.getMatrixParams();
         if (StringUtils.isBlank(matrixParams)) {
             return;
@@ -354,10 +319,10 @@ public class ExtractorUtils {
     }
 
     private static void addEnvVars(Map<String, String> env, AbstractBuild<?, ?> build,
-            ArtifactoryClientConfiguration configuration) {
+                                   ArtifactoryClientConfiguration configuration) {
         // Write all the deploy (matrix params) properties.
         configuration.fillFromProperties(env);
-        //Add only the hudson specific environment variables
+        //Add only the jenkins specific environment variables
         MapDifference<String, String> envDifference = Maps.difference(env, System.getenv());
         Map<String, String> filteredEnvDifference = envDifference.entriesOnlyOnLeft();
         configuration.info.addBuildVariables(filteredEnvDifference);
@@ -376,17 +341,5 @@ public class ExtractorUtils {
         Map<String, String> filteredBuildVarDifferences = buildVarDifference.entriesOnlyOnLeft();
 
         configuration.info.addBuildVariables(filteredBuildVarDifferences);
-    }
-
-    /**
-     * Adds quotes around strings containing spaces.
-     */
-    private static String quote(String arg) {
-
-        if (StringUtils.isNotBlank(arg) && arg.indexOf(' ') >= 0) {
-            return "\"" + arg + "\"";
-        } else {
-            return arg;
-        }
     }
 }

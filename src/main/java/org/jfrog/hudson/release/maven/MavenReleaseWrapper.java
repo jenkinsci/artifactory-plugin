@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.release.maven;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
@@ -28,6 +29,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
@@ -35,8 +37,13 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
+import org.jfrog.hudson.ArtifactoryBuilder;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.StagingPluginSettings;
+import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -44,10 +51,12 @@ import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.jfrog.hudson.util.FormValidations;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -64,6 +73,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
     private String releaseBranchPrefix;
     private String alternativeGoals;
     private String defaultVersioning;
+    private StagingPluginSettings stagingPlugin;
 
     private transient ScmCoordinator scmCoordinator;
 
@@ -114,6 +124,22 @@ public class MavenReleaseWrapper extends BuildWrapper {
         this.defaultVersioning = defaultVersioning;
     }
 
+    public StagingPluginSettings getStagingPlugin() {
+        return stagingPlugin;
+    }
+
+    public String getStagingPluginName() {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
+    }
+
+    public void setStagingPlugin(StagingPluginSettings stagingPlugin) {
+        this.stagingPlugin = stagingPlugin;
+    }
+
+    public String getPluginParamValue(String paramKey) {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(paramKey) : null;
+    }
+
     @Override
     public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
@@ -137,6 +163,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                     ? releaseAction.getTagUrl() : null;
             boolean modified;
             try {
+                log(listener, "Changing POMs to release version");
                 modified = changeVersions(mavenBuild, releaseAction, true, vcsUrl);
             } catch (SnapshotNotAllowedException e) {
                 log(listener, "ERROR: " + e.getMessage());
@@ -176,6 +203,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                         String scmUrl = releaseAction.isCreateVcsTag() &&
                                 AbstractScmCoordinator.isSvn(build.getProject())
                                 ? scmCoordinator.getRemoteUrlForPom() : null;
+                        log(listener, "Changing POMs to next development version");
                         boolean modified = changeVersions(mavenBuild, releaseAction, false, scmUrl);
                         scmCoordinator.afterDevelopmentVersionChange(modified);
                     }
@@ -208,6 +236,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
             String pomRelativePath = StringUtils.isBlank(relativePath) ? "pom.xml" : relativePath + "/pom.xml";
             FilePath pomPath = new FilePath(moduleRoot, pomRelativePath);
             debuggingLogger.fine("Changing version of pom: " + pomPath);
+            scmCoordinator.edit(pomPath);
             modified |= pomPath.act(
                     new PomTransformer(mavenModule.getModuleName(), modulesByName, scmUrl, releaseVersion));
         }
@@ -231,6 +260,11 @@ public class MavenReleaseWrapper extends BuildWrapper {
     @Extension
     public static final class DescriptorImpl extends BuildWrapperDescriptor {
 
+        public DescriptorImpl() {
+            super(MavenReleaseWrapper.class);
+            load();
+        }
+
         /**
          * This wrapper applied to maven projects with subversion only.
          *
@@ -248,6 +282,37 @@ public class MavenReleaseWrapper extends BuildWrapper {
         @Override
         public String getDisplayName() {
             return "Enable Artifactory release management";
+        }
+
+        @Override
+        public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            MavenReleaseWrapper wrapper = (MavenReleaseWrapper) super.newInstance(req, formData);
+            if (formData.has("stagingPlugin")) {
+                StagingPluginSettings settings = new StagingPluginSettings();
+                Map<String, String> paramMap = Maps.newHashMap();
+                JSONObject pluginSettings = formData.getJSONObject("stagingPlugin");
+                String pluginName = pluginSettings.getString("pluginName");
+                settings.setPluginName(pluginName);
+                Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
+                        new Predicate<String>() {
+                            public boolean apply(String input) {
+                                return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
+                            }
+                        });
+                for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
+                    String key = settingsEntry.getKey();
+                    String value = pluginSettings.getString(key);
+                    if (!StringUtils.startsWith(key, pluginName)) {
+                        key = pluginName + "." + key;
+                    }
+                    paramMap.put(key, value);
+                }
+                if (!paramMap.isEmpty()) {
+                    settings.setParamMap(paramMap);
+                }
+                wrapper.setStagingPlugin(settings);
+            }
+            return wrapper;
         }
 
         /**
@@ -269,6 +334,13 @@ public class MavenReleaseWrapper extends BuildWrapper {
                 model.add(versioning.toString());
             }
             return model;
+        }
+
+        public List<UserPluginInfo> getStagingUserPluginInfo() {
+            ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
+                    Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
+            List<ArtifactoryServer> artifactoryServers = descriptor.getArtifactoryServers();
+            return artifactoryServers.get(0).getStagingUserPluginInfo();
         }
     }
 

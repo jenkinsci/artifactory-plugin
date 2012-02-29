@@ -23,9 +23,12 @@ import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.StagingPluginSettings;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
+import org.jfrog.hudson.release.PromotionConfig;
 import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.release.VcsConfig;
+import org.jfrog.hudson.release.VersionedModule;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.StaplerRequest;
@@ -43,9 +46,7 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-public class GradleReleaseAction extends ReleaseAction {
-
-    private final transient FreeStyleProject project;
+public class GradleReleaseAction extends ReleaseAction<FreeStyleProject, ArtifactoryGradleConfigurator> {
 
     private transient Map<String, String> releaseProps;
     private transient Map<String, String> nextIntegProps;
@@ -59,8 +60,7 @@ public class GradleReleaseAction extends ReleaseAction {
     private Map<String, String> nextVersionPerModule;
 
     public GradleReleaseAction(FreeStyleProject project) {
-        super(project);
-        this.project = project;
+        super(project, ArtifactoryGradleConfigurator.class);
     }
 
     public String[] getReleaseProperties() {
@@ -76,6 +76,7 @@ public class GradleReleaseAction extends ReleaseAction {
      * gradle.properties file.
      */
     public void init() throws IOException, InterruptedException {
+        super.init();
         FilePath workspace = getRootLocationPath(project.getSomeWorkspace());
         if (workspace == null) {
             throw new IllegalStateException("No workspace found, cannot perform staging");
@@ -117,18 +118,6 @@ public class GradleReleaseAction extends ReleaseAction {
     }
 
     /**
-     * @return The release repository configured in Artifactory publisher.
-     */
-    @Override
-    public String getDefaultStagingRepository() {
-        ArtifactoryGradleConfigurator publisher = getGradleWrapper();
-        if (publisher == null) {
-            return null;
-        }
-        return publisher.getRepositoryKey();
-    }
-
-    /**
      * @return List of target repositories for deployment (release repositories first). Called from the UI.
      */
     @Override
@@ -144,7 +133,7 @@ public class GradleReleaseAction extends ReleaseAction {
 
     @Override
     public ArtifactoryServer getArtifactoryServer() {
-        ArtifactoryGradleConfigurator configurator = getGradleWrapper();
+        ArtifactoryGradleConfigurator configurator = getWrapper();
         if (configurator != null) {
             return configurator.getArtifactoryServer();
         }
@@ -152,88 +141,8 @@ public class GradleReleaseAction extends ReleaseAction {
     }
 
     @Override
-    public String lastStagingRepository() {
-        ArtifactoryGradleConfigurator gradleWrapper = getGradleWrapper();
-        return gradleWrapper == null ? null : gradleWrapper.getRepositoryKey();
-    }
-
-    @Override
-    public String getDefaultTagUrl() {
-        String baseTagUrl = getReleaseWrapper().getTagPrefix();
-        StringBuilder sb = new StringBuilder(getBaseTagUrlAccordingToScm(baseTagUrl));
-        String releaseVersion = getFirstReleaseVersion();
-        sb.append(releaseVersion);
-        return sb.toString();
-    }
-
-    @Override
-    public String getDefaultReleaseBranch() {
-        String releaseBranchPrefix = getReleaseWrapper().getReleaseBranchPrefix();
-        StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
-        String releaseVersion = getFirstReleaseVersion();
-        sb.append(releaseVersion);
-        return sb.toString();
-    }
-
-    @Override
     public String latestVersioningSelection() {
         return VERSIONING.PER_MODULE.name();
-    }
-
-    @Override
-    public String getCurrentVersion() {
-        String version = extractNumericVersion(releaseProps.values());
-        if (StringUtils.isBlank(version)) {
-            version = extractNumericVersion(nextIntegProps.values());
-        }
-        if (StringUtils.isBlank(version)) {
-            if (!releaseProps.values().isEmpty()) {
-                version = releaseProps.values().iterator().next();
-            } else if (!nextIntegProps.values().isEmpty()) {
-                version = nextIntegProps.values().iterator().next();
-            }
-        }
-        return version;
-    }
-
-    /**
-     * Try to extract a numeric version from a collection of strings.
-     *
-     * @param versionStrings Collection of string properties.
-     * @return The version string if exists in the collection.
-     */
-    private String extractNumericVersion(Collection<String> versionStrings) {
-        if (versionStrings == null) {
-            return "";
-        }
-        for (String value : versionStrings) {
-            String releaseValue = calculateReleaseVersion(value);
-            if (!releaseValue.equals(value)) {
-                return releaseValue;
-            }
-        }
-        return "";
-    }
-
-    @Override
-    public String getDefaultReleaseComment() {
-        return SubversionManager.COMMENT_PREFIX + "Release version " + super.calculateReleaseVersion(
-                getCurrentVersion());
-    }
-
-    @Override
-    protected void doPerModuleVersioning(StaplerRequest req) {
-        releaseVersionPerModule = Maps.newHashMap();
-        nextVersionPerModule = Maps.newHashMap();
-        Enumeration params = req.getParameterNames();
-        while (params.hasMoreElements()) {
-            String key = (String) params.nextElement();
-            if (key.startsWith("release.")) {
-                releaseVersionPerModule.put(StringUtils.removeStart(key, "release."), req.getParameter(key));
-            } else if (key.startsWith("next.")) {
-                nextVersionPerModule.put(StringUtils.removeStart(key, "next."), req.getParameter(key));
-            }
-        }
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -281,15 +190,125 @@ public class GradleReleaseAction extends ReleaseAction {
         }
     }
 
-    private GradleReleaseWrapper getReleaseWrapper() {
-        return getGradleWrapper().getReleaseWrapper();
+    @Override
+    protected StagingPluginSettings getSelectedStagingPlugin() {
+        return getReleaseWrapper().getStagingPlugin();
     }
 
-    private ArtifactoryGradleConfigurator getGradleWrapper() {
-        return ActionableHelper.getBuildWrapper(project, ArtifactoryGradleConfigurator.class);
+    @Override
+    protected void doPerModuleVersioning(StaplerRequest req) {
+        releaseVersionPerModule = Maps.newHashMap();
+        nextVersionPerModule = Maps.newHashMap();
+        Enumeration params = req.getParameterNames();
+        while (params.hasMoreElements()) {
+            String key = (String) params.nextElement();
+            if (key.startsWith("release.")) {
+                releaseVersionPerModule.put(StringUtils.removeStart(key, "release."), req.getParameter(key));
+            } else if (key.startsWith("next.")) {
+                nextVersionPerModule.put(StringUtils.removeStart(key, "next."), req.getParameter(key));
+            }
+        }
+    }
+
+    @Override
+    protected void prepareBuilderSpecificDefaultGlobalModule() {
+    }
+
+    @Override
+    protected void prepareBuilderSpecificDefaultModules() {
+        defaultModules = Maps.newHashMap();
+
+        for (String releaseProperties : getReleaseProperties()) {
+            defaultModules.put(releaseProperties, new VersionedModule(releaseProperties,
+                    calculateReleaseVersion(releaseProperties), null));
+        }
+
+        for (String nextIntegProperty : getNextIntegProperties()) {
+            defaultModules.put(nextIntegProperty, new VersionedModule(nextIntegProperty,
+                    calculateReleaseVersion(nextIntegProperty), calculateNextVersion(nextIntegProperty)));
+        }
+    }
+
+    @Override
+    protected void prepareBuilderSpecificDefaultVcsConfig() {
+        String defaultReleaseBranch = getDefaultReleaseBranch();
+        String defaultTagUrl = getDefaultTagUrl();
+        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch), defaultReleaseBranch,
+                StringUtils.isNotBlank(defaultTagUrl), defaultTagUrl, getDefaultTagComment(),
+                getDefaultNextDevelCommitMessage());
+    }
+
+    @Override
+    protected void prepareBuilderSpecificDefaultPromotionConfig() {
+        defaultPromotionConfig = new PromotionConfig(getDefaultStagingRepository(), null);
+    }
+
+    private GradleReleaseWrapper getReleaseWrapper() {
+        return getWrapper().getReleaseWrapper();
+    }
+
+    private String getDefaultReleaseBranch() {
+        String releaseBranchPrefix = getReleaseWrapper().getReleaseBranchPrefix();
+        return new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix)).append(getFirstReleaseVersion())
+                .toString();
+    }
+
+    private String getDefaultTagUrl() {
+        String baseTagUrl = getReleaseWrapper().getTagPrefix();
+        return new StringBuilder(getBaseTagUrlAccordingToScm(baseTagUrl)).append(getFirstReleaseVersion()).toString();
+    }
+
+    private String getDefaultTagComment() {
+        return new StringBuilder(SubversionManager.COMMENT_PREFIX).append("Release version ")
+                .append(getFirstReleaseVersion()).toString();
     }
 
     private String getFirstReleaseVersion() {
         return super.calculateReleaseVersion(getCurrentVersion());
+    }
+
+    private String getCurrentVersion() {
+        String version = extractNumericVersion(releaseProps.values());
+        if (StringUtils.isBlank(version)) {
+            version = extractNumericVersion(nextIntegProps.values());
+        }
+        if (StringUtils.isBlank(version)) {
+            if (!releaseProps.values().isEmpty()) {
+                version = releaseProps.values().iterator().next();
+            } else if (!nextIntegProps.values().isEmpty()) {
+                version = nextIntegProps.values().iterator().next();
+            }
+        }
+        return version;
+    }
+
+    /**
+     * Try to extract a numeric version from a collection of strings.
+     *
+     * @param versionStrings Collection of string properties.
+     * @return The version string if exists in the collection.
+     */
+    private String extractNumericVersion(Collection<String> versionStrings) {
+        if (versionStrings == null) {
+            return "";
+        }
+        for (String value : versionStrings) {
+            String releaseValue = calculateReleaseVersion(value);
+            if (!releaseValue.equals(value)) {
+                return releaseValue;
+            }
+        }
+        return "";
+    }
+
+    /**
+     * @return The release repository configured in Artifactory publisher.
+     */
+    private String getDefaultStagingRepository() {
+        ArtifactoryGradleConfigurator publisher = getWrapper();
+        if (publisher == null) {
+            return null;
+        }
+        return publisher.getRepositoryKey();
     }
 }
