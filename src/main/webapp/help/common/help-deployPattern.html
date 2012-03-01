@@ -1,0 +1,11 @@
+<div>
+    New line or comma separated paths to build artifacts that will be published to Artifactory. <br/>
+    Supports Ant-style wildcards mapping to target directories. E.g.:<br/>
+    <b>**/*.zip=>winFiles</b> - Deploys all zip files under the working directory to the winFiles directory of the target
+    repository, maintaining the original relative path for each file.<br/>
+    <b>unix/*.tgz</b> - Deploys all tgz files under the unix directory to the root directory of the target repository,
+    maintaining the original relative path for each file.<br/>
+    <b>unix/**=>/ux-x64</b> - Deploys all files under the unix directory to the ux-x64 directory of the target repository,
+    as a flat list of files.<br/>
+    are target directories.
+</div>
