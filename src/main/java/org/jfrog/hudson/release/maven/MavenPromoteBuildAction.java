@@ -61,8 +61,7 @@ public class MavenPromoteBuildAction extends PromoteBuildAction {
     protected Credentials getCredentials(ArtifactoryServer server) {
         ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
                 getBuild().getProject(), ArtifactoryRedeployPublisher.class);
-        Credentials deployer = CredentialResolver.getPreferredDeployer(artifactoryPublisher, server);
-        return deployer;
+        return CredentialResolver.getPreferredDeployer(artifactoryPublisher, server);
     }
 
     @Override

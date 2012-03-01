@@ -1,39 +1,70 @@
 <!-- displays a form to choose the repository to promote the build to -->
+<!--suppress XmlUnusedNamespaceDeclaration -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <l:layout>
         <l:main-panel>
             <f:form method="post" action="submit">
                 <f:section title="Artifactory Pro Release Promotion">
-                    <f:entry title="${%Target status}" field="targetStatus"
-                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-targetStatus.html">
-                        <select class="setting-input" name="targetStatus">
-                            <j:forEach var="r" items="${it.targetStatuses}">
-                                <f:option selected="${r==it.nextLogicalStatus}" value="${r}">${r}</f:option>
-                            </j:forEach>
-                        </select>
-                    </f:entry>
-                    <f:entry title="${%Comment}" field="comment">
-                        <f:textarea name="comment"/>
-                    </f:entry>
-                    <f:entry title="${%Target promotion repository}" field="repositoryKey"
-                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-promotionRepository.html">
-                        <select class="setting-input" name="repositoryKey">
-                            <j:forEach var="r" items="${it.repositoryKeys}">
-                                <f:option selected="${r==it.lastPromotionRepository}" value="${r}">${r}</f:option>
-                            </j:forEach>
-                        </select>
-                    </f:entry>
-                    <f:entry field="includeDependencies"
-                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-includeDependencies.html">
-                        <f:checkbox default="false" name="includeDependencies"/>
-                        <label class="attach-previous">${%Include dependencies}</label>
-                    </f:entry>
-                    <f:entry field="useCopy"
-                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-useCopy.html">
-                        <f:checkbox default="false" name="useCopy"/>
-                        <label class="attach-previous">${%Use copy}</label>
-                    </f:entry>
+                    <f:dropdownList name="promotionPlugin" title="${%Promotion plugins}"
+                                    help="/plugin/artifactory/help/release/ReleaseAction/help-promotionPlugin.html">
+                        <j:forEach var="promotionPlugin" items="${it.promotionsUserPluginInfo}" varStatus="loop">
+                            <f:dropdownListBlock value="${promotionPlugin.pluginName}"
+                                                 title="${promotionPlugin.pluginName}">
+                                <f:nested>
+                                    <j:choose>
+                                        <j:when test="${promotionPlugin.pluginName == 'None'}">
+                                            <f:entry title="${%Target status}" field="targetStatus"
+                                                     help="/plugin/artifactory/help/release/PromoteBuildAction/help-targetStatus.html">
+                                                <select class="setting-input" name="targetStatus">
+                                                    <j:forEach var="r" items="${it.targetStatuses}">
+                                                        <f:option selected="${r==it.nextLogicalStatus}"
+                                                                  value="${r}">${r}
+                                                        </f:option>
+                                                    </j:forEach>
+                                                </select>
+                                            </f:entry>
+                                            <f:entry title="${%Comment}" field="comment">
+                                                <f:textarea name="comment"/>
+                                            </f:entry>
+                                            <f:entry title="${%Target promotion repository}" field="repositoryKey"
+                                                     help="/plugin/artifactory/help/release/PromoteBuildAction/help-promotionRepository.html">
+                                                <select class="setting-input" name="repositoryKey">
+                                                    <j:forEach var="r" items="${it.repositoryKeys}">
+                                                        <f:option selected="${r==it.lastPromotionRepository}"
+                                                                  value="${r}">${r}
+                                                        </f:option>
+                                                    </j:forEach>
+                                                </select>
+                                            </f:entry>
+                                            <f:entry field="includeDependencies"
+                                                     help="/plugin/artifactory/help/release/PromoteBuildAction/help-includeDependencies.html">
+                                                <f:checkbox default="false" name="includeDependencies"/>
+                                                <label class="attach-previous">${%Include dependencies}</label>
+                                            </f:entry>
+                                            <f:entry field="useCopy"
+                                                     help="/plugin/artifactory/help/release/PromoteBuildAction/help-useCopy.html">
+                                                <f:checkbox default="false" name="useCopy"/>
+                                                <label class="attach-previous">${%Use copy}</label>
+                                            </f:entry>
+                                        </j:when>
+                                        <j:otherwise>
+                                            <input type="hidden" name="pluginName"
+                                                   value="${promotionPlugin.pluginName}"/>
+                                            <j:forEach var="pluginParam" items="${promotionPlugin.pluginParams}"
+                                                       varStatus="loop">
+                                                <f:entry title="${pluginParam.key}" field="${pluginParam.key}">
+                                                    <f:textbox name="${pluginParam.key}"
+                                                               default="${pluginParam.defaultValue}"
+                                                               value="${instance.getPluginParamValue(promotionPlugin.pluginName, pluginParam.key)}"/>
+                                                </f:entry>
+                                            </j:forEach>
+                                        </j:otherwise>
+                                    </j:choose>
+                                </f:nested>
+                            </f:dropdownListBlock>
+                        </j:forEach>
+                    </f:dropdownList>
                     <tr>
                         <td colspan="3">
                             <f:submit value="${%Update}"/>

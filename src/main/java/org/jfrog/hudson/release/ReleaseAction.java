@@ -24,7 +24,8 @@ import hudson.model.Cause;
 import hudson.tasks.BuildWrapper;
 import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.StagingPluginSettings;
+import org.jfrog.hudson.PluginSettings;
+import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
@@ -89,8 +90,9 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     }
 
     public void init() throws IOException, InterruptedException {
-        StagingPluginSettings selectedStagingPluginSettings = getSelectedStagingPlugin();
-        if (selectedStagingPluginSettings != null) {
+        PluginSettings selectedStagingPluginSettings = getSelectedStagingPlugin();
+        if ((selectedStagingPluginSettings != null) &&
+                !UserPluginInfo.NO_PLUGIN_KEY.equals(selectedStagingPluginSettings.getPluginName())) {
             stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings,
                     project.getName());
             strategyPluginExists = (stagingStrategy != null) && !stagingStrategy.isEmpty();
@@ -325,7 +327,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
      */
     protected abstract void doPerModuleVersioning(StaplerRequest req);
 
-    protected abstract StagingPluginSettings getSelectedStagingPlugin();
+    protected abstract PluginSettings getSelectedStagingPlugin();
 
     protected abstract void prepareBuilderSpecificDefaultGlobalModule();
 

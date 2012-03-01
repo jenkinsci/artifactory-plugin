@@ -15,7 +15,9 @@
 
 package org.jfrog.hudson.release;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildBadgeAction;
 import hudson.model.TaskAction;
@@ -26,6 +28,7 @@ import hudson.security.ACL;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -33,6 +36,8 @@ import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.PluginSettings;
+import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.StaplerRequest;
@@ -42,6 +47,7 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This badge action is added to a successful staged builds. It allows performing additional promotion.
@@ -56,6 +62,7 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
     private String comment;
     private boolean useCopy;
     private boolean includeDependencies;
+    private PluginSettings promotionPlugin;
 
     public PromoteBuildAction(AbstractBuild build) {
         this.build = build;
@@ -81,11 +88,6 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
         return getACL().hasPermission(getPermission());
     }
 
-    @Override
-    protected ACL getACL() {
-        return build.getACL();
-    }
-
     public AbstractBuild getBuild() {
         return build;
     }
@@ -108,6 +110,18 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
 
     public void setIncludeDependencies(boolean includeDependencies) {
         this.includeDependencies = includeDependencies;
+    }
+
+    public String getPromotionPluginName() {
+        return (promotionPlugin != null) ? promotionPlugin.getPluginName() : null;
+    }
+
+    public void setPromotionPlugin(PluginSettings promotionPlugin) {
+        this.promotionPlugin = promotionPlugin;
+    }
+
+    public String getPluginParamValue(String pluginName, String paramKey) {
+        return (promotionPlugin != null) ? promotionPlugin.getPluginParamValue(pluginName, paramKey) : null;
     }
 
     /**
@@ -137,10 +151,6 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
         req.getView(this, chooseAction()).forward(req, resp);
     }
 
-    private synchronized String chooseAction() {
-        return workerThread == null ? "form.jelly" : "progress.jelly";
-    }
-
     /**
      * Form submission is calling this method
      */
@@ -149,6 +159,32 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
         getACL().checkPermission(getPermission());
 
         req.bindParameters(this);
+
+        JSONObject formData = req.getSubmittedForm();
+        if (formData.has("promotionPlugin")) {
+            JSONObject pluginSettings = formData.getJSONObject("promotionPlugin");
+            String pluginName = pluginSettings.getString("pluginName");
+            if (!UserPluginInfo.NO_PLUGIN_KEY.equals(pluginName)) {
+                PluginSettings settings = new PluginSettings();
+                Map<String, String> paramMap = Maps.newHashMap();
+                settings.setPluginName(pluginName);
+                Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
+                        new Predicate<String>() {
+                            public boolean apply(String input) {
+                                return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
+                            }
+                        });
+                for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
+                    String key = settingsEntry.getKey();
+                    paramMap.put(key, pluginSettings.getString(key));
+                }
+                if (!paramMap.isEmpty()) {
+                    settings.setParamMap(paramMap);
+                }
+                setPromotionPlugin(settings);
+            }
+        }
+
         ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
                 build.getProject(), ArtifactoryRedeployPublisher.class);
         ArtifactoryServer server = getArtifactoryServer();
@@ -156,6 +192,10 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
         new PromoteWorkerThread(server, getCredentials(server)).start();
 
         resp.sendRedirect(".");
+    }
+
+    public List<UserPluginInfo> getPromotionsUserPluginInfo() {
+        return getArtifactoryServer().getPromotionsUserPluginInfo();
     }
 
     /**
@@ -169,6 +209,14 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
      */
     protected abstract Credentials getCredentials(ArtifactoryServer server);
 
+    @Override
+    protected ACL getACL() {
+        return build.getACL();
+    }
+
+    private synchronized String chooseAction() {
+        return workerThread == null ? "form.jelly" : "progress.jelly";
+    }
 
     /**
      * The thread that performs the promotion asynchronously.
@@ -198,25 +246,12 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
 
                 client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword());
 
-                // do a dry run first
-                PromotionBuilder promotionBuilder = new PromotionBuilder()
-                        .status(targetStatus)
-                        .comment(comment)
-                        .ciUser(ciUser)
-                        .targetRepo(repositoryKey)
-                        .dependencies(includeDependencies)
-                        .copy(useCopy)
-                        .dryRun(true);
-                listener.getLogger().println("Performing dry run promotion (no changes are made during dry run) ...");
-                HttpResponse dryResponse = client.stageBuild(build.getParent().getDisplayName(),
-                        build.getNumber() + "", promotionBuilder.build());
-                if (checkSuccess(dryResponse, true, listener)) {
-                    listener.getLogger().println("Dry run finished successfully.\nPerforming promotion ...");
-                    HttpResponse wetResponse = client.stageBuild(build.getParent().getDisplayName(),
-                            build.getNumber() + "", promotionBuilder.dryRun(false).build());
-                    if (checkSuccess(wetResponse, false, listener)) {
-                        listener.getLogger().println("Promotion completed successfully!");
-                    }
+                if ((promotionPlugin != null) &&
+                        !UserPluginInfo.NO_PLUGIN_KEY.equals(promotionPlugin.getPluginName())) {
+                    handlePluginPromotion(listener, client);
+                } else {
+                    handleStandardPromotion(listener, client);
+
                 }
 
                 build.save();
@@ -236,48 +271,94 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
             }
         }
 
+        private void handlePluginPromotion(TaskListener listener, ArtifactoryBuildInfoClient client)
+                throws IOException {
+            String buildName = build.getParent().getDisplayName();
+            String buildNumber = build.getNumber() + "";
+            HttpResponse pluginPromotionResponse = client.executePromotionUserPlugin(
+                    promotionPlugin.getPluginName(), buildName, buildNumber, promotionPlugin.getParamMap());
+            if (checkSuccess(pluginPromotionResponse, false, false, listener)) {
+                listener.getLogger().println("Promotion completed successfully!");
+            }
+        }
+
+        private void handleStandardPromotion(TaskListener listener, ArtifactoryBuildInfoClient client)
+                throws IOException {
+            // do a dry run first
+            PromotionBuilder promotionBuilder = new PromotionBuilder()
+                    .status(targetStatus)
+                    .comment(comment)
+                    .ciUser(ciUser)
+                    .targetRepo(repositoryKey)
+                    .dependencies(includeDependencies)
+                    .copy(useCopy)
+                    .dryRun(true);
+            listener.getLogger()
+                    .println("Performing dry run promotion (no changes are made during dry run) ...");
+            String buildName = build.getParent().getDisplayName();
+            String buildNumber = build.getNumber() + "";
+            HttpResponse dryResponse = client.stageBuild(buildName, buildNumber, promotionBuilder.build());
+            if (checkSuccess(dryResponse, true, true, listener)) {
+                listener.getLogger().println("Dry run finished successfully.\nPerforming promotion ...");
+                HttpResponse wetResponse = client.stageBuild(buildName,
+                        buildNumber, promotionBuilder.dryRun(false).build());
+                if (checkSuccess(wetResponse, false, true, listener)) {
+                    listener.getLogger().println("Promotion completed successfully!");
+                }
+            }
+        }
+
         /**
          * Checks the status and return true on success
          *
          * @param response
          * @param dryRun
+         * @param parseMessages
          * @param listener
          * @return
          */
-        private boolean checkSuccess(HttpResponse response, boolean dryRun, TaskListener listener) {
+        private boolean checkSuccess(HttpResponse response, boolean dryRun, boolean parseMessages,
+                TaskListener listener) {
             StatusLine status = response.getStatusLine();
             try {
                 String content = entityToString(response);
-                if (status.getStatusCode() != 200) {
-                    if (dryRun) {
-                        listener.error(
-                                "Promotion failed during dry run (no change in Artifactory was done): " + status +
-                                        "\n" + content);
-                    } else {
-                        listener.error(
-                                "Promotion failed. View Artifactory logs for more details: " + status + "\n" + content);
+                if (assertResponseStatus(dryRun, listener, status, content)) {
+                    if (parseMessages) {
+                        JSONObject json = JSONObject.fromObject(content);
+                        JSONArray messages = json.getJSONArray("messages");
+                        for (Object messageObj : messages) {
+                            JSONObject messageJson = (JSONObject) messageObj;
+                            String level = messageJson.getString("level");
+                            String message = messageJson.getString("message");
+                            // TODO: we don't want to fail if no items were moved/copied. find a way to support it
+                            if ((level.equals("WARNING") || level.equals("ERROR")) &&
+                                    !message.startsWith("No items were")) {
+                                listener.error("Received " + level + ": " + message);
+                                return false;
+                            }
+                        }
                     }
-                    return false;
+                    return true;
                 }
-
-                JSONObject json = JSONObject.fromObject(content);
-                JSONArray messages = json.getJSONArray("messages");
-                for (Object messageObj : messages) {
-                    JSONObject messageJson = (JSONObject) messageObj;
-                    String level = messageJson.getString("level");
-                    String message = messageJson.getString("message");
-                    // TODO: we don't want to fail if no items were moved/copied. find a way to support it
-                    if ((level.equals("WARNING") || level.equals("ERROR")) &&
-                            !message.startsWith("No items were")) {
-                        listener.error("Received " + level + ": " + message);
-                        return false;
-                    }
-                }
-                return true;
             } catch (IOException e) {
                 e.printStackTrace(listener.error("Failed parsing promotion response:"));
+            }
+            return false;
+        }
+
+        private boolean assertResponseStatus(boolean dryRun, TaskListener listener, StatusLine status, String content) {
+            if (status.getStatusCode() != 200) {
+                if (dryRun) {
+                    listener.error(
+                            "Promotion failed during dry run (no change in Artifactory was done): " + status +
+                                    "\n" + content);
+                } else {
+                    listener.error(
+                            "Promotion failed. View Artifactory logs for more details: " + status + "\n" + content);
+                }
                 return false;
             }
+            return true;
         }
 
         private String entityToString(HttpResponse response) throws IOException {

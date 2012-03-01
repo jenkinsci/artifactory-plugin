@@ -23,7 +23,7 @@ import hudson.maven.ModuleName;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.StagingPluginSettings;
+import org.jfrog.hudson.PluginSettings;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.PromotionConfig;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -83,7 +83,7 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
     }
 
     @Override
-    protected StagingPluginSettings getSelectedStagingPlugin() {
+    protected PluginSettings getSelectedStagingPlugin() {
         return getWrapper().getStagingPlugin();
     }
 

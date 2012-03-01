@@ -42,7 +42,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.StagingPluginSettings;
+import org.jfrog.hudson.PluginSettings;
 import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -73,7 +73,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
     private String releaseBranchPrefix;
     private String alternativeGoals;
     private String defaultVersioning;
-    private StagingPluginSettings stagingPlugin;
+    private PluginSettings stagingPlugin;
 
     private transient ScmCoordinator scmCoordinator;
 
@@ -124,7 +124,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
         this.defaultVersioning = defaultVersioning;
     }
 
-    public StagingPluginSettings getStagingPlugin() {
+    public PluginSettings getStagingPlugin() {
         return stagingPlugin;
     }
 
@@ -132,12 +132,12 @@ public class MavenReleaseWrapper extends BuildWrapper {
         return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
     }
 
-    public void setStagingPlugin(StagingPluginSettings stagingPlugin) {
+    public void setStagingPlugin(PluginSettings stagingPlugin) {
         this.stagingPlugin = stagingPlugin;
     }
 
-    public String getPluginParamValue(String paramKey) {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(paramKey) : null;
+    public String getPluginParamValue(String pluginName, String paramKey) {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(pluginName, paramKey) : null;
     }
 
     @Override
@@ -288,7 +288,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
         public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             MavenReleaseWrapper wrapper = (MavenReleaseWrapper) super.newInstance(req, formData);
             if (formData.has("stagingPlugin")) {
-                StagingPluginSettings settings = new StagingPluginSettings();
+                PluginSettings settings = new PluginSettings();
                 Map<String, String> paramMap = Maps.newHashMap();
                 JSONObject pluginSettings = formData.getJSONObject("stagingPlugin");
                 String pluginName = pluginSettings.getString("pluginName");
@@ -301,11 +301,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                         });
                 for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
                     String key = settingsEntry.getKey();
-                    String value = pluginSettings.getString(key);
-                    if (!StringUtils.startsWith(key, pluginName)) {
-                        key = pluginName + "." + key;
-                    }
-                    paramMap.put(key, value);
+                    paramMap.put(key, pluginSettings.getString(key));
                 }
                 if (!paramMap.isEmpty()) {
                     settings.setParamMap(paramMap);

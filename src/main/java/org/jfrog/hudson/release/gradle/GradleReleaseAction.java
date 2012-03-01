@@ -23,7 +23,7 @@ import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.StagingPluginSettings;
+import org.jfrog.hudson.PluginSettings;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
 import org.jfrog.hudson.release.PromotionConfig;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -191,7 +191,7 @@ public class GradleReleaseAction extends ReleaseAction<FreeStyleProject, Artifac
     }
 
     @Override
-    protected StagingPluginSettings getSelectedStagingPlugin() {
+    protected PluginSettings getSelectedStagingPlugin() {
         return getReleaseWrapper().getStagingPlugin();
     }
 

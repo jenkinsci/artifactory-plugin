@@ -36,8 +36,8 @@ import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.PluginSettings;
 import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.StagingPluginSettings;
 import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
@@ -458,7 +458,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             if (formData.has("releaseWrapper")) {
                 JSONObject releaseWrapperObject = formData.getJSONObject("releaseWrapper");
                 if (releaseWrapperObject.has("stagingPlugin")) {
-                    StagingPluginSettings settings = new StagingPluginSettings();
+                    PluginSettings settings = new PluginSettings();
                     Map<String, String> paramMap = Maps.newHashMap();
                     JSONObject pluginSettings = releaseWrapperObject.getJSONObject("stagingPlugin");
                     String pluginName = pluginSettings.getString("pluginName");
@@ -471,11 +471,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             });
                     for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
                         String key = settingsEntry.getKey();
-                        String value = pluginSettings.getString(key);
-                        if (!StringUtils.startsWith(key, pluginName)) {
-                            key = pluginName + "." + key;
-                        }
-                        paramMap.put(key, value);
+                        paramMap.put(key, pluginSettings.getString(key));
                     }
                     if (!paramMap.isEmpty()) {
                         settings.setParamMap(paramMap);

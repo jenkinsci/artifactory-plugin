@@ -21,16 +21,17 @@
         <f:select/>
     </f:entry>
     <f:entry>
-        <f:dropdownList name="stagingPlugin" title="${%Staging plugins}">
+        <f:dropdownList name="stagingPlugin" title="${%Staging plugins}"
+                        help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
             <j:forEach var="stagingPlugin" items="${descriptor.stagingUserPluginInfo}" varStatus="loop">
                 <f:dropdownListBlock value="${stagingPlugin.pluginName}" title="${stagingPlugin.pluginName}"
                                      selected="${stagingPlugin.pluginName==instance.stagingPluginName}">
                     <f:nested>
                         <input type="hidden" name="pluginName" value="${stagingPlugin.pluginName}"/>
                         <j:forEach var="pluginParam" items="${stagingPlugin.pluginParams}" varStatus="loop">
-                            <f:entry title="${pluginParam.displayName}" field="${pluginParam.key}">
+                            <f:entry title="${pluginParam.key}" field="${pluginParam.key}">
                                 <f:textbox name="${pluginParam.key}" default="${pluginParam.defaultValue}"
-                                           value="${instance.getPluginParamValue(pluginParam.key)}"/>
+                                           value="${instance.getPluginParamValue(stagingPlugin.pluginName, pluginParam.key)}"/>
                             </f:entry>
                         </j:forEach>
                     </f:nested>

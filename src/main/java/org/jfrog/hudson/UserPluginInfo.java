@@ -11,8 +11,12 @@ import java.util.Map;
  */
 public class UserPluginInfo {
 
+    public static final String NO_PLUGIN_KEY = "None";
+
     private String pluginName;
     private Map<String, String> pluginParams;
+
+    public static final UserPluginInfo NO_PLUGIN = new UserPluginInfo(NO_PLUGIN_KEY);
 
     public UserPluginInfo(Map stagingPluginInfo) {
         pluginName = stagingPluginInfo.get("name").toString();
@@ -24,6 +28,11 @@ public class UserPluginInfo {
         }
     }
 
+    private UserPluginInfo(String name) {
+        pluginName = name;
+        pluginParams = Maps.newHashMap();
+    }
+
     public String getPluginName() {
         return pluginName;
     }
@@ -32,9 +41,13 @@ public class UserPluginInfo {
         List<UserPluginInfoParam> pluginParamList = Lists.newArrayList();
         for (Map.Entry<String, String> paramEntry : pluginParams.entrySet()) {
             String paramKey = paramEntry.getKey();
-            pluginParamList.add(new UserPluginInfoParam(pluginName + "." + paramKey, paramKey, paramEntry.getValue()));
+            pluginParamList.add(new UserPluginInfoParam(paramKey, paramEntry.getValue()));
         }
 
         return pluginParamList;
+    }
+
+    public void addParam(String key, String value) {
+        pluginParams.put(key, value);
     }
 }

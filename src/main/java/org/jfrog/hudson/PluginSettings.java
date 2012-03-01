@@ -5,17 +5,17 @@ import java.util.Map;
 /**
  * @author Noam Y. Tenne
  */
-public class StagingPluginSettings {
+public class PluginSettings {
 
     private String pluginName;
     private Map<String, String> paramMap;
 
-    public StagingPluginSettings(String pluginName, Map<String, String> paramMap) {
+    public PluginSettings(String pluginName, Map<String, String> paramMap) {
         this.pluginName = pluginName;
         this.paramMap = paramMap;
     }
 
-    public StagingPluginSettings() {
+    public PluginSettings() {
     }
 
     public String getPluginName() {
@@ -39,7 +39,10 @@ public class StagingPluginSettings {
         return pluginName;
     }
 
-    public String getPluginParamValue(String paramKey) {
+    public String getPluginParamValue(String pluginName, String paramKey) {
+        if (!pluginName.equals(this.pluginName)) {
+            return null;
+        }
         return (paramMap != null) ? paramMap.get(paramKey) : null;
     }
 }
