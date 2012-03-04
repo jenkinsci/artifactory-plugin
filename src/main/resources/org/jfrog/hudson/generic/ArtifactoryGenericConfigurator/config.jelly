@@ -39,7 +39,7 @@
         <f:block>
             <table style="width:100%">
                     <f:entry title="Edit Published Artifacts" field="deployPattern" help="/plugin/artifactory/help/common/help-deployPattern.html">
-                        <f:textbox value="${instance.deployPattern}" />
+                        <f:textarea value="${instance.deployPattern}" />
                     </f:entry>
                     <f:entry title="Deployment properties" field="matrixParams" help="/plugin/artifactory/help/common/help-matrixParams.html">
                         <f:textbox value="${instance.matrixParams}"/>
@@ -57,38 +57,6 @@
                         <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
                         <label class="attach-previous">${%Include all environment variables}</label>
                     </f:entry>
-                    <f:block>
-                                            <table style="width:100%">
-                                                <f:optionalBlock name="runChecks"
-                                                                 checked="${instance.runChecks}"
-                                                                 title="Run license checks (requires Artifactory Pro)"
-                                                                 inline="true"
-                                                                 help="/plugin/artifactory/help/common/help-runChecks.html">
-                                                    <f:entry title="${%Send license violation notifications to: }"
-                                                             field="violationRecipients"
-                                                             help="/plugin/artifactory/help/common/help-sendViolationNotification.html"
-                                                             description="Space-separated list of recipient addresses.">
-                                                        <f:textbox value="${instance.violationRecipients}"/>
-                                                    </f:entry>
-                                                    <f:entry title="${%Limit checks to the following scopes: }"
-                                                             help="/plugin/artifactory/help/common/help-scopes.html"
-                                                             field="scopes"
-                                                             description="Space-separated list of scopes.">
-                                                        <f:textbox value="${instance.scopes}"/>
-                                                    </f:entry>
-                                                    <f:entry field="includePublishArtifacts"
-                                                             help="/plugin/artifactory/help/common/help-includePublishArtifacts.html">
-                                                        <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
-                                                        <label class="attach-previous">${%Include published artifacts}</label>
-                                                    </f:entry>
-                                                    <f:entry field="disableLicenseAutoDiscovery"
-                                                             help="/plugin/artifactory/help/common/help-licenseAutoDiscovery.html">
-                                                        <f:checkbox default="false" checked="${instance.disableLicenseAutoDiscovery}"/>
-                                                        <label class="attach-previous">${%Disable automatic license discovery}</label>
-                                                    </f:entry>
-                                                </f:optionalBlock>
-                                            </table>
-                                        </f:block>
                     <f:optionalBlock name="discardOldBuilds"
                                      checked="${instance.discardOldBuilds}"
                                      title="Discard old builds from Artifactory (requires Artifactory Pro)"
