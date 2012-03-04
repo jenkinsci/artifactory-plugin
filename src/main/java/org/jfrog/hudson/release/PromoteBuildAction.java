@@ -163,25 +163,27 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
         JSONObject formData = req.getSubmittedForm();
         if (formData.has("promotionPlugin")) {
             JSONObject pluginSettings = formData.getJSONObject("promotionPlugin");
-            String pluginName = pluginSettings.getString("pluginName");
-            if (!UserPluginInfo.NO_PLUGIN_KEY.equals(pluginName)) {
-                PluginSettings settings = new PluginSettings();
-                Map<String, String> paramMap = Maps.newHashMap();
-                settings.setPluginName(pluginName);
-                Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
-                        new Predicate<String>() {
-                            public boolean apply(String input) {
-                                return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
-                            }
-                        });
-                for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
-                    String key = settingsEntry.getKey();
-                    paramMap.put(key, pluginSettings.getString(key));
+            if (pluginSettings.has("pluginName")) {
+                String pluginName = pluginSettings.getString("pluginName");
+                if (!UserPluginInfo.NO_PLUGIN_KEY.equals(pluginName)) {
+                    PluginSettings settings = new PluginSettings();
+                    Map<String, String> paramMap = Maps.newHashMap();
+                    settings.setPluginName(pluginName);
+                    Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
+                            new Predicate<String>() {
+                                public boolean apply(String input) {
+                                    return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
+                                }
+                            });
+                    for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
+                        String key = settingsEntry.getKey();
+                        paramMap.put(key, pluginSettings.getString(key));
+                    }
+                    if (!paramMap.isEmpty()) {
+                        settings.setParamMap(paramMap);
+                    }
+                    setPromotionPlugin(settings);
                 }
-                if (!paramMap.isEmpty()) {
-                    settings.setParamMap(paramMap);
-                }
-                setPromotionPlugin(settings);
             }
         }
 
