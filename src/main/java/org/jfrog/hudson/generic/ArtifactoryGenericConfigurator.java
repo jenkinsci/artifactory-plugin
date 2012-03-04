@@ -13,11 +13,11 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.Build;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
@@ -36,7 +36,8 @@ import java.util.Set;
  *
  * @author Shay Yaakov
  */
-public class ArtifactoryGenericConfigurator extends BuildWrapper implements DeployerOverrider {
+public class ArtifactoryGenericConfigurator extends BuildWrapper implements DeployerOverrider,
+        BuildInfoAwareConfigurator {
 
     private final ServerDetails details;
     private final Credentials overridingDeployerCredentials;
@@ -48,31 +49,19 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
      * Include environment variables in the generated build info
      */
     private final boolean includeEnvVars;
-    private final boolean runChecks;
-    private final String violationRecipients;
-    private final boolean includePublishArtifacts;
-    private final String scopes;
-    private final boolean licenseAutoDiscovery;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
 
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            String deployPattern, String matrixParams, boolean deployBuildInfo,
-            boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-            String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
-            boolean discardBuildArtifacts) {
+            String deployPattern, String matrixParams, boolean deployBuildInfo, boolean includeEnvVars,
+            boolean discardOldBuilds, boolean discardBuildArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployPattern = deployPattern;
         this.matrixParams = matrixParams;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
-        this.runChecks = runChecks;
-        this.violationRecipients = violationRecipients;
-        this.includePublishArtifacts = includePublishArtifacts;
-        this.scopes = scopes;
-        this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
     }
@@ -106,23 +95,24 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public boolean isRunChecks() {
-        return runChecks;
+        // There is no use of license checks in a generic build
+        return false;
     }
 
     public String getViolationRecipients() {
-        return violationRecipients;
+        return null;
     }
 
     public boolean isIncludePublishArtifacts() {
-        return includePublishArtifacts;
+        return false;
     }
 
     public String getScopes() {
-        return scopes;
+        return null;
     }
 
     public boolean isLicenseAutoDiscovery() {
-        return licenseAutoDiscovery;
+        return false;
     }
 
     public boolean isDiscardOldBuilds() {
@@ -141,10 +131,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             }
         }
         return null;
-    }
-
-    public ArtifactoryGenericConfigurator getConfigurator() {
-        return this;
     }
 
     @Override
@@ -186,25 +172,14 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
                         preferredDeployer.getPassword());
                 try {
-                    GenericBuildInfoHelper genericBuildInfoHelper = new GenericBuildInfoHelper(getConfigurator(), build,
-                            listener);
-                    Build buildInfo = deployBuildInfo ? genericBuildInfoHelper.extractBuildInfo(build) : null;
-                    Set<DeployDetails> deployDetails = genericBuildInfoHelper.createDeployDetailsAndAddToBuildInfo(
-                            buildInfo);
-                    for (DeployDetails deployDetail : deployDetails) {
-                        StringBuilder deploymentPathBuilder = new StringBuilder(artifactoryServer.getUrl());
-                        deploymentPathBuilder.append("/").append(getRepositoryKey());
-                        if (!deployDetail.getArtifactPath().startsWith("/")) {
-                            deploymentPathBuilder.append("/");
-                        }
-                        deploymentPathBuilder.append(deployDetail.getArtifactPath());
-                        listener.getLogger().println("Deploying artifact: " + deploymentPathBuilder.toString());
-                        client.deployArtifact(deployDetail);
-                    }
-                    if(deployBuildInfo) {
-                        String url = artifactoryServer.getUrl() + "/api/build";
-                        listener.getLogger().println("Deploying build info to: " + url);
-                        client.sendBuildInfo(buildInfo);
+                    GenericArtifactsDeployer artifactsDeployer = new GenericArtifactsDeployer(build,
+                            ArtifactoryGenericConfigurator.this, listener, client);
+                    artifactsDeployer.deploy();
+
+                    Set<DeployDetails> deployedArtifacts = artifactsDeployer.getDeployedArtifacts();
+                    if (deployBuildInfo) {
+                        new GenericBuildInfoDeployer(ArtifactoryGenericConfigurator.this, client, build,
+                                listener, deployedArtifacts).deploy();
                         // add the result action (prefer always the same index)
                         build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
                     }
