@@ -89,7 +89,15 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
         this.wrapperClass = wrapperClass;
     }
 
-    public void init() throws IOException, InterruptedException {
+    /**
+     * invoked from the jelly file
+     *
+     * @throws Exception Any exception
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public void init() throws Exception {
+        initBuilderSpecific();
+        resetFields();
         PluginSettings selectedStagingPluginSettings = getSelectedStagingPlugin();
         if ((selectedStagingPluginSettings != null) &&
                 !UserPluginInfo.NO_PLUGIN_KEY.equals(selectedStagingPluginSettings.getPluginName())) {
@@ -102,6 +110,15 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
         prepareDefaultModules();
         prepareDefaultVcsSettings();
         prepareDefaultPromotionConfig();
+    }
+
+    private void resetFields() {
+        strategyPluginExists = false;
+        stagingStrategy = null;
+        defaultGlobalModule = null;
+        defaultModules = null;
+        defaultVcsConfig = null;
+        defaultPromotionConfig = null;
     }
 
     public String getIconFileName() {
@@ -251,6 +268,9 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     public abstract String getReleaseVersionFor(Object moduleName);
 
     public abstract String getNextVersionFor(Object moduleName);
+
+    protected void initBuilderSpecific() throws Exception {
+    }
 
     protected String getDefaultNextDevelCommitMessage() {
         return SubversionManager.COMMENT_PREFIX + "Next development version";
