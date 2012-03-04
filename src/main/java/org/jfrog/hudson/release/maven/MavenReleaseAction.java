@@ -130,6 +130,10 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
         }
     }
 
+    public String getCurrentVersion() {
+        return getRootModule().getVersion();
+    }
+
     @Override
     protected void prepareBuilderSpecificDefaultGlobalModule() {
         if ((project != null) && (getRootModule() != null)) {

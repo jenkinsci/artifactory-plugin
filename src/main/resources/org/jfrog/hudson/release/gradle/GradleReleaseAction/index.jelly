@@ -5,14 +5,14 @@
     <l:layout title="">
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
-                <f:section title="Artifactory Pro Release Staging">
+                <f:invisibleEntry>
+                    <input type="hidden" name="init" value="${it.init()}"/>
+                </f:invisibleEntry>
+                <f:section title="${it.title}">
                     <f:entry name="version"
                              title="Property values for release and next development version (if applicable):"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-versioningPerModule.html">
                     </f:entry>
-                    <f:invisibleEntry>
-                        <input type="hidden" name="init" value="${it.init()}"/>
-                    </f:invisibleEntry>
                     <f:invisibleEntry>
                         <input type="hidden" name="versioning" value="PER_MODULE"/>
                     </f:invisibleEntry>

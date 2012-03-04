@@ -5,14 +5,14 @@
     <l:layout title="">
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
-                <f:section title="Artifactory Pro Release Staging">
+                <f:invisibleEntry>
+                    <input type="hidden" name="init" value="${it.init()}"/>
+                </f:invisibleEntry>
+                <f:section title="${it.title}">
                     <f:entry title="Last built version"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-currentVersion.html">
                         ${it.currentVersion}
                     </f:entry>
-                    <f:invisibleEntry>
-                        <input type="hidden" name="init" value="${it.init()}"/>
-                    </f:invisibleEntry>
                     <f:section title="${%Module Version Configuration}">
                         <f:radioBlock name="versioning" value="GLOBAL" title="One version for all modules"
                                       checked="${'GLOBAL' == it.defaultVersioning}"

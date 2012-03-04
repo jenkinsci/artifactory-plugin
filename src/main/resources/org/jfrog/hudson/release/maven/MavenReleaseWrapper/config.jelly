@@ -5,23 +5,16 @@
              help="/plugin/artifactory/help/release/common/help-tagBaseUrl.html">
         <f:textbox name="tagPrefix" value="${instance.tagPrefix}"/>
     </f:entry>
-    <!--<j:if test="${it.isGit()}">-->
     <f:entry field="releaseBranchPrefix" title="Git release branch name prefix"
              help="/plugin/artifactory/help/release/common/help-releaseBranchPrefix.html">
         <f:textbox name="releaseBranchPrefix" value="${instance.releaseBranchPrefix}" default="REL-BRANCH-"/>
-    </f:entry>
-    <!--</j:if>-->
-    <f:entry title="Alternative Maven goals and options"
-             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-alternativeGoals.html">
-        <f:textbox name="alternativeGoals" value="${instance.alternativeGoals}"
-                   default="${jenkins.artifactory.release.maven.alternativeGoalsDefault}"/>
     </f:entry>
     <f:entry title="${%Default module version configuration}" field="defaultVersioning"
              help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-versioningDefault.html">
         <f:select/>
     </f:entry>
     <f:entry>
-        <f:dropdownList name="stagingPlugin" title="${%Staging plugins}"
+        <f:dropdownList name="stagingPlugin" title="${%Additional staging configuration}"
                         help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
             <j:forEach var="stagingPlugin" items="${descriptor.stagingUserPluginInfo}" varStatus="loop">
                 <f:dropdownListBlock value="${stagingPlugin.pluginName}" title="${stagingPlugin.pluginName}"
@@ -38,5 +31,10 @@
                 </f:dropdownListBlock>
             </j:forEach>
         </f:dropdownList>
+    </f:entry>
+    <f:entry title="Alternative Maven goals and options"
+             help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-alternativeGoals.html">
+        <f:textbox name="alternativeGoals" value="${instance.alternativeGoals}"
+                   default="${jenkins.artifactory.release.maven.alternativeGoalsDefault}"/>
     </f:entry>
 </j:jelly>

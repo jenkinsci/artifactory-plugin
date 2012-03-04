@@ -22,6 +22,7 @@ import hudson.model.Action;
 import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
 import hudson.tasks.BuildWrapper;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.PluginSettings;
@@ -119,6 +120,15 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
         defaultModules = null;
         defaultVcsConfig = null;
         defaultPromotionConfig = null;
+    }
+
+    public String getTitle() {
+        StringBuilder titleBuilder = new StringBuilder("Artifactory Pro Release Staging");
+        if (strategyPluginExists && StringUtils.isNotBlank(getSelectedStagingPlugin().getPluginName())) {
+            titleBuilder.append(" - Using the '").append(getSelectedStagingPlugin().getPluginName())
+                    .append("' staging plugin.");
+        }
+        return titleBuilder.toString();
     }
 
     public String getIconFileName() {
