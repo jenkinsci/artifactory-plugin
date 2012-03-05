@@ -327,7 +327,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
         public ListBoxModel doFillDefaultVersioningItems() {
             ListBoxModel model = new ListBoxModel();
             for (ReleaseAction.VERSIONING versioning : ReleaseAction.VERSIONING.values()) {
-                model.add(versioning.toString());
+                model.add(versioning.getDisplayMessage(), versioning.toString());
             }
             return model;
         }

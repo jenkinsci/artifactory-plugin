@@ -82,7 +82,19 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     protected transient PromotionConfig defaultPromotionConfig;
 
     public enum VERSIONING {
-        GLOBAL, PER_MODULE, NONE
+        GLOBAL("One version for all modules"),
+        PER_MODULE("Version per module"),
+        NONE("Use existing module versions");
+        // The description to display in the UI
+        private final String displayMessage;
+
+        VERSIONING(String displayMessage) {
+            this.displayMessage = displayMessage;
+        }
+
+        public String getDisplayMessage() {
+            return displayMessage;
+        }
     }
 
     public ReleaseAction(P project, Class<W> wrapperClass) {
