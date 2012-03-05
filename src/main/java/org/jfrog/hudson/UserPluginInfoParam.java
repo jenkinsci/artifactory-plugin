@@ -5,19 +5,19 @@ package org.jfrog.hudson;
  */
 public class UserPluginInfoParam {
 
-    private String key;
-    private String defaultValue;
+    private Object key;
+    private Object defaultValue;
 
-    public UserPluginInfoParam(String key, String defaultValue) {
+    public UserPluginInfoParam(Object key, Object defaultValue) {
         this.key = key;
         this.defaultValue = defaultValue;
     }
 
-    public String getKey() {
+    public Object getKey() {
         return key;
     }
 
-    public String getDefaultValue() {
+    public Object getDefaultValue() {
         return defaultValue;
     }
 }
