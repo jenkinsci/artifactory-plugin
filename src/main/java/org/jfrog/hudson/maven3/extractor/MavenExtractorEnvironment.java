@@ -84,7 +84,13 @@ public class MavenExtractorEnvironment extends Environment {
 
     @Override
     public void buildEnvVars(Map<String, String> env) {
-        // if not valid Maven version return empty environment
+
+        if (build.getWorkspace() == null) {
+            // HAP-274 - workspace might not be initialized yet (this method will be called later in the build lifecycle)
+            return;
+        }
+
+        // if not valid Maven version don't modify the environment
         if (!isMavenVersionValid()) {
             return;
         }
