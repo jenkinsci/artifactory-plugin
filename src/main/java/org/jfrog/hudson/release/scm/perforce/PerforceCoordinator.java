@@ -61,16 +61,15 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
         if (modifiedFilesForReleaseVersion) {
             log("Submitting release version changes");
             labelChangeListId = currentChangeListId + "";
+            if (releaseAction.isCreateVcsTag()) {
+                log("Creating label: '" + releaseAction.getTagUrl() + "' with change list id: " + labelChangeListId);
+                perforce.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment(), labelChangeListId);
+                tagCreated = true;
+            }
             perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultVcsConfig().getTagComment());
         } else {
             perforce.deleteChangeList(currentChangeListId);
             currentChangeListId = perforce.getDefaultChangeListId();
-        }
-
-        if (releaseAction.isCreateVcsTag()) {
-            log("Creating label: '" + releaseAction.getTagUrl() + "' with change list id: " + labelChangeListId);
-            perforce.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment(), labelChangeListId);
-            tagCreated = true;
         }
     }
 
