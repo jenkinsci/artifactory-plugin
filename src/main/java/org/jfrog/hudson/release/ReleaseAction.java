@@ -76,6 +76,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
 
     protected transient boolean strategyPluginExists;
     protected transient Map stagingStrategy;
+    protected transient String defaultVersioning;
     protected transient VersionedModule defaultGlobalModule;
     protected transient Map<String, VersionedModule> defaultModules;
     protected transient VcsConfig defaultVcsConfig;
@@ -119,6 +120,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
             strategyPluginExists = (stagingStrategy != null) && !stagingStrategy.isEmpty();
         }
 
+        prepareDefaultVersioning();
         prepareDefaultGlobalModule();
         prepareDefaultModules();
         prepareDefaultVcsSettings();
@@ -128,6 +130,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     private void resetFields() {
         strategyPluginExists = false;
         stagingStrategy = null;
+        defaultVersioning = null;
         defaultGlobalModule = null;
         defaultModules = null;
         defaultVcsConfig = null;
@@ -378,6 +381,23 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     protected abstract void prepareBuilderSpecificDefaultVcsConfig();
 
     protected abstract void prepareBuilderSpecificDefaultPromotionConfig();
+
+    protected void prepareBuilderSpecificDefaultVersioning() {
+    }
+
+    private void prepareDefaultVersioning() {
+        if (strategyPluginExists) {
+            if (stagingStrategy.containsKey("defaultModuleVersion")) {
+                defaultVersioning = VERSIONING.GLOBAL.name();
+            } else if (stagingStrategy.containsKey("moduleVersionsMap")) {
+                defaultVersioning = VERSIONING.PER_MODULE.name();
+            }
+        }
+
+        if (StringUtils.isBlank(defaultVersioning)) {
+            prepareBuilderSpecificDefaultVersioning();
+        }
+    }
 
     private void prepareDefaultGlobalModule() {
         if (strategyPluginExists) {

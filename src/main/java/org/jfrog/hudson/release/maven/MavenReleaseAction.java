@@ -60,7 +60,7 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
 
     @SuppressWarnings({"UnusedDeclaration"})
     public String getDefaultVersioning() {
-        return getWrapper().getDefaultVersioning();
+        return defaultVersioning;
     }
 
     @Override
@@ -132,6 +132,11 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
 
     public String getCurrentVersion() {
         return getRootModule().getVersion();
+    }
+
+    @Override
+    protected void prepareBuilderSpecificDefaultVersioning() {
+        defaultVersioning = getWrapper().getDefaultVersioning();
     }
 
     @Override
