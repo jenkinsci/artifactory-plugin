@@ -139,16 +139,13 @@ public class ArtifactoryServer {
         return repositoryKeys;
     }
 
-    public Map getStagingStrategy(PluginSettings selectedStagingPlugin, String buildName) {
+    public Map getStagingStrategy(PluginSettings selectedStagingPlugin, String buildName) throws IOException {
         Credentials resolvingCredentials = getResolvingCredentials();
         ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
                 resolvingCredentials.getPassword());
         try {
             return client.getStagingStrategy(selectedStagingPlugin.getPluginName(), buildName,
                     selectedStagingPlugin.getParamMap());
-        } catch (Exception e) {
-            log.log(Level.WARNING, "Failed to obtain staging strategy: " + e.getMessage());
-            return null;
         } finally {
             client.shutdown();
         }

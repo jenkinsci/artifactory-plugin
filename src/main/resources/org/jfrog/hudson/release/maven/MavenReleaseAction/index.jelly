@@ -8,6 +8,9 @@
                 <f:invisibleEntry>
                     <input type="hidden" name="init" value="${it.init()}"/>
                 </f:invisibleEntry>
+                <j:if test="${it.isStrategyRequestFailed()}">
+                    <div id='shutdown-msg'>${it.strategyRequestErrorMessage}</div>
+                </j:if>
                 <f:section title="${it.title}">
                     <f:entry title="Last built version"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-currentVersion.html">

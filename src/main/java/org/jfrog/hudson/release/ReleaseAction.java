@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This action leads to execution of the release wrapper. It will collect information from the user about the release
@@ -47,6 +49,8 @@ import java.util.Map;
  */
 public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWithBuildWrappers,
         W extends BuildWrapper> implements Action {
+
+    private static final Logger log = Logger.getLogger(ReleaseAction.class.getName());
 
     protected final transient P project;
     private Class<W> wrapperClass;
@@ -74,6 +78,8 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     boolean createReleaseBranch;
     String releaseBranch;
 
+    protected transient boolean strategyRequestFailed = false;
+    protected transient String strategyRequestErrorMessage = null;
     protected transient boolean strategyPluginExists;
     protected transient Map stagingStrategy;
     protected transient String defaultVersioning;
@@ -115,8 +121,17 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
         PluginSettings selectedStagingPluginSettings = getSelectedStagingPlugin();
         if ((selectedStagingPluginSettings != null) &&
                 !UserPluginInfo.NO_PLUGIN_KEY.equals(selectedStagingPluginSettings.getPluginName())) {
-            stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings,
-                    project.getName());
+            try {
+                stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings,
+                        project.getName());
+            } catch (Exception e) {
+                log.log(Level.WARNING, "Failed to obtain staging strategy: " + e.getMessage(), e);
+                strategyRequestFailed = true;
+                strategyRequestErrorMessage = "Failed to obtain staging strategy '" +
+                        selectedStagingPluginSettings.getPluginName() + "': " + e.getMessage() +
+                        ".\nPlease review the log for further information.";
+                stagingStrategy = null;
+            }
             strategyPluginExists = (stagingStrategy != null) && !stagingStrategy.isEmpty();
         }
 
@@ -128,6 +143,8 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     }
 
     private void resetFields() {
+        strategyRequestFailed = false;
+        strategyRequestErrorMessage = null;
         strategyPluginExists = false;
         stagingStrategy = null;
         defaultVersioning = null;
@@ -135,6 +152,14 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
         defaultModules = null;
         defaultVcsConfig = null;
         defaultPromotionConfig = null;
+    }
+
+    public boolean isStrategyRequestFailed() {
+        return strategyRequestFailed;
+    }
+
+    public String getStrategyRequestErrorMessage() {
+        return strategyRequestErrorMessage;
     }
 
     public String getTitle() {
