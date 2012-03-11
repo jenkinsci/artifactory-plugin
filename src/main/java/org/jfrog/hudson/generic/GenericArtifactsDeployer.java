@@ -9,7 +9,6 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.remoting.VirtualChannel;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.util.FileChecksumCalculator;
@@ -85,19 +84,7 @@ public class GenericArtifactsDeployer {
         Set<DeployDetails> result = Sets.newHashSet();
         String targetPath = fileEntry.getKey();
         File artifactFile = fileEntry.getValue();
-        String relativePath = artifactFile.getAbsolutePath();
-        if (StringUtils.startsWith(relativePath, rootDir)) {
-            relativePath = StringUtils.removeStart(artifactFile.getAbsolutePath(), rootDir);
-        } else {
-            String parentDir = artifactFile.getParent();
-            if (!StringUtils.isBlank(parentDir)) {
-                relativePath = StringUtils.removeStart(artifactFile.getAbsolutePath(),
-                        parentDir);
-            }
-        }
-        relativePath = FilenameUtils.separatorsToUnix(relativePath);
-        relativePath = StringUtils.removeStart(relativePath, "/");
-        String path = PublishedItemsHelper.calculateTargetPath(relativePath, targetPath, artifactFile.getName());
+        String path = PublishedItemsHelper.calculateTargetPath(targetPath, artifactFile, rootDir);
         path = StringUtils.replace(path, "//", "/");
 
         // calculate the sha1 checksum that is not given by Jenkins and add it to the deploy artifactsToDeploy
