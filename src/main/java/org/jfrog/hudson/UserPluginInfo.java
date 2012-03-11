@@ -3,6 +3,8 @@ package org.jfrog.hudson;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +45,11 @@ public class UserPluginInfo {
         for (Map.Entry paramEntry : ((Set<Map.Entry>) pluginParams.entrySet())) {
             pluginParamList.add(new UserPluginInfoParam(paramEntry.getKey(), paramEntry.getValue()));
         }
-
+        Collections.sort(pluginParamList, new Comparator<UserPluginInfoParam>() {
+            public int compare(UserPluginInfoParam o1, UserPluginInfoParam o2) {
+                return o1.getKey().toString().compareTo(o2.getKey().toString());
+            }
+        });
         return pluginParamList;
     }
 

@@ -304,7 +304,11 @@ public class ArtifactoryServer {
                     for (Map stagingPluginInfo : stagingUserPluginInfo) {
                         infosToReturn.add(new UserPluginInfo(stagingPluginInfo));
                     }
-
+                    Collections.sort(infosToReturn, new Comparator<UserPluginInfo>() {
+                        public int compare(UserPluginInfo o1, UserPluginInfo o2) {
+                            return o1.getPluginName().compareTo(o2.getPluginName());
+                        }
+                    });
                 }
             }
         } catch (IOException e) {
