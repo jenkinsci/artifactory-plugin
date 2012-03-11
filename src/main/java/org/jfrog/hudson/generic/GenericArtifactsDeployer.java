@@ -11,8 +11,6 @@ import hudson.model.BuildListener;
 import hudson.remoting.VirtualChannel;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tools.ant.types.FileSet;
-import org.apache.tools.ant.types.resources.FileResource;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.util.FileChecksumCalculator;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
@@ -24,7 +22,6 @@ import org.jfrog.hudson.util.ExtractorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -77,59 +74,55 @@ public class GenericArtifactsDeployer {
     private void assembleArtifactsToDeploy()
             throws IOException, InterruptedException, NoSuchAlgorithmException {
         FilePath workspace = build.getWorkspace();
-        Multimap<String, FileSet> fileSetMap = buildTargetPathToFiles(workspace);
-        for (Map.Entry<String, FileSet> entry : fileSetMap.entries()) {
-            artifactsToDeploy.addAll(buildDeployDetailsFromFileSet(entry, workspace.getRemote()));
+        Multimap<String, File> filesMap = buildTargetPathToFiles(workspace);
+        for (Map.Entry<String, File> entry : filesMap.entries()) {
+            artifactsToDeploy.addAll(buildDeployDetailsFromFileEntry(entry, workspace.getRemote()));
         }
     }
 
-    private Set<DeployDetails> buildDeployDetailsFromFileSet(Map.Entry<String, FileSet> fileSetEntry, String rootDir)
+    private Set<DeployDetails> buildDeployDetailsFromFileEntry(Map.Entry<String, File> fileEntry, String rootDir)
             throws IOException, NoSuchAlgorithmException {
         Set<DeployDetails> result = Sets.newHashSet();
-        String targetPath = fileSetEntry.getKey();
-        Iterator<FileResource> iterator = fileSetEntry.getValue().iterator();
-        while (iterator.hasNext()) {
-            FileResource fileResource = iterator.next();
-            File artifactFile = fileResource.getFile();
-            String relativePath = artifactFile.getAbsolutePath();
-            if (StringUtils.startsWith(relativePath, rootDir)) {
-                relativePath = StringUtils.removeStart(artifactFile.getAbsolutePath(), rootDir);
-            } else {
-                File fileBaseDir = fileResource.getBaseDir();
-                if (fileBaseDir != null) {
-                    relativePath = StringUtils.removeStart(artifactFile.getAbsolutePath(),
-                            fileBaseDir.getAbsolutePath());
-                }
+        String targetPath = fileEntry.getKey();
+        File artifactFile = fileEntry.getValue();
+        String relativePath = artifactFile.getAbsolutePath();
+        if (StringUtils.startsWith(relativePath, rootDir)) {
+            relativePath = StringUtils.removeStart(artifactFile.getAbsolutePath(), rootDir);
+        } else {
+            String parentDir = artifactFile.getParent();
+            if (!StringUtils.isBlank(parentDir)) {
+                relativePath = StringUtils.removeStart(artifactFile.getAbsolutePath(),
+                        parentDir);
             }
-            relativePath = FilenameUtils.separatorsToUnix(relativePath);
-            relativePath = StringUtils.removeStart(relativePath, "/");
-            String path = PublishedItemsHelper.calculateTargetPath(relativePath, targetPath, artifactFile.getName());
-            path = StringUtils.replace(path, "//", "/");
-
-            // calculate the sha1 checksum that is not given by Jenkins and add it to the deploy artifactsToDeploy
-            Map<String, String> checksums = FileChecksumCalculator.calculateChecksums(artifactFile, SHA1, MD5);
-            DeployDetails.Builder builder = new DeployDetails.Builder()
-                    .file(artifactFile)
-                    .artifactPath(path)
-                    .targetRepository(configurator.getRepositoryKey())
-                    .md5(checksums.get(MD5)).sha1(checksums.get(SHA1))
-                    .addProperty("build.name", build.getParent().getDisplayName())
-                    .addProperty("build.number", build.getNumber() + "")
-                    .addProperty("build.timestamp", build.getTimestamp().getTime().getTime() + "");
-            String revision = ExtractorUtils.getVcsRevision(env);
-            if (StringUtils.isNotBlank(revision)) {
-                builder.addProperty(BuildInfoFields.VCS_REVISION, revision);
-            }
-            addMatrixParams(builder);
-            result.add(builder.build());
         }
+        relativePath = FilenameUtils.separatorsToUnix(relativePath);
+        relativePath = StringUtils.removeStart(relativePath, "/");
+        String path = PublishedItemsHelper.calculateTargetPath(relativePath, targetPath, artifactFile.getName());
+        path = StringUtils.replace(path, "//", "/");
+
+        // calculate the sha1 checksum that is not given by Jenkins and add it to the deploy artifactsToDeploy
+        Map<String, String> checksums = FileChecksumCalculator.calculateChecksums(artifactFile, SHA1, MD5);
+        DeployDetails.Builder builder = new DeployDetails.Builder()
+                .file(artifactFile)
+                .artifactPath(path)
+                .targetRepository(configurator.getRepositoryKey())
+                .md5(checksums.get(MD5)).sha1(checksums.get(SHA1))
+                .addProperty("build.name", build.getParent().getDisplayName())
+                .addProperty("build.number", build.getNumber() + "")
+                .addProperty("build.timestamp", build.getTimestamp().getTime().getTime() + "");
+        String revision = ExtractorUtils.getVcsRevision(env);
+        if (StringUtils.isNotBlank(revision)) {
+            builder.addProperty(BuildInfoFields.VCS_REVISION, revision);
+        }
+        addMatrixParams(builder);
+        result.add(builder.build());
 
         return result;
     }
 
-    private Multimap<String, FileSet> buildTargetPathToFiles(FilePath workingDir)
+    private Multimap<String, File> buildTargetPathToFiles(FilePath workingDir)
             throws IOException, InterruptedException {
-        final Multimap<String, FileSet> result = HashMultimap.create();
+        final Multimap<String, File> result = HashMultimap.create();
         String deployPattern = configurator.getDeployPattern();
         deployPattern = StringUtils.replace(deployPattern, "\r\n", "\n");
         deployPattern = StringUtils.replace(deployPattern, ",", "\n");
@@ -141,11 +134,12 @@ public class GenericArtifactsDeployer {
         for (final Map.Entry<String, String> entry : pairs.entrySet()) {
             workingDir.act(new FilePath.FileCallable<Object>() {
                 public Object invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-                    FileSet fileSet = Util.createFileSet(f, entry.getKey());
-                    if (fileSet != null) {
+                    Multimap<String, File> publishingData = PublishedItemsHelper.buildPublishingData(f, entry.getKey(),
+                            entry.getValue());
+                    if (publishingData != null) {
                         listener.getLogger().println(
-                                "For pattern: " + entry.getKey() + " " + fileSet.size() + " artifacts were found");
-                        result.put(entry.getValue(), fileSet);
+                                "For pattern: " + entry.getKey() + " " + publishingData.size() + " artifacts were found");
+                        result.putAll(publishingData);
                     } else {
                         listener.getLogger().println("For pattern: " + entry.getKey() + " no artifacts were found");
                     }
