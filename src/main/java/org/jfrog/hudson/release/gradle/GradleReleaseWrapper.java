@@ -185,7 +185,7 @@ public class GradleReleaseWrapper {
 
     private boolean changeProperties(AbstractBuild build, GradleReleaseAction release, boolean releaseVersion,
             BuildListener listener) throws IOException, InterruptedException {
-        FilePath root = build.getModuleRoot();
+        FilePath root = release.getModuleRoot(build.getEnvironment(listener));
         debuggingLogger.fine("Root directory is: " + root.getRemote());
         String[] modules = release.getReleaseProperties();
         Map<String, String> modulesByName = Maps.newHashMap();

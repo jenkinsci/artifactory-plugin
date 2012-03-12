@@ -17,10 +17,12 @@
 package org.jfrog.hudson.release.gradle;
 
 import com.google.common.collect.Maps;
+import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.Util;
 import hudson.model.FreeStyleProject;
-import hudson.scm.SCM;
-import hudson.scm.SubversionSCM;
+import hudson.plugins.gradle.Gradle;
+import hudson.tasks.Builder;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.PluginSettings;
@@ -33,6 +35,7 @@ import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -77,10 +80,7 @@ public class GradleReleaseAction extends ReleaseAction<FreeStyleProject, Artifac
     @Override
     protected void initBuilderSpecific() throws Exception {
         reset();
-        FilePath workspace = getRootLocationPath(project.getSomeWorkspace());
-        if (workspace == null) {
-            throw new IllegalStateException("No workspace found, cannot perform staging");
-        }
+        FilePath workspace = getModuleRoot(EnvVars.masterEnvVars);
         FilePath gradlePropertiesPath = new FilePath(workspace, "gradle.properties");
         if (releaseProps == null) {
             releaseProps = PropertyUtils.getModulesPropertiesFromPropFile(gradlePropertiesPath, getReleaseProperties());
@@ -92,18 +92,34 @@ public class GradleReleaseAction extends ReleaseAction<FreeStyleProject, Artifac
     }
 
     /**
-     * Get the root path where the build is located, in case of {@link SubversionSCM} the project may be checked out to
+     * Get the root path where the build is located, the project may be checked out to
      * a sub-directory from the root workspace location.
      *
-     * @param workspace The root workspace of the project.
+     * @param env EnvVars to take the workspace from, if workspace is not found
+     *            then it is take from project.getSomeWorkspace()
      * @return The location of the root of the Gradle build.
+     * @throws IOException
+     * @throws InterruptedException
      */
-    private FilePath getRootLocationPath(FilePath workspace) {
-        SCM scm = project.getScm();
-        if (scm instanceof SubversionSCM) {
-            return new FilePath(workspace, ((SubversionSCM) scm).getLocations()[0].getLocalDir());
+    public FilePath getModuleRoot(Map<String, String> env) throws IOException, InterruptedException {
+        FilePath someWorkspace = project.getSomeWorkspace();
+        if (StringUtils.isBlank(env.get("WORKSPACE"))) {
+            env.put("WORKSPACE", someWorkspace.getRemote());
         }
-        return workspace;
+        Builder builder = project.getBuilders().get(0);
+        if (builder instanceof Gradle) {
+            Gradle gradleBuilder = (Gradle) builder;
+            String rootBuildScriptDir = gradleBuilder.getRootBuildScriptDir();
+            if (rootBuildScriptDir != null && rootBuildScriptDir.trim().length() != 0) {
+                String rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptDir.trim(), env);
+                rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptNormalized, env);
+                return new FilePath(someWorkspace, rootBuildScriptNormalized);
+            } else {
+                return someWorkspace;
+            }
+        }
+
+        return null;
     }
 
     /**
