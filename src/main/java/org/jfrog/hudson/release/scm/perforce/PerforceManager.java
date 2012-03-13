@@ -62,8 +62,12 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
         perforce = builder.build();
     }
 
-    public void commitWorkingCopy(int changeListId, String commitMessage) throws IOException {
-        perforce.commitWorkingCopy(changeListId, commitMessage);
+    public void commitWorkingCopy(int changeListId, String commitMessage) throws IOException, InterruptedException {
+        FilePath workspace = build.getWorkspace();
+        if(workspace == null) {
+            throw new IOException("Workspace is null, cannot commit changes");
+        }
+        workspace.act(new CommitFilesCallable(builder, changeListId, commitMessage));
     }
 
     public void createTag(String label, String commitMessage, String changeListId) throws IOException {
@@ -138,6 +142,26 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
             log(listener, "Opening file: '" + file.getAbsolutePath() + "' for editing");
             PerforceClient perforce = builder.build();
             perforce.editFile(currentChangeListId, file);
+            perforce.closeConnection();
+            return null;
+        }
+    }
+    
+    private static class CommitFilesCallable implements FilePath.FileCallable<String> {
+
+        private PerforceClient.Builder builder;
+        private int changeListId;
+        private String commitMessage;
+
+        public CommitFilesCallable(PerforceClient.Builder builder, int changeListId, String commitMessage) {
+            this.builder = builder;
+            this.changeListId = changeListId;
+            this.commitMessage = commitMessage;
+        }
+
+        public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+            PerforceClient perforce = builder.build();
+            perforce.commitWorkingCopy(changeListId, commitMessage);
             perforce.closeConnection();
             return null;
         }
