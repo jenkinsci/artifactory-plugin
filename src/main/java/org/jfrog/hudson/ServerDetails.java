@@ -39,6 +39,8 @@ public class ServerDetails {
      */
     public final String downloadRepositoryKey;
 
+    private PluginSettings stagingPlugin;
+
     @DataBoundConstructor
     public ServerDetails(String artifactoryName, String repositoryKey, String snapshotsRepositoryKey,
             String downloadRepositoryKey) {
@@ -46,5 +48,21 @@ public class ServerDetails {
         this.repositoryKey = repositoryKey;
         this.snapshotsRepositoryKey = snapshotsRepositoryKey != null ? snapshotsRepositoryKey : repositoryKey;
         this.downloadRepositoryKey = downloadRepositoryKey;
+    }
+
+    public PluginSettings getStagingPlugin() {
+        return stagingPlugin;
+    }
+
+    public String getStagingPluginName() {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
+    }
+
+    public void setStagingPlugin(PluginSettings stagingPlugin) {
+        this.stagingPlugin = stagingPlugin;
+    }
+
+    public String getPluginParamValue(String pluginName, String paramKey) {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(pluginName, paramKey) : null;
     }
 }

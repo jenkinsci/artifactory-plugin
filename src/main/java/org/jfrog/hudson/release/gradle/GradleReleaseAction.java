@@ -208,7 +208,7 @@ public class GradleReleaseAction extends ReleaseAction<FreeStyleProject, Artifac
 
     @Override
     protected PluginSettings getSelectedStagingPlugin() {
-        return getReleaseWrapper().getStagingPlugin();
+        return getWrapper().getDetails().getStagingPlugin();
     }
 
     @Override

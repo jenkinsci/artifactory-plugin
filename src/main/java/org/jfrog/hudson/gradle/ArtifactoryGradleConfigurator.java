@@ -455,12 +455,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         @Override
         public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             ArtifactoryGradleConfigurator wrapper = (ArtifactoryGradleConfigurator) super.newInstance(req, formData);
-            if (formData.has("releaseWrapper")) {
-                JSONObject releaseWrapperObject = formData.getJSONObject("releaseWrapper");
-                if (releaseWrapperObject.has("stagingPlugin")) {
+            if (formData.has("details")) {
+                JSONObject detailsObject = formData.getJSONObject("details");
+                if (detailsObject.has("stagingPlugin")) {
                     PluginSettings settings = new PluginSettings();
                     Map<String, String> paramMap = Maps.newHashMap();
-                    JSONObject pluginSettings = releaseWrapperObject.getJSONObject("stagingPlugin");
+                    JSONObject pluginSettings = detailsObject.getJSONObject("stagingPlugin");
                     String pluginName = pluginSettings.getString("pluginName");
                     settings.setPluginName(pluginName);
                     Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
@@ -476,7 +476,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     if (!paramMap.isEmpty()) {
                         settings.setParamMap(paramMap);
                     }
-                    wrapper.getReleaseWrapper().setStagingPlugin(settings);
+                    wrapper.getDetails().setStagingPlugin(settings);
                 }
             }
             return wrapper;

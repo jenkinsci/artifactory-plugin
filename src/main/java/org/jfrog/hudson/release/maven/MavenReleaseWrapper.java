@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson.release.maven;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
@@ -29,7 +28,6 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
-import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
@@ -37,13 +35,8 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.PluginSettings;
-import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -51,12 +44,10 @@ import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.jfrog.hudson.util.FormValidations;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -73,7 +64,6 @@ public class MavenReleaseWrapper extends BuildWrapper {
     private String releaseBranchPrefix;
     private String alternativeGoals;
     private String defaultVersioning;
-    private PluginSettings stagingPlugin;
 
     private transient ScmCoordinator scmCoordinator;
 
@@ -122,22 +112,6 @@ public class MavenReleaseWrapper extends BuildWrapper {
     @SuppressWarnings({"UnusedDeclaration"})
     public void setDefaultVersioning(String defaultVersioning) {
         this.defaultVersioning = defaultVersioning;
-    }
-
-    public PluginSettings getStagingPlugin() {
-        return stagingPlugin;
-    }
-
-    public String getStagingPluginName() {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
-    }
-
-    public void setStagingPlugin(PluginSettings stagingPlugin) {
-        this.stagingPlugin = stagingPlugin;
-    }
-
-    public String getPluginParamValue(String pluginName, String paramKey) {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(pluginName, paramKey) : null;
     }
 
     @Override
@@ -284,33 +258,6 @@ public class MavenReleaseWrapper extends BuildWrapper {
             return "Enable Artifactory release management";
         }
 
-        @Override
-        public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            MavenReleaseWrapper wrapper = (MavenReleaseWrapper) super.newInstance(req, formData);
-            if (formData.has("stagingPlugin")) {
-                PluginSettings settings = new PluginSettings();
-                Map<String, String> paramMap = Maps.newHashMap();
-                JSONObject pluginSettings = formData.getJSONObject("stagingPlugin");
-                String pluginName = pluginSettings.getString("pluginName");
-                settings.setPluginName(pluginName);
-                Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
-                        new Predicate<String>() {
-                            public boolean apply(String input) {
-                                return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
-                            }
-                        });
-                for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
-                    String key = settingsEntry.getKey();
-                    paramMap.put(key, pluginSettings.getString(key));
-                }
-                if (!paramMap.isEmpty()) {
-                    settings.setParamMap(paramMap);
-                }
-                wrapper.setStagingPlugin(settings);
-            }
-            return wrapper;
-        }
-
         /**
          * @param tagPrefix The subversion tags url
          * @return Error message if tags url is not set
@@ -330,13 +277,6 @@ public class MavenReleaseWrapper extends BuildWrapper {
                 model.add(versioning.getDisplayMessage(), versioning.toString());
             }
             return model;
-        }
-
-        public List<UserPluginInfo> getStagingUserPluginInfo() {
-            ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
-                    Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
-            List<ArtifactoryServer> artifactoryServers = descriptor.getArtifactoryServers();
-            return artifactoryServers.get(0).getStagingUserPluginInfo();
         }
     }
 

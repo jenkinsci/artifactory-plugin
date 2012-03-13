@@ -19,6 +19,7 @@ package org.jfrog.hudson;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -41,6 +42,7 @@ import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
@@ -56,6 +58,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * {@link Publisher} for {@link hudson.maven.MavenModuleSetBuild} to deploy artifacts to Artifactory only after a build
@@ -365,7 +368,32 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         @Override
         public ArtifactoryRedeployPublisher newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            return req.bindJSON(ArtifactoryRedeployPublisher.class, formData);
+            ArtifactoryRedeployPublisher publisher = req.bindJSON(ArtifactoryRedeployPublisher.class, formData);
+            if (formData.has("details")) {
+                JSONObject serverDetails = formData.getJSONObject("details");
+                if (serverDetails.has("stagingPlugin")) {
+                    PluginSettings settings = new PluginSettings();
+                    Map<String, String> paramMap = Maps.newHashMap();
+                    JSONObject pluginSettings = serverDetails.getJSONObject("stagingPlugin");
+                    String pluginName = pluginSettings.getString("pluginName");
+                    settings.setPluginName(pluginName);
+                    Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
+                            new Predicate<String>() {
+                                public boolean apply(String input) {
+                                    return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
+                                }
+                            });
+                    for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
+                        String key = settingsEntry.getKey();
+                        paramMap.put(key, pluginSettings.getString(key));
+                    }
+                    if (!paramMap.isEmpty()) {
+                        settings.setParamMap(paramMap);
+                    }
+                    publisher.details.setStagingPlugin(settings);
+                }
+            }
+            return publisher;
         }
 
         @Override

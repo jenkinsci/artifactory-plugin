@@ -24,6 +24,28 @@
                                 </j:forEach>
                             </select>
                         </f:entry>
+                        <f:entry>
+                            <f:dropdownList name="stagingPlugin" title="${%Additional staging configuration}"
+                                            help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
+                                <j:forEach var="stagingPlugin" items="${s.stagingUserPluginInfo}" varStatus="loop">
+                                    <f:dropdownListBlock value="${stagingPlugin.pluginName}"
+                                                         title="${stagingPlugin.pluginName}"
+                                                         selected="${stagingPlugin.pluginName==instance.details.stagingPluginName}">
+                                        <f:nested>
+                                            <input type="hidden" name="pluginName" value="${stagingPlugin.pluginName}"/>
+                                            <j:forEach var="pluginParam" items="${stagingPlugin.pluginParams}"
+                                                       varStatus="loop">
+                                                <f:entry title="${pluginParam.key}" field="${pluginParam.key}">
+                                                    <f:textbox name="${pluginParam.key}"
+                                                               default="${pluginParam.defaultValue}"
+                                                               value="${instance.details.getPluginParamValue(stagingPlugin.pluginName, pluginParam.key)}"/>
+                                                </f:entry>
+                                            </j:forEach>
+                                        </f:nested>
+                                    </f:dropdownListBlock>
+                                </j:forEach>
+                            </f:dropdownList>
+                        </f:entry>
                     </f:nested>
                 </f:dropdownListBlock>
             </j:forEach>
@@ -206,28 +228,6 @@
                     <f:entry title="Next integration properties"
                              help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-nextIntegPropsKeys.html">
                         <f:textbox name="nextIntegPropsKeys" value="${releaseWrapper.nextIntegPropsKeys}"/>
-                    </f:entry>
-                    <f:entry>
-                        <f:dropdownList name="stagingPlugin" title="${%Additional staging configuration}"
-                                        help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
-                            <j:forEach var="stagingPlugin" items="${descriptor.stagingUserPluginInfo}" varStatus="loop">
-                                <f:dropdownListBlock value="${stagingPlugin.pluginName}"
-                                                     title="${stagingPlugin.pluginName}"
-                                                     selected="${stagingPlugin.pluginName==releaseWrapper.stagingPluginName}">
-                                    <f:nested>
-                                        <input type="hidden" name="pluginName" value="${stagingPlugin.pluginName}"/>
-                                        <j:forEach var="pluginParam" items="${stagingPlugin.pluginParams}"
-                                                   varStatus="loop">
-                                            <f:entry title="${pluginParam.key}" field="${pluginParam.key}">
-                                                <f:textbox name="${pluginParam.key}"
-                                                           default="${pluginParam.defaultValue}"
-                                                           value="${releaseWrapper.getPluginParamValue(stagingPlugin.pluginName, pluginParam.key)}"/>
-                                            </f:entry>
-                                        </j:forEach>
-                                    </f:nested>
-                                </f:dropdownListBlock>
-                            </j:forEach>
-                        </f:dropdownList>
                     </f:entry>
                     <f:entry title="Alternative Gradle tasks and options"
                              help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-alternativeTasks.html">

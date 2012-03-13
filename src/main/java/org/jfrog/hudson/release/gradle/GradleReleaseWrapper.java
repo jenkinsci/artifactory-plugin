@@ -23,7 +23,6 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.PluginSettings;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -48,7 +47,6 @@ public class GradleReleaseWrapper {
     private String alternativeTasks;
     private String releasePropsKeys;
     private String nextIntegPropsKeys;
-    private PluginSettings stagingPlugin;
 
     private transient ScmCoordinator scmCoordinator;
 
@@ -119,22 +117,6 @@ public class GradleReleaseWrapper {
 
     public String[] getNextIntegPropsKeysList() {
         return stringToArray(getNextIntegPropsKeys());
-    }
-
-    public PluginSettings getStagingPlugin() {
-        return stagingPlugin;
-    }
-
-    public String getStagingPluginName() {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
-    }
-
-    public void setStagingPlugin(PluginSettings stagingPlugin) {
-        this.stagingPlugin = stagingPlugin;
-    }
-
-    public String getPluginParamValue(String pluginName, String paramKey) {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(pluginName, paramKey) : null;
     }
 
     private String[] stringToArray(String commaSeparatedString) {
