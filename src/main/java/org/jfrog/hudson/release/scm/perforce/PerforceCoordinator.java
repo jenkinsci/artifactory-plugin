@@ -57,18 +57,20 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
     }
 
     public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
+        String labelChangeListId = ExtractorUtils.getVcsRevision(build.getEnvironment(listener));
         if (modifiedFilesForReleaseVersion) {
             log("Submitting release version changes");
-            String labelChangeListId = currentChangeListId + "";
-            if (releaseAction.isCreateVcsTag()) {
-                log("Creating label: '" + releaseAction.getTagUrl() + "' with change list id: " + labelChangeListId);
-                perforce.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment(), labelChangeListId);
-                tagCreated = true;
-            }
+            labelChangeListId = currentChangeListId + "";
             perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultVcsConfig().getTagComment());
         } else {
             perforce.deleteChangeList(currentChangeListId);
             currentChangeListId = perforce.getDefaultChangeListId();
+        }
+
+        if (releaseAction.isCreateVcsTag()) {
+            log("Creating label: '" + releaseAction.getTagUrl() + "' with change list id: " + labelChangeListId);
+            perforce.createTag(releaseAction.getTagUrl(), releaseAction.getTagComment(), labelChangeListId);
+            tagCreated = true;
         }
     }
 
