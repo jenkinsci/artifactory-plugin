@@ -103,9 +103,7 @@ public class GradleReleaseAction extends ReleaseAction<FreeStyleProject, Artifac
      */
     public FilePath getModuleRoot(Map<String, String> env) throws IOException, InterruptedException {
         FilePath someWorkspace = project.getSomeWorkspace();
-        if (StringUtils.isBlank(env.get("WORKSPACE"))) {
-            env.put("WORKSPACE", someWorkspace.getRemote());
-        }
+        env.put("WORKSPACE", someWorkspace.getRemote());
         Builder builder = project.getBuilders().get(0);
         if (builder instanceof Gradle) {
             Gradle gradleBuilder = (Gradle) builder;
