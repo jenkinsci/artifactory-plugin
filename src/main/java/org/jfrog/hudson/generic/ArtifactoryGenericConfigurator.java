@@ -2,6 +2,7 @@ package org.jfrog.hudson.generic;
 
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
@@ -26,6 +27,7 @@ import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -51,11 +53,12 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final boolean includeEnvVars;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
+    private final boolean keepArchivedArtifacts;
 
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
             String deployPattern, String matrixParams, boolean deployBuildInfo, boolean includeEnvVars,
-            boolean discardOldBuilds, boolean discardBuildArtifacts) {
+            boolean discardOldBuilds, boolean discardBuildArtifacts, boolean keepArchivedArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployPattern = deployPattern;
@@ -64,6 +67,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.includeEnvVars = includeEnvVars;
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.keepArchivedArtifacts = keepArchivedArtifacts;
     }
 
     public String getArtifactoryName() {
@@ -121,6 +125,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     public boolean isDiscardBuildArtifacts() {
         return discardBuildArtifacts;
+    }
+
+    public boolean isKeepArchivedArtifacts() {
+        return keepArchivedArtifacts;
     }
 
     public ArtifactoryServer getArtifactoryServer() {
@@ -183,6 +191,15 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                         // add the result action (prefer always the same index)
                         build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
                     }
+
+                    if (!keepArchivedArtifacts) {
+                        // remove the local artifacts directory created for remote agents
+                        File artifactsDir = new File(build.getRootDir(), GenericArtifactsDeployer.LOCAL_ARTIFACTS_DIR);
+                        if (artifactsDir.exists()) {
+                            Util.deleteRecursive(artifactsDir);
+                        }
+                    }
+
                     return true;
                 } catch (Exception e) {
                     e.printStackTrace(listener.error(e.getMessage()));

@@ -71,6 +71,15 @@
                 </f:optionalBlock>
             </table>
         </f:block>
+        <f:block>
+            <table style="width:100%">
+                <f:optionalBlock field="keepArchivedArtifacts"
+                                 help="/plugin/artifactory/help/common/help-keepArchivedArtifacts.html"
+                                 inline="true" checked="${instance.keepArchivedArtifacts}"
+                                 title="Keep archived artifacts from remote agent">
+                </f:optionalBlock>
+            </table>
+        </f:block>
     </f:section>
     <f:block>
         <hr/>

@@ -9,6 +9,7 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.remoting.VirtualChannel;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.util.FileChecksumCalculator;
@@ -30,6 +31,7 @@ import java.util.Set;
  * @author Shay Yaakov
  */
 public class GenericArtifactsDeployer {
+    public static final String LOCAL_ARTIFACTS_DIR = "genericDeployArtifacts";
     private static final String SHA1 = "SHA1";
     private static final String MD5 = "MD5";
 
@@ -119,20 +121,34 @@ public class GenericArtifactsDeployer {
         }
 
         for (final Map.Entry<String, String> entry : pairs.entrySet()) {
-            workingDir.act(new FilePath.FileCallable<Object>() {
-                public Object invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-                    Multimap<String, File> publishingData = PublishedItemsHelper.buildPublishingData(f, entry.getKey(),
-                            entry.getValue());
-                    if (publishingData != null) {
-                        listener.getLogger().println(
-                                "For pattern: " + entry.getKey() + " " + publishingData.size() + " artifacts were found");
-                        result.putAll(publishingData);
-                    } else {
-                        listener.getLogger().println("For pattern: " + entry.getKey() + " no artifacts were found");
-                    }
-                    return null;
+            // Retrieves all associated files according to the entry Ant pattern (value)
+            Multimap<String, File> filesOnRemote = workingDir.act(
+                    new FilesArchivingCallable(listener, entry.getKey(), entry.getValue()));
+
+            // Creates a local directory for remote agents to perform a copy to
+            File localArtifactsDir = null;
+            if (workingDir.isRemote()) {
+                localArtifactsDir = new File(build.getRootDir(), LOCAL_ARTIFACTS_DIR);
+                localArtifactsDir.mkdirs();
+            }
+
+            for (Map.Entry<String, File> filesEntry : filesOnRemote.entries()) {
+                String targetPath = filesEntry.getKey();
+                File fileToDeploy = filesEntry.getValue();
+                if (workingDir.isRemote()) {
+                    // On a remote agent, perform copy the files locally and put the local file into the map
+                    // We need to replace the separators since if the remote agent is on a different
+                    // operation system than jenkins then the separators get converted by jenkins!
+                    String remoteFilePath = FilenameUtils.separatorsToUnix(fileToDeploy.getPath());
+                    FilePath remoteFile = new FilePath(workingDir.getChannel(), remoteFilePath);
+                    File localFile = new File(localArtifactsDir, targetPath + "/" + remoteFile.getName());
+                    remoteFile.copyTo(new FilePath(localFile));
+                    result.put(targetPath, localFile);
+                } else {
+                    // On a local agent simply put the local file into the map
+                    result.put(targetPath, fileToDeploy);
                 }
-            });
+            }
         }
         return result;
     }
@@ -151,4 +167,29 @@ public class GenericArtifactsDeployer {
         }
     }
 
+    private static class FilesArchivingCallable implements FilePath.FileCallable<Multimap<String, File>> {
+
+        private BuildListener listener;
+        private String pattern;
+        private String targetPath;
+
+        public FilesArchivingCallable(BuildListener listener, String pattern, String targetPath) {
+            this.listener = listener;
+            this.pattern = pattern;
+            this.targetPath = targetPath;
+        }
+
+        public Multimap<String, File> invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+            Multimap<String, File> publishingData = PublishedItemsHelper.buildPublishingData(f, pattern,
+                    targetPath);
+            if (publishingData != null) {
+                listener.getLogger().println(
+                        "For pattern: " + pattern + " " + publishingData.size() + " artifacts were found");
+                return publishingData;
+            } else {
+                listener.getLogger().println("For pattern: " + pattern + " no artifacts were found");
+            }
+            return null;
+        }
+    }
 }
