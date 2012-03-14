@@ -25,7 +25,7 @@
                             </select>
                         </f:entry>
                         <f:entry>
-                            <f:dropdownList name="stagingPlugin" title="${%Additional staging configuration}"
+                            <f:dropdownList name="stagingPlugin" title="${%Custom staging configuration}"
                                             help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
                                 <j:forEach var="stagingPlugin" items="${s.stagingUserPluginInfo}" varStatus="loop">
                                     <f:dropdownListBlock value="${stagingPlugin.pluginName}"
