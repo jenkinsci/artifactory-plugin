@@ -22,7 +22,6 @@ import hudson.model.BuildListener;
 import hudson.model.Result;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
-import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
 import java.util.logging.Level;
@@ -57,9 +56,8 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
     }
 
     public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
-        String labelChangeListId = ExtractorUtils.getVcsRevision(build.getEnvironment(listener));
         log("Submitting release version changes");
-        labelChangeListId = currentChangeListId + "";
+        String labelChangeListId = currentChangeListId + "";
         perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultVcsConfig().getTagComment());
 
         if (releaseAction.isCreateVcsTag()) {
