@@ -8,6 +8,7 @@ import hudson.FilePath;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.Cause;
 import hudson.remoting.VirtualChannel;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
@@ -17,6 +18,7 @@ import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.build.util.PublishedItemsHelper;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.File;
@@ -99,6 +101,11 @@ public class GenericArtifactsDeployer {
                 .addProperty("build.name", build.getParent().getDisplayName())
                 .addProperty("build.number", build.getNumber() + "")
                 .addProperty("build.timestamp", build.getTimestamp().getTime().getTime() + "");
+        Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
+        if (parent != null) {
+            builder.addProperty("build.parentName", parent.getUpstreamProject())
+                    .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
+        }
         String revision = ExtractorUtils.getVcsRevision(env);
         if (StringUtils.isNotBlank(revision)) {
             builder.addProperty(BuildInfoFields.VCS_REVISION, revision);
