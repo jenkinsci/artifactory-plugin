@@ -61,7 +61,7 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
         if (modifiedFilesForReleaseVersion) {
             log("Submitting release version changes");
             labelChangeListId = currentChangeListId + "";
-            perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultVcsConfig().getTagComment());
+            perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultGlobalReleaseVersion());
         } else {
             safeRevertWorkingCopy();
             currentChangeListId = perforce.getDefaultChangeListId();
