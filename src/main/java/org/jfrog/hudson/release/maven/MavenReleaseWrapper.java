@@ -24,12 +24,7 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.ModuleName;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Result;
-import hudson.model.TaskListener;
+import hudson.model.*;
 import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -69,7 +64,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
 
     @DataBoundConstructor
     public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeGoals,
-            String defaultVersioning) {
+                               String defaultVersioning) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeGoals = alternativeGoals;
@@ -137,6 +132,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                     ? releaseAction.getTagUrl() : null;
             boolean modified;
             try {
+                log(listener, "Changing POMs to release version");
                 modified = changeVersions(mavenBuild, releaseAction, true, vcsUrl);
             } catch (SnapshotNotAllowedException e) {
                 log(listener, "ERROR: " + e.getMessage());
@@ -176,6 +172,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                         String scmUrl = releaseAction.isCreateVcsTag() &&
                                 AbstractScmCoordinator.isSvn(build.getProject())
                                 ? scmCoordinator.getRemoteUrlForPom() : null;
+                        log(listener, "Changing POMs to next development version");
                         boolean modified = changeVersions(mavenBuild, releaseAction, false, scmUrl);
                         scmCoordinator.afterDevelopmentVersionChange(modified);
                     }
@@ -190,7 +187,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
     }
 
     private boolean changeVersions(MavenModuleSetBuild mavenBuild, ReleaseAction release, boolean releaseVersion,
-            String scmUrl) throws IOException, InterruptedException {
+                                   String scmUrl) throws IOException, InterruptedException {
         FilePath moduleRoot = mavenBuild.getModuleRoot();
         // get the active modules only
         Collection<MavenModule> modules = mavenBuild.getProject().getDisabledModules(false);
@@ -208,6 +205,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
             String pomRelativePath = StringUtils.isBlank(relativePath) ? "pom.xml" : relativePath + "/pom.xml";
             FilePath pomPath = new FilePath(moduleRoot, pomRelativePath);
             debuggingLogger.fine("Changing version of pom: " + pomPath);
+            scmCoordinator.edit(pomPath);
             modified |= pomPath.act(
                     new PomTransformer(mavenModule.getModuleName(), modulesByName, scmUrl, releaseVersion));
         }
@@ -266,7 +264,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
         public ListBoxModel doFillDefaultVersioningItems() {
             ListBoxModel model = new ListBoxModel();
             for (ReleaseAction.VERSIONING versioning : ReleaseAction.VERSIONING.values()) {
-                model.add(versioning.toString());
+                model.add(versioning.getDisplayMessage(), versioning.toString());
             }
             return model;
         }

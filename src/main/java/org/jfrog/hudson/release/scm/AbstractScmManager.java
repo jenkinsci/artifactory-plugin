@@ -36,7 +36,7 @@ public abstract class AbstractScmManager<T extends SCM> implements ScmManager {
         this.buildListener = buildListener;
     }
 
-    public T getHudsonScm() {
+    public T getJenkinsScm() {
         return (T) build.getProject().getRootProject().getScm();
     }
 

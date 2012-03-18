@@ -44,7 +44,7 @@ import net.sf.json.JSONObject;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
-import org.jfrog.hudson.maven2.BuildInfoDeployer;
+import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -63,7 +63,7 @@ import java.util.List;
  *
  * @author Yossi Shaul
  */
-public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOverrider {
+public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOverrider, BuildInfoAwareConfigurator {
     /**
      * Repository URL and repository to deploy artifacts to.
      */
@@ -280,7 +280,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 new ArtifactsDeployer(this, client, mavenBuild, listener).deploy();
             }
             if (deployBuildInfo) {
-                new BuildInfoDeployer(this, client, mavenBuild, listener).deploy();
+                new MavenBuildInfoDeployer(this, client, mavenBuild, listener).deploy();
                 // add the result action (prefer always the same index)
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
             }

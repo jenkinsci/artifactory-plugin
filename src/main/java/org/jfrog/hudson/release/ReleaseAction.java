@@ -65,7 +65,19 @@ public abstract class ReleaseAction implements Action {
     String releaseBranch;
 
     public enum VERSIONING {
-        GLOBAL, PER_MODULE, NONE
+        GLOBAL("One version for all modules"),
+        PER_MODULE("Version per module"),
+        NONE("Use existing module versions");
+        // The description to display in the UI
+        private final String displayMessage;
+
+        VERSIONING(String displayMessage) {
+            this.displayMessage = displayMessage;
+        }
+
+        public String getDisplayMessage() {
+            return displayMessage;
+        }
     }
 
     public ReleaseAction(AbstractProject project) {
@@ -302,4 +314,7 @@ public abstract class ReleaseAction implements Action {
     public abstract String getReleaseVersionFor(Object moduleName);
 
     public abstract String getNextVersionFor(Object moduleName);
+
+    protected void initBuilderSpecific() throws Exception {
+    }
 }
