@@ -22,6 +22,8 @@ import hudson.FilePath;
 import hudson.Util;
 import hudson.model.FreeStyleProject;
 import hudson.plugins.gradle.Gradle;
+import hudson.scm.SCM;
+import hudson.scm.SubversionSCM;
 import hudson.tasks.Builder;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -77,9 +79,7 @@ public class GradleReleaseAction extends ReleaseAction {
      * Initialize the version properties map from the gradle.properties file, and the additional properties from the
      * gradle.properties file.
      */
-    @Override
-    protected void initBuilderSpecific() throws Exception {
-        reset();
+    public void init() throws IOException, InterruptedException {
         FilePath workspace = getModuleRoot(EnvVars.masterEnvVars);
         FilePath gradlePropertiesPath = new FilePath(workspace, "gradle.properties");
         if (releaseProps == null) {
