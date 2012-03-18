@@ -314,4 +314,7 @@ public abstract class ReleaseAction implements Action {
     public abstract String getReleaseVersionFor(Object moduleName);
 
     public abstract String getNextVersionFor(Object moduleName);
+
+    protected void initBuilderSpecific() throws Exception {
+    }
 }
