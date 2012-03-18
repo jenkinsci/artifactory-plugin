@@ -63,8 +63,7 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
             labelChangeListId = currentChangeListId + "";
             perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultReleaseComment());
         } else {
-            perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultReleaseComment());
-            perforce.deleteChangeList(currentChangeListId);
+            safeRevertWorkingCopy();
             currentChangeListId = perforce.getDefaultChangeListId();
         }
 
