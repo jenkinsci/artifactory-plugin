@@ -84,6 +84,9 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
         if (modified) {
             log("Submitting next development version changes");
             perforce.commitWorkingCopy(currentChangeListId, releaseAction.getNextDevelCommitComment());
+        } else {
+            safeRevertWorkingCopy();
+            currentChangeListId = perforce.getDefaultChangeListId();
         }
     }
 
