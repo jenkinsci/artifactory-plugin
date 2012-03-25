@@ -16,21 +16,16 @@
 
 package org.jfrog.hudson.release.scm.perforce;
 
-import com.perforce.p4java.core.IChangelist;
-import com.tek42.perforce.Depot;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.TaskListener;
 import hudson.plugins.perforce.PerforceSCM;
-import hudson.plugins.perforce.PerforceTagAction;
 import hudson.remoting.VirtualChannel;
 import org.jfrog.build.vcs.perforce.PerforceClient;
-import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 
 /**
  * Performs Perforce actions for the release management.
@@ -59,12 +54,13 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
         }
         builder.hostAddress(hostAddress).client(build.getEnvironment(buildListener).get("P4CLIENT"));
         builder.username(jenkinsScm.getP4User()).password(jenkinsScm.getDecryptedP4Passwd());
+        builder.charset(jenkinsScm.getP4Charset());
         perforce = builder.build();
     }
 
     public void commitWorkingCopy(int changeListId, String commitMessage) throws IOException, InterruptedException {
         FilePath workspace = build.getWorkspace();
-        if(workspace == null) {
+        if (workspace == null) {
             throw new IOException("Workspace is null, cannot commit changes");
         }
         workspace.act(new CommitFilesCallable(builder, changeListId, commitMessage));
@@ -84,6 +80,7 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
 
     /**
      * Creates a new changelist and returns its id number
+     *
      * @return The id of the newly created changelist
      * @throws IOException In case of errors communicating with perforce server
      */
@@ -114,9 +111,10 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
     /**
      * Opens file for editing, this method uses {@link EditFilesCallable} which opens
      * new connection to perforce server since it may invoke on remote agents.
+     *
      * @param currentChangeListId The current change list id to open the file for editing at
-     * @param filePath The filePath which contains the file we need to edit
-     * @throws IOException Thrown in case of perforce communication errors
+     * @param filePath            The filePath which contains the file we need to edit
+     * @throws IOException          Thrown in case of perforce communication errors
      * @throws InterruptedException
      */
     public void edit(int currentChangeListId, FilePath filePath) throws IOException, InterruptedException {
@@ -124,7 +122,7 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
     }
 
     public void closeConnection() throws IOException {
-        perforce.closeConnection();   
+        perforce.closeConnection();
     }
 
     private static class EditFilesCallable implements FilePath.FileCallable<String> {
@@ -146,7 +144,7 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
             return null;
         }
     }
-    
+
     private static class CommitFilesCallable implements FilePath.FileCallable<String> {
 
         private PerforceClient.Builder builder;
