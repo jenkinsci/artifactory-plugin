@@ -103,21 +103,25 @@ public class GradleReleaseAction extends ReleaseAction {
      */
     public FilePath getModuleRoot(Map<String, String> env) throws IOException, InterruptedException {
         FilePath someWorkspace = project.getSomeWorkspace();
+        if (someWorkspace == null) {
+            throw new IllegalStateException("Couldn't find workspace");
+        }
         env.put("WORKSPACE", someWorkspace.getRemote());
-        Builder builder = project.getBuilders().get(0);
-        if (builder instanceof Gradle) {
-            Gradle gradleBuilder = (Gradle) builder;
-            String rootBuildScriptDir = gradleBuilder.getRootBuildScriptDir();
-            if (rootBuildScriptDir != null && rootBuildScriptDir.trim().length() != 0) {
-                String rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptDir.trim(), env);
-                rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptNormalized, env);
-                return new FilePath(someWorkspace, rootBuildScriptNormalized);
-            } else {
-                return someWorkspace;
+        for (Builder builder : project.getBuilders()) {
+            if (builder instanceof Gradle) {
+                Gradle gradleBuilder = (Gradle) builder;
+                String rootBuildScriptDir = gradleBuilder.getRootBuildScriptDir();
+                if (rootBuildScriptDir != null && rootBuildScriptDir.trim().length() != 0) {
+                    String rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptDir.trim(), env);
+                    rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptNormalized, env);
+                    return new FilePath(someWorkspace, rootBuildScriptNormalized);
+                } else {
+                    return someWorkspace;
+                }
             }
         }
 
-        return null;
+        throw new IllegalArgumentException("Couldn't find Gradle builder in the current builders list");
     }
 
     /**
