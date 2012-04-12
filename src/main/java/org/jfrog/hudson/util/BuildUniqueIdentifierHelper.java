@@ -6,7 +6,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
 import hudson.model.Hudson;
-import hudson.model.TopLevelItem;
+import hudson.model.Item;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.client.DeployDetails;
@@ -103,13 +103,13 @@ public class BuildUniqueIdentifierHelper {
     }
 
     /**
-     * Get a project according to its name.
+     * Get a project according to its full name.
      *
-     * @param name The name of the project.
-     * @return The project which answers the name.
+     * @param fullName The full name of the project.
+     * @return The project which answers the full name.
      */
-    private static AbstractProject<?, ?> getProject(String name) {
-        TopLevelItem item = Hudson.getInstance().getItem(name);
+    private static AbstractProject<?, ?> getProject(String fullName) {
+        Item item = Hudson.getInstance().getItemByFullName(fullName);
         if (item != null && item instanceof AbstractProject) {
             return (AbstractProject<?, ?>) item;
         }
