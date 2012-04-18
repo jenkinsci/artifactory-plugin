@@ -19,12 +19,14 @@ package org.jfrog.hudson.util;
 import hudson.util.Scrambler;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.Serializable;
+
 /**
  * Credentials model object
  *
  * @author Noam Y. Tenne
  */
-public class Credentials {
+public class Credentials implements Serializable {
 
     private final String username;
     private final String password;
