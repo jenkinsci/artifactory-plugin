@@ -14,7 +14,10 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.Dependency;
+import org.jfrog.build.api.dependency.UserBuildDependency;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -44,6 +47,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final ServerDetails details;
     private final Credentials overridingDeployerCredentials;
     private final String deployPattern;
+    private final String resolvePattern;
     private final String matrixParams;
 
     private final boolean deployBuildInfo;
@@ -54,14 +58,18 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private final boolean keepArchivedArtifacts;
+    private transient List<Dependency> publishedDependencies;
+    private transient List<UserBuildDependency> buildDependencies;
 
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            String deployPattern, String matrixParams, boolean deployBuildInfo, boolean includeEnvVars,
-            boolean discardOldBuilds, boolean discardBuildArtifacts, boolean keepArchivedArtifacts) {
+            String deployPattern, String resolvePattern, String matrixParams, boolean deployBuildInfo,
+            boolean includeEnvVars, boolean discardOldBuilds, boolean discardBuildArtifacts,
+            boolean keepArchivedArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployPattern = deployPattern;
+        this.resolvePattern = resolvePattern;
         this.matrixParams = matrixParams;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
@@ -88,6 +96,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     public String getDeployPattern() {
         return deployPattern;
+    }
+
+    public String getResolvePattern() {
+        return resolvePattern;
     }
 
     public String getMatrixParams() {
@@ -161,6 +173,33 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
 
+        Credentials preferredDeployer;
+        ArtifactoryServer server = getArtifactoryServer();
+        if (isOverridingDefaultDeployer()) {
+            preferredDeployer = getOverridingDeployerCredentials();
+        } else {
+            preferredDeployer = server.getResolvingCredentials();
+        }
+        ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
+                preferredDeployer.getUsername(), preferredDeployer.getPassword(), Hudson.getInstance().proxy,
+                listener);
+        try {
+            GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build,
+                    ArtifactoryGenericConfigurator.this, listener, dependenciesClient);
+            publishedDependencies = artifactsResolver.retrievePublishedDependencies();
+            buildDependencies = artifactsResolver.retrieveBuildDependencies();
+
+            return createEnvironmentOnSuccessfulSetup();
+        } catch (Exception e) {
+            e.printStackTrace(listener.error(e.getMessage()));
+        } finally {
+            dependenciesClient.shutdown();
+        }
+
+        return null;
+    }
+
+    private Environment createEnvironmentOnSuccessfulSetup() {
         return new Environment() {
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
@@ -187,7 +226,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                     Set<DeployDetails> deployedArtifacts = artifactsDeployer.getDeployedArtifacts();
                     if (deployBuildInfo) {
                         new GenericBuildInfoDeployer(ArtifactoryGenericConfigurator.this, client, build,
-                                listener, deployedArtifacts).deploy();
+                                listener, deployedArtifacts, buildDependencies, publishedDependencies).deploy();
                         // add the result action (prefer always the same index)
                         build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
                     }
