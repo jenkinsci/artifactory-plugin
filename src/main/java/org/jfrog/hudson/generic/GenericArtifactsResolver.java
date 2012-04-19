@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2012 JFrog Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jfrog.hudson.generic;
 
 import com.google.common.collect.Lists;
@@ -86,7 +102,6 @@ public class GenericArtifactsResolver {
             }
         }
 
-        FilePath workspace = build.getWorkspace();
         Credentials preferredDeployer;
         ArtifactoryServer server = configurator.getArtifactoryServer();
         if (configurator.isOverridingDefaultDeployer()) {
@@ -94,6 +109,7 @@ public class GenericArtifactsResolver {
         } else {
             preferredDeployer = server.getResolvingCredentials();
         }
+        FilePath workspace = build.getWorkspace();
         return workspace.act(new BuildDependenciesCallable(listener, Hudson.getInstance().proxy, preferredDeployer,
                 server, true, downloadableArtifacts));
     }
@@ -226,9 +242,7 @@ public class GenericArtifactsResolver {
                     Dependency dependency = downloadArtifact(client,
                             targetDir(downloadableArtifact.getRelativeDirPath(), dest),
                             downloadableArtifact.getRepoUrl(),
-                            // "http://10.0.0.1:8080/artifactory/libs-release-local"
                             downloadableArtifact.getFilePath(),
-                            // "com/goldin/plugins/gradle/0.1.1/gradle-0.1.1.jar"
                             downloadableArtifact.getMatrixParameters(), includeDependencies);
                     if (dependency != null) {
                         dependencies.add(dependency);
