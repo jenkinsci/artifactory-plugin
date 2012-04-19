@@ -49,6 +49,7 @@ public class PublisherContext {
     private String ivyPattern = "";
     private String matrixParams;
     private boolean maven2Compatible;
+    private boolean enableIssueTrackerIntegration;
 
     private PublisherContext() {
     }
@@ -143,6 +144,10 @@ public class PublisherContext {
 
     public boolean isMaven2Compatible() {
         return maven2Compatible;
+    }
+
+    public boolean isEnableIssueTrackerIntegration() {
+        return enableIssueTrackerIntegration;
     }
 
     public static class Builder {
@@ -260,6 +265,11 @@ public class PublisherContext {
 
         public Builder maven2Compatible(boolean maven2Compatible) {
             publisher.maven2Compatible = maven2Compatible;
+            return this;
+        }
+
+        public Builder enableIssueTrackerIntegration(boolean enableIssueTrackerIntegration) {
+            publisher.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
             return this;
         }
     }

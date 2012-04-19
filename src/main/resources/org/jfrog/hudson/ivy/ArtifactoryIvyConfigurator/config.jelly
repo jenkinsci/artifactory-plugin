@@ -1,3 +1,4 @@
+<!--suppress XmlUnusedNamespaceDeclaration -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <!--    <script src="http://code.jquery.com/jquery.min.js" type="text/javascript"></script>
@@ -170,6 +171,18 @@
                         }
                     </script>
                 </f:optionalBlock>
+            </table>
+        </f:block>
+        <f:block>
+            <table style="width:100%">
+                <j:if test="${descriptor.jiraPluginEnabled}">
+                    <f:optionalBlock name="enableIssueTrackerIntegration"
+                                     checked="${instance.enableIssueTrackerIntegration}"
+                                     title="Enable JIRA Integration"
+                                     help="/plugin/artifactory/help/common/help-enableIssueTrackerIntegration.html"
+                                     inline="true">
+                    </f:optionalBlock>
+                </j:if>
             </table>
         </f:block>
     </f:section>

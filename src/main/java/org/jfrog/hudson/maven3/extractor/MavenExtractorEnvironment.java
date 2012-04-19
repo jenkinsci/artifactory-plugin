@@ -24,6 +24,8 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
 import hudson.remoting.Which;
+import hudson.scm.NullChangeLogParser;
+import hudson.scm.NullSCM;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
@@ -43,6 +45,7 @@ import org.jfrog.hudson.util.ResolverContext;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Map;
 
@@ -90,6 +93,25 @@ public class MavenExtractorEnvironment extends Environment {
             return;
         }
 
+        //If an SCM is configured
+        if (!initialized && !(build.getProject().getScm() instanceof NullSCM)) {
+            //Handle all the extractor info only when a checkout was already done
+            boolean checkoutWasPerformed = true;
+            try {
+                Field scmField = AbstractBuild.class.getDeclaredField("scm");
+                scmField.setAccessible(true);
+                Object scmObject = scmField.get(build);
+                //Null changelog parser is set when a checkout wasn't performed yet
+                checkoutWasPerformed = !(scmObject instanceof NullChangeLogParser);
+            } catch (Exception e) {
+                buildListener.getLogger().println("[Warning] An error occurred while testing if the SCM checkout " +
+                        "has already been performed: " + e.getMessage());
+            }
+            if (!checkoutWasPerformed) {
+                return;
+            }
+        }
+
         // if not valid Maven version don't modify the environment
         if (!isMavenVersionValid()) {
             return;
@@ -123,7 +145,7 @@ public class MavenExtractorEnvironment extends Environment {
                 }
 
                 ArtifactoryClientConfiguration configuration = ExtractorUtils.addBuilderInfoArguments(
-                        env, build, publisherContext, resolverContext);
+                        env, build, buildListener, publisherContext, resolverContext);
                 propertiesFilePath = configuration.getPropertiesFile();
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -173,7 +195,7 @@ public class MavenExtractorEnvironment extends Environment {
                 .skipBuildInfoDeploy(!publisher.isDeployBuildInfo())
                 .includeEnvVars(publisher.isIncludeEnvVars()).discardBuildArtifacts(publisher.isDiscardBuildArtifacts())
                 .matrixParams(publisher.getMatrixParams()).evenIfUnstable(publisher.isEvenIfUnstable())
-                .build();
+                .enableIssueTrackerIntegration(publisher.isEnableIssueTrackerIntegration()).build();
 
         return context;
     }
@@ -189,7 +211,8 @@ public class MavenExtractorEnvironment extends Environment {
 
         if (StringUtils.contains(opts, MAVEN_PLUGIN_OPTS)) {
             listener.getLogger().println(
-                    "Property '" + MAVEN_PLUGIN_OPTS + "' is already part of MAVEN_OPTS. This is usually a leftover of " +
+                    "Property '" + MAVEN_PLUGIN_OPTS +
+                            "' is already part of MAVEN_OPTS. This is usually a leftover of " +
                             "previous build which was forcibly stopped. Replacing the value with an updated one. " +
                             "Please remove it from the job configuration.");
             // this regex will remove the property and the value (the value either ends with a space or surrounded by quotes

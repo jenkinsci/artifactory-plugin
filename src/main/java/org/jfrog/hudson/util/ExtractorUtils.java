@@ -19,15 +19,24 @@ package org.jfrog.hudson.util;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
+import com.google.common.io.NullOutputStream;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Computer;
 import hudson.model.Run;
+import hudson.model.StreamBuildListener;
+import hudson.plugins.jira.JiraIssue;
+import hudson.plugins.jira.JiraSession;
+import hudson.plugins.jira.JiraSite;
+import hudson.plugins.jira.soap.RemoteServerInfo;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.LogRotator;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
@@ -41,10 +50,15 @@ import org.jfrog.hudson.release.ReleaseAction;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * @author Tomer Cohen
@@ -63,8 +77,8 @@ public class ExtractorUtils {
     }
 
     /**
-     * Get the VCS revision from the Jenkins build environment. The search will one of "SVN_REVISION",
-     * "GIT_COMMIT", "P4_CHANGELIST" in the environment.
+     * Get the VCS revision from the Jenkins build environment. The search will one of "SVN_REVISION", "GIT_COMMIT",
+     * "P4_CHANGELIST" in the environment.
      *
      * @param env Th Jenkins build environment.
      * @return The vcs revision for supported VCS
@@ -85,18 +99,16 @@ public class ExtractorUtils {
      * buildinfo.properties} into a temporary location. The location is then put into an environment variable {@link
      * BuildInfoConfigProperties#PROP_PROPS_FILE} for the extractor to read.
      *
-     * @param env                       A map of the environment variables that are to be persisted into the
-     *                                  buildinfo.properties file. NOTE: nothing should be added to the env in this
-     *                                  method
-     * @param build                     The build from which to get build/project related information from (e.g build
-     *                                  name and build number).
-     * @param selectedArtifactoryServer The Artifactory server that is to be used during the build for resolution/
-     *                                  deployment
-     * @param publisherContext          A context for publisher settings
-     * @param resolverContext           A context for resolver settings
+     * @param env              A map of the environment variables that are to be persisted into the buildinfo.properties
+     *                         file. NOTE: nothing should be added to the env in this method
+     * @param build            The build from which to get build/project related information from (e.g build name and
+     *                         build number).
+     * @param listener
+     * @param publisherContext A context for publisher settings
+     * @param resolverContext  A context for resolver settings
      */
     public static ArtifactoryClientConfiguration addBuilderInfoArguments(Map<String, String> env, AbstractBuild build,
-                                                                         PublisherContext publisherContext, ResolverContext resolverContext)
+            BuildListener listener, PublisherContext publisherContext, ResolverContext resolverContext)
             throws IOException, InterruptedException {
         ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
         addBuildRootIfNeeded(build, configuration);
@@ -109,9 +121,66 @@ public class ExtractorUtils {
             setResolverInfo(configuration, resolverContext);
         }
 
+        if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
+                publisherContext.isEnableIssueTrackerIntegration()) {
+            setIssueTrackerInfo(build, listener, configuration);
+        }
+
         addEnvVars(env, build, configuration);
         persistConfiguration(build, configuration, env);
         return configuration;
+    }
+
+    private static void setIssueTrackerInfo(AbstractBuild build, BuildListener listener,
+            ArtifactoryClientConfiguration configuration) {
+        JiraSite site = JiraSite.get(build.getProject());
+        if (site == null) {
+            return;
+        }
+
+        try {
+            configuration.info.setIssueTrackerName("JIRA");
+            JiraSession session = site.createSession();
+            RemoteServerInfo info = session.service.getServerInfo(session.token);
+            configuration.info.setIssueTrackerVersion(info.getVersion());
+
+            StringBuilder affectedIssuesBuilder = new StringBuilder();
+            StringBuilder matrixParamsBuilder = new StringBuilder();
+            Set<String> issueIds = Sets.newHashSet(manuallyCollectIssues(build, site.getIssuePattern()));
+            for (String issueId : issueIds) {
+                if (!site.existsIssue(issueId)) {
+                    continue;
+                }
+
+                if (affectedIssuesBuilder.length() > 0) {
+                    affectedIssuesBuilder.append(",");
+                    matrixParamsBuilder.append(",");
+                }
+
+                URL url = site.getUrl(issueId);
+                JiraIssue issue = site.getIssue(issueId);
+                affectedIssuesBuilder.append(issueId).append(">>").append(url.toString()).append(">>")
+                        .append(issue.title);
+                matrixParamsBuilder.append(issueId);
+            }
+            configuration.info.setAffectedIssues(affectedIssuesBuilder.toString());
+            configuration.publisher
+                    .addMatrixParam(BuildInfoFields.BUILD_AFFECTED_ISSUES, matrixParamsBuilder.toString());
+        } catch (Exception e) {
+            listener.getLogger()
+                    .print("[Warning] Error while trying to collect issue tracker and change information: " +
+                            e.getMessage());
+        }
+    }
+
+    private static Set<String> manuallyCollectIssues(AbstractBuild build, Pattern issuePattern)
+            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Class<?> jiraUpdaterClass = Class.forName("hudson.plugins.jira.Updater");
+        Method findIssueIdsRecursive = jiraUpdaterClass.getDeclaredMethod("findIssueIdsRecursive", AbstractBuild.class,
+                Pattern.class, BuildListener.class);
+        findIssueIdsRecursive.setAccessible(true);
+        return (Set<String>) findIssueIdsRecursive.invoke(null, build, issuePattern,
+                new StreamBuildListener(new NullOutputStream()));
     }
 
     private static void setResolverInfo(ArtifactoryClientConfiguration configuration, ResolverContext context) {
@@ -126,7 +195,7 @@ public class ExtractorUtils {
      * Set all the parameters relevant for publishing artifacts and build info
      */
     private static void setPublisherInfo(Map<String, String> env, AbstractBuild build,
-                                         PublisherContext context, ArtifactoryClientConfiguration configuration) {
+            PublisherContext context, ArtifactoryClientConfiguration configuration) {
         configuration.setActivateRecorder(Boolean.TRUE);
 
         String buildName = build.getProject().getDisplayName();
@@ -272,7 +341,7 @@ public class ExtractorUtils {
     }
 
     public static void persistConfiguration(AbstractBuild build, ArtifactoryClientConfiguration configuration,
-                                            Map<String, String> env) throws IOException, InterruptedException {
+            Map<String, String> env) throws IOException, InterruptedException {
         FilePath propertiesFile = build.getWorkspace().createTextTempFile("buildInfo", ".properties", "", false);
         configuration.setPropertiesFile(propertiesFile.getRemote());
         env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());
@@ -299,8 +368,8 @@ public class ExtractorUtils {
     }
 
     private static void addMatrixParams(PublisherContext context,
-                                        ArtifactoryClientConfiguration.PublisherHandler publisher,
-                                        Map<String, String> env) {
+            ArtifactoryClientConfiguration.PublisherHandler publisher,
+            Map<String, String> env) {
         String matrixParams = context.getMatrixParams();
         if (StringUtils.isBlank(matrixParams)) {
             return;
@@ -319,7 +388,7 @@ public class ExtractorUtils {
     }
 
     private static void addEnvVars(Map<String, String> env, AbstractBuild<?, ?> build,
-                                   ArtifactoryClientConfiguration configuration) {
+            ArtifactoryClientConfiguration configuration) {
         // Write all the deploy (matrix params) properties.
         configuration.fillFromProperties(env);
         //Add only the jenkins specific environment variables

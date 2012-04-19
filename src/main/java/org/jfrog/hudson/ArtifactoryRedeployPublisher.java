@@ -41,6 +41,7 @@ import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
@@ -104,7 +105,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
-
+    private final boolean enableIssueTrackerIntegration;
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
@@ -112,7 +113,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
             String violationRecipients, boolean includePublishArtifacts, String scopes,
             boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
-            boolean discardBuildArtifacts, String matrixParams) {
+            boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -130,6 +131,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.matrixParams = matrixParams;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.deployBuildInfo = deployBuildInfo;
+        this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -228,6 +230,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return details != null ?
                 (details.snapshotsRepositoryKey != null ? details.snapshotsRepositoryKey : details.repositoryKey) :
                 null;
+    }
+
+    public boolean isEnableIssueTrackerIntegration() {
+        return enableIssueTrackerIntegration;
     }
 
     @Override
@@ -416,6 +422,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
+        }
+
+        public boolean isJiraPluginEnabled() {
+            return (Jenkins.getInstance().getPlugin("jira") != null);
         }
     }
 

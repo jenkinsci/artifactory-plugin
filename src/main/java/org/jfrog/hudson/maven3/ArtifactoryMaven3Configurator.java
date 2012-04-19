@@ -29,6 +29,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryBuilder;
@@ -88,13 +89,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
+    private final boolean enableIssueTrackerIntegration;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
             IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts, boolean deployBuildInfo,
             boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
             String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
-            boolean discardBuildArtifacts, String matrixParams) {
+            boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -105,6 +107,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.matrixParams = matrixParams;
+        this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.deployBuildInfo = deployBuildInfo;
         this.deployArtifacts = deployArtifacts;
@@ -196,6 +199,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return runChecks;
     }
 
+    public boolean isEnableIssueTrackerIntegration() {
+        return enableIssueTrackerIntegration;
+    }
+
     public ArtifactoryServer getArtifactoryServer(String artifactoryServerName) {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
         for (ArtifactoryServer server : servers) {
@@ -233,13 +240,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
                 .skipBuildInfoDeploy(skipBuildInfoDeploy).includeEnvVars(isIncludeEnvVars())
-                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams()).build();
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
+                .enableIssueTrackerIntegration(enableIssueTrackerIntegration).build();
         build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, context, null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -298,6 +306,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
+        }
+
+        public boolean isJiraPluginEnabled() {
+            return (Jenkins.getInstance().getPlugin("jira") != null);
         }
     }
 

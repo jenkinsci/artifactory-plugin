@@ -34,6 +34,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.ArtifactoryBuilder;
@@ -89,7 +90,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private final boolean passIdentifiedDownstream;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
-
+    private final boolean enableIssueTrackerIntegration;
 
     @DataBoundConstructor
     public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -98,7 +99,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts,
-            String matrixParams) {
+            String matrixParams, boolean enableIssueTrackerIntegration) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -117,6 +118,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.discardOldBuilds = discardOldBuilds;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.matrixParams = matrixParams;
+        this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.discardBuildArtifacts = discardBuildArtifacts;
     }
@@ -213,13 +215,17 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return !notM2Compatible;
     }
 
+    public boolean isEnableIssueTrackerIntegration() {
+        return enableIssueTrackerIntegration;
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
     }
 
     @Override
-    public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
+    public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
 
         final PublisherContext context = new PublisherContext.Builder().artifactoryServer(getArtifactoryServer())
@@ -231,7 +237,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .maven2Compatible(isM2Compatible()).artifactsPattern(getArtifactPattern())
-                .ivyPattern(getIvyPattern())
+                .ivyPattern(getIvyPattern()).enableIssueTrackerIntegration(enableIssueTrackerIntegration)
                 .build();
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
@@ -249,7 +255,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             public void buildEnvVars(Map<String, String> env) {
                 super.buildEnvVars(env);
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, context, null);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, context, null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -352,6 +358,10 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
+        }
+
+        public boolean isJiraPluginEnabled() {
+            return (Jenkins.getInstance().getPlugin("jira") != null);
         }
     }
 

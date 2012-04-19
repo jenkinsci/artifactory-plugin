@@ -29,6 +29,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.gradle.plugin.artifactory.extractor.BuildInfoTask;
@@ -87,6 +88,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean licenseAutoDiscovery;
     private final boolean disableLicenseAutoDiscovery;
     private final String ivyPattern;
+    private final boolean enableIssueTrackerIntegration;
     private final String artifactPattern;
     private final boolean notM2Compatible;
     private final IncludesExcludes artifactDeploymentPatterns;
@@ -97,7 +99,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final String matrixParams;
     private final boolean skipInjectInitScript;
 
-
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
             boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
@@ -105,7 +106,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
-            boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript) {
+            boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
+            boolean enableIssueTrackerIntegration) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -120,6 +122,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.scopes = scopes;
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.ivyPattern = ivyPattern;
+        this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.artifactPattern = cleanString(artifactPattern);
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -244,6 +247,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return !notM2Compatible;
     }
 
+    public boolean isEnableIssueTrackerIntegration() {
+        return enableIssueTrackerIntegration;
+    }
+
     private String cleanString(String artifactPattern) {
         return StringUtils.removeEnd(StringUtils.removeStart(artifactPattern, "\""), "\"");
     }
@@ -262,7 +269,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     @Override
-    public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
+    public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
         if (isRelease(build)) {
             releaseWrapper.setUp(build, launcher, listener);
@@ -343,7 +350,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                         .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
                         .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
-                        .build();
+                        .enableIssueTrackerIntegration(enableIssueTrackerIntegration).build();
 
                 ResolverContext resolverContext = null;
                 if (StringUtils.isNotBlank(serverDetails.downloadRepositoryKey)) {
@@ -360,7 +367,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 }
 
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, publisherContext, resolverContext);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, publisherContext, resolverContext);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -522,6 +529,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         public List<UserPluginInfo> getStagingUserPluginInfo() {
             List<ArtifactoryServer> artifactoryServers = getArtifactoryServers();
             return artifactoryServers.get(0).getStagingUserPluginInfo();
+        }
+
+        public boolean isJiraPluginEnabled() {
+            return (Jenkins.getInstance().getPlugin("jira") != null);
         }
     }
 
