@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Resolves and deploys artifacts to Artifactory. This class is used only in free style generic configurator.
+ * Deploys artifacts to Artifactory. This class is used only in free style generic configurator.
  *
  * @author Shay Yaakov
  */
@@ -122,12 +122,12 @@ public class GenericArtifactsDeployer {
         String deployPattern = configurator.getDeployPattern();
         deployPattern = StringUtils.replace(deployPattern, "\r\n", "\n");
         deployPattern = StringUtils.replace(deployPattern, ",", "\n");
-        Map<String, String> pairs = PublishedItemsHelper.getPublishedItemsPatternPairs(deployPattern);
+        Multimap<String, String> pairs = PublishedItemsHelper.getPublishedItemsPatternPairs(deployPattern);
         if (pairs.isEmpty()) {
             return result;
         }
 
-        for (final Map.Entry<String, String> entry : pairs.entrySet()) {
+        for (final Map.Entry<String, String> entry : pairs.entries()) {
             // Retrieves all associated files according to the entry Ant pattern (value)
             Multimap<String, File> filesOnRemote = workingDir.act(
                     new FilesArchivingCallable(listener, entry.getKey(), entry.getValue()));

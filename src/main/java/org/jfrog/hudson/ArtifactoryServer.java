@@ -20,6 +20,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.ProxyConfiguration;
+import hudson.model.BuildListener;
 import hudson.model.Hudson;
 import hudson.model.User;
 import hudson.util.Scrambler;
@@ -27,9 +28,11 @@ import hudson.util.XStream2;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -46,7 +49,7 @@ import java.util.logging.Logger;
  *
  * @author Yossi Shaul
  */
-public class ArtifactoryServer {
+public class ArtifactoryServer implements Serializable {
     private static final Logger log = Logger.getLogger(ArtifactoryServer.class.getName());
 
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;    // 5 Minutes
@@ -232,6 +235,21 @@ public class ArtifactoryServer {
         client.setConnectionTimeout(timeout);
 
         ProxyConfiguration proxyConfiguration = Hudson.getInstance().proxy;
+        if (!bypassProxy && proxyConfiguration != null) {
+            client.setProxyConfiguration(proxyConfiguration.name,
+                    proxyConfiguration.port,
+                    proxyConfiguration.getUserName(),
+                    proxyConfiguration.getPassword());
+        }
+
+        return client;
+    }
+
+    public ArtifactoryDependenciesClient createArtifactoryDependenciesClient(String userName, String password,
+            ProxyConfiguration proxyConfiguration, BuildListener listener) {
+        ArtifactoryDependenciesClient client = new ArtifactoryDependenciesClient(url, userName, password,
+                new JenkinsBuildInfoLog(listener));
+        client.setConnectionTimeout(timeout);
         if (!bypassProxy && proxyConfiguration != null) {
             client.setProxyConfiguration(proxyConfiguration.name,
                     proxyConfiguration.port,

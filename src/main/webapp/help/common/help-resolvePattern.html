@@ -1,0 +1,20 @@
+<div>
+    New line or comma separated references to other artifacts that this build should use as dependencies.<br/>
+    Each reference is specified in the format of: <br/>
+    <b>repo_key:path_pattern[;prop=val1,val2[;prop2+=val3][=>target_dir]</b>, where:<br/>
+    <b>repo_key</b> - A key of the Artifactory repository that contains the dependencies (may contain the * and the
+    ? wildcards).<br/>
+    <b>path_pattern</b> - An Ant-like pattern of the dependencies path within the Artifactory (may contain the * and
+    the ? wildcards). <br/>
+    For example: <b>repo-key:dir/*/bob/*.zip</b> (** wilcards are not supported) <br/>
+    Artifacts can be downloaded conditionally based on their property values in Artifactory. <br> For example, to
+    download all zip files marked as production ready: <b>repo-key:dir/*/bob/*.zip;status+=prod</b>.<br/>
+    For more details see the plug-in's <a
+        href="https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin"
+        target="_blank">documentation</a>.<br/>
+    <b>target_dir</b> - An optional target directory to where resolved dependencies will be downloaded. <br/>
+    By default dependencies will be downloaded to a path under the build workspace.<br/>
+    For example: <b>repo-key:*.zip=>winFiles, repo-key:unix/distro.tgz=>linuxFiles</b>,
+    where <b>winFiles</b> and <b>linuxFiles</b> are target directories.<br>
+    Target directories can either be absolute or relative to the working directory.
+</div>
