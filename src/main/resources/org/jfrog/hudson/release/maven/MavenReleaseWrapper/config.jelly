@@ -1,7 +1,7 @@
 <!--suppress XmlUnusedNamespaceDeclaration -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry field="tagPrefix" title="VCS tags base URL/name"
+    <f:entry field="tagPrefix" title="VCS tags name/base URL"
              help="/plugin/artifactory/help/release/common/help-tagBaseUrl.html">
         <f:textbox name="tagPrefix" value="${instance.tagPrefix}"/>
     </f:entry>
