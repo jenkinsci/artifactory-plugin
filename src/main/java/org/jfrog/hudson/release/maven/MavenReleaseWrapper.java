@@ -28,7 +28,6 @@ import hudson.model.*;
 import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
@@ -36,9 +35,7 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
-import org.jfrog.hudson.util.FormValidations;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -251,15 +248,6 @@ public class MavenReleaseWrapper extends BuildWrapper {
         @Override
         public String getDisplayName() {
             return "Enable Artifactory release management";
-        }
-
-        /**
-         * @param tagPrefix The subversion tags url
-         * @return Error message if tags url is not set
-         */
-        @SuppressWarnings({"UnusedDeclaration"})
-        public FormValidation doCheckTagPrefix(@QueryParameter String tagPrefix) {
-            return FormValidations.validateTagPrefix(tagPrefix);
         }
 
         /**
