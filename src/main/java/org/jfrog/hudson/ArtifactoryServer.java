@@ -20,21 +20,27 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.ProxyConfiguration;
+import hudson.model.BuildListener;
 import hudson.model.Hudson;
+import hudson.model.User;
 import hudson.util.Scrambler;
 import hudson.util.XStream2;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,7 +49,7 @@ import java.util.logging.Logger;
  *
  * @author Yossi Shaul
  */
-public class ArtifactoryServer {
+public class ArtifactoryServer implements Serializable {
     private static final Logger log = Logger.getLogger(ArtifactoryServer.class.getName());
 
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;    // 5 Minutes
@@ -100,13 +106,20 @@ public class ArtifactoryServer {
 
     public List<String> getRepositoryKeys() {
         Credentials resolvingCredentials = getResolvingCredentials();
+        ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                resolvingCredentials.getPassword());
         try {
-            ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
-                    resolvingCredentials.getPassword());
             repositories = client.getLocalRepositoriesKeys();
         } catch (IOException e) {
-            log.log(Level.WARNING, "Could not obtain local repositories list from '" + url + "': " + e.getMessage());
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.WARNING, "Could not obtain local repositories list from '" + url + "'", e);
+            } else {
+                log.log(Level.WARNING,
+                        "Could not obtain local repositories list from '" + url + "': " + e.getMessage());
+            }
             return Lists.newArrayList();
+        } finally {
+            client.shutdown();
         }
         return repositories;
     }
@@ -129,7 +142,19 @@ public class ArtifactoryServer {
         return repositoryKeys;
     }
 
-    private static class RepositoryComparator implements Comparator<String> {
+    public Map getStagingStrategy(PluginSettings selectedStagingPlugin, String buildName) throws IOException {
+        Credentials resolvingCredentials = getResolvingCredentials();
+        ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                resolvingCredentials.getPassword());
+        try {
+            return client.getStagingStrategy(selectedStagingPlugin.getPluginName(), buildName,
+                    selectedStagingPlugin.getParamMap());
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    private static class RepositoryComparator implements Comparator<String>, Serializable {
 
         public int compare(String o1, String o2) {
             if (o1.contains("snapshot") && !o2.contains("snapshot")) {
@@ -142,9 +167,9 @@ public class ArtifactoryServer {
 
     public List<VirtualRepository> getVirtualRepositoryKeys() {
         Credentials resolvingCredentials = getResolvingCredentials();
+        ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                resolvingCredentials.getPassword());
         try {
-            ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
-                    resolvingCredentials.getPassword());
             List<String> keys = client.getVirtualRepositoryKeys();
             virtualRepositories = Lists.newArrayList(Lists.transform(keys, new Function<String, VirtualRepository>() {
                 public VirtualRepository apply(String from) {
@@ -152,8 +177,15 @@ public class ArtifactoryServer {
                 }
             }));
         } catch (IOException e) {
-            log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.WARNING, "Could not obtain virtual repositories list from '" + url + "'", e);
+            } else {
+                log.log(Level.WARNING,
+                        "Could not obtain virtual repositories list from '" + url + "': " + e.getMessage());
+            }
             return Lists.newArrayList();
+        } finally {
+            client.shutdown();
         }
         virtualRepositories
                 .add(0, new VirtualRepository("-- To use Artifactory for resolution select a virtual repository --",
@@ -169,9 +201,33 @@ public class ArtifactoryServer {
             ArtifactoryVersion version = client.getVersion();
             return version.hasAddons();
         } catch (IOException e) {
-            log.log(Level.WARNING, "Failed to obtain list of virtual repositories: " + e.getMessage());
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.WARNING, "Could not obtain artifactory version from '" + url + "'", e);
+            } else {
+                log.log(Level.WARNING,
+                        "Could not obtain artifactory version from '" + url + "': " + e.getMessage());
+            }
         }
         return false;
+    }
+
+    public List<UserPluginInfo> getStagingUserPluginInfo() {
+        List<UserPluginInfo> infosToReturn = Lists.newArrayList(UserPluginInfo.NO_PLUGIN);
+        gatherUserPluginInfo(infosToReturn, "staging");
+        return infosToReturn;
+    }
+
+    public List<UserPluginInfo> getPromotionsUserPluginInfo() {
+        List<UserPluginInfo> infosToReturn = Lists.newArrayList(UserPluginInfo.NO_PLUGIN);
+        gatherUserPluginInfo(infosToReturn, "promotions");
+        User user = User.current();
+        String ciUser = (user == null) ? "anonymous" : user.getId();
+        for (UserPluginInfo info : infosToReturn) {
+            if (!UserPluginInfo.NO_PLUGIN.equals(info)) {
+                info.addParam("ciUser", ciUser);
+            }
+        }
+        return infosToReturn;
     }
 
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password) {
@@ -179,6 +235,21 @@ public class ArtifactoryServer {
         client.setConnectionTimeout(timeout);
 
         ProxyConfiguration proxyConfiguration = Hudson.getInstance().proxy;
+        if (!bypassProxy && proxyConfiguration != null) {
+            client.setProxyConfiguration(proxyConfiguration.name,
+                    proxyConfiguration.port,
+                    proxyConfiguration.getUserName(),
+                    proxyConfiguration.getPassword());
+        }
+
+        return client;
+    }
+
+    public ArtifactoryDependenciesClient createArtifactoryDependenciesClient(String userName, String password,
+            ProxyConfiguration proxyConfiguration, BuildListener listener) {
+        ArtifactoryDependenciesClient client = new ArtifactoryDependenciesClient(url, userName, password,
+                new JenkinsBuildInfoLog(listener));
+        client.setConnectionTimeout(timeout);
         if (!bypassProxy && proxyConfiguration != null) {
             client.setProxyConfiguration(proxyConfiguration.name,
                     proxyConfiguration.port,
@@ -235,4 +306,30 @@ public class ArtifactoryServer {
      */
     @Deprecated
     private transient String password;    // base64 scrambled password
+
+    private void gatherUserPluginInfo(List<UserPluginInfo> infosToReturn, String pluginKey) {
+        Credentials resolvingCredentials = getResolvingCredentials();
+        ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
+                resolvingCredentials.getPassword());
+        try {
+            Map<String, List<Map>> userPluginInfo = client.getUserPluginInfo();
+            if (userPluginInfo != null && userPluginInfo.containsKey(pluginKey)) {
+                List<Map> stagingUserPluginInfo = userPluginInfo.get(pluginKey);
+                if (stagingUserPluginInfo != null) {
+                    for (Map stagingPluginInfo : stagingUserPluginInfo) {
+                        infosToReturn.add(new UserPluginInfo(stagingPluginInfo));
+                    }
+                    Collections.sort(infosToReturn, new Comparator<UserPluginInfo>() {
+                        public int compare(UserPluginInfo o1, UserPluginInfo o2) {
+                            return o1.getPluginName().compareTo(o2.getPluginName());
+                        }
+                    });
+                }
+            }
+        } catch (IOException e) {
+            log.log(Level.WARNING, "Failed to obtain user plugin info: " + e.getMessage());
+        } finally {
+            client.shutdown();
+        }
+    }
 }

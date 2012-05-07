@@ -64,7 +64,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
 
     @DataBoundConstructor
     public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeGoals,
-                               String defaultVersioning) {
+            String defaultVersioning) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeGoals = alternativeGoals;
@@ -187,7 +187,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
     }
 
     private boolean changeVersions(MavenModuleSetBuild mavenBuild, ReleaseAction release, boolean releaseVersion,
-                                   String scmUrl) throws IOException, InterruptedException {
+            String scmUrl) throws IOException, InterruptedException {
         FilePath moduleRoot = mavenBuild.getModuleRoot();
         // get the active modules only
         Collection<MavenModule> modules = mavenBuild.getProject().getDisabledModules(false);

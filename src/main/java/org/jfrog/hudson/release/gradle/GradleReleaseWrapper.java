@@ -52,7 +52,7 @@ public class GradleReleaseWrapper {
 
     @DataBoundConstructor
     public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeTasks,
-                                String releasePropsKeys, String nextIntegPropsKeys) {
+            String releasePropsKeys, String nextIntegPropsKeys) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeTasks = alternativeTasks;
