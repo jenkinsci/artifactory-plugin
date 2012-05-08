@@ -89,6 +89,11 @@
                         <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
                         <label class="attach-previous">${%Include all environment variables}</label>
                     </f:entry>
+                    <f:entry field="allowPromotionOfNonStagedBuilds"
+                             help="/plugin/artifactory/help/common/help-allowPromotionOfNonStagedBuilds.html">
+                        <f:checkbox default="false" checked="${instance.allowPromotionOfNonStagedBuilds}"/>
+                        <label class="attach-previous">${%Allow promotion of non-staged builds}</label>
+                    </f:entry>
                     <f:block>
                         <table style="width:100%">
                             <f:optionalBlock name="runChecks"

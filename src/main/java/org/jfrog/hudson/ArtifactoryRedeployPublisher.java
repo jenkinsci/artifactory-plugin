@@ -48,6 +48,7 @@ import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
+import org.jfrog.hudson.release.maven.MavenPromoteBuildAction;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -106,6 +107,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
     private final boolean enableIssueTrackerIntegration;
+    private final boolean allowPromotionOfNonStagedBuilds;
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
@@ -113,7 +115,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
             String violationRecipients, boolean includePublishArtifacts, String scopes,
             boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
-            boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration) {
+            boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
+            boolean allowPromotionOfNonStagedBuilds) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -132,6 +135,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.deployBuildInfo = deployBuildInfo;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
+        this.allowPromotionOfNonStagedBuilds = allowPromotionOfNonStagedBuilds;
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -236,6 +240,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return enableIssueTrackerIntegration;
     }
 
+    public boolean isAllowPromotionOfNonStagedBuilds() {
+        return allowPromotionOfNonStagedBuilds;
+    }
+
     @Override
     public Action getProjectAction(AbstractProject<?, ?> project) {
         return details != null ? new ArtifactoryProjectAction(details.artifactoryName, project) : null;
@@ -255,6 +263,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         if (isExtractorUsed(build.getEnvironment(listener))) {
             if (deployBuildInfo) {
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
+                if (isAllowPromotionOfNonStagedBuilds()) {
+                    build.getActions().add(new MavenPromoteBuildAction(build));
+                }
             }
             return true;
         }
@@ -292,6 +303,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 new MavenBuildInfoDeployer(this, client, mavenBuild, listener).deploy();
                 // add the result action (prefer always the same index)
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
+                if (isAllowPromotionOfNonStagedBuilds()) {
+                    build.getActions().add(new MavenPromoteBuildAction(build));
+                }
             }
             return true;
         } catch (Exception e) {

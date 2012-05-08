@@ -24,13 +24,19 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.ModuleName;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
+import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -283,16 +289,20 @@ public class MavenReleaseWrapper extends BuildWrapper {
                 return;
             }
 
-            Result result = run.getResult();
-            if (result.isBetterOrEqualTo(Result.SUCCESS)) {
-                // add a stage action
-                run.addAction(new MavenPromoteBuildAction(run));
+            // signal completion to the scm coordinator
+            MavenModuleSet project = ((MavenModuleSetBuild) run).getProject();
+
+            ArtifactoryRedeployPublisher redeployPublisher =
+                    ActionableHelper.getPublisher(project, ArtifactoryRedeployPublisher.class);
+            if (!redeployPublisher.isAllowPromotionOfNonStagedBuilds()) {
+                Result result = run.getResult();
+                if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+                    // add a stage action
+                    run.addAction(new MavenPromoteBuildAction(run));
+                }
             }
 
-            // signal completion to the scm coordinator
-            MavenModuleSetBuild mavenBuild = (MavenModuleSetBuild) run;
-            MavenReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(mavenBuild.getProject(),
-                    MavenReleaseWrapper.class);
+            MavenReleaseWrapper wrapper = ActionableHelper.getBuildWrapper(project, MavenReleaseWrapper.class);
             try {
                 wrapper.scmCoordinator.buildCompleted();
             } catch (Exception e) {
