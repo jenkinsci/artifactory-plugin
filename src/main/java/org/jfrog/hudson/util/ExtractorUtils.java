@@ -19,9 +19,7 @@ package org.jfrog.hudson.util;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
-import com.google.common.io.NullOutputStream;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.AbstractBuild;
@@ -29,11 +27,6 @@ import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Computer;
 import hudson.model.Run;
-import hudson.model.StreamBuildListener;
-import hudson.plugins.jira.JiraIssue;
-import hudson.plugins.jira.JiraSession;
-import hudson.plugins.jira.JiraSite;
-import hudson.plugins.jira.soap.RemoteServerInfo;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.LogRotator;
 import jenkins.model.Jenkins;
@@ -50,15 +43,10 @@ import org.jfrog.hudson.release.ReleaseAction;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * @author Tomer Cohen
@@ -123,64 +111,12 @@ public class ExtractorUtils {
 
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
                 publisherContext.isEnableIssueTrackerIntegration()) {
-            setIssueTrackerInfo(build, listener, configuration);
+            new IssuesTrackerHelper().setIssueTrackerInfo(build, listener, configuration);
         }
 
         addEnvVars(env, build, configuration);
         persistConfiguration(build, configuration, env);
         return configuration;
-    }
-
-    private static void setIssueTrackerInfo(AbstractBuild build, BuildListener listener,
-            ArtifactoryClientConfiguration configuration) {
-        JiraSite site = JiraSite.get(build.getProject());
-        if (site == null) {
-            return;
-        }
-
-        try {
-            configuration.info.setIssueTrackerName("JIRA");
-            JiraSession session = site.createSession();
-            RemoteServerInfo info = session.service.getServerInfo(session.token);
-            configuration.info.setIssueTrackerVersion(info.getVersion());
-
-            StringBuilder affectedIssuesBuilder = new StringBuilder();
-            StringBuilder matrixParamsBuilder = new StringBuilder();
-            Set<String> issueIds = Sets.newHashSet(manuallyCollectIssues(build, site.getIssuePattern()));
-            for (String issueId : issueIds) {
-                if (!site.existsIssue(issueId)) {
-                    continue;
-                }
-
-                if (affectedIssuesBuilder.length() > 0) {
-                    affectedIssuesBuilder.append(",");
-                    matrixParamsBuilder.append(",");
-                }
-
-                URL url = site.getUrl(issueId);
-                JiraIssue issue = site.getIssue(issueId);
-                affectedIssuesBuilder.append(issueId).append(">>").append(url.toString()).append(">>")
-                        .append(issue.title);
-                matrixParamsBuilder.append(issueId);
-            }
-            configuration.info.setAffectedIssues(affectedIssuesBuilder.toString());
-            configuration.publisher
-                    .addMatrixParam(BuildInfoFields.BUILD_AFFECTED_ISSUES, matrixParamsBuilder.toString());
-        } catch (Exception e) {
-            listener.getLogger()
-                    .print("[Warning] Error while trying to collect issue tracker and change information: " +
-                            e.getMessage());
-        }
-    }
-
-    private static Set<String> manuallyCollectIssues(AbstractBuild build, Pattern issuePattern)
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Class<?> jiraUpdaterClass = Class.forName("hudson.plugins.jira.Updater");
-        Method findIssueIdsRecursive = jiraUpdaterClass.getDeclaredMethod("findIssueIdsRecursive", AbstractBuild.class,
-                Pattern.class, BuildListener.class);
-        findIssueIdsRecursive.setAccessible(true);
-        return (Set<String>) findIssueIdsRecursive.invoke(null, build, issuePattern,
-                new StreamBuildListener(new NullOutputStream()));
     }
 
     private static void setResolverInfo(ArtifactoryClientConfiguration configuration, ResolverContext context) {
