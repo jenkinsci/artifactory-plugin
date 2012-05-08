@@ -212,7 +212,7 @@
                                  title="Enabled Release Management">
                     <input type="hidden" name="stapler-class"
                            value="org.jfrog.hudson.release.gradle.GradleReleaseWrapper"/>
-                    <f:entry field="tagPrefix" title="VCS tags base URL/name"
+                    <f:entry field="tagPrefix" title="VCS tags name/base URL"
                              help="/plugin/artifactory/help/release/common/help-tagBaseUrl.html">
                         <f:textbox name="tagPrefix" value="${releaseWrapper.tagPrefix}"/>
                     </f:entry>
