@@ -32,13 +32,13 @@ import java.util.List;
  * A stage action for Gradle builds, allows to stage and release builds in Artifactory.
  *
  * @author Tomer Cohen
- * @deprecated Use {@link org.jfrog.hudson.release.PromoteBuildAction} directly
+ * @deprecated Use {@link org.jfrog.hudson.release.UnifiedPromoteBuildAction} for all builder types
  */
 @Deprecated
 public class GradlePromoteBuildAction extends PromoteBuildAction {
 
     public GradlePromoteBuildAction(AbstractBuild build) {
-        super(build, null);
+        super(build);
     }
 
     @Override
@@ -64,6 +64,7 @@ public class GradlePromoteBuildAction extends PromoteBuildAction {
         }
     }
 
+    @Override
     protected ArtifactoryServer getArtifactoryServer() {
         ArtifactoryGradleConfigurator wrapper = ActionableHelper
                 .getBuildWrapper((BuildableItemWithBuildWrappers) getBuild().getProject(),
@@ -71,6 +72,7 @@ public class GradlePromoteBuildAction extends PromoteBuildAction {
         return wrapper.getArtifactoryServer();
     }
 
+    @Override
     protected Credentials getCredentials(ArtifactoryServer server) {
         ArtifactoryGradleConfigurator wrapper = ActionableHelper
                 .getBuildWrapper((BuildableItemWithBuildWrappers) getBuild().getProject(),

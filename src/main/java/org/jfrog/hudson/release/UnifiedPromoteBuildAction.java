@@ -25,6 +25,7 @@ import hudson.model.TaskListener;
 import hudson.model.TaskThread;
 import hudson.model.User;
 import hudson.security.ACL;
+import hudson.security.Permission;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
@@ -34,11 +35,13 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
+import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.PluginSettings;
 import org.jfrog.hudson.UserPluginInfo;
-import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -52,12 +55,12 @@ import java.util.Map;
 /**
  * This badge action is added to a successful staged builds. It allows performing additional promotion.
  *
- * @author Yossi Shaul
- * @deprecated Use {@link org.jfrog.hudson.release.UnifiedPromoteBuildAction} for all builder types
+ * @author Noam Y. Tenne
  */
-@Deprecated
-public abstract class PromoteBuildAction extends TaskAction implements BuildBadgeAction {
+public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & DeployerOverrider> extends TaskAction
+        implements BuildBadgeAction {
     private final AbstractBuild build;
+    private final C configurator;
 
     private String targetStatus;
     private String repositoryKey;
@@ -66,8 +69,14 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
     private boolean includeDependencies;
     private PluginSettings promotionPlugin;
 
-    public PromoteBuildAction(AbstractBuild build) {
+    public UnifiedPromoteBuildAction(AbstractBuild build, C configurator) {
         this.build = build;
+        this.configurator = configurator;
+    }
+
+    @Override
+    protected Permission getPermission() {
+        return ArtifactoryPlugin.PROMOTE;
     }
 
     public String getIconFileName() {
@@ -129,7 +138,15 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
     /**
      * @return List of target repositories for deployment (release repositories first). Called from the UI.
      */
-    public abstract List<String> getRepositoryKeys();
+    public List<String> getRepositoryKeys() {
+        ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
+        if (artifactoryServer == null) {
+            return Lists.newArrayList();
+        }
+        List<String> repos = artifactoryServer.getReleaseRepositoryKeysFirst();
+        repos.add(0, "");  // option not to move
+        return repos;
+    }
 
     @SuppressWarnings({"UnusedDeclaration"})
     public List<String> getTargetStatuses() {
@@ -189,29 +206,20 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
             }
         }
 
-        ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
-                build.getProject(), ArtifactoryRedeployPublisher.class);
-        ArtifactoryServer server = getArtifactoryServer();
+        ArtifactoryServer server = configurator.getArtifactoryServer();
 
-        new PromoteWorkerThread(server, getCredentials(server)).start();
+        new PromoteWorkerThread(server, CredentialResolver.getPreferredDeployer(configurator, server)).start();
 
         resp.sendRedirect(".");
     }
 
     public List<UserPluginInfo> getPromotionsUserPluginInfo() {
-        return getArtifactoryServer().getPromotionsUserPluginInfo();
+        ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
+        if (artifactoryServer == null) {
+            return Lists.newArrayList(UserPluginInfo.NO_PLUGIN);
+        }
+        return artifactoryServer.getPromotionsUserPluginInfo();
     }
-
-    /**
-     * @return The Artifactory server that is used for the build.
-     */
-    protected abstract ArtifactoryServer getArtifactoryServer();
-
-    /**
-     * @param server The Artifactory server that is used for the build.
-     * @return The credentials that were used for this server.
-     */
-    protected abstract Credentials getCredentials(ArtifactoryServer server);
 
     @Override
     protected ACL getACL() {
@@ -232,7 +240,7 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
         private final String ciUser;
 
         public PromoteWorkerThread(ArtifactoryServer artifactoryServer, Credentials deployer) {
-            super(PromoteBuildAction.this, ListenerAndText.forMemory(null));
+            super(UnifiedPromoteBuildAction.this, ListenerAndText.forMemory(null));
             this.artifactoryServer = artifactoryServer;
             this.deployer = deployer;
             // current user is bound to the thread and will be lost in the perform method
