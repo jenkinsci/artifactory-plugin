@@ -34,10 +34,12 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.PromoteBuildAction;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
@@ -58,7 +60,9 @@ import java.util.Map;
  *
  * @author Noam Y. Tenne
  */
-public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider {
+public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider,
+        BuildInfoAwareConfigurator {
+
     /**
      * Repository URL and repository to deploy artifacts to
      */
@@ -150,6 +154,16 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public boolean isDeployBuildInfo() {
         return deployBuildInfo;
+    }
+
+    public ArtifactoryServer getArtifactoryServer() {
+        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
+        for (ArtifactoryServer server : servers) {
+            if (server.getName().equals(getArtifactoryName())) {
+                return server;
+            }
+        }
+        return null;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -258,6 +272,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 Result result = build.getResult();
                 if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
+                    build.getActions().add(new PromoteBuildAction<ArtifactoryMaven3Configurator>(build,
+                            ArtifactoryMaven3Configurator.this));
                 }
                 return true;
             }

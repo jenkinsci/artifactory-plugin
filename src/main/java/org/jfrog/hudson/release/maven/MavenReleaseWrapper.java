@@ -38,6 +38,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.PromoteBuildAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
@@ -298,7 +299,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                 Result result = run.getResult();
                 if (result.isBetterOrEqualTo(Result.SUCCESS)) {
                     // add a stage action
-                    run.addAction(new MavenPromoteBuildAction(run));
+                    run.addAction(new PromoteBuildAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
                 }
             }
 

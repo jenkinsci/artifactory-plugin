@@ -35,6 +35,7 @@ import net.sf.json.JSONObject;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -59,7 +60,8 @@ import java.util.Map;
 /**
  * @author Tomer Cohen
  */
-public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements DeployerOverrider {
+public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements DeployerOverrider,
+        BuildInfoAwareConfigurator {
 
     private ServerDetails details;
     private final Credentials overridingDeployerCredentials;
@@ -187,6 +189,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     public String getScopes() {
         return scopes;
+    }
+
+    public boolean isLicenseAutoDiscovery() {
+        return licenseAutoDiscovery;
     }
 
     public void setRunChecks(boolean runChecks) {

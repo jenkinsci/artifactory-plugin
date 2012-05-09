@@ -35,6 +35,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.gradle.plugin.artifactory.extractor.BuildInfoTask;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.PluginSettings;
@@ -42,7 +43,7 @@ import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
-import org.jfrog.hudson.release.GradlePromoteBuildAction;
+import org.jfrog.hudson.release.PromoteBuildAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
@@ -72,7 +73,8 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider {
+public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider,
+        BuildInfoAwareConfigurator {
     private ServerDetails details;
     private boolean deployArtifacts;
     private final Credentials overridingDeployerCredentials;
@@ -397,7 +399,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     if (isDeployBuildInfo()) {
                         build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
                         if (isAllowPromotionOfNonStagedBuilds()) {
-                            build.getActions().add(new GradlePromoteBuildAction(build));
+                            ArtifactoryGradleConfigurator configurator = ActionableHelper.getBuildWrapper(
+                                    (BuildableItemWithBuildWrappers) build.getProject(),
+                                    ArtifactoryGradleConfigurator.class);
+                            if (configurator != null) {
+                                build.getActions().add(new PromoteBuildAction<ArtifactoryGradleConfigurator>(build,
+                                        ArtifactoryGradleConfigurator.this));
+                            }
                         }
                     }
                     success = true;
@@ -560,7 +568,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 Result result = run.getResult();
                 if (result.isBetterOrEqualTo(Result.SUCCESS)) {
                     // add a stage action
-                    run.addAction(new GradlePromoteBuildAction(run));
+                    run.addAction(new PromoteBuildAction<ArtifactoryGradleConfigurator>(run, wrapper));
                 }
             }
 
