@@ -23,15 +23,15 @@ import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import org.jfrog.hudson.BuildInfoResultAction;
+import org.jfrog.hudson.release.PromoteBuildAction;
 
 
 /**
- * A build listener which takes care of Ivy builds.
- * This class extends a {@link hudson.model.listeners.RunListener} with a generic type of {@link hudson.model.AbstractBuild}
- * and not {@link hudson.ivy.IvyModuleSetBuild} since Hudson's classloader tries to load initialize the class by
- * reflection and is failing on {@link LinkageError} which is handled by Hudson by printing out the stacktrace
- * to the log.
- * However, if not using it during construction time and checking at runtime, the exception seems to disappear.
+ * A build listener which takes care of Ivy builds. This class extends a {@link hudson.model.listeners.RunListener} with
+ * a generic type of {@link hudson.model.AbstractBuild} and not {@link hudson.ivy.IvyModuleSetBuild} since Hudson's
+ * classloader tries to load initialize the class by reflection and is failing on {@link LinkageError} which is handled
+ * by Hudson by printing out the stacktrace to the log. However, if not using it during construction time and checking
+ * at runtime, the exception seems to disappear.
  *
  * @author Tomer Cohen
  */
@@ -56,6 +56,8 @@ public class ArtifactoryIvyRunListener extends RunListener<AbstractBuild> {
             }
             if (artifactoryIvyConfigurator.isDeployBuildInfo()) {
                 run.getActions().add(new BuildInfoResultAction(artifactoryIvyConfigurator.getArtifactoryName(), run));
+                run.getActions().add(new PromoteBuildAction<ArtifactoryIvyConfigurator>(run,
+                        artifactoryIvyConfigurator));
             }
         }
     }

@@ -35,6 +35,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.gradle.plugin.artifactory.extractor.BuildInfoTask;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.PluginSettings;
@@ -42,7 +43,7 @@ import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
-import org.jfrog.hudson.release.GradlePromoteBuildAction;
+import org.jfrog.hudson.release.PromoteBuildAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
@@ -72,7 +73,8 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider {
+public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider,
+        BuildInfoAwareConfigurator {
     private ServerDetails details;
     private boolean deployArtifacts;
     private final Credentials overridingDeployerCredentials;
@@ -98,6 +100,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
     private final boolean skipInjectInitScript;
+    private final boolean allowPromotionOfNonStagedBuilds;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -107,7 +110,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
             boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
-            boolean enableIssueTrackerIntegration) {
+            boolean enableIssueTrackerIntegration, boolean allowPromotionOfNonStagedBuilds) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -133,6 +136,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.matrixParams = matrixParams;
         this.skipInjectInitScript = skipInjectInitScript;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
+        this.allowPromotionOfNonStagedBuilds = allowPromotionOfNonStagedBuilds;
     }
 
     public GradleReleaseWrapper getReleaseWrapper() {
@@ -251,6 +255,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return enableIssueTrackerIntegration;
     }
 
+    public boolean isAllowPromotionOfNonStagedBuilds() {
+        return allowPromotionOfNonStagedBuilds;
+    }
+
     private String cleanString(String artifactPattern) {
         return StringUtils.removeEnd(StringUtils.removeStart(artifactPattern, "\""), "\"");
     }
@@ -350,7 +358,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                         .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
                         .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
-                        .enableIssueTrackerIntegration(enableIssueTrackerIntegration).build();
+                        .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration()).build();
 
                 ResolverContext resolverContext = null;
                 if (StringUtils.isNotBlank(serverDetails.downloadRepositoryKey)) {
@@ -390,6 +398,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 if (result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     if (isDeployBuildInfo()) {
                         build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
+                        if (isAllowPromotionOfNonStagedBuilds()) {
+                            ArtifactoryGradleConfigurator configurator = ActionableHelper.getBuildWrapper(
+                                    (BuildableItemWithBuildWrappers) build.getProject(),
+                                    ArtifactoryGradleConfigurator.class);
+                            if (configurator != null) {
+                                build.getActions().add(new PromoteBuildAction<ArtifactoryGradleConfigurator>(build,
+                                        ArtifactoryGradleConfigurator.this));
+                            }
+                        }
                     }
                     success = true;
                 }
@@ -543,15 +560,18 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 return;
             }
 
-            Result result = run.getResult();
-            if (result.isBetterOrEqualTo(Result.SUCCESS)) {
-                // add a stage action
-                run.addAction(new GradlePromoteBuildAction(run));
-            }
-
             // signal completion to the scm coordinator
             ArtifactoryGradleConfigurator wrapper = ActionableHelper.getBuildWrapper(
                     (BuildableItemWithBuildWrappers) run.getProject(), ArtifactoryGradleConfigurator.class);
+
+            if (!wrapper.isAllowPromotionOfNonStagedBuilds()) {
+                Result result = run.getResult();
+                if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+                    // add a stage action
+                    run.addAction(new PromoteBuildAction<ArtifactoryGradleConfigurator>(run, wrapper));
+                }
+            }
+
             try {
                 wrapper.getReleaseWrapper().getScmCoordinator().buildCompleted();
             } catch (Exception e) {

@@ -26,6 +26,7 @@ import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.release.PromoteBuildAction;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -229,6 +230,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                                 listener, deployedArtifacts, buildDependencies, publishedDependencies).deploy();
                         // add the result action (prefer always the same index)
                         build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
+                        build.getActions().add(new PromoteBuildAction<ArtifactoryGenericConfigurator>(build,
+                                ArtifactoryGenericConfigurator.this));
                     }
 
                     if (!keepArchivedArtifacts) {

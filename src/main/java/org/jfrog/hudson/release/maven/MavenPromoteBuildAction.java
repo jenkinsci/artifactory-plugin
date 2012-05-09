@@ -30,11 +30,13 @@ import java.util.List;
 
 /**
  * @author Tomer Cohen
+ * @deprecated Use {@link org.jfrog.hudson.release.PromoteBuildAction} directly
  */
+@Deprecated
 public class MavenPromoteBuildAction extends PromoteBuildAction {
 
     public MavenPromoteBuildAction(AbstractBuild build) {
-        super(build);
+        super(build, null);
     }
 
     @Override
@@ -50,21 +52,18 @@ public class MavenPromoteBuildAction extends PromoteBuildAction {
         }
     }
 
-    @Override
     protected ArtifactoryServer getArtifactoryServer() {
         ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
                 getBuild().getProject(), ArtifactoryRedeployPublisher.class);
         return artifactoryPublisher.getArtifactoryServer();
     }
 
-    @Override
     protected Credentials getCredentials(ArtifactoryServer server) {
         ArtifactoryRedeployPublisher artifactoryPublisher = ActionableHelper.getPublisher(
                 getBuild().getProject(), ArtifactoryRedeployPublisher.class);
         return CredentialResolver.getPreferredDeployer(artifactoryPublisher, server);
     }
 
-    @Override
     protected Permission getPermission() {
         return ArtifactoryPlugin.PROMOTE;
     }
