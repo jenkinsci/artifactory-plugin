@@ -48,7 +48,7 @@ import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
-import org.jfrog.hudson.release.PromoteBuildAction;
+import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -264,7 +264,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             if (deployBuildInfo) {
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
                 if (isAllowPromotionOfNonStagedBuilds()) {
-                    build.getActions().add(new PromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
+                    build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
             }
             return true;
@@ -304,7 +304,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 // add the result action (prefer always the same index)
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
                 if (isAllowPromotionOfNonStagedBuilds()) {
-                    build.getActions().add(new PromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
+                    build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
             }
             return true;

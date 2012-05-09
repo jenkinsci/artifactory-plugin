@@ -43,8 +43,8 @@ import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
-import org.jfrog.hudson.release.PromoteBuildAction;
 import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
 import org.jfrog.hudson.util.Credentials;
@@ -403,8 +403,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                     (BuildableItemWithBuildWrappers) build.getProject(),
                                     ArtifactoryGradleConfigurator.class);
                             if (configurator != null) {
-                                build.getActions().add(new PromoteBuildAction<ArtifactoryGradleConfigurator>(build,
-                                        ArtifactoryGradleConfigurator.this));
+                                build.getActions()
+                                        .add(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(build,
+                                                ArtifactoryGradleConfigurator.this));
                             }
                         }
                     }
@@ -568,7 +569,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 Result result = run.getResult();
                 if (result.isBetterOrEqualTo(Result.SUCCESS)) {
                     // add a stage action
-                    run.addAction(new PromoteBuildAction<ArtifactoryGradleConfigurator>(run, wrapper));
+                    run.addAction(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(run, wrapper));
                 }
             }
 

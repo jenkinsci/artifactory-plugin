@@ -42,9 +42,11 @@ public abstract class CredentialResolver {
             return overrider.getOverridingDeployerCredentials();
         }
 
-        Credentials deployerCredentials = server.getDeployerCredentials();
-        if (deployerCredentials != null) {
-            return deployerCredentials;
+        if (server != null) {
+            Credentials deployerCredentials = server.getDeployerCredentials();
+            if (deployerCredentials != null) {
+                return deployerCredentials;
+            }
         }
 
         return new Credentials(null, null);

@@ -23,7 +23,7 @@ import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.release.PromoteBuildAction;
+import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 
 
 /**
@@ -56,7 +56,7 @@ public class ArtifactoryIvyRunListener extends RunListener<AbstractBuild> {
             }
             if (artifactoryIvyConfigurator.isDeployBuildInfo()) {
                 run.getActions().add(new BuildInfoResultAction(artifactoryIvyConfigurator.getArtifactoryName(), run));
-                run.getActions().add(new PromoteBuildAction<ArtifactoryIvyConfigurator>(run,
+                run.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyConfigurator>(run,
                         artifactoryIvyConfigurator));
             }
         }

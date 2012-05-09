@@ -44,7 +44,7 @@ import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.release.PromoteBuildAction;
+import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
@@ -274,7 +274,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 Result result = build.getResult();
                 if (!context.isSkipBuildInfoDeploy() && (result == null || result.isBetterOrEqualTo(Result.SUCCESS))) {
                     build.getActions().add(0, new BuildInfoResultAction(context.getArtifactoryName(), build));
-                    build.getActions().add(new PromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
+                    build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
                             ArtifactoryIvyFreeStyleConfigurator.this));
                 }
                 return true;

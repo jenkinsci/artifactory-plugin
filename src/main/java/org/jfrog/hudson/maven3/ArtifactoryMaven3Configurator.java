@@ -39,7 +39,7 @@ import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.release.PromoteBuildAction;
+import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.FormValidations;
@@ -272,7 +272,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 Result result = build.getResult();
                 if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
-                    build.getActions().add(new PromoteBuildAction<ArtifactoryMaven3Configurator>(build,
+                    build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryMaven3Configurator>(build,
                             ArtifactoryMaven3Configurator.this));
                 }
                 return true;
