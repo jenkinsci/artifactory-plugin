@@ -20,14 +20,7 @@ import com.google.common.collect.Iterables;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Project;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.remoting.Which;
 import hudson.tasks.Ant;
 import hudson.tasks.BuildWrapper;
@@ -36,22 +29,12 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoAwareConfigurator;
-import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.FormValidations;
-import org.jfrog.hudson.util.IncludesExcludes;
-import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
-import org.jfrog.hudson.util.PluginDependencyHelper;
-import org.jfrog.hudson.util.PublisherContext;
+import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -98,12 +81,12 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     @DataBoundConstructor
     public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            boolean deployArtifacts, String remotePluginLocation,
-            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
-            boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
-            String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-            boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts,
-            String matrixParams, boolean enableIssueTrackerIntegration) {
+                                               boolean deployArtifacts, String remotePluginLocation,
+                                               boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
+                                               boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
+                                               String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
+                                               boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts,
+                                               String matrixParams, boolean enableIssueTrackerIntegration) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -116,7 +99,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.scopes = scopes;
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.ivyPattern = ivyPattern;
-        this.artifactPattern = artifactPattern;
+        this.artifactPattern = clearApostrophes(artifactPattern);
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.discardOldBuilds = discardOldBuilds;
@@ -125,6 +108,13 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.discardBuildArtifacts = discardBuildArtifacts;
+    }
+
+    /**
+     * Clears the extra apostrophes from the start and the end of the string
+     */
+    private String clearApostrophes(String artifactPattern) {
+        return StringUtils.removeEnd(StringUtils.removeStart(artifactPattern, "\""), "\"");
     }
 
     public ServerDetails getDetails() {
@@ -160,7 +150,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public String getArtifactPattern() {
-        return artifactPattern;
+        return clearApostrophes(artifactPattern);
     }
 
     public String getIvyPattern() {
