@@ -18,12 +18,7 @@ package org.jfrog.hudson.release;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildBadgeAction;
-import hudson.model.TaskAction;
-import hudson.model.TaskListener;
-import hudson.model.TaskThread;
-import hudson.model.User;
+import hudson.model.*;
 import hudson.security.ACL;
 import hudson.security.Permission;
 import net.sf.json.JSONArray;
@@ -35,12 +30,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.hudson.ArtifactoryPlugin;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoAwareConfigurator;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.PluginSettings;
-import org.jfrog.hudson.UserPluginInfo;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.StaplerRequest;
@@ -179,6 +169,10 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
         req.bindParameters(this);
 
+        // current user is bound to the thread and will be lost in the perform method
+        User user = User.current();
+        String ciUser = (user == null) ? "anonymous" : user.getId();
+
         JSONObject formData = req.getSubmittedForm();
         if (formData.has("promotionPlugin")) {
             JSONObject pluginSettings = formData.getJSONObject("promotionPlugin");
@@ -198,6 +192,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                         String key = settingsEntry.getKey();
                         paramMap.put(key, pluginSettings.getString(key));
                     }
+                    paramMap.put("ciUser", ciUser);
                     if (!paramMap.isEmpty()) {
                         settings.setParamMap(paramMap);
                     }
@@ -208,7 +203,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
         ArtifactoryServer server = configurator.getArtifactoryServer();
 
-        new PromoteWorkerThread(server, CredentialResolver.getPreferredDeployer(configurator, server)).start();
+        new PromoteWorkerThread(server, CredentialResolver.getPreferredDeployer(configurator, server), ciUser).start();
 
         resp.sendRedirect(".");
     }
@@ -239,14 +234,11 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         private final Credentials deployer;
         private final String ciUser;
 
-        public PromoteWorkerThread(ArtifactoryServer artifactoryServer, Credentials deployer) {
+        public PromoteWorkerThread(ArtifactoryServer artifactoryServer, Credentials deployer, String ciUser) {
             super(UnifiedPromoteBuildAction.this, ListenerAndText.forMemory(null));
             this.artifactoryServer = artifactoryServer;
             this.deployer = deployer;
-            // current user is bound to the thread and will be lost in the perform method
-            User user = User.current();
-            this.ciUser = (user == null) ? "anonymous" : user.getId();
-
+            this.ciUser = ciUser;
         }
 
         @Override
@@ -330,7 +322,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
          * @return
          */
         private boolean checkSuccess(HttpResponse response, boolean dryRun, boolean parseMessages,
-                TaskListener listener) {
+                                     TaskListener listener) {
             StatusLine status = response.getStatusLine();
             try {
                 String content = entityToString(response);

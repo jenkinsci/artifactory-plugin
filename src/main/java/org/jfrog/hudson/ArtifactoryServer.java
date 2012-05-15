@@ -22,7 +22,6 @@ import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.ProxyConfiguration;
 import hudson.model.BuildListener;
 import hudson.model.Hudson;
-import hudson.model.User;
 import hudson.util.Scrambler;
 import hudson.util.XStream2;
 import org.apache.commons.lang.StringUtils;
@@ -72,7 +71,7 @@ public class ArtifactoryServer implements Serializable {
 
     @DataBoundConstructor
     public ArtifactoryServer(String url, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
-            boolean bypassProxy) {
+                             boolean bypassProxy) {
         this.url = StringUtils.removeEnd(url, "/");
         this.deployerCredentials = deployerCredentials;
         this.resolverCredentials = resolverCredentials;
@@ -220,13 +219,6 @@ public class ArtifactoryServer implements Serializable {
     public List<UserPluginInfo> getPromotionsUserPluginInfo() {
         List<UserPluginInfo> infosToReturn = Lists.newArrayList(UserPluginInfo.NO_PLUGIN);
         gatherUserPluginInfo(infosToReturn, "promotions");
-        User user = User.current();
-        String ciUser = (user == null) ? "anonymous" : user.getId();
-        for (UserPluginInfo info : infosToReturn) {
-            if (!UserPluginInfo.NO_PLUGIN.equals(info)) {
-                info.addParam("ciUser", ciUser);
-            }
-        }
         return infosToReturn;
     }
 
@@ -246,7 +238,7 @@ public class ArtifactoryServer implements Serializable {
     }
 
     public ArtifactoryDependenciesClient createArtifactoryDependenciesClient(String userName, String password,
-            ProxyConfiguration proxyConfiguration, BuildListener listener) {
+                                                                             ProxyConfiguration proxyConfiguration, BuildListener listener) {
         ArtifactoryDependenciesClient client = new ArtifactoryDependenciesClient(url, userName, password,
                 new JenkinsBuildInfoLog(listener));
         client.setConnectionTimeout(timeout);
