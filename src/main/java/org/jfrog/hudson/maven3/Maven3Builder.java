@@ -87,22 +87,12 @@ public class Maven3Builder extends Builder {
             throws InterruptedException, IOException {
         EnvVars env = build.getEnvironment(listener);
         FilePath workDir = build.getModuleRoot();
-        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env);
-        StringBuilder javaPathBuilder = new StringBuilder();
-
-        JDK configuredJdk = build.getProject().getJDK();
-        if (configuredJdk != null) {
-            javaPathBuilder.append(build.getProject().getJDK().getBinDir().getCanonicalPath()).append(File.separator);
-        }
-        javaPathBuilder.append("java");
-        if (!launcher.isUnix()) {
-            javaPathBuilder.append(".exe");
-        }
+        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher.isUnix());
         String[] cmds = cmdLine.toCommandArray();
         try {
             //listener.getLogger().println("Executing: " + cmdLine.toStringWithQuote());
             int exitValue =
-                    launcher.launch().cmds(new File(javaPathBuilder.toString()), cmds).envs(env).stdout(listener)
+                    launcher.launch().cmds(cmds).envs(env).stdout(listener)
                             .pwd(workDir).join();
             boolean success = (exitValue == 0);
             build.setResult(success ? Result.SUCCESS : Result.FAILURE);
@@ -116,7 +106,7 @@ public class Maven3Builder extends Builder {
     }
 
     private ArgumentListBuilder buildMavenCmdLine(AbstractBuild<?, ?> build, BuildListener listener,
-                                                  EnvVars env) throws IOException, InterruptedException {
+                                                  EnvVars env, boolean isUnix) throws IOException, InterruptedException {
 
         FilePath mavenHome = getMavenHomeDir(build, listener, env);
 
@@ -135,6 +125,17 @@ public class Maven3Builder extends Builder {
         }
 
         FilePath classWorldsJar = classworldsCandidates[0];
+
+        StringBuilder javaPathBuilder = new StringBuilder();
+        String jdkBinPath = env.get("PATH+JDK");
+        if (StringUtils.isNotBlank(jdkBinPath)) {
+            javaPathBuilder.append(jdkBinPath).append("/");
+        }
+        javaPathBuilder.append("java");
+        if (!isUnix) {
+            javaPathBuilder.append(".exe");
+        }
+        args.add(javaPathBuilder.toString());
 
         // classpath
         args.add("-classpath");
