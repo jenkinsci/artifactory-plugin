@@ -18,6 +18,7 @@ package org.jfrog.hudson;
 
 import hudson.model.AbstractBuild;
 import hudson.model.BuildBadgeAction;
+import org.jfrog.hudson.util.ExtractorUtils;
 
 /**
  * Result of the redeploy publisher. Currently only a link to Artifactory build info.
@@ -62,7 +63,7 @@ public class BuildInfoResultAction implements BuildBadgeAction {
 
     private String generateUrl(String artifactoryRootUrl, AbstractBuild build) {
         return artifactoryRootUrl + "/webapp/builds/"
-                + build.getParent().getDisplayName() + "/"
+                + ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()) + "/"
                 + build.getNumber();
     }
 }

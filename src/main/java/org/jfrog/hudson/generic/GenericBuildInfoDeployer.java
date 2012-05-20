@@ -33,6 +33,7 @@ import org.jfrog.build.api.dependency.UserBuildDependency;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
+import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -57,8 +58,8 @@ public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
     private Build buildInfo;
 
     public GenericBuildInfoDeployer(ArtifactoryGenericConfigurator configurator, ArtifactoryBuildInfoClient client,
-            AbstractBuild build, BuildListener listener, Set<DeployDetails> deployedArtifacts,
-            List<UserBuildDependency> buildDependencies, List<Dependency> publishedDependencies)
+                                    AbstractBuild build, BuildListener listener, Set<DeployDetails> deployedArtifacts,
+                                    List<UserBuildDependency> buildDependencies, List<Dependency> publishedDependencies)
             throws IOException, InterruptedException, NoSuchAlgorithmException {
         super(configurator, build, build.getEnvironment(listener));
         this.configurator = configurator;
@@ -94,11 +95,11 @@ public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
     }
 
     private void createDeployDetailsAndAddToBuildInfo(Set<DeployDetails> deployedArtifacts,
-            List<Dependency> publishedDependencies)
+                                                      List<Dependency> publishedDependencies)
             throws IOException, InterruptedException, NoSuchAlgorithmException {
         List<Artifact> artifacts = convertDeployDetailsToArtifacts(deployedArtifacts);
         ModuleBuilder moduleBuilder =
-                new ModuleBuilder().id(build.getParent().getDisplayName() + ":" + build.getNumber())
+                new ModuleBuilder().id(ExtractorUtils.sanitizeBuildName(build.getParent().getDisplayName()) + ":" + build.getNumber())
                         .artifacts(artifacts);
         moduleBuilder.dependencies(publishedDependencies);
         buildInfo.setModules(Lists.newArrayList(moduleBuilder.build()));

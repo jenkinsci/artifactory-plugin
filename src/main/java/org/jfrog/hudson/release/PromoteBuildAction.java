@@ -18,12 +18,7 @@ package org.jfrog.hudson.release;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildBadgeAction;
-import hudson.model.TaskAction;
-import hudson.model.TaskListener;
-import hudson.model.TaskThread;
-import hudson.model.User;
+import hudson.model.*;
 import hudson.security.ACL;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -40,6 +35,7 @@ import org.jfrog.hudson.PluginSettings;
 import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -277,7 +273,7 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
 
         private void handlePluginPromotion(TaskListener listener, ArtifactoryBuildInfoClient client)
                 throws IOException {
-            String buildName = build.getParent().getDisplayName();
+            String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getFullName());
             String buildNumber = build.getNumber() + "";
             HttpResponse pluginPromotionResponse = client.executePromotionUserPlugin(
                     promotionPlugin.getPluginName(), buildName, buildNumber, promotionPlugin.getParamMap());
@@ -299,7 +295,7 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
                     .dryRun(true);
             listener.getLogger()
                     .println("Performing dry run promotion (no changes are made during dry run) ...");
-            String buildName = build.getParent().getDisplayName();
+            String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getFullName());
             String buildNumber = build.getNumber() + "";
             HttpResponse dryResponse = client.stageBuild(buildName, buildNumber, promotionBuilder.build());
             if (checkSuccess(dryResponse, true, true, listener)) {
@@ -322,7 +318,7 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
          * @return
          */
         private boolean checkSuccess(HttpResponse response, boolean dryRun, boolean parseMessages,
-                TaskListener listener) {
+                                     TaskListener listener) {
             StatusLine status = response.getStatusLine();
             try {
                 String content = entityToString(response);

@@ -45,7 +45,7 @@ public class GenericArtifactsDeployer {
     private Set<DeployDetails> artifactsToDeploy = Sets.newHashSet();
 
     public GenericArtifactsDeployer(AbstractBuild build, ArtifactoryGenericConfigurator configurator,
-            BuildListener listener, ArtifactoryBuildInfoClient client)
+                                    BuildListener listener, ArtifactoryBuildInfoClient client)
             throws IOException, InterruptedException, NoSuchAlgorithmException {
         this.build = build;
         this.configurator = configurator;
@@ -98,12 +98,12 @@ public class GenericArtifactsDeployer {
                 .artifactPath(path)
                 .targetRepository(configurator.getRepositoryKey())
                 .md5(checksums.get(MD5)).sha1(checksums.get(SHA1))
-                .addProperty("build.name", build.getParent().getDisplayName())
+                .addProperty("build.name", ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()))
                 .addProperty("build.number", build.getNumber() + "")
                 .addProperty("build.timestamp", build.getTimestamp().getTime().getTime() + "");
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
         if (parent != null) {
-            builder.addProperty("build.parentName", parent.getUpstreamProject())
+            builder.addProperty("build.parentName", ExtractorUtils.sanitizeBuildName(parent.getUpstreamProject()))
                     .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
         }
         String revision = ExtractorUtils.getVcsRevision(env);

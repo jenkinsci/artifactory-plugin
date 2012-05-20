@@ -6,13 +6,7 @@ import hudson.EnvVars;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.Agent;
-import org.jfrog.build.api.Build;
-import org.jfrog.build.api.BuildAgent;
-import org.jfrog.build.api.BuildInfoProperties;
-import org.jfrog.build.api.BuildRetention;
-import org.jfrog.build.api.BuildType;
-import org.jfrog.build.api.LicenseControl;
+import org.jfrog.build.api.*;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.PromotionStatusBuilder;
 import org.jfrog.build.api.release.Promotion;
@@ -41,7 +35,7 @@ public class AbstractBuildInfoDeployer {
     }
 
     protected Build createBuildInfo(String buildAgentName, String buildAgentVersion, BuildType buildType) {
-        BuildInfoBuilder builder = new BuildInfoBuilder(build.getParent().getDisplayName())
+        BuildInfoBuilder builder = new BuildInfoBuilder(ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()))
                 .number(build.getNumber() + "").type(buildType)
                 .buildAgent(new BuildAgent(buildAgentName, buildAgentVersion))
                 .agent(new Agent("hudson", build.getHudsonVersion()));
@@ -69,7 +63,7 @@ public class AbstractBuildInfoDeployer {
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
         if (parent != null) {
-            String parentProject = parent.getUpstreamProject();
+            String parentProject = ExtractorUtils.sanitizeBuildName(parent.getUpstreamProject());
             int parentNumber = parent.getUpstreamBuild();
             builder.parentName(parentProject);
             builder.parentNumber(parentNumber + "");

@@ -1,12 +1,7 @@
 package org.jfrog.hudson.util;
 
 import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildableItemWithBuildWrappers;
-import hudson.model.Cause;
-import hudson.model.Hudson;
-import hudson.model.Item;
+import hudson.model.*;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.client.DeployDetails;
@@ -143,7 +138,7 @@ public class BuildUniqueIdentifierHelper {
      */
     public static String getUpstreamIdentifier(AbstractBuild<?, ?> rootBuild) {
         AbstractProject<?, ?> rootProject = rootBuild.getProject();
-        return rootProject.getName() + "-" + rootBuild.getNumber();
+        return ExtractorUtils.sanitizeBuildName(rootProject.getFullName()) + "-" + rootBuild.getNumber();
     }
 
     /**

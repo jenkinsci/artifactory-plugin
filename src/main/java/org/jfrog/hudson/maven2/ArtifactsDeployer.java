@@ -23,11 +23,7 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.util.VersionNumber;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ToStringBuilder;
@@ -77,7 +73,7 @@ public class ArtifactsDeployer {
     private final AbstractBuild<?, ?> rootBuild;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
-            MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) throws IOException, InterruptedException {
+                             MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) throws IOException, InterruptedException {
         this.client = client;
         this.mavenModuleSetBuild = mavenModuleSetBuild;
         this.listener = listener;
@@ -167,7 +163,7 @@ public class ArtifactsDeployer {
                 .artifactPath(artifactPath)
                 .targetRepository(getTargetRepository(mavenArtifact.version))
                 .md5(mavenArtifact.md5sum).sha1(checksums.get(SHA1))
-                .addProperty("build.name", mavenModuleSetBuild.getParent().getDisplayName())
+                .addProperty("build.name", ExtractorUtils.sanitizeBuildName(mavenModuleSetBuild.getParent().getFullName()))
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
         if (downstreamIdentifier && ActionableHelper.getUpstreamCause(mavenBuild) == null) {
@@ -181,7 +177,7 @@ public class ArtifactsDeployer {
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(mavenModuleSetBuild);
         if (parent != null) {
-            builder.addProperty("build.parentName", parent.getUpstreamProject())
+            builder.addProperty("build.parentName", ExtractorUtils.sanitizeBuildName(parent.getUpstreamProject()))
                     .addProperty("build.parentNumber", parent.getUpstreamBuild() + "");
         }
         String revision = ExtractorUtils.getVcsRevision(env);
