@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson;
 
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildBadgeAction;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -63,7 +64,7 @@ public class BuildInfoResultAction implements BuildBadgeAction {
 
     private String generateUrl(String artifactoryRootUrl, AbstractBuild build) {
         return artifactoryRootUrl + "/webapp/builds/"
-                + ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()) + "/"
+                + Util.rawEncode(ExtractorUtils.sanitizeBuildName(build.getParent().getFullName())) + "/"
                 + build.getNumber();
     }
 }

@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.action;
 
+import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.ProminentProjectAction;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -49,6 +50,7 @@ public class ArtifactoryProjectAction implements ProminentProjectAction {
     }
 
     private String generateUrl(String artifactoryRootUrl, AbstractProject<?, ?> project) {
-        return artifactoryRootUrl + "/webapp/builds/" + ExtractorUtils.sanitizeBuildName(project.getFullName());
+        return artifactoryRootUrl + "/webapp/builds/" +
+                Util.rawEncode(ExtractorUtils.sanitizeBuildName(project.getFullName()));
     }
 }
