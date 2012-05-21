@@ -191,7 +191,9 @@ public class Maven3Builder extends Builder {
         // maven opts
         if (StringUtils.isNotBlank(getMavenOpts())) {
             String mavenOpts = Util.replaceMacro(getMavenOpts(), build.getBuildVariableResolver());
-            args.add(mavenOpts);
+
+            // HAP-314 - We need to separate the args, same as jenkins maven plugin does
+            args.addTokenized(mavenOpts);
         }
 
         // classworlds launcher main class
