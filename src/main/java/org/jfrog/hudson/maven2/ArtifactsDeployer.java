@@ -166,13 +166,10 @@ public class ArtifactsDeployer {
                 .addProperty("build.name", ExtractorUtils.sanitizeBuildName(mavenModuleSetBuild.getParent().getFullName()))
                 .addProperty("build.number", mavenModuleSetBuild.getNumber() + "")
                 .addProperty("build.timestamp", mavenBuild.getTimestamp().getTime().getTime() + "");
-        if (downstreamIdentifier && ActionableHelper.getUpstreamCause(mavenBuild) == null) {
-            debuggingLogger.fine("Adding unique identifier to artifact:" + builder);
-            BuildUniqueIdentifierHelper.addUniqueBuildIdentifier(builder, env);
-        }
-        if (rootBuild != null) {
-            debuggingLogger.fine("Adding build.root from root build");
-            BuildUniqueIdentifierHelper.addUpstreamIdentifier(builder, rootBuild);
+
+        String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(rootBuild);
+        if (StringUtils.isNotBlank(identifier)) {
+            builder.addProperty(BuildInfoFields.BUILD_ROOT, identifier);
         }
 
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(mavenModuleSetBuild);
