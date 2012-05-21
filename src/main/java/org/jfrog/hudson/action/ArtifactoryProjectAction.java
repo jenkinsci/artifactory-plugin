@@ -18,6 +18,7 @@ package org.jfrog.hudson.action;
 
 import hudson.model.AbstractProject;
 import hudson.model.ProminentProjectAction;
+import org.jfrog.hudson.util.ExtractorUtils;
 
 /**
  * {@link hudson.model.ProminentProjectAction} that links to the latest build in Artifactory.
@@ -48,6 +49,6 @@ public class ArtifactoryProjectAction implements ProminentProjectAction {
     }
 
     private String generateUrl(String artifactoryRootUrl, AbstractProject<?, ?> project) {
-        return artifactoryRootUrl + "/webapp/builds/" + project.getDisplayName();
+        return artifactoryRootUrl + "/webapp/builds/" + ExtractorUtils.sanitizeBuildName(project.getFullName());
     }
 }
