@@ -39,6 +39,7 @@ import org.jfrog.hudson.release.ReleaseAction;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -271,7 +272,7 @@ public class ExtractorUtils {
         return builder.toString();
     }
 
-    public static void addBuildRootIfNeeded(AbstractBuild build, ArtifactoryClientConfiguration configuration) {
+    public static void addBuildRootIfNeeded(AbstractBuild build, ArtifactoryClientConfiguration configuration) throws UnsupportedEncodingException {
         AbstractBuild<?, ?> rootBuild = BuildUniqueIdentifierHelper.getRootBuild(build);
         if (rootBuild != null) {
             String identifier = BuildUniqueIdentifierHelper.getUpstreamIdentifier(rootBuild);
