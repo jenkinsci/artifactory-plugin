@@ -17,6 +17,7 @@
 package org.jfrog.hudson.release;
 
 import com.google.common.collect.Maps;
+import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildableItemWithBuildWrappers;
@@ -123,7 +124,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
                 !UserPluginInfo.NO_PLUGIN_KEY.equals(selectedStagingPluginSettings.getPluginName())) {
             try {
                 stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings,
-                        project.getName());
+                        Util.rawEncode(project.getName()));
             } catch (Exception e) {
                 log.log(Level.WARNING, "Failed to obtain staging strategy: " + e.getMessage(), e);
                 strategyRequestFailed = true;
