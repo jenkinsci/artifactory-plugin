@@ -103,7 +103,11 @@ public class BuildUniqueIdentifierHelper {
      * @return The upstream identifier.
      */
     public static String getUpstreamIdentifier(AbstractBuild<?, ?> rootBuild) {
-        AbstractProject<?, ?> rootProject = rootBuild.getProject();
-        return ExtractorUtils.sanitizeBuildName(rootProject.getFullName()) + "-" + rootBuild.getNumber();
+        if (rootBuild != null) {
+            AbstractProject<?, ?> rootProject = rootBuild.getProject();
+            return ExtractorUtils.sanitizeBuildName(rootProject.getFullName()) + "-" + rootBuild.getNumber();
+        }
+
+        return null;
     }
 }
