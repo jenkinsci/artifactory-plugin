@@ -218,7 +218,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>r06</version>
+            <version>r08</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
