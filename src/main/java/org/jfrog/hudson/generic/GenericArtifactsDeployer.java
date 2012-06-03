@@ -79,16 +79,16 @@ public class GenericArtifactsDeployer {
         FilePath workspace = build.getWorkspace();
         Multimap<String, File> filesMap = buildTargetPathToFiles(workspace);
         for (Map.Entry<String, File> entry : filesMap.entries()) {
-            artifactsToDeploy.addAll(buildDeployDetailsFromFileEntry(entry, workspace.getRemote()));
+            artifactsToDeploy.addAll(buildDeployDetailsFromFileEntry(entry));
         }
     }
 
-    private Set<DeployDetails> buildDeployDetailsFromFileEntry(Map.Entry<String, File> fileEntry, String rootDir)
+    private Set<DeployDetails> buildDeployDetailsFromFileEntry(Map.Entry<String, File> fileEntry)
             throws IOException, NoSuchAlgorithmException {
         Set<DeployDetails> result = Sets.newHashSet();
         String targetPath = fileEntry.getKey();
         File artifactFile = fileEntry.getValue();
-        String path = PublishedItemsHelper.calculateTargetPath(targetPath, artifactFile, rootDir);
+        String path = PublishedItemsHelper.calculateTargetPath(targetPath, artifactFile);
         path = StringUtils.replace(path, "//", "/");
 
         // calculate the sha1 checksum that is not given by Jenkins and add it to the deploy artifactsToDeploy
