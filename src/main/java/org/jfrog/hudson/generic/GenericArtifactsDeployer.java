@@ -119,7 +119,7 @@ public class GenericArtifactsDeployer {
     private Multimap<String, File> buildTargetPathToFiles(FilePath workingDir)
             throws IOException, InterruptedException {
         final Multimap<String, File> result = HashMultimap.create();
-        String deployPattern = configurator.getDeployPattern();
+        String deployPattern = Util.replaceMacro(configurator.getDeployPattern(), env);
         deployPattern = StringUtils.replace(deployPattern, "\r\n", "\n");
         deployPattern = StringUtils.replace(deployPattern, ",", "\n");
         Multimap<String, String> pairs = PublishedItemsHelper.getPublishedItemsPatternPairs(deployPattern);
