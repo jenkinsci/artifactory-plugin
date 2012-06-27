@@ -20,11 +20,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import hudson.FilePath;
-import hudson.ProxyConfiguration;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.model.Hudson;
 import hudson.remoting.VirtualChannel;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.builder.DependencyBuilder;
@@ -35,6 +34,7 @@ import org.jfrog.build.api.dependency.PatternArtifact;
 import org.jfrog.build.api.dependency.PatternResultFileSet;
 import org.jfrog.build.api.dependency.UserBuildDependency;
 import org.jfrog.build.client.ArtifactoryDependenciesClient;
+import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.util.BuildDependenciesHelper;
 import org.jfrog.build.util.DependenciesHelper;
 import org.jfrog.build.util.PublishedItemsHelper;
@@ -110,8 +110,9 @@ public class GenericArtifactsResolver {
             preferredDeployer = server.getResolvingCredentials();
         }
         FilePath workspace = build.getWorkspace();
-        return workspace.act(new BuildDependenciesCallable(listener, Hudson.getInstance().proxy, preferredDeployer,
-                server, true, downloadableArtifacts));
+        return workspace.act(
+                new BuildDependenciesCallable(listener, createProxyConfigForBuildDependencies(), preferredDeployer,
+                        server, true, downloadableArtifacts));
     }
 
     private Set<DownloadableArtifact> handleDependencyPatternPair(Map.Entry<String, String> patternPair)
@@ -210,8 +211,23 @@ public class GenericArtifactsResolver {
         } else {
             preferredDeployer = server.getResolvingCredentials();
         }
-        workspace.act(new BuildDependenciesCallable(listener, Hudson.getInstance().proxy, preferredDeployer, server,
-                false, downloadableArtifacts));
+        workspace.act(
+                new BuildDependenciesCallable(listener, createProxyConfigForBuildDependencies(), preferredDeployer,
+                        server, false, downloadableArtifacts));
+    }
+
+    private ProxyConfiguration createProxyConfigForBuildDependencies() {
+        hudson.ProxyConfiguration proxy = Jenkins.getInstance().proxy;
+        org.jfrog.build.client.ProxyConfiguration proxyConfiguration = null;
+        if (proxy != null) {
+            proxyConfiguration = new org.jfrog.build.client.ProxyConfiguration();
+            proxyConfiguration.host = proxy.name;
+            proxyConfiguration.port = proxy.port;
+            proxyConfiguration.username = proxy.getUserName();
+            proxyConfiguration.password = proxy.getPassword();
+        }
+
+        return proxyConfiguration;
     }
 
     private static class BuildDependenciesCallable implements FilePath.FileCallable<List<Dependency>> {

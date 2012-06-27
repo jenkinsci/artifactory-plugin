@@ -19,7 +19,6 @@ package org.jfrog.hudson;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
-import hudson.ProxyConfiguration;
 import hudson.model.BuildListener;
 import hudson.model.Hudson;
 import hudson.util.Scrambler;
@@ -30,6 +29,7 @@ import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.build.client.ArtifactoryVersion;
+import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -71,7 +71,7 @@ public class ArtifactoryServer implements Serializable {
 
     @DataBoundConstructor
     public ArtifactoryServer(String url, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
-                             boolean bypassProxy) {
+            boolean bypassProxy) {
         this.url = StringUtils.removeEnd(url, "/");
         this.deployerCredentials = deployerCredentials;
         this.resolverCredentials = resolverCredentials;
@@ -226,7 +226,7 @@ public class ArtifactoryServer implements Serializable {
         ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password, new NullLog());
         client.setConnectionTimeout(timeout);
 
-        ProxyConfiguration proxyConfiguration = Hudson.getInstance().proxy;
+        hudson.ProxyConfiguration proxyConfiguration = Hudson.getInstance().proxy;
         if (!bypassProxy && proxyConfiguration != null) {
             client.setProxyConfiguration(proxyConfiguration.name,
                     proxyConfiguration.port,
@@ -237,16 +237,17 @@ public class ArtifactoryServer implements Serializable {
         return client;
     }
 
+    /**
+     * This method might run on slaves, this is why we provide it with a proxy from the master config
+     */
     public ArtifactoryDependenciesClient createArtifactoryDependenciesClient(String userName, String password,
-                                                                             ProxyConfiguration proxyConfiguration, BuildListener listener) {
+            ProxyConfiguration proxyConfiguration, BuildListener listener) {
         ArtifactoryDependenciesClient client = new ArtifactoryDependenciesClient(url, userName, password,
                 new JenkinsBuildInfoLog(listener));
         client.setConnectionTimeout(timeout);
         if (!bypassProxy && proxyConfiguration != null) {
-            client.setProxyConfiguration(proxyConfiguration.name,
-                    proxyConfiguration.port,
-                    proxyConfiguration.getUserName(),
-                    proxyConfiguration.getPassword());
+            client.setProxyConfiguration(proxyConfiguration.host, proxyConfiguration.port, proxyConfiguration.username,
+                    proxyConfiguration.password);
         }
 
         return client;

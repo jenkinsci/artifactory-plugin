@@ -12,6 +12,7 @@ import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Dependency;
@@ -19,6 +20,7 @@ import org.jfrog.build.api.dependency.UserBuildDependency;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.client.DeployDetails;
+import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoAwareConfigurator;
@@ -181,8 +183,18 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         } else {
             preferredDeployer = server.getResolvingCredentials();
         }
+
+        hudson.ProxyConfiguration proxy = Jenkins.getInstance().proxy;
+        ProxyConfiguration proxyConfiguration = null;
+        if (proxy != null) {
+            proxyConfiguration = new ProxyConfiguration();
+            proxyConfiguration.host = proxy.name;
+            proxyConfiguration.port = proxy.port;
+            proxyConfiguration.username = proxy.getUserName();
+            proxyConfiguration.password = proxy.getPassword();
+        }
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredDeployer.getUsername(), preferredDeployer.getPassword(), Hudson.getInstance().proxy,
+                preferredDeployer.getUsername(), preferredDeployer.getPassword(), proxyConfiguration,
                 listener);
         try {
             GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build,
