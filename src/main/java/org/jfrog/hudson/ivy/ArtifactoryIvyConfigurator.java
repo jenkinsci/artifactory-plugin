@@ -20,7 +20,12 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -29,9 +34,19 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
-import org.jfrog.hudson.*;
+import org.jfrog.hudson.ArtifactoryBuilder;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
+import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.FormValidations;
+import org.jfrog.hudson.util.IncludesExcludes;
+import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
+import org.jfrog.hudson.util.PluginDependencyHelper;
+import org.jfrog.hudson.util.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -66,16 +81,18 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private final String matrixParams;
     private boolean notM2Compatible;
     private String ivyPattern;
+    private String aggregationBuildStatus;
     private String artifactPattern;
     private boolean enableIssueTrackerIntegration;
+    private boolean aggregateBuildIssues;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-                                      boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
-                                      boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-                                      String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
-                                      String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, String matrixParams,
-                                      boolean enableIssueTrackerIntegration) {
+            boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
+            boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+            String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
+            String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, String matrixParams,
+            boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -89,12 +106,14 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.notM2Compatible = notM2Compatible;
         this.ivyPattern = ivyPattern;
+        this.aggregationBuildStatus = aggregationBuildStatus;
         this.artifactPattern = clearApostrophes(artifactPattern);
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.matrixParams = matrixParams;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
+        this.aggregateBuildIssues = aggregateBuildIssues;
     }
 
     /**
@@ -232,6 +251,22 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
     }
 
+    public boolean isAggregateBuildIssues() {
+        return aggregateBuildIssues;
+    }
+
+    public void setAggregateBuildIssues(boolean aggregateBuildIssues) {
+        this.aggregateBuildIssues = aggregateBuildIssues;
+    }
+
+    public String getAggregationBuildStatus() {
+        return aggregationBuildStatus;
+    }
+
+    public void setAggregationBuildStatus(String aggregationBuildStatus) {
+        this.aggregationBuildStatus = aggregationBuildStatus;
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
@@ -251,7 +286,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern()).maven2Compatible(isM2Compatible())
-                .enableIssueTrackerIntegration(enableIssueTrackerIntegration).build();
+                .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
+                .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(
+                        getAggregationBuildStatus()).build();
         build.setResult(Result.SUCCESS);
         return new AntIvyBuilderEnvironment() {
             @Override

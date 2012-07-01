@@ -20,7 +20,14 @@ import com.google.common.collect.Iterables;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.FreeStyleProject;
+import hudson.model.Hudson;
+import hudson.model.Project;
+import hudson.model.Result;
 import hudson.remoting.Which;
 import hudson.tasks.Ant;
 import hudson.tasks.BuildWrapper;
@@ -31,10 +38,21 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
-import org.jfrog.hudson.*;
+import org.jfrog.hudson.ArtifactoryBuilder;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
+import org.jfrog.hudson.BuildInfoResultAction;
+import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
-import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.FormValidations;
+import org.jfrog.hudson.util.IncludesExcludes;
+import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
+import org.jfrog.hudson.util.PluginDependencyHelper;
+import org.jfrog.hudson.util.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -70,6 +88,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private final boolean licenseAutoDiscovery;
     private final boolean disableLicenseAutoDiscovery;
     private final String ivyPattern;
+    private String aggregationBuildStatus;
     private final String artifactPattern;
     private final boolean notM2Compatible;
     private final IncludesExcludes artifactDeploymentPatterns;
@@ -78,15 +97,17 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
     private final boolean enableIssueTrackerIntegration;
+    private boolean aggregateBuildIssues;
 
     @DataBoundConstructor
     public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-                                               boolean deployArtifacts, String remotePluginLocation,
-                                               boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
-                                               boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
-                                               String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-                                               boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts,
-                                               String matrixParams, boolean enableIssueTrackerIntegration) {
+            boolean deployArtifacts, String remotePluginLocation,
+            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
+            boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
+            String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
+            boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts,
+            String matrixParams, boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
+            String aggregationBuildStatus) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -99,6 +120,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.scopes = scopes;
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.ivyPattern = ivyPattern;
+        this.aggregationBuildStatus = aggregationBuildStatus;
         this.artifactPattern = clearApostrophes(artifactPattern);
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -106,6 +128,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.matrixParams = matrixParams;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
+        this.aggregateBuildIssues = aggregateBuildIssues;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.discardBuildArtifacts = discardBuildArtifacts;
     }
@@ -213,6 +236,14 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return enableIssueTrackerIntegration;
     }
 
+    public boolean isAggregateBuildIssues() {
+        return aggregateBuildIssues;
+    }
+
+    public String getAggregationBuildStatus() {
+        return aggregationBuildStatus;
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
@@ -231,8 +262,9 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .maven2Compatible(isM2Compatible()).artifactsPattern(getArtifactPattern())
-                .ivyPattern(getIvyPattern()).enableIssueTrackerIntegration(enableIssueTrackerIntegration)
-                .build();
+                .ivyPattern(getIvyPattern()).enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
+                .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(
+                        getAggregationBuildStatus()).build();
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);

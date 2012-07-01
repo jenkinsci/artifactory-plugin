@@ -91,6 +91,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean disableLicenseAutoDiscovery;
     private final String ivyPattern;
     private final boolean enableIssueTrackerIntegration;
+    private final boolean aggregateBuildIssues;
+    private String aggregationBuildStatus;
     private final String artifactPattern;
     private final boolean notM2Compatible;
     private final IncludesExcludes artifactDeploymentPatterns;
@@ -110,7 +112,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
             boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
-            boolean enableIssueTrackerIntegration, boolean allowPromotionOfNonStagedBuilds) {
+            boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
+            boolean allowPromotionOfNonStagedBuilds) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -126,6 +129,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.ivyPattern = ivyPattern;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
+        this.aggregateBuildIssues = aggregateBuildIssues;
+        this.aggregationBuildStatus = aggregationBuildStatus;
         this.artifactPattern = cleanString(artifactPattern);
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -255,6 +260,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return enableIssueTrackerIntegration;
     }
 
+    public boolean isAggregateBuildIssues() {
+        return aggregateBuildIssues;
+    }
+
+    public String getAggregationBuildStatus() {
+        return aggregationBuildStatus;
+    }
+
     public boolean isAllowPromotionOfNonStagedBuilds() {
         return allowPromotionOfNonStagedBuilds;
     }
@@ -358,7 +371,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                         .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
                         .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
-                        .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration()).build();
+                        .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
+                        .aggregateBuildIssues(isAggregateBuildIssues())
+                        .aggregationBuildStatus(getAggregationBuildStatus()).build();
 
                 ResolverContext resolverContext = null;
                 if (StringUtils.isNotBlank(serverDetails.downloadRepositoryKey)) {

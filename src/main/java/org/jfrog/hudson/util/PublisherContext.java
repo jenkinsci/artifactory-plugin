@@ -50,6 +50,8 @@ public class PublisherContext {
     private String matrixParams;
     private boolean maven2Compatible;
     private boolean enableIssueTrackerIntegration;
+    private boolean aggregateBuildIssues;
+    private String aggregationBuildStatus;
 
     private PublisherContext() {
     }
@@ -148,6 +150,14 @@ public class PublisherContext {
 
     public boolean isEnableIssueTrackerIntegration() {
         return enableIssueTrackerIntegration;
+    }
+
+    public boolean isAggregateBuildIssues() {
+        return aggregateBuildIssues;
+    }
+
+    public String getAggregationBuildStatus() {
+        return aggregationBuildStatus;
     }
 
     public static class Builder {
@@ -270,6 +280,16 @@ public class PublisherContext {
 
         public Builder enableIssueTrackerIntegration(boolean enableIssueTrackerIntegration) {
             publisher.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
+            return this;
+        }
+
+        public Builder aggregateBuildIssues(boolean aggregateBuildIssues) {
+            publisher.aggregateBuildIssues = aggregateBuildIssues;
+            return this;
+        }
+
+        public Builder aggregationBuildStatus(String aggregationBuildStatus) {
+            publisher.aggregationBuildStatus = aggregationBuildStatus;
             return this;
         }
     }

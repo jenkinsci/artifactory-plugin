@@ -106,7 +106,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
+    private String aggregationBuildStatus;
     private final boolean enableIssueTrackerIntegration;
+    private boolean aggregateBuildIssues;
     private final boolean allowPromotionOfNonStagedBuilds;
 
     @DataBoundConstructor
@@ -116,7 +118,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             String violationRecipients, boolean includePublishArtifacts, String scopes,
             boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
             boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
-            boolean allowPromotionOfNonStagedBuilds) {
+            boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -132,9 +134,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.matrixParams = matrixParams;
+        this.aggregationBuildStatus = aggregationBuildStatus;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.deployBuildInfo = deployBuildInfo;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
+        this.aggregateBuildIssues = aggregateBuildIssues;
         this.allowPromotionOfNonStagedBuilds = allowPromotionOfNonStagedBuilds;
     }
 
@@ -238,6 +242,14 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isEnableIssueTrackerIntegration() {
         return enableIssueTrackerIntegration;
+    }
+
+    public boolean isAggregateBuildIssues() {
+        return aggregateBuildIssues;
+    }
+
+    public String getAggregationBuildStatus() {
+        return aggregationBuildStatus;
     }
 
     public boolean isAllowPromotionOfNonStagedBuilds() {

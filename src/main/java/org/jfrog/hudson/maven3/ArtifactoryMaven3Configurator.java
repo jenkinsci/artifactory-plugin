@@ -94,13 +94,16 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
     private final boolean enableIssueTrackerIntegration;
+    private boolean aggregateBuildIssues;
+    private String aggregationBuildStatus;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
             IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts, boolean deployBuildInfo,
             boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
             String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
-            boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration) {
+            boolean discardBuildArtifacts, String matrixParams,
+            boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -112,6 +115,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.matrixParams = matrixParams;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
+        this.aggregateBuildIssues = aggregateBuildIssues;
+        this.aggregationBuildStatus = aggregationBuildStatus;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.deployBuildInfo = deployBuildInfo;
         this.deployArtifacts = deployArtifacts;
@@ -217,6 +222,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return enableIssueTrackerIntegration;
     }
 
+    public boolean isAggregateBuildIssues() {
+        return aggregateBuildIssues;
+    }
+
+    public String getAggregationBuildStatus() {
+        return aggregationBuildStatus;
+    }
+
     public ArtifactoryServer getArtifactoryServer(String artifactoryServerName) {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
         for (ArtifactoryServer server : servers) {
@@ -255,7 +268,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
                 .skipBuildInfoDeploy(skipBuildInfoDeploy).includeEnvVars(isIncludeEnvVars())
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
-                .enableIssueTrackerIntegration(enableIssueTrackerIntegration).build();
+                .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
+                .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(
+                        getAggregationBuildStatus()).build();
         build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override

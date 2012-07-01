@@ -9,7 +9,7 @@ import hudson.plugins.jira.JiraIssue;
 import hudson.plugins.jira.JiraSession;
 import hudson.plugins.jira.JiraSite;
 import hudson.plugins.jira.soap.RemoteServerInfo;
-import org.jfrog.build.api.BuildInfoFields;
+import org.jfrog.build.api.IssuesTrackerFields;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
 
 import java.lang.reflect.InvocationTargetException;
@@ -24,17 +24,23 @@ import java.util.regex.Pattern;
 public class IssuesTrackerHelper {
 
     public void setIssueTrackerInfo(AbstractBuild build, BuildListener listener,
-            ArtifactoryClientConfiguration configuration) {
+            ArtifactoryClientConfiguration configuration, boolean aggregateBuildIssues, String aggregationBuildStatus) {
         JiraSite site = JiraSite.get(build.getProject());
         if (site == null) {
             return;
         }
 
         try {
-            configuration.info.setIssueTrackerName("JIRA");
+            configuration.info.issues.setIssueTrackerName("JIRA");
             JiraSession session = site.createSession();
             RemoteServerInfo info = session.service.getServerInfo(session.token);
-            configuration.info.setIssueTrackerVersion(info.getVersion());
+            configuration.info.issues.setIssueTrackerVersion(info.getVersion());
+            configuration.info.issues.setAggregateBuildIssues(aggregateBuildIssues);
+            if (aggregateBuildIssues) {
+                configuration.info.issues.setAggregationBuildStatus(aggregationBuildStatus);
+            } else {
+                configuration.info.issues.setAggregationBuildStatus("");
+            }
 
             StringBuilder affectedIssuesBuilder = new StringBuilder();
             StringBuilder matrixParamsBuilder = new StringBuilder();
@@ -55,9 +61,9 @@ public class IssuesTrackerHelper {
                         .append(issue.title);
                 matrixParamsBuilder.append(issueId);
             }
-            configuration.info.setAffectedIssues(affectedIssuesBuilder.toString());
+            configuration.info.issues.setAffectedIssues(affectedIssuesBuilder.toString());
             configuration.publisher
-                    .addMatrixParam(BuildInfoFields.BUILD_AFFECTED_ISSUES, matrixParamsBuilder.toString());
+                    .addMatrixParam(IssuesTrackerFields.AFFECTED_ISSUES, matrixParamsBuilder.toString());
         } catch (Exception e) {
             listener.getLogger()
                     .print("[Warning] Error while trying to collect issue tracker and change information: " +
