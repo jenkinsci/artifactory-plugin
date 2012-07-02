@@ -168,7 +168,7 @@
                                           title="Aggregate issues from previous builds"
                                           inline="true"
                                           help="/plugin/artifactory/help/common/help-aggregateBuildIssues.html">
-                            <f:entry field="aggregationBuildStatus" title="${%Aggregation build status: }"
+                            <f:entry field="aggregationBuildStatus" title="${%Aggregate from status}"
                                 description="Define the latest build status to stop the aggregation at">
                                 <f:textbox value="${instance.aggregationBuildStatus}" default="Released"/>
                             </f:entry>
