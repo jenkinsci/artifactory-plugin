@@ -379,4 +379,40 @@
         </repository>
     </distributionManagement>
 
+    <repositories>
+      <repository>
+        <id>central</id>
+        <name>jfrog-apps-dist</name>
+        <url>http://repo.jfrog.org/artifactory/libs-releases</url>
+        <snapshots>
+          <enabled>false</enabled>
+        </snapshots>
+      </repository>
+      <repository>
+        <id>snapshots</id>
+        <name>jfrog-apps-snapshots</name>
+        <url>http://repo.jfrog.org/artifactory/libs-snapshots</url>
+        <snapshots>
+          <enabled>true</enabled>
+        </snapshots>
+      </repository>
+    </repositories>
+    <pluginRepositories>
+      <pluginRepository>
+        <id>central</id>
+        <name>jfrog-plugins-dist</name>
+        <url>http://repo.jfrog.org/artifactory/plugins-releases</url>
+        <snapshots>
+          <enabled>false</enabled>
+        </snapshots>
+      </pluginRepository>
+      <pluginRepository>
+        <id>snapshots</id>
+        <name>jfrog-plugins-snapshots</name>
+        <url>http://repo.jfrog.org/artifactory/plugins-snapshots</url>
+        <snapshots>
+          <enabled>true</enabled>
+        </snapshots>
+      </pluginRepository>
+    </pluginRepositories>
 </project>
