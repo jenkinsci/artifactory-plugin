@@ -117,6 +117,8 @@ public class MavenBuildInfoDeployer extends AbstractBuildInfoDeployer {
                         .md5(getMd5(dependency.groupId, dependency.fileName, mavenBuild));
                 moduleBuilder.addDependency(dependencyBuilder.build());
             }
+            // delete them once used
+            build.getActions().removeAll(build.getActions(MavenDependenciesRecord.class));
         }
     }
 
