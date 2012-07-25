@@ -4,17 +4,28 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.model.Cause;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.*;
+import org.jfrog.build.api.Agent;
+import org.jfrog.build.api.Build;
+import org.jfrog.build.api.BuildAgent;
+import org.jfrog.build.api.BuildInfoProperties;
+import org.jfrog.build.api.BuildRetention;
+import org.jfrog.build.api.BuildType;
+import org.jfrog.build.api.LicenseControl;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.PromotionStatusBuilder;
 import org.jfrog.build.api.release.Promotion;
+import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildRetentionFactory;
 import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.IssuesTrackerHelper;
 
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -26,16 +37,22 @@ import java.util.Map;
 public class AbstractBuildInfoDeployer {
     private BuildInfoAwareConfigurator configurator;
     protected AbstractBuild build;
+    protected BuildListener listener;
+    protected ArtifactoryBuildInfoClient client;
     private EnvVars env;
 
-    public AbstractBuildInfoDeployer(BuildInfoAwareConfigurator configurator, AbstractBuild build, EnvVars env) {
+    public AbstractBuildInfoDeployer(BuildInfoAwareConfigurator configurator, AbstractBuild build,
+            BuildListener listener, ArtifactoryBuildInfoClient client) throws IOException, InterruptedException {
         this.configurator = configurator;
         this.build = build;
-        this.env = env;
+        this.listener = listener;
+        this.client = client;
+        this.env = build.getEnvironment(listener);
     }
 
     protected Build createBuildInfo(String buildAgentName, String buildAgentVersion, BuildType buildType) {
-        BuildInfoBuilder builder = new BuildInfoBuilder(ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()))
+        BuildInfoBuilder builder = new BuildInfoBuilder(
+                ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()))
                 .number(build.getNumber() + "").type(buildType)
                 .buildAgent(new BuildAgent(buildAgentName, buildAgentVersion))
                 .agent(new Agent("hudson", build.getHudsonVersion()));
@@ -110,6 +127,11 @@ public class AbstractBuildInfoDeployer {
             buildRetention = BuildRetentionFactory.createBuildRetention(build, configurator.isDiscardBuildArtifacts());
         }
         builder.buildRetention(buildRetention);
+
+        if ((Jenkins.getInstance().getPlugin("jira") != null) && configurator.isEnableIssueTrackerIntegration()) {
+            new IssuesTrackerHelper(build, listener, configurator.isAggregateBuildIssues(),
+                    configurator.getAggregationBuildStatus()).setIssueTrackerInfo(builder);
+        }
 
         // add staging status if it is a release build
         ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);

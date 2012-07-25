@@ -52,20 +52,16 @@ import static com.google.common.collect.Sets.newHashSet;
 public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
 
     private ArtifactoryGenericConfigurator configurator;
-    private ArtifactoryBuildInfoClient client;
     private final AbstractBuild build;
-    private final BuildListener listener;
     private Build buildInfo;
 
     public GenericBuildInfoDeployer(ArtifactoryGenericConfigurator configurator, ArtifactoryBuildInfoClient client,
-                                    AbstractBuild build, BuildListener listener, Set<DeployDetails> deployedArtifacts,
-                                    List<UserBuildDependency> buildDependencies, List<Dependency> publishedDependencies)
-            throws IOException, InterruptedException, NoSuchAlgorithmException {
-        super(configurator, build, build.getEnvironment(listener));
+            AbstractBuild build, BuildListener listener, Set<DeployDetails> deployedArtifacts,
+            List<UserBuildDependency> buildDependencies, List<Dependency> publishedDependencies)
+            throws IOException, NoSuchAlgorithmException, InterruptedException {
+        super(configurator, build, listener, client);
         this.configurator = configurator;
-        this.client = client;
         this.build = build;
-        this.listener = listener;
         this.buildInfo = createBuildInfo("Generic", "Generic", BuildType.GENERIC);
         createDeployDetailsAndAddToBuildInfo(deployedArtifacts, publishedDependencies);
         addBuildDependencies(buildDependencies);
@@ -95,11 +91,12 @@ public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
     }
 
     private void createDeployDetailsAndAddToBuildInfo(Set<DeployDetails> deployedArtifacts,
-                                                      List<Dependency> publishedDependencies)
-            throws IOException, InterruptedException, NoSuchAlgorithmException {
+            List<Dependency> publishedDependencies)
+            throws IOException, NoSuchAlgorithmException {
         List<Artifact> artifacts = convertDeployDetailsToArtifacts(deployedArtifacts);
         ModuleBuilder moduleBuilder =
-                new ModuleBuilder().id(ExtractorUtils.sanitizeBuildName(build.getParent().getDisplayName()) + ":" + build.getNumber())
+                new ModuleBuilder().id(
+                        ExtractorUtils.sanitizeBuildName(build.getParent().getDisplayName()) + ":" + build.getNumber())
                         .artifacts(artifacts);
         moduleBuilder.dependencies(publishedDependencies);
         buildInfo.setModules(Lists.newArrayList(moduleBuilder.build()));

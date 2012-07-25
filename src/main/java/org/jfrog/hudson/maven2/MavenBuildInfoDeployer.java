@@ -54,16 +54,11 @@ public class MavenBuildInfoDeployer extends AbstractBuildInfoDeployer {
 
     private final Build buildInfo;
     private BuildInfoAwareConfigurator configurator;
-    private BuildListener listener;
-    private ArtifactoryBuildInfoClient client;
 
     public MavenBuildInfoDeployer(BuildInfoAwareConfigurator configurator, ArtifactoryBuildInfoClient client,
-            MavenModuleSetBuild build,
-            BuildListener listener) throws IOException, InterruptedException {
-        super(configurator, build, build.getEnvironment(listener));
+            MavenModuleSetBuild build, BuildListener listener) throws IOException, InterruptedException {
+        super(configurator, build, listener, client);
         this.configurator = configurator;
-        this.listener = listener;
-        this.client = client;
         buildInfo = createBuildInfo("Maven", build.getParent().getMaven().getName(), BuildType.MAVEN);
         gatherModuleAndDependencyInfo(build);
     }

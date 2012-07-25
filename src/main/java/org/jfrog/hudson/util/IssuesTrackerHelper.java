@@ -9,8 +9,13 @@ import hudson.plugins.jira.JiraIssue;
 import hudson.plugins.jira.JiraSession;
 import hudson.plugins.jira.JiraSite;
 import hudson.plugins.jira.soap.RemoteServerInfo;
+import org.jfrog.build.api.Issue;
+import org.jfrog.build.api.IssueTracker;
+import org.jfrog.build.api.Issues;
 import org.jfrog.build.api.IssuesTrackerFields;
+import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
+import org.jfrog.build.util.IssuesTrackerUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -23,25 +28,25 @@ import java.util.regex.Pattern;
  */
 public class IssuesTrackerHelper {
 
-    public void setIssueTrackerInfo(AbstractBuild build, BuildListener listener,
-            ArtifactoryClientConfiguration configuration, boolean aggregateBuildIssues, String aggregationBuildStatus) {
+    private String issueTrackerVersion;
+    private boolean aggregateBuildIssues;
+    private String aggregationBuildStatus;
+    private String affectedIssues;
+    private String matrixParams;
+
+    public IssuesTrackerHelper(AbstractBuild build, BuildListener listener, boolean aggregateBuildIssues,
+            String aggregationBuildStatus) {
+        this.aggregateBuildIssues = aggregateBuildIssues;
+        this.aggregationBuildStatus = aggregationBuildStatus;
         JiraSite site = JiraSite.get(build.getProject());
         if (site == null) {
             return;
         }
 
         try {
-            configuration.info.issues.setIssueTrackerName("JIRA");
             JiraSession session = site.createSession();
             RemoteServerInfo info = session.service.getServerInfo(session.token);
-            configuration.info.issues.setIssueTrackerVersion(info.getVersion());
-            configuration.info.issues.setAggregateBuildIssues(aggregateBuildIssues);
-            if (aggregateBuildIssues) {
-                configuration.info.issues.setAggregationBuildStatus(aggregationBuildStatus);
-            } else {
-                configuration.info.issues.setAggregationBuildStatus("");
-            }
-
+            issueTrackerVersion = info.getVersion();
             StringBuilder affectedIssuesBuilder = new StringBuilder();
             StringBuilder matrixParamsBuilder = new StringBuilder();
             Set<String> issueIds = Sets.newHashSet(manuallyCollectIssues(build, site.getIssuePattern()));
@@ -57,13 +62,12 @@ public class IssuesTrackerHelper {
 
                 URL url = site.getUrl(issueId);
                 JiraIssue issue = site.getIssue(issueId);
-                affectedIssuesBuilder.append(issueId).append(">>").append(url.toString()).append(">>")
-                        .append(issue.title);
+                affectedIssuesBuilder.append(issueId).append(">>").append(url.toString()).append(">>").append(
+                        issue.title);
                 matrixParamsBuilder.append(issueId);
             }
-            configuration.info.issues.setAffectedIssues(affectedIssuesBuilder.toString());
-            configuration.publisher
-                    .addMatrixParam(IssuesTrackerFields.AFFECTED_ISSUES, matrixParamsBuilder.toString());
+            affectedIssues = affectedIssuesBuilder.toString();
+            matrixParams = matrixParamsBuilder.toString();
         } catch (Exception e) {
             listener.getLogger()
                     .print("[Warning] Error while trying to collect issue tracker and change information: " +
@@ -79,5 +83,36 @@ public class IssuesTrackerHelper {
         findIssueIdsRecursive.setAccessible(true);
         return (Set<String>) findIssueIdsRecursive.invoke(null, build, issuePattern,
                 new StreamBuildListener(new NullOutputStream()));
+    }
+
+    /**
+     * Applying issues tracker info to a client configuration (used by the extractors)
+     */
+    public void setIssueTrackerInfo(ArtifactoryClientConfiguration configuration) {
+        configuration.info.issues.setIssueTrackerName("JIRA");
+        configuration.info.issues.setIssueTrackerVersion(issueTrackerVersion);
+        configuration.info.issues.setAggregateBuildIssues(aggregateBuildIssues);
+        if (aggregateBuildIssues) {
+            configuration.info.issues.setAggregationBuildStatus(aggregationBuildStatus);
+        } else {
+            configuration.info.issues.setAggregationBuildStatus("");
+        }
+        configuration.info.issues.setAffectedIssues(affectedIssues);
+        configuration.publisher.addMatrixParam(IssuesTrackerFields.AFFECTED_ISSUES, matrixParams);
+    }
+
+    /**
+     * Apply issues tracker info to a build info builder (used by generic tasks and maven2 which doesn't use the extractor
+     */
+    public void setIssueTrackerInfo(BuildInfoBuilder builder) {
+        Issues issues = new Issues();
+        issues.setAggregateBuildIssues(aggregateBuildIssues);
+        issues.setAggregationBuildStatus(aggregationBuildStatus);
+        issues.setTracker(new IssueTracker("JIRA", issueTrackerVersion));
+        Set<Issue> affectedIssuesSet = IssuesTrackerUtils.getAffectedIssuesSet(affectedIssues);
+        if (!affectedIssuesSet.isEmpty()) {
+            issues.setAffectedIssues(affectedIssuesSet);
+        }
+        builder.issues(issues);
     }
 }

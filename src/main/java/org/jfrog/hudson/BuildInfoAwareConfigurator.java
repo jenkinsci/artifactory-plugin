@@ -26,4 +26,10 @@ public interface BuildInfoAwareConfigurator {
     boolean isDiscardOldBuilds();
 
     boolean isDiscardBuildArtifacts();
+
+    boolean isEnableIssueTrackerIntegration();
+
+    boolean isAggregateBuildIssues();
+
+    String getAggregationBuildStatus();
 }

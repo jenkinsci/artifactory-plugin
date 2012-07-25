@@ -112,8 +112,8 @@ public class ExtractorUtils {
 
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
                 publisherContext.isEnableIssueTrackerIntegration()) {
-            new IssuesTrackerHelper().setIssueTrackerInfo(build, listener, configuration,
-                    publisherContext.isAggregateBuildIssues(), publisherContext.getAggregationBuildStatus());
+            new IssuesTrackerHelper(build, listener, publisherContext.isAggregateBuildIssues(),
+                    publisherContext.getAggregationBuildStatus()).setIssueTrackerInfo(configuration);
         }
 
         addEnvVars(env, build, configuration);

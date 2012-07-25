@@ -142,6 +142,18 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return discardBuildArtifacts;
     }
 
+    public boolean isEnableIssueTrackerIntegration() {
+        return false;
+    }
+
+    public boolean isAggregateBuildIssues() {
+        return false;
+    }
+
+    public String getAggregationBuildStatus() {
+        return null;
+    }
+
     public boolean isKeepArchivedArtifacts() {
         return keepArchivedArtifacts;
     }
