@@ -209,8 +209,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 preferredDeployer.getUsername(), preferredDeployer.getPassword(), proxyConfiguration,
                 listener);
         try {
-            GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build,
-                    ArtifactoryGenericConfigurator.this, listener, dependenciesClient);
+            GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener,
+                    dependenciesClient, getResolvePattern());
             publishedDependencies = artifactsResolver.retrievePublishedDependencies();
             buildDependencies = artifactsResolver.retrieveBuildDependencies();
 
