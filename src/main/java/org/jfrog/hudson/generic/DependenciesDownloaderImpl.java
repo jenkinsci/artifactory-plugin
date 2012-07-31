@@ -66,7 +66,6 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
     }
 
     private static class DownloadFileCallable implements FilePath.FileCallable<Map<String, String>> {
-
         private Log log;
 
         public DownloadFileCallable(Log log) {

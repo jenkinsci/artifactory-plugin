@@ -38,29 +38,29 @@ import java.util.List;
  */
 public class GenericArtifactsResolver {
     private final AbstractBuild build;
-    private final BuildListener listener;
     private final ArtifactoryDependenciesClient client;
     private String resolvePattern;
+    private Log log;
 
     public GenericArtifactsResolver(AbstractBuild build, BuildListener listener, ArtifactoryDependenciesClient client,
             String resolvePattern) {
         this.build = build;
-        this.listener = listener;
         this.client = client;
         this.resolvePattern = resolvePattern;
+        log = new JenkinsBuildInfoLog(listener);
     }
 
     public List<Dependency> retrievePublishedDependencies() throws IOException, InterruptedException {
-        Log log = new JenkinsBuildInfoLog(listener);
-        DependenciesDownloader downloader = new DependenciesDownloaderImpl(client, build.getWorkspace(), log);
-        DependenciesHelper helper = new DependenciesHelper(downloader, log);
+        DependenciesHelper helper = new DependenciesHelper(createDependenciesDownloader(), log);
         return helper.retrievePublishedDependencies(resolvePattern);
     }
 
     public List<UserBuildDependency> retrieveBuildDependencies() throws IOException, InterruptedException {
-        Log log = new JenkinsBuildInfoLog(listener);
-        DependenciesDownloader downloader = new DependenciesDownloaderImpl(client, build.getWorkspace(), log);
-        BuildDependenciesHelper helper = new BuildDependenciesHelper(downloader, log);
+        BuildDependenciesHelper helper = new BuildDependenciesHelper(createDependenciesDownloader(), log);
         return helper.retrieveBuildDependencies(resolvePattern);
+    }
+
+    private DependenciesDownloader createDependenciesDownloader() {
+        return new DependenciesDownloaderImpl(client, build.getWorkspace(), log);
     }
 }
