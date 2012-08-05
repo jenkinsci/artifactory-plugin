@@ -302,4 +302,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             return descriptor.getArtifactoryServers();
         }
     }
+
+    /**
+     * Don't need it anymore since now the slave uses it's own client to deploy the artifacts
+     */
+    @Deprecated
+    private transient String keepArchivedArtifacts;
 }
