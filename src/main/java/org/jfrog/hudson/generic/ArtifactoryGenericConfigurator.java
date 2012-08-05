@@ -2,7 +2,6 @@ package org.jfrog.hudson.generic;
 
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
@@ -15,11 +14,11 @@ import hudson.tasks.BuildWrapperDescriptor;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.dependency.UserBuildDependency;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryDependenciesClient;
-import org.jfrog.build.client.DeployDetails;
 import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -33,11 +32,9 @@ import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Freestyle Generic configurator
@@ -60,15 +57,13 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final boolean includeEnvVars;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
-    private final boolean keepArchivedArtifacts;
     private transient List<Dependency> publishedDependencies;
     private transient List<UserBuildDependency> buildDependencies;
 
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
             String deployPattern, String resolvePattern, String matrixParams, boolean deployBuildInfo,
-            boolean includeEnvVars, boolean discardOldBuilds, boolean discardBuildArtifacts,
-            boolean keepArchivedArtifacts) {
+            boolean includeEnvVars, boolean discardOldBuilds, boolean discardBuildArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployPattern = deployPattern;
@@ -78,7 +73,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.includeEnvVars = includeEnvVars;
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
-        this.keepArchivedArtifacts = keepArchivedArtifacts;
     }
 
     public String getArtifactoryName() {
@@ -152,10 +146,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     public String getAggregationBuildStatus() {
         return null;
-    }
-
-    public boolean isKeepArchivedArtifacts() {
-        return keepArchivedArtifacts;
     }
 
     public ArtifactoryServer getArtifactoryServer() {
@@ -242,13 +232,13 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                     preferredDeployer = server.getResolvingCredentials();
                 }
                 ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
-                        preferredDeployer.getPassword());
+                        preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
                 try {
                     GenericArtifactsDeployer artifactsDeployer = new GenericArtifactsDeployer(build,
-                            ArtifactoryGenericConfigurator.this, listener, client);
+                            ArtifactoryGenericConfigurator.this, listener, preferredDeployer);
                     artifactsDeployer.deploy();
 
-                    Set<DeployDetails> deployedArtifacts = artifactsDeployer.getDeployedArtifacts();
+                    List<Artifact> deployedArtifacts = artifactsDeployer.getDeployedArtifacts();
                     if (deployBuildInfo) {
                         new GenericBuildInfoDeployer(ArtifactoryGenericConfigurator.this, client, build,
                                 listener, deployedArtifacts, buildDependencies, publishedDependencies).deploy();
@@ -256,14 +246,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                         build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
                         build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryGenericConfigurator>(build,
                                 ArtifactoryGenericConfigurator.this));
-                    }
-
-                    if (!keepArchivedArtifacts) {
-                        // remove the local artifacts directory created for remote agents
-                        File artifactsDir = new File(build.getRootDir(), GenericArtifactsDeployer.LOCAL_ARTIFACTS_DIR);
-                        if (artifactsDir.exists()) {
-                            Util.deleteRecursive(artifactsDir);
-                        }
                     }
 
                     return true;

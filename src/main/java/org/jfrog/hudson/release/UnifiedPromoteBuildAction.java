@@ -18,9 +18,15 @@ package org.jfrog.hudson.release;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildBadgeAction;
+import hudson.model.TaskAction;
+import hudson.model.TaskListener;
+import hudson.model.TaskThread;
+import hudson.model.User;
 import hudson.security.ACL;
 import hudson.security.Permission;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
@@ -30,7 +36,12 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.hudson.*;
+import org.jfrog.hudson.ArtifactoryPlugin;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
+import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.PluginSettings;
+import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -249,7 +260,8 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                 long started = System.currentTimeMillis();
                 listener.getLogger().println("Promoting build ....");
 
-                client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword());
+                client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword(),
+                        artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
                 if ((promotionPlugin != null) &&
                         !UserPluginInfo.NO_PLUGIN_KEY.equals(promotionPlugin.getPluginName())) {
@@ -323,7 +335,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
          * @return
          */
         private boolean checkSuccess(HttpResponse response, boolean dryRun, boolean parseMessages,
-                                     TaskListener listener) {
+                TaskListener listener) {
             StatusLine status = response.getStatusLine();
             try {
                 String content = entityToString(response);

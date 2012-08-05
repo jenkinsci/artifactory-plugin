@@ -304,8 +304,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         ArtifactoryServer server = getArtifactoryServer();
         Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(this, server);
-        ArtifactoryBuildInfoClient client =
-                server.createArtifactoryClient(preferredDeployer.getUsername(), preferredDeployer.getPassword());
+        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
+                preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             verifySupportedArtifactoryVersion(client);
             if (deployArtifacts) {

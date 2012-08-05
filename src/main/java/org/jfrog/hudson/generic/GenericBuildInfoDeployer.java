@@ -20,25 +20,21 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import org.apache.commons.io.FilenameUtils;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildType;
 import org.jfrog.build.api.Dependency;
-import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.api.builder.dependency.BuildDependencyBuilder;
 import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.api.dependency.UserBuildDependency;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.build.client.DeployDetails;
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
 import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.Set;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
@@ -56,7 +52,7 @@ public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
     private Build buildInfo;
 
     public GenericBuildInfoDeployer(ArtifactoryGenericConfigurator configurator, ArtifactoryBuildInfoClient client,
-            AbstractBuild build, BuildListener listener, Set<DeployDetails> deployedArtifacts,
+            AbstractBuild build, BuildListener listener, List<Artifact> deployedArtifacts,
             List<UserBuildDependency> buildDependencies, List<Dependency> publishedDependencies)
             throws IOException, NoSuchAlgorithmException, InterruptedException {
         super(configurator, build, listener, client);
@@ -90,26 +86,13 @@ public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
                 }));
     }
 
-    private void createDeployDetailsAndAddToBuildInfo(Set<DeployDetails> deployedArtifacts,
-            List<Dependency> publishedDependencies)
-            throws IOException, NoSuchAlgorithmException {
-        List<Artifact> artifacts = convertDeployDetailsToArtifacts(deployedArtifacts);
+    private void createDeployDetailsAndAddToBuildInfo(List<Artifact> deployedArtifacts,
+            List<Dependency> publishedDependencies) throws IOException, NoSuchAlgorithmException {
         ModuleBuilder moduleBuilder =
                 new ModuleBuilder().id(
                         ExtractorUtils.sanitizeBuildName(build.getParent().getDisplayName()) + ":" + build.getNumber())
-                        .artifacts(artifacts);
+                        .artifacts(deployedArtifacts);
         moduleBuilder.dependencies(publishedDependencies);
         buildInfo.setModules(Lists.newArrayList(moduleBuilder.build()));
-    }
-
-    private List<Artifact> convertDeployDetailsToArtifacts(Set<DeployDetails> details) {
-        List<Artifact> result = Lists.newArrayList();
-        for (DeployDetails detail : details) {
-            String ext = FilenameUtils.getExtension(detail.getFile().getName());
-            Artifact artifact = new ArtifactBuilder(detail.getFile().getName()).md5(detail.getMd5())
-                    .sha1(detail.getSha1()).type(ext).build();
-            result.add(artifact);
-        }
-        return result;
     }
 }

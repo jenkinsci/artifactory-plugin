@@ -18,8 +18,14 @@ package org.jfrog.hudson.release;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildBadgeAction;
+import hudson.model.TaskAction;
+import hudson.model.TaskListener;
+import hudson.model.TaskThread;
+import hudson.model.User;
 import hudson.security.ACL;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
@@ -244,7 +250,8 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
                 long started = System.currentTimeMillis();
                 listener.getLogger().println("Promoting build ....");
 
-                client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword());
+                client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword(),
+                        artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
                 if ((promotionPlugin != null) &&
                         !UserPluginInfo.NO_PLUGIN_KEY.equals(promotionPlugin.getPluginName())) {
@@ -318,7 +325,7 @@ public abstract class PromoteBuildAction extends TaskAction implements BuildBadg
          * @return
          */
         private boolean checkSuccess(HttpResponse response, boolean dryRun, boolean parseMessages,
-                                     TaskListener listener) {
+                TaskListener listener) {
             StatusLine status = response.getStatusLine();
             try {
                 String content = entityToString(response);

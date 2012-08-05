@@ -20,9 +20,9 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.model.BuildListener;
-import hudson.model.Hudson;
 import hudson.util.Scrambler;
 import hudson.util.XStream2;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
@@ -106,7 +106,7 @@ public class ArtifactoryServer implements Serializable {
     public List<String> getRepositoryKeys() {
         Credentials resolvingCredentials = getResolvingCredentials();
         ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
-                resolvingCredentials.getPassword());
+                resolvingCredentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             repositories = client.getLocalRepositoriesKeys();
         } catch (IOException e) {
@@ -144,7 +144,7 @@ public class ArtifactoryServer implements Serializable {
     public Map getStagingStrategy(PluginSettings selectedStagingPlugin, String buildName) throws IOException {
         Credentials resolvingCredentials = getResolvingCredentials();
         ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
-                resolvingCredentials.getPassword());
+                resolvingCredentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             return client.getStagingStrategy(selectedStagingPlugin.getPluginName(), buildName,
                     selectedStagingPlugin.getParamMap());
@@ -167,7 +167,7 @@ public class ArtifactoryServer implements Serializable {
     public List<VirtualRepository> getVirtualRepositoryKeys() {
         Credentials resolvingCredentials = getResolvingCredentials();
         ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
-                resolvingCredentials.getPassword());
+                resolvingCredentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             List<String> keys = client.getVirtualRepositoryKeys();
             virtualRepositories = Lists.newArrayList(Lists.transform(keys, new Function<String, VirtualRepository>() {
@@ -222,20 +222,36 @@ public class ArtifactoryServer implements Serializable {
         return infosToReturn;
     }
 
-    public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password) {
+    /**
+     * This method might run on slaves, this is why we provide it with a proxy from the master config
+     */
+    public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password,
+            ProxyConfiguration proxyConfiguration) {
         ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password, new NullLog());
         client.setConnectionTimeout(timeout);
-
-        hudson.ProxyConfiguration proxyConfiguration = Hudson.getInstance().proxy;
         if (!bypassProxy && proxyConfiguration != null) {
-            client.setProxyConfiguration(proxyConfiguration.name,
+            client.setProxyConfiguration(proxyConfiguration.host,
                     proxyConfiguration.port,
-                    proxyConfiguration.getUserName(),
-                    proxyConfiguration.getPassword());
+                    proxyConfiguration.username,
+                    proxyConfiguration.password);
         }
 
         return client;
     }
+
+    public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+        ProxyConfiguration proxyConfiguration = null;
+        if (proxy != null) {
+            proxyConfiguration = new ProxyConfiguration();
+            proxyConfiguration.host = proxy.name;
+            proxyConfiguration.port = proxy.port;
+            proxyConfiguration.username = proxy.getUserName();
+            proxyConfiguration.password = proxy.getPassword();
+        }
+
+        return proxyConfiguration;
+    }
+
 
     /**
      * This method might run on slaves, this is why we provide it with a proxy from the master config
@@ -303,7 +319,7 @@ public class ArtifactoryServer implements Serializable {
     private void gatherUserPluginInfo(List<UserPluginInfo> infosToReturn, String pluginKey) {
         Credentials resolvingCredentials = getResolvingCredentials();
         ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentials.getUsername(),
-                resolvingCredentials.getPassword());
+                resolvingCredentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             Map<String, List<Map>> userPluginInfo = client.getUserPluginInfo();
             if (userPluginInfo != null && userPluginInfo.containsKey(pluginKey)) {
