@@ -46,14 +46,14 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
         return helper.downloadDependencies(downloadableArtifacts);
     }
 
-    public String getTargetDir(String relativeDir) {
-        FilePath targetDirFile = new FilePath(workspace, relativeDir);
+    public String getTargetDir(String targetDir, String relativeDir) {
+        FilePath targetDirFile = new FilePath(workspace, targetDir).child(relativeDir);
         return targetDirFile.getRemote();
     }
 
     public Map<String, String> saveDownloadedFile(InputStream is, String filePath) throws IOException {
         try {
-            FilePath child = workspace.child(getTargetDir(filePath));
+            FilePath child = workspace.child(filePath);
             child.copyFrom(is);
             return child.act(new DownloadFileCallable(log));
         } catch (InterruptedException e) {
