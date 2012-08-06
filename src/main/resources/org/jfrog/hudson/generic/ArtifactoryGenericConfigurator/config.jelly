@@ -38,7 +38,7 @@
         </f:block>
         <f:block>
             <table style="width:100%">
-                <f:entry title="Resolved Artifacts (requires Artifactory Pro 2.6.0+)" field="resolvePattern" help="/plugin/artifactory/help/common/help-resolvePattern.html">
+                <f:entry title="Resolved Artifacts (requires Artifactory Pro)" field="resolvePattern" help="/plugin/artifactory/help/common/help-resolvePattern.html">
                                 <f:textarea value="${instance.resolvePattern}" />
                             </f:entry>
                 <f:entry title="Published Artifacts" field="deployPattern" help="/plugin/artifactory/help/common/help-deployPattern.html">
