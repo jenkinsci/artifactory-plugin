@@ -14,7 +14,9 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   ~
-  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
@@ -30,7 +32,7 @@
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
     <properties>
-        <buildinfo.version>2.0.14</buildinfo.version>
+        <buildinfo.version>2.0.x-SNAPSHOT</buildinfo.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
     </properties>
 
@@ -153,7 +155,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-ivy</artifactId>
-            <version>2.0.7</version>
+            <version>2.0.x-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.ant</groupId>
@@ -168,12 +170,12 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-maven3</artifactId>
-            <version>2.0.9</version>
+            <version>2.0.x-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-gradle</artifactId>
-            <version>2.0.15</version>
+            <version>2.0.x-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.ant</groupId>
@@ -379,39 +381,39 @@
     </distributionManagement>
 
     <repositories>
-      <repository>
-        <id>central</id>
-        <name>jfrog-apps-dist</name>
-        <url>http://repo.jfrog.org/artifactory/libs-releases</url>
-        <snapshots>
-          <enabled>false</enabled>
-        </snapshots>
-      </repository>
-      <repository>
-        <id>snapshots</id>
-        <name>jfrog-apps-snapshots</name>
-        <url>http://repo.jfrog.org/artifactory/libs-snapshots</url>
-        <snapshots>
-          <enabled>true</enabled>
-        </snapshots>
-      </repository>
+        <repository>
+            <id>central</id>
+            <name>jfrog-apps-dist</name>
+            <url>http://repo.jfrog.org/artifactory/libs-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>snapshots</id>
+            <name>jfrog-apps-snapshots</name>
+            <url>http://repo.jfrog.org/artifactory/libs-snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
     </repositories>
     <pluginRepositories>
-      <pluginRepository>
-        <id>central</id>
-        <name>jfrog-plugins-dist</name>
-        <url>http://repo.jfrog.org/artifactory/plugins-releases</url>
-        <snapshots>
-          <enabled>false</enabled>
-        </snapshots>
-      </pluginRepository>
-      <pluginRepository>
-        <id>snapshots</id>
-        <name>jfrog-plugins-snapshots</name>
-        <url>http://repo.jfrog.org/artifactory/plugins-snapshots</url>
-        <snapshots>
-          <enabled>true</enabled>
-        </snapshots>
-      </pluginRepository>
+        <pluginRepository>
+            <id>central</id>
+            <name>jfrog-plugins-dist</name>
+            <url>http://repo.jfrog.org/artifactory/plugins-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+            <id>snapshots</id>
+            <name>jfrog-plugins-snapshots</name>
+            <url>http://repo.jfrog.org/artifactory/plugins-snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
     </pluginRepositories>
 </project>

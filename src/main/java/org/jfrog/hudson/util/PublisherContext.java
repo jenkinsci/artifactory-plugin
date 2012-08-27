@@ -42,6 +42,7 @@ public class PublisherContext {
     private IncludesExcludes includesExcludes;
     private boolean skipBuildInfoDeploy;
     private boolean includeEnvVars;
+    private IncludesExcludes envVarsPatterns;
     private boolean evenIfUnstable;
     private boolean deployMaven;
     private boolean deployIvy;
@@ -90,6 +91,10 @@ public class PublisherContext {
 
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
+    }
+
+    public IncludesExcludes getEnvVarsPatterns() {
+        return envVarsPatterns;
     }
 
     public DeployerOverrider getDeployerOverrider() {
@@ -235,6 +240,11 @@ public class PublisherContext {
 
         public Builder includeEnvVars(boolean includeEnvVars) {
             publisher.includeEnvVars = includeEnvVars;
+            return this;
+        }
+
+        public Builder envVarsPatterns(IncludesExcludes envVarsPatterns) {
+            publisher.envVarsPatterns = envVarsPatterns;
             return this;
         }
 

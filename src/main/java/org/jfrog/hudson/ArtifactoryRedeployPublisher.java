@@ -86,6 +86,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     private boolean deployBuildInfo;
 
+    private final IncludesExcludes envVarsPatterns;
     /**
      * Deploy even if the build is unstable (failed tests)
      */
@@ -114,7 +115,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
             IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
-            boolean includeEnvVars, boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
+            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+            boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
             String violationRecipients, boolean includePublishArtifacts, String scopes,
             boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
             boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
@@ -124,6 +126,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.includeEnvVars = includeEnvVars;
+        this.envVarsPatterns = envVarsPatterns;
         this.evenIfUnstable = evenIfUnstable;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
@@ -197,6 +200,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
+    }
+
+    public IncludesExcludes getEnvVarsPatterns() {
+        return envVarsPatterns;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})

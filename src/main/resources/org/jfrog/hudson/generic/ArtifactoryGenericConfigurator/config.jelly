@@ -1,5 +1,4 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:section title="${%Artifactory Configuration}">
         <f:dropdownList name="details" title="${%Artifactory server}">
             <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
@@ -7,7 +6,8 @@
                     <f:nested>
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <f:entry title="${%Target Repository}" help="/plugin/artifactory/help/common/help-deployRepository.html">
+                        <f:entry title="${%Target Repository}"
+                                 help="/plugin/artifactory/help/common/help-deployRepository.html">
                             <select class="setting-input" name="repositoryKey">
                                 <j:forEach var="r" items="${s.repositoryKeys}">
                                     <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
@@ -38,13 +38,16 @@
         </f:block>
         <f:block>
             <table style="width:100%">
-                <f:entry title="Resolved Artifacts (requires Artifactory Pro)" field="resolvePattern" help="/plugin/artifactory/help/common/help-resolvePattern.html">
-                                <f:textarea value="${instance.resolvePattern}" />
-                            </f:entry>
-                <f:entry title="Published Artifacts" field="deployPattern" help="/plugin/artifactory/help/common/help-deployPattern.html">
-                    <f:textarea value="${instance.deployPattern}" />
+                <f:entry title="Resolved Artifacts (requires Artifactory Pro)" field="resolvePattern"
+                         help="/plugin/artifactory/help/common/help-resolvePattern.html">
+                    <f:textarea value="${instance.resolvePattern}"/>
                 </f:entry>
-                <f:entry title="Deployment properties" field="matrixParams" help="/plugin/artifactory/help/common/help-matrixParams.html">
+                <f:entry title="Published Artifacts" field="deployPattern"
+                         help="/plugin/artifactory/help/common/help-deployPattern.html">
+                    <f:textarea value="${instance.deployPattern}"/>
+                </f:entry>
+                <f:entry title="Deployment properties" field="matrixParams"
+                         help="/plugin/artifactory/help/common/help-matrixParams.html">
                     <f:textbox value="${instance.matrixParams}"/>
                 </f:entry>
             </table>
@@ -55,11 +58,31 @@
                                  title="Capture and publish build info"
                                  help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
                                  inline="true">
-                    <f:entry field="includeEnvVars"
-                             help="/plugin/artifactory/help/common/help-includeEnvVars.html">
-                        <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
-                        <label class="attach-previous">${%Include all environment variables}</label>
-                    </f:entry>
+
+                    <f:optionalBlock name="includeEnvVars" checked="${instance.includeEnvVars}"
+                                     title="Include environment variables"
+                                     help="/plugin/artifactory/help/common/help-includeEnvVars.html"
+                                     inline="true">
+                        <f:block>
+                            <table style="width:100%">
+                                <j:set var="envVarsPatterns" value="${instance.envVarsPatterns}"/>
+                                <f:section name="envVarsPatterns">
+                                    <input type="hidden" name="stapler-class"
+                                           value="org.jfrog.hudson.util.IncludesExcludes"/>
+                                    <f:entry title="Include Patterns" field="includePatterns"
+                                             help="/plugin/artifactory/help/common/help-envVarsIncludePatterns.html">
+                                        <f:textbox value="${envVarsPatterns.includePatterns}"/>
+                                    </f:entry>
+                                    <f:entry title="Exclude Patterns"
+                                             field="excludePatterns"
+                                             help="/plugin/artifactory/help/common/help-envVarsExcludePatterns.html">
+                                        <f:textbox value="${envVarsPatterns.excludePatterns}"
+                                                   default="*password*,*secret*"/>
+                                    </f:entry>
+                                </f:section>
+                            </table>
+                        </f:block>
+                    </f:optionalBlock>
                     <f:optionalBlock name="discardOldBuilds"
                                      checked="${instance.discardOldBuilds}"
                                      title="Discard old builds from Artifactory (requires Artifactory Pro)"

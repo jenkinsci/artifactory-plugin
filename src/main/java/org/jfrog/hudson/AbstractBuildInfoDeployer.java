@@ -1,7 +1,5 @@
 package org.jfrog.hudson;
 
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
@@ -19,6 +17,8 @@ import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.PromotionStatusBuilder;
 import org.jfrog.build.api.release.Promotion;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.IncludeExcludePatterns;
+import org.jfrog.build.client.PatternMatcher;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildRetentionFactory;
@@ -27,7 +27,9 @@ import org.jfrog.hudson.util.IssuesTrackerHelper;
 
 import java.io.IOException;
 import java.util.Calendar;
+import java.util.Enumeration;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Handles build info creation and deployment
@@ -89,26 +91,12 @@ public class AbstractBuildInfoDeployer {
             }
         }
 
-        gatherSysPropInfo(builder);
-        addBuildInfoVariables(builder);
-
         String revision = ExtractorUtils.getVcsRevision(env);
         if (StringUtils.isNotBlank(revision)) {
             builder.vcsRevision(revision);
         }
-        if (configurator.isIncludeEnvVars()) {
-            for (Map.Entry<String, String> entry : env.entrySet()) {
-                builder.addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
-                        entry.getValue());
-            }
-        } else {
-            MapDifference<String, String> difference = Maps.difference(env, System.getenv());
-            Map<String, String> filteredEnvVars = difference.entriesOnlyOnLeft();
-            for (Map.Entry<String, String> entry : filteredEnvVars.entrySet()) {
-                builder.addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(),
-                        entry.getValue());
-            }
-        }
+
+        addBuildInfoProperties(builder);
 
         LicenseControl licenseControl = new LicenseControl(configurator.isRunChecks());
         if (configurator.isRunChecks()) {
@@ -156,22 +144,53 @@ public class AbstractBuildInfoDeployer {
         return buildInfo;
     }
 
-    private void gatherSysPropInfo(BuildInfoBuilder infoBuilder) {
-        infoBuilder.addProperty("os.arch", System.getProperty("os.arch"));
-        infoBuilder.addProperty("os.name", System.getProperty("os.name"));
-        infoBuilder.addProperty("os.version", System.getProperty("os.version"));
-        infoBuilder.addProperty("java.version", System.getProperty("java.version"));
-        infoBuilder.addProperty("java.vm.info", System.getProperty("java.vm.info"));
-        infoBuilder.addProperty("java.vm.name", System.getProperty("java.vm.name"));
-        infoBuilder.addProperty("java.vm.specification.name", System.getProperty("java.vm.specification.name"));
-        infoBuilder.addProperty("java.vm.vendor", System.getProperty("java.vm.vendor"));
+    private void addBuildInfoProperties(BuildInfoBuilder builder) {
+        IncludeExcludePatterns patterns = new IncludeExcludePatterns(
+                configurator.getEnvVarsPatterns().getIncludePatterns(),
+                configurator.getEnvVarsPatterns().getExcludePatterns());
+
+        if (configurator.isIncludeEnvVars()) {
+            // First add all build related variables
+            addBuildVariables(builder, patterns);
+
+            // Then add env variables
+            addEnvVariables(builder, patterns);
+
+            // And finally add system variables
+            addSystemVariables(builder, patterns);
+        }
     }
 
-    private void addBuildInfoVariables(BuildInfoBuilder infoBuilder) {
+    private void addBuildVariables(BuildInfoBuilder builder, IncludeExcludePatterns patterns) {
         Map<String, String> buildVariables = build.getBuildVariables();
         for (Map.Entry<String, String> entry : buildVariables.entrySet()) {
-            infoBuilder.addProperty(
-                    BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + entry.getKey(), entry.getValue());
+            String varKey = entry.getKey();
+            if (PatternMatcher.pathConflicts(varKey, patterns)) {
+                continue;
+            }
+            builder.addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + varKey, entry.getValue());
+        }
+    }
+
+    private void addEnvVariables(BuildInfoBuilder builder, IncludeExcludePatterns patterns) {
+        for (Map.Entry<String, String> entry : env.entrySet()) {
+            String varKey = entry.getKey();
+            if (PatternMatcher.pathConflicts(varKey, patterns)) {
+                continue;
+            }
+            builder.addProperty(BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX + varKey, entry.getValue());
+        }
+    }
+
+    private void addSystemVariables(BuildInfoBuilder builder, IncludeExcludePatterns patterns) {
+        Properties systemProperties = System.getProperties();
+        Enumeration<?> enumeration = systemProperties.propertyNames();
+        while (enumeration.hasMoreElements()) {
+            String propertyKey = (String) enumeration.nextElement();
+            if (PatternMatcher.pathConflicts(propertyKey, patterns)) {
+                continue;
+            }
+            builder.addProperty(propertyKey, systemProperties.getProperty(propertyKey));
         }
     }
 }

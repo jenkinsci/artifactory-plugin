@@ -1,5 +1,7 @@
 package org.jfrog.hudson;
 
+import org.jfrog.hudson.util.IncludesExcludes;
+
 /**
  * Represents a class that can be passed to {@link AbstractBuildInfoDeployer} for build info creation
  *
@@ -12,6 +14,8 @@ public interface BuildInfoAwareConfigurator {
     String getRepositoryKey();
 
     boolean isIncludeEnvVars();
+
+    IncludesExcludes getEnvVarsPatterns();
 
     boolean isRunChecks();
 

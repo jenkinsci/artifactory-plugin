@@ -79,6 +79,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private boolean deployArtifacts;
     private final Credentials overridingDeployerCredentials;
     public final String remotePluginLocation;
+    private IncludesExcludes envVarsPatterns;
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
     private final boolean runChecks;
@@ -102,7 +103,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     @DataBoundConstructor
     public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
             boolean deployArtifacts, String remotePluginLocation,
-            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
+            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+            boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts,
@@ -113,6 +115,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.deployArtifacts = deployArtifacts;
         this.remotePluginLocation = remotePluginLocation;
         this.includeEnvVars = includeEnvVars;
+        this.envVarsPatterns = envVarsPatterns;
         this.deployBuildInfo = deployBuildInfo;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
@@ -212,6 +215,10 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return includeEnvVars;
     }
 
+    public IncludesExcludes getEnvVarsPatterns() {
+        return envVarsPatterns;
+    }
+
     public String getRepositoryKey() {
         return details != null ? details.repositoryKey : null;
     }
@@ -259,7 +266,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 .violationRecipients(getViolationRecipients()).scopes(getScopes())
                 .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
-                .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
+                .skipBuildInfoDeploy(!isDeployBuildInfo())
+                .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .maven2Compatible(isM2Compatible()).artifactsPattern(getArtifactPattern())
                 .ivyPattern(getIvyPattern()).enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())

@@ -70,6 +70,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private final IncludesExcludes artifactDeploymentPatterns;
     private boolean deployBuildInfo;
     private boolean includeEnvVars;
+    private IncludesExcludes envVarsPatterns;
     private boolean runChecks;
     private String violationRecipients;
     private boolean includePublishArtifacts;
@@ -89,7 +90,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
             boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
-            boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+            boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
             String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
             String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, String matrixParams,
             boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus) {
@@ -99,6 +101,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
+        this.envVarsPatterns = envVarsPatterns;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
@@ -227,6 +230,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return includeEnvVars;
     }
 
+    public IncludesExcludes getEnvVarsPatterns() {
+        return envVarsPatterns;
+    }
+
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
     }
@@ -283,7 +290,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 .includePublishArtifacts(isIncludePublishArtifacts()).violationRecipients(getViolationRecipients())
                 .scopes(getScopes()).licenseAutoDiscovery(licenseAutoDiscovery).discardOldBuilds(isDiscardOldBuilds())
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
-                .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
+                .skipBuildInfoDeploy(!isDeployBuildInfo())
+                .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern()).maven2Compatible(isM2Compatible())
                 .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())

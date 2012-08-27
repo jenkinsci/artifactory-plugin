@@ -36,6 +36,7 @@ import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.build.client.ClientProperties;
+import org.jfrog.build.client.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -116,7 +117,7 @@ public class ExtractorUtils {
                     publisherContext.getAggregationBuildStatus()).setIssueTrackerInfo(configuration);
         }
 
-        addEnvVars(env, build, configuration);
+        addEnvVars(env, build, configuration, publisherContext.getEnvVarsPatterns());
         persistConfiguration(build, configuration, env);
         return configuration;
     }
@@ -244,6 +245,8 @@ public class ExtractorUtils {
         }
         configuration.publisher.setPublishBuildInfo(!context.isSkipBuildInfoDeploy());
         configuration.setIncludeEnvVars(context.isIncludeEnvVars());
+        configuration.setEnvVarsIncludePatterns(context.getEnvVarsPatterns().getIncludePatterns());
+        configuration.setEnvVarsExcludePatterns(context.getEnvVarsPatterns().getExcludePatterns());
         addMatrixParams(context, configuration.publisher, env);
     }
 
@@ -334,27 +337,27 @@ public class ExtractorUtils {
     }
 
     private static void addEnvVars(Map<String, String> env, AbstractBuild<?, ?> build,
-            ArtifactoryClientConfiguration configuration) {
-        // Write all the deploy (matrix params) properties.
-        configuration.fillFromProperties(env);
-        //Add only the jenkins specific environment variables
+            ArtifactoryClientConfiguration configuration, IncludesExcludes envVarsPatterns) {
+        IncludeExcludePatterns patterns = new IncludeExcludePatterns(envVarsPatterns.getIncludePatterns(),
+                envVarsPatterns.getExcludePatterns());
+
+        // Add only the jenkins specific environment variables
         MapDifference<String, String> envDifference = Maps.difference(env, System.getenv());
         Map<String, String> filteredEnvDifference = envDifference.entriesOnlyOnLeft();
-        configuration.info.addBuildVariables(filteredEnvDifference);
+        configuration.info.addBuildVariables(filteredEnvDifference, patterns);
 
-        // add build variables
+        // Add Jenkins build variables
         Map<String, String> buildVariables = build.getBuildVariables();
-        configuration.fillFromProperties(buildVariables);
+        MapDifference<String, String> buildVarDifference = Maps.difference(buildVariables, System.getenv());
+        Map<String, String> filteredBuildVarDifferences = buildVarDifference.entriesOnlyOnLeft();
+        configuration.info.addBuildVariables(filteredBuildVarDifferences, patterns);
+
+        // Write all the deploy (matrix params) properties.
+        configuration.fillFromProperties(buildVariables, patterns);
         for (Map.Entry<String, String> entry : buildVariables.entrySet()) {
             if (entry.getKey().startsWith(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX)) {
                 configuration.publisher.addMatrixParam(entry.getKey(), entry.getValue());
             }
         }
-        Map<String, String> filteredBuildVars = Maps.newHashMap();
-
-        MapDifference<String, String> buildVarDifference = Maps.difference(buildVariables, filteredBuildVars);
-        Map<String, String> filteredBuildVarDifferences = buildVarDifference.entriesOnlyOnLeft();
-
-        configuration.info.addBuildVariables(filteredBuildVarDifferences);
     }
 }

@@ -80,6 +80,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private final boolean includeEnvVars;
 
     private final boolean deployBuildInfo;
+    private IncludesExcludes envVarsPatterns;
     private final boolean runChecks;
 
     private final String violationRecipients;
@@ -100,13 +101,15 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
             IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts, boolean deployBuildInfo,
-            boolean includeEnvVars, boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+            boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
             String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
             boolean discardBuildArtifacts, String matrixParams,
             boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
+        this.envVarsPatterns = envVarsPatterns;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
         this.includePublishArtifacts = includePublishArtifacts;
@@ -210,6 +213,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return includeEnvVars;
     }
 
+    public IncludesExcludes getEnvVarsPatterns() {
+        return envVarsPatterns;
+    }
+
     public String getViolationRecipients() {
         return violationRecipients;
     }
@@ -266,7 +273,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .violationRecipients(getViolationRecipients()).scopes(getScopes())
                 .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
-                .skipBuildInfoDeploy(skipBuildInfoDeploy).includeEnvVars(isIncludeEnvVars())
+                .skipBuildInfoDeploy(skipBuildInfoDeploy)
+                .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(

@@ -43,11 +43,30 @@
                                  title="Capture and publish build info"
                                  help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
                                  inline="true">
-                    <f:entry field="includeEnvVars"
-                             help="/plugin/artifactory/help/common/help-includeEnvVars.html">
-                        <f:checkbox default="false" checked="${instance.includeEnvVars}"/>
-                        <label class="attach-previous">${%Include all environment variables}</label>
-                    </f:entry>
+                    <f:optionalBlock name="includeEnvVars" checked="${instance.includeEnvVars}"
+                                     title="Include environment variables"
+                                     help="/plugin/artifactory/help/common/help-includeEnvVars.html"
+                                     inline="true">
+                        <f:block>
+                            <table style="width:100%">
+                                <j:set var="envVarsPatterns" value="${instance.envVarsPatterns}"/>
+                                <f:section name="envVarsPatterns">
+                                    <input type="hidden" name="stapler-class"
+                                           value="org.jfrog.hudson.util.IncludesExcludes"/>
+                                    <f:entry title="Include Patterns" field="includePatterns"
+                                             help="/plugin/artifactory/help/common/help-envVarsIncludePatterns.html">
+                                        <f:textbox value="${envVarsPatterns.includePatterns}"/>
+                                    </f:entry>
+                                    <f:entry title="Exclude Patterns"
+                                             field="excludePatterns"
+                                             help="/plugin/artifactory/help/common/help-envVarsExcludePatterns.html">
+                                        <f:textbox value="${envVarsPatterns.excludePatterns}"
+                                                   default="*password*,*secret*"/>
+                                    </f:entry>
+                                </f:section>
+                            </table>
+                        </f:block>
+                    </f:optionalBlock>
                     <f:block>
                         <table style="width:100%">
                             <f:optionalBlock name="runChecks"
@@ -163,13 +182,13 @@
                                      help="/plugin/artifactory/help/common/help-enableIssueTrackerIntegration.html"
                                      inline="true">
 
-                         <f:optionalBlock name="aggregateBuildIssues"
-                                          checked="${instance.aggregateBuildIssues}"
-                                          title="Aggregate issues from previous builds"
-                                          inline="true"
-                                          help="/plugin/artifactory/help/common/help-aggregateBuildIssues.html">
+                        <f:optionalBlock name="aggregateBuildIssues"
+                                         checked="${instance.aggregateBuildIssues}"
+                                         title="Aggregate issues from previous builds"
+                                         inline="true"
+                                         help="/plugin/artifactory/help/common/help-aggregateBuildIssues.html">
                             <f:entry field="aggregationBuildStatus" title="${%Aggregate from status}"
-                                description="Define the latest build status to stop the aggregation at">
+                                     description="Define the latest build status to stop the aggregation at">
                                 <f:textbox value="${instance.aggregationBuildStatus}" default="Released"/>
                             </f:entry>
                         </f:optionalBlock>

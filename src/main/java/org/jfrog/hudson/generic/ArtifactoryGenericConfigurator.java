@@ -29,6 +29,7 @@ import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.IncludesExcludes;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -55,6 +56,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
      * Include environment variables in the generated build info
      */
     private final boolean includeEnvVars;
+    private final IncludesExcludes envVarsPatterns;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private transient List<Dependency> publishedDependencies;
@@ -63,7 +65,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
             String deployPattern, String resolvePattern, String matrixParams, boolean deployBuildInfo,
-            boolean includeEnvVars, boolean discardOldBuilds, boolean discardBuildArtifacts) {
+            boolean includeEnvVars, IncludesExcludes envVarsPatterns, boolean discardOldBuilds,
+            boolean discardBuildArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployPattern = deployPattern;
@@ -71,6 +74,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.matrixParams = matrixParams;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
+        this.envVarsPatterns = envVarsPatterns;
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
     }
@@ -105,6 +109,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
+    }
+
+    public IncludesExcludes getEnvVarsPatterns() {
+        return envVarsPatterns;
     }
 
     public boolean isRunChecks() {

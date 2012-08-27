@@ -81,6 +81,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     public final boolean deployMaven;
     public final boolean deployIvy;
     public final String remotePluginLocation;
+    private IncludesExcludes envVarsPatterns;
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
     private final boolean runChecks;
@@ -107,7 +108,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
             boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
-            boolean includeEnvVars, boolean deployBuildInfo, boolean runChecks, String violationRecipients,
+            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+            boolean deployBuildInfo, boolean runChecks, String violationRecipients,
             boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
             String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
             boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
@@ -121,6 +123,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.deployArtifacts = deployArtifacts;
         this.remotePluginLocation = remotePluginLocation;
         this.includeEnvVars = includeEnvVars;
+        this.envVarsPatterns = envVarsPatterns;
         this.deployBuildInfo = deployBuildInfo;
         this.runChecks = runChecks;
         this.violationRecipients = violationRecipients;
@@ -222,6 +225,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
+    }
+
+    public IncludesExcludes getEnvVarsPatterns() {
+        return envVarsPatterns;
     }
 
     public String getRepositoryKey() {
@@ -367,7 +374,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         .violationRecipients(getViolationRecipients()).scopes(getScopes())
                         .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
                         .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
-                        .skipBuildInfoDeploy(!isDeployBuildInfo()).includeEnvVars(isIncludeEnvVars())
+                        .skipBuildInfoDeploy(!isDeployBuildInfo())
+                        .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
                         .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                         .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
                         .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
