@@ -117,7 +117,12 @@ public class ExtractorUtils {
                     publisherContext.getAggregationBuildStatus()).setIssueTrackerInfo(configuration);
         }
 
-        addEnvVars(env, build, configuration, publisherContext.getEnvVarsPatterns());
+
+        IncludesExcludes envVarsPatterns = publisherContext.getEnvVarsPatterns();
+        if (envVarsPatterns == null) {
+            envVarsPatterns = new IncludesExcludes("", "");
+        }
+        addEnvVars(env, build, configuration, envVarsPatterns);
         persistConfiguration(build, configuration, env);
         return configuration;
     }
@@ -245,8 +250,11 @@ public class ExtractorUtils {
         }
         configuration.publisher.setPublishBuildInfo(!context.isSkipBuildInfoDeploy());
         configuration.setIncludeEnvVars(context.isIncludeEnvVars());
-        configuration.setEnvVarsIncludePatterns(context.getEnvVarsPatterns().getIncludePatterns());
-        configuration.setEnvVarsExcludePatterns(context.getEnvVarsPatterns().getExcludePatterns());
+        IncludesExcludes envVarsPatterns = context.getEnvVarsPatterns();
+        if (envVarsPatterns != null) {
+            configuration.setEnvVarsIncludePatterns(envVarsPatterns.getIncludePatterns());
+            configuration.setEnvVarsExcludePatterns(envVarsPatterns.getExcludePatterns());
+        }
         addMatrixParams(context, configuration.publisher, env);
     }
 
