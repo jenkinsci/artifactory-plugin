@@ -25,7 +25,10 @@ public class ServerDetails {
     /**
      * Artifactory server URL
      */
+    private final String artifactoryUrl;
+
     public final String artifactoryName;
+
     /**
      * Key of the repository to deploy release artifacts to
      */
@@ -42,9 +45,10 @@ public class ServerDetails {
     private PluginSettings stagingPlugin;
 
     @DataBoundConstructor
-    public ServerDetails(String artifactoryName, String repositoryKey, String snapshotsRepositoryKey,
-            String downloadRepositoryKey) {
+    public ServerDetails(String artifactoryName, String artifactoryUrl, String repositoryKey, String snapshotsRepositoryKey,
+                         String downloadRepositoryKey) {
         this.artifactoryName = artifactoryName;
+        this.artifactoryUrl = artifactoryUrl;
         this.repositoryKey = repositoryKey;
         this.snapshotsRepositoryKey = snapshotsRepositoryKey != null ? snapshotsRepositoryKey : repositoryKey;
         this.downloadRepositoryKey = downloadRepositoryKey;
@@ -64,5 +68,10 @@ public class ServerDetails {
 
     public String getPluginParamValue(String pluginName, String paramKey) {
         return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(pluginName, paramKey) : null;
+    }
+
+    public String getArtifactoryUrl() {
+        //support legacy code when artifactoryName was the url
+        return artifactoryUrl != null ? artifactoryUrl : artifactoryName;
     }
 }

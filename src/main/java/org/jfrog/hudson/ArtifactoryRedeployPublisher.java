@@ -28,13 +28,7 @@ import hudson.maven.MavenBuild;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -49,11 +43,7 @@ import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
-import org.jfrog.hudson.util.CredentialResolver;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.FormValidations;
-import org.jfrog.hudson.util.IncludesExcludes;
+import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -114,13 +104,13 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
-            IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
-            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
-            boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
-            String violationRecipients, boolean includePublishArtifacts, String scopes,
-            boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
-            boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
-            boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds) {
+                                        IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
+                                        boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+                                        boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
+                                        String violationRecipients, boolean includePublishArtifacts, String scopes,
+                                        boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
+                                        boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
+                                        boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -265,7 +255,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     @Override
     public Action getProjectAction(AbstractProject<?, ?> project) {
-        return details != null ? new ArtifactoryProjectAction(details.artifactoryName, project) : null;
+        return details != null ? new ArtifactoryProjectAction(details.getArtifactoryUrl(), project) : null;
     }
 
     @Override
@@ -380,7 +370,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     public ArtifactoryServer getArtifactoryServer() {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
         for (ArtifactoryServer server : servers) {
-            if (server.getName().equals(getArtifactoryName())) {
+            //support legacy code when artifactoryName was the url
+            if (server.getName().equals(getArtifactoryName()) || server.getUrl().equals(getArtifactoryName())) {
                 return server;
             }
         }

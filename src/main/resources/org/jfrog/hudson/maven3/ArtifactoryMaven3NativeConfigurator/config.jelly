@@ -2,9 +2,10 @@
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:dropdownList name="details" title="${%Artifactory server}">
         <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
-            <f:dropdownListBlock value="${s.name}" title="${s.name}" selected="${s.name==instance.artifactoryName}">
+            <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                 <f:nested>
                     <input type="hidden" name="artifactoryName" value="${s.name}" field="artifactoryName"/>
+                    <input type="hidden" name="artifactoryUrl" value="${s.url}" field="artifactoryUrl"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                     <f:entry title="${%Resolution repository}">
                         <select class="setting-input" name="downloadRepositoryKey">

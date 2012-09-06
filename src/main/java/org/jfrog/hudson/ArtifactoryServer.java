@@ -25,11 +25,7 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.build.client.ArtifactoryDependenciesClient;
-import org.jfrog.build.client.ArtifactoryHttpClient;
-import org.jfrog.build.client.ArtifactoryVersion;
-import org.jfrog.build.client.ProxyConfiguration;
+import org.jfrog.build.client.*;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -54,6 +50,7 @@ public class ArtifactoryServer implements Serializable {
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;    // 5 Minutes
 
     private final String url;
+    private final String id;
 
     private final Credentials deployerCredentials;
     private Credentials resolverCredentials;
@@ -70,17 +67,18 @@ public class ArtifactoryServer implements Serializable {
     private transient volatile List<VirtualRepository> virtualRepositories;
 
     @DataBoundConstructor
-    public ArtifactoryServer(String url, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
-            boolean bypassProxy) {
+    public ArtifactoryServer(String serverId, String url, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
+                             boolean bypassProxy) {
         this.url = StringUtils.removeEnd(url, "/");
         this.deployerCredentials = deployerCredentials;
         this.resolverCredentials = resolverCredentials;
         this.timeout = timeout > 0 ? timeout : DEFAULT_CONNECTION_TIMEOUT;
         this.bypassProxy = bypassProxy;
+        this.id = serverId == null || serverId.isEmpty() ? url.hashCode() + "@" + System.currentTimeMillis() : serverId;
     }
 
     public String getName() {
-        return url;
+        return id != null ? id : url;
     }
 
     public String getUrl() {
@@ -226,7 +224,7 @@ public class ArtifactoryServer implements Serializable {
      * This method might run on slaves, this is why we provide it with a proxy from the master config
      */
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password,
-            ProxyConfiguration proxyConfiguration) {
+                                                              ProxyConfiguration proxyConfiguration) {
         ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password, new NullLog());
         client.setConnectionTimeout(timeout);
         if (!bypassProxy && proxyConfiguration != null) {
@@ -257,7 +255,7 @@ public class ArtifactoryServer implements Serializable {
      * This method might run on slaves, this is why we provide it with a proxy from the master config
      */
     public ArtifactoryDependenciesClient createArtifactoryDependenciesClient(String userName, String password,
-            ProxyConfiguration proxyConfiguration, BuildListener listener) {
+                                                                             ProxyConfiguration proxyConfiguration, BuildListener listener) {
         ArtifactoryDependenciesClient client = new ArtifactoryDependenciesClient(url, userName, password,
                 new JenkinsBuildInfoLog(listener));
         client.setConnectionTimeout(timeout);

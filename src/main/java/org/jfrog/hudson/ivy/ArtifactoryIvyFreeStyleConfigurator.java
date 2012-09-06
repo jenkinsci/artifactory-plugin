@@ -253,7 +253,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
+        return ActionableHelper.getArtifactoryProjectAction(details.getArtifactoryUrl(), project);
     }
 
     @Override

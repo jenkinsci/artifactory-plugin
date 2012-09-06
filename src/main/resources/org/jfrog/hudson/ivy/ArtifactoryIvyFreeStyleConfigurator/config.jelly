@@ -3,9 +3,10 @@
     <f:section title="${%Artifactory Configuration}">
         <f:dropdownList name="details" title="${%Artifactory server}">
             <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
-                <f:dropdownListBlock value="${s.name}" title="${s.name}" selected="${s.name==instance.artifactoryName}">
+                <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                     <f:nested>
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
+                        <input type="hidden" name="artifactoryUrl" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Publishing repository}">
                             <select class="setting-input" name="repositoryKey">

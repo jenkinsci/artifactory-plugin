@@ -180,7 +180,7 @@ public class MavenExtractorEnvironment extends Environment {
             // staging build might change the target deployment repository
             String stagingRepoKey = release.getStagingRepositoryKey();
             if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
-                server = new ServerDetails(server.artifactoryName, stagingRepoKey,
+                server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), stagingRepoKey,
                         server.snapshotsRepositoryKey, server.downloadRepositoryKey);
             }
         }

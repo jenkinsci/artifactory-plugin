@@ -33,27 +33,14 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.gradle.plugin.artifactory.extractor.BuildInfoTask;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoAwareConfigurator;
-import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.PluginSettings;
-import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.UserPluginInfo;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.FormValidations;
-import org.jfrog.hudson.util.IncludesExcludes;
-import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
-import org.jfrog.hudson.util.PublisherContext;
-import org.jfrog.hudson.util.ResolverContext;
+import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -107,15 +94,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
-            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
-            boolean deployBuildInfo, boolean runChecks, String violationRecipients,
-            boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
-            String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-            boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
-            boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
-            boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
-            boolean allowPromotionOfNonStagedBuilds) {
+                                         boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
+                                         boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+                                         boolean deployBuildInfo, boolean runChecks, String violationRecipients,
+                                         boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
+                                         String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
+                                         boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
+                                         boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
+                                         boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
+                                         boolean allowPromotionOfNonStagedBuilds) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -243,6 +230,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return details != null ? details.artifactoryName : null;
     }
 
+    public String getArtifactoryUrl() {
+        return details != null ? details.getArtifactoryUrl() : null;
+    }
+
     public boolean isDeployArtifacts() {
         return deployArtifacts;
     }
@@ -286,7 +277,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         List<ArtifactoryProjectAction> action =
-                ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
+                ActionableHelper.getArtifactoryProjectAction(details.getArtifactoryUrl(), project);
         if (getReleaseWrapper() != null) {
             List actions = new ArrayList();
             actions.add(new GradleReleaseAction((FreeStyleProject) project));
@@ -305,10 +296,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         ArtifactoryServer artifactoryServer = getArtifactoryServer();
         if (artifactoryServer == null) {
             listener.getLogger().format("No Artifactory server configured for %s. " +
-                    "Please check your configuration.", getArtifactoryName()).println();
+                    "Please check your configuration.", getArtifactoryUrl()).println();
             build.setResult(Result.FAILURE);
-            return new Environment() {
-            };
+            throw new IOException("No Artifactory server configured for " + getArtifactoryUrl() +
+                    ". Please check your configuration.");
         }
         String switches = null;
         String originalTasks = null;
@@ -364,7 +355,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         stagingRepository = getRepositoryKey();
                     }
                     serverDetails = new ServerDetails(
-                            serverDetails.artifactoryName, stagingRepository,
+                            serverDetails.artifactoryName, serverDetails.getArtifactoryUrl(), stagingRepository,
                             serverDetails.snapshotsRepositoryKey, serverDetails.downloadRepositoryKey);
                 }
                 PublisherContext publisherContext = new PublisherContext.Builder()

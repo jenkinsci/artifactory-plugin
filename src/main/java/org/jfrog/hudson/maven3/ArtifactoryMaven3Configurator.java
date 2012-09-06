@@ -167,7 +167,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     public ArtifactoryServer getArtifactoryServer() {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
         for (ArtifactoryServer server : servers) {
-            if (server.getName().equals(getArtifactoryName())) {
+            if (server.getName().equals(artifactoryName())) {
                 return server;
             }
         }
@@ -201,8 +201,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return disableLicenseAutoDiscovery;
     }
 
-    public String getArtifactoryName() {
-        return details != null ? details.artifactoryName : null;
+    public String artifactoryName() {
+        return details != null ? details.artifactoryName: null;
     }
 
     public String getScopes() {
@@ -249,14 +249,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(details.artifactoryName, project);
+        return ActionableHelper.getArtifactoryProjectAction(details.getArtifactoryUrl(), project);
     }
 
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
 
-        final String artifactoryServerName = getArtifactoryName();
+        final String artifactoryServerName = artifactoryName();
         if (StringUtils.isBlank(artifactoryServerName)) {
             return super.setUp(build, launcher, listener);
         }
@@ -294,7 +294,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             public boolean tearDown(AbstractBuild build, BuildListener listener) {
                 Result result = build.getResult();
                 if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
-                    build.getActions().add(new BuildInfoResultAction(getArtifactoryName(), build));
+                    build.getActions().add(new BuildInfoResultAction(artifactoryName(), build));
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryMaven3Configurator>(build,
                             ArtifactoryMaven3Configurator.this));
                 }

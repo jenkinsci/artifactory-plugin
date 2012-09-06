@@ -1,10 +1,12 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form">
     <f:section title="Artifactory">
         <f:entry title="Artifactory servers"
                  description="List of Artifactory servers that projects will want to deploy artifacts and build info to">
-            <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}">
+            <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}"
+                          header="Artifactory">
                 <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ArtifactoryServer"/>
+                <input type="hidden" name="serverId" value="${server.name}"/>
                 <table width="100%">
                     <f:entry title="URL" help="/plugin/artifactory/help/ArtifactoryBuilder/help-url.html" field="url">
                         <f:textbox name="artifactory.url" value="${server.url}"/>
