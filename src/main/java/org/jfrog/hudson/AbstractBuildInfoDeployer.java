@@ -23,6 +23,7 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildRetentionFactory;
 import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.IssuesTrackerHelper;
 
 import java.io.IOException;
@@ -145,19 +146,20 @@ public class AbstractBuildInfoDeployer {
     }
 
     private void addBuildInfoProperties(BuildInfoBuilder builder) {
-        IncludeExcludePatterns patterns = new IncludeExcludePatterns(
-                configurator.getEnvVarsPatterns().getIncludePatterns(),
-                configurator.getEnvVarsPatterns().getExcludePatterns());
-
         if (configurator.isIncludeEnvVars()) {
-            // First add all build related variables
-            addBuildVariables(builder, patterns);
+            IncludesExcludes envVarsPatterns = configurator.getEnvVarsPatterns();
+            if (envVarsPatterns != null) {
+                IncludeExcludePatterns patterns = new IncludeExcludePatterns(envVarsPatterns.getIncludePatterns(),
+                        envVarsPatterns.getExcludePatterns());
+                // First add all build related variables
+                addBuildVariables(builder, patterns);
 
-            // Then add env variables
-            addEnvVariables(builder, patterns);
+                // Then add env variables
+                addEnvVariables(builder, patterns);
 
-            // And finally add system variables
-            addSystemVariables(builder, patterns);
+                // And finally add system variables
+                addSystemVariables(builder, patterns);
+            }
         }
     }
 
