@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.generic;
 
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import org.jfrog.build.api.Dependency;
@@ -43,10 +44,10 @@ public class GenericArtifactsResolver {
     private Log log;
 
     public GenericArtifactsResolver(AbstractBuild build, BuildListener listener, ArtifactoryDependenciesClient client,
-            String resolvePattern) {
+            String resolvePattern) throws IOException, InterruptedException {
         this.build = build;
         this.client = client;
-        this.resolvePattern = resolvePattern;
+        this.resolvePattern = Util.replaceMacro(resolvePattern, build.getEnvironment(listener));
         log = new JenkinsBuildInfoLog(listener);
     }
 
