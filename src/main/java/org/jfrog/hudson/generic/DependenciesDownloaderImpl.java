@@ -3,6 +3,7 @@ package org.jfrog.hudson.generic;
 import hudson.FilePath;
 import hudson.remoting.VirtualChannel;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.dependency.DownloadableArtifact;
 import org.jfrog.build.api.util.FileChecksumCalculator;
@@ -63,6 +64,24 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
         }
 
         return null;
+    }
+
+    public boolean isFileExistsLocally(String filePath, String md5, String sha1) throws IOException {
+        try {
+            FilePath child = workspace.child(filePath);
+            if (!child.exists()) {
+                return false;
+            }
+
+            Map<String, String> checksumsMap = child.act(new DownloadFileCallable(log));
+            return checksumsMap != null &&
+                    StringUtils.isNotBlank(md5) && StringUtils.equals(md5, checksumsMap.get("md5")) &&
+                    StringUtils.isNotBlank(sha1) && StringUtils.equals(sha1, checksumsMap.get("sha1"));
+        } catch (InterruptedException e) {
+            log.warn("Caught interrupted exception: " + e.getLocalizedMessage());
+        }
+
+        return false;
     }
 
     private static class DownloadFileCallable implements FilePath.FileCallable<Map<String, String>> {
