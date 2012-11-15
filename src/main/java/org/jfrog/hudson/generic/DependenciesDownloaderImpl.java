@@ -73,6 +73,11 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
                 return false;
             }
 
+            // If it's a folder return true since we don't care about it, not going to download a folder anyway
+            if (child.isDirectory()) {
+                return true;
+            }
+
             Map<String, String> checksumsMap = child.act(new DownloadFileCallable(log));
             return checksumsMap != null &&
                     StringUtils.isNotBlank(md5) && StringUtils.equals(md5, checksumsMap.get("md5")) &&
