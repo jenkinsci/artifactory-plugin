@@ -61,6 +61,6 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
             return new Environment() {
             };
         }
-        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher, resolver, listener);
+        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, listener);
     }
 }

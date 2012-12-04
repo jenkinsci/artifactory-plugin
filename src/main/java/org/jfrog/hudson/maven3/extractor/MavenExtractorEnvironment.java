@@ -27,21 +27,10 @@ import hudson.remoting.Which;
 import hudson.scm.NullChangeLogParser;
 import hudson.scm.NullSCM;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.BuildInfoConfigProperties;
-import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
-import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator;
-import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.util.CredentialResolver;
-import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.MavenVersionHelper;
 import org.jfrog.hudson.util.PluginDependencyHelper;
-import org.jfrog.hudson.util.PublisherContext;
-import org.jfrog.hudson.util.ResolverContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,26 +50,20 @@ public class MavenExtractorEnvironment extends Environment {
 
     private final MavenModuleSet project;
     private final String originalMavenOpts;
-    private final ArtifactoryRedeployPublisher publisher;
     private final MavenModuleSetBuild build;
-    private final ArtifactoryMaven3NativeConfigurator resolver;
     private final BuildListener buildListener;
     private final EnvVars envVars;
     private FilePath classworldsConf;
-    private String propertiesFilePath;
 
     // the build env vars method may be called again from another setUp of a wrapper so we need this flag to
     // attempt only once certain operations (like copying file or changing maven opts).
     private boolean initialized;
 
-    public MavenExtractorEnvironment(MavenModuleSetBuild build, ArtifactoryRedeployPublisher publisher,
-            ArtifactoryMaven3NativeConfigurator resolver, BuildListener buildListener)
+    public MavenExtractorEnvironment(MavenModuleSetBuild build, BuildListener buildListener)
             throws IOException, InterruptedException {
         this.buildListener = buildListener;
         this.project = build.getProject();
         this.build = build;
-        this.publisher = publisher;
-        this.resolver = resolver;
         this.originalMavenOpts = project.getMavenOpts();
         this.envVars = build.getEnvironment(buildListener);
     }
@@ -130,30 +113,11 @@ public class MavenExtractorEnvironment extends Environment {
         if (!initialized) {
             try {
                 build.getProject().setMavenOpts(appendNewMavenOpts(project, build, buildListener));
-
-                PublisherContext publisherContext = null;
-                if (publisher != null) {
-                    publisherContext = createPublisherContext(publisher, build);
-                }
-
-                ResolverContext resolverContext = null;
-                if (resolver != null) {
-                    Credentials resolverCredentials = CredentialResolver.getPreferredResolver(
-                            resolver, resolver.getArtifactoryServer());
-                    resolverContext = new ResolverContext(resolver.getArtifactoryServer(), resolver.getDetails(),
-                            resolverCredentials);
-                }
-
-                ArtifactoryClientConfiguration configuration = ExtractorUtils.addBuilderInfoArguments(
-                        env, build, buildListener, publisherContext, resolverContext);
-                propertiesFilePath = configuration.getPropertiesFile();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
             initialized = true;
         }
-
-        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
     }
 
     private boolean isMavenVersionValid() {
@@ -172,37 +136,6 @@ public class MavenExtractorEnvironment extends Environment {
         }
         return true;
     }
-
-    private PublisherContext createPublisherContext(ArtifactoryRedeployPublisher publisher, AbstractBuild build) {
-        ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
-        ServerDetails server = publisher.getDetails();
-        if (release != null) {
-            // staging build might change the target deployment repository
-            String stagingRepoKey = release.getStagingRepositoryKey();
-            if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
-                server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), stagingRepoKey,
-                        server.snapshotsRepositoryKey, server.downloadRepositoryKey);
-            }
-        }
-
-        PublisherContext context = new PublisherContext.Builder().artifactoryServer(publisher.getArtifactoryServer())
-                .serverDetails(server).deployerOverrider(publisher).runChecks(publisher.isRunChecks())
-                .includePublishArtifacts(publisher.isIncludePublishArtifacts())
-                .violationRecipients(publisher.getViolationRecipients()).scopes(publisher.getScopes())
-                .licenseAutoDiscovery(publisher.isLicenseAutoDiscovery())
-                .discardOldBuilds(publisher.isDiscardOldBuilds()).deployArtifacts(publisher.isDeployArtifacts())
-                .includesExcludes(publisher.getArtifactDeploymentPatterns())
-                .skipBuildInfoDeploy(!publisher.isDeployBuildInfo())
-                .includeEnvVars(publisher.isIncludeEnvVars()).envVarsPatterns(publisher.getEnvVarsPatterns())
-                .discardBuildArtifacts(publisher.isDiscardBuildArtifacts())
-                .matrixParams(publisher.getMatrixParams()).evenIfUnstable(publisher.isEvenIfUnstable())
-                .enableIssueTrackerIntegration(publisher.isEnableIssueTrackerIntegration())
-                .aggregateBuildIssues(publisher.isAggregateBuildIssues())
-                .aggregationBuildStatus(publisher.getAggregationBuildStatus()).build();
-
-        return context;
-    }
-
 
     /**
      * Append custom Maven opts to the existing to the already existing ones. The opt that will be appended is the
