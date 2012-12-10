@@ -72,7 +72,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
             throws IOException, InterruptedException {
         build.getWorkspace()
                 .act(new SVNCreateTagCallable(tagUrl, commitMessage, getLocation(), getSvnAuthenticationProvider(),
-                        buildListener));
+                        buildListener, build));
     }
 
     /**
@@ -205,23 +205,33 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
         private final SubversionSCM.ModuleLocation location;
         private final ISVNAuthenticationProvider authProvider;
         private final TaskListener buildListener;
+        private final AbstractBuild<?, ?> build;
 
         public SVNCreateTagCallable(String tagUrl, String commitMessage, SubversionSCM.ModuleLocation location,
-                                    ISVNAuthenticationProvider provider, TaskListener listener) {
+                                    ISVNAuthenticationProvider provider, TaskListener listener, AbstractBuild<?, ?> build) {
             this.tagUrl = tagUrl;
             this.commitMessage = commitMessage;
             this.location = location;
             authProvider = provider;
             buildListener = listener;
+            this.build = build;
         }
 
         public Object invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
             File workingCopy = new File(ws, location.getLocalDir()).getCanonicalFile();
             try {
                 SVNURL svnUrl = SVNURL.parseURIEncoded(tagUrl);
-                ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
-                sam.setAuthenticationProvider(authProvider);
-                SVNCopyClient copyClient = new SVNCopyClient(sam, null);
+
+                SVNCopyClient copyClient;
+                try {
+                    copyClient = SubversionSCM.createClientManager(build.getProject()).getCopyClient();
+                } catch (NoSuchMethodError e) {
+                    //todo remove when backward compatibility not needed
+                    //fallback for older versions of org.jenkins-ci.plugins:subversion
+                    buildListener.getLogger().println("[RELEASE] You are using an old subversion jenkins plugin, please consider upgrading.");
+                    copyClient = SubversionSCM.createSvnClientManager(authProvider).getCopyClient();
+                }
+
                 buildListener.getLogger().println("[RELEASE] Creating subversion tag: " + tagUrl);
                 SVNCopySource source = new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING, workingCopy);
                 SVNCommitInfo commitInfo = copyClient.doCopy(new SVNCopySource[]{source},
