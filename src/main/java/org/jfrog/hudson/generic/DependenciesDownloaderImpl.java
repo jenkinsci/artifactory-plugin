@@ -1,5 +1,7 @@
 package org.jfrog.hudson.generic;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import hudson.FilePath;
 import hudson.remoting.VirtualChannel;
 import org.apache.commons.io.IOUtils;
@@ -87,6 +89,48 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
         }
 
         return false;
+    }
+
+    public void removeUnusedArtifactsFromLocal(Set<String> resolvedFiles) {
+        try {
+            log.info("Collecting locally unresolved files for deletion...");
+            for (String resolvedFile : resolvedFiles) {
+                FilePath resolvedFileParent = workspace.child(resolvedFile).getParent();
+                if (!resolvedFileParent.exists()) {
+                    continue;
+                }
+
+                List<FilePath> fileSiblings = resolvedFileParent.list();
+                if (fileSiblings == null || fileSiblings.isEmpty()) {
+                    continue;
+                }
+
+                for (FilePath sibling : fileSiblings) {
+
+                    String siblingPath = sibling.absolutize().getRemote();
+                    if (!isResolvedOrParentOfResolvedFile(resolvedFiles, siblingPath)) {
+                        try {
+                            sibling.deleteRecursive();
+                            log.info("Deleted unresolved file '" + siblingPath + "'");
+                        } catch (IOException e) {
+                            log.debug("Unable to delete '" + siblingPath + "' error message: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new UnsupportedOperationException("Implement me");
+        } catch (InterruptedException e) {
+            log.warn("Caught interrupted exception: " + e.getLocalizedMessage());
+        }
+    }
+
+    private boolean isResolvedOrParentOfResolvedFile(Set<String> resolvedFiles, final String path) {
+        return Iterables.any(resolvedFiles, new Predicate<String>() {
+            public boolean apply(String filePath) {
+                return StringUtils.equals(filePath, path) || StringUtils.startsWith(filePath, path);
+            }
+        });
     }
 
     private static class DownloadFileCallable implements FilePath.FileCallable<Map<String, String>> {

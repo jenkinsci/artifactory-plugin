@@ -16,7 +16,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
-import org.jfrog.build.api.dependency.UserBuildDependency;
+import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.client.ProxyConfiguration;
@@ -60,7 +60,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private transient List<Dependency> publishedDependencies;
-    private transient List<UserBuildDependency> buildDependencies;
+    private transient List<BuildDependency> buildDependencies;
 
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,

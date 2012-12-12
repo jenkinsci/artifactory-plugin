@@ -20,7 +20,7 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import org.jfrog.build.api.Dependency;
-import org.jfrog.build.api.dependency.UserBuildDependency;
+import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.util.BuildDependenciesHelper;
@@ -56,7 +56,7 @@ public class GenericArtifactsResolver {
         return helper.retrievePublishedDependencies(resolvePattern);
     }
 
-    public List<UserBuildDependency> retrieveBuildDependencies() throws IOException, InterruptedException {
+    public List<BuildDependency> retrieveBuildDependencies() throws IOException, InterruptedException {
         BuildDependenciesHelper helper = new BuildDependenciesHelper(createDependenciesDownloader(), log);
         return helper.retrieveBuildDependencies(resolvePattern);
     }
