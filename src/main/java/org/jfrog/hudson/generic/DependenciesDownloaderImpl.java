@@ -49,9 +49,15 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
         return helper.downloadDependencies(downloadableArtifacts);
     }
 
-    public String getTargetDir(String targetDir, String relativeDir) {
-        FilePath targetDirFile = new FilePath(workspace, targetDir).child(relativeDir);
-        return targetDirFile.getRemote();
+    public String getTargetDir(String targetDir, String relativeDir) throws IOException {
+        try {
+            FilePath targetDirFile = new FilePath(workspace, targetDir).child(relativeDir);
+            return targetDirFile.absolutize().getRemote();
+        } catch (InterruptedException e) {
+            log.warn("Caught interrupted exception: " + e.getLocalizedMessage());
+        }
+
+        return null;
     }
 
     public Map<String, String> saveDownloadedFile(InputStream is, String filePath) throws IOException {
@@ -91,9 +97,8 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
         return false;
     }
 
-    public void removeUnusedArtifactsFromLocal(Set<String> resolvedFiles) {
+    public void removeUnusedArtifactsFromLocal(Set<String> resolvedFiles) throws IOException {
         try {
-            log.info("Collecting locally unresolved files for deletion...");
             for (String resolvedFile : resolvedFiles) {
                 FilePath resolvedFileParent = workspace.child(resolvedFile).getParent();
                 if (!resolvedFileParent.exists()) {
@@ -106,20 +111,13 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
                 }
 
                 for (FilePath sibling : fileSiblings) {
-
                     String siblingPath = sibling.absolutize().getRemote();
                     if (!isResolvedOrParentOfResolvedFile(resolvedFiles, siblingPath)) {
-                        try {
-                            sibling.deleteRecursive();
-                            log.info("Deleted unresolved file '" + siblingPath + "'");
-                        } catch (IOException e) {
-                            log.debug("Unable to delete '" + siblingPath + "' error message: " + e.getMessage());
-                        }
+                        sibling.deleteRecursive();
+                        log.info("Deleted unresolved file '" + siblingPath + "'");
                     }
                 }
             }
-        } catch (IOException e) {
-            throw new UnsupportedOperationException("Implement me");
         } catch (InterruptedException e) {
             log.warn("Caught interrupted exception: " + e.getLocalizedMessage());
         }
