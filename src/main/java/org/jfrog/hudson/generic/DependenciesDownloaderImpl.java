@@ -97,9 +97,10 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
         return false;
     }
 
-    public void removeUnusedArtifactsFromLocal(Set<String> resolvedFiles) throws IOException {
+    public void removeUnusedArtifactsFromLocal(Set<String> allResolvesFiles, Set<String> forDeletionFiles)
+            throws IOException {
         try {
-            for (String resolvedFile : resolvedFiles) {
+            for (String resolvedFile : forDeletionFiles) {
                 FilePath resolvedFileParent = workspace.child(resolvedFile).getParent();
                 if (!resolvedFileParent.exists()) {
                     continue;
@@ -112,7 +113,7 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
 
                 for (FilePath sibling : fileSiblings) {
                     String siblingPath = sibling.absolutize().getRemote();
-                    if (!isResolvedOrParentOfResolvedFile(resolvedFiles, siblingPath)) {
+                    if (!isResolvedOrParentOfResolvedFile(allResolvesFiles, siblingPath)) {
                         sibling.deleteRecursive();
                         log.info("Deleted unresolved file '" + siblingPath + "'");
                     }
