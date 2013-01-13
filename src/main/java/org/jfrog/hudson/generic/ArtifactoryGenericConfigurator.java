@@ -83,6 +83,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return details != null ? details.artifactoryName : null;
     }
 
+    public String getArtifactoryUrl() {
+        return details != null ? details.getArtifactoryUrl() : null;
+    }
+
     public boolean isOverridingDefaultDeployer() {
         return getOverridingDeployerCredentials() != null;
     }
@@ -251,7 +255,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                         new GenericBuildInfoDeployer(ArtifactoryGenericConfigurator.this, client, build,
                                 listener, deployedArtifacts, buildDependencies, publishedDependencies).deploy();
                         // add the result action (prefer always the same index)
-                        build.getActions().add(0, new BuildInfoResultAction(getArtifactoryName(), build));
+                        build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                         build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryGenericConfigurator>(build,
                                 ArtifactoryGenericConfigurator.this));
                     }

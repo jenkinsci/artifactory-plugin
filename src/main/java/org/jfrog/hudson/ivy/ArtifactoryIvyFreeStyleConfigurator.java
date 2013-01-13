@@ -227,6 +227,10 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return details != null ? details.artifactoryName : null;
     }
 
+    public String getArtifactoryUrl() {
+        return details != null ? details.getArtifactoryUrl() : null;
+    }
+
     public boolean isDeployArtifacts() {
         return deployArtifacts;
     }
@@ -253,7 +257,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(details.getArtifactoryUrl(), project);
+        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
     }
 
     @Override
@@ -303,7 +307,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 }
                 Result result = build.getResult();
                 if (!context.isSkipBuildInfoDeploy() && (result == null || result.isBetterOrEqualTo(Result.SUCCESS))) {
-                    build.getActions().add(0, new BuildInfoResultAction(context.getArtifactoryName(), build));
+                    build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
                             ArtifactoryIvyFreeStyleConfigurator.this));
                 }

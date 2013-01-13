@@ -202,7 +202,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public String artifactoryName() {
-        return details != null ? details.artifactoryName: null;
+        return details != null ? details.artifactoryName : null;
+    }
+
+    public String getArtifactoryUrl() {
+        return details != null ? details.getArtifactoryUrl() : null;
     }
 
     public String getScopes() {
@@ -294,7 +298,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             public boolean tearDown(AbstractBuild build, BuildListener listener) {
                 Result result = build.getResult();
                 if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
-                    build.getActions().add(new BuildInfoResultAction(artifactoryName(), build));
+                    build.getActions().add(new BuildInfoResultAction(getArtifactoryUrl(), build));
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryMaven3Configurator>(build,
                             ArtifactoryMaven3Configurator.this));
                 }

@@ -242,6 +242,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return details != null ? details.repositoryKey : null;
     }
 
+    public String getArtifactoryUrl() {
+        return details != null ? details.getArtifactoryUrl() : null;
+    }
+
     public void setViolationRecipients(String violationRecipients) {
         this.violationRecipients = violationRecipients;
     }
