@@ -112,6 +112,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private boolean aggregateBuildIssues;
     private final boolean allowPromotionOfNonStagedBuilds;
 
+    private boolean blackDuckRunChecks;
+    private String blackDuckAppName;
+    private String blackDuckAppVersion;
+
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
             IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
@@ -120,7 +124,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             String violationRecipients, boolean includePublishArtifacts, String scopes,
             boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
             boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
-            boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds) {
+            boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
+            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -143,6 +148,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.aggregateBuildIssues = aggregateBuildIssues;
         this.allowPromotionOfNonStagedBuilds = allowPromotionOfNonStagedBuilds;
+        this.blackDuckRunChecks = blackDuckRunChecks;
+        this.blackDuckAppName = blackDuckAppName;
+        this.blackDuckAppVersion = blackDuckAppVersion;
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -265,6 +273,18 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isAllowPromotionOfNonStagedBuilds() {
         return allowPromotionOfNonStagedBuilds;
+    }
+
+    public boolean isBlackDuckRunChecks() {
+        return blackDuckRunChecks;
+    }
+
+    public String getBlackDuckAppName() {
+        return blackDuckAppName;
+    }
+
+    public String getBlackDuckAppVersion() {
+        return blackDuckAppVersion;
     }
 
     @Override

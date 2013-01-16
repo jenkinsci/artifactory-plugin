@@ -97,6 +97,26 @@
                                     <f:checkbox default="false" checked="${instance.disableLicenseAutoDiscovery}"/>
                                     <label class="attach-previous">${%Disable automatic license discovery}</label>
                                 </f:entry>
+
+                                <f:optionalBlock name="blackDuckRunChecks"
+                                                 checked="${instance.blackDuckRunChecks}"
+                                                 title="Run Black Duck checks (requires Artifactory Pro)"
+                                                 inline="true"
+                                                 help="/plugin/artifactory/help/common/help-blackDuckRunChecks.html">
+                                    <f:entry title="${%Black Duck application name: }"
+                                             field="blackDuckAppName"
+                                             help="/plugin/artifactory/help/common/help-blackDuckAppName.html"
+                                             description="Black Duck application name on the server.">
+                                        <f:textbox value="${instance.blackDuckAppName}"/>
+                                    </f:entry>
+                                    <f:entry title="${%Black Duck application version: }"
+                                             field="blackDuckAppVersion"
+                                             help="/plugin/artifactory/help/common/help-blackDuckAppVersion.html"
+                                             description="Black Duck application version on the server.">
+                                        <f:textbox value="${instance.blackDuckAppVersion}"/>
+                                    </f:entry>
+                                </f:optionalBlock>
+
                             </f:optionalBlock>
                         </table>
                     </f:block>

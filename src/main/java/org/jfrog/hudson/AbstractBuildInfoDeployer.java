@@ -7,6 +7,7 @@ import hudson.model.Cause;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Agent;
+import org.jfrog.build.api.BlackDuckProperties;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildAgent;
 import org.jfrog.build.api.BuildInfoProperties;
@@ -111,6 +112,13 @@ public class AbstractBuildInfoDeployer {
         licenseControl.setIncludePublishedArtifacts(configurator.isIncludePublishArtifacts());
         licenseControl.setAutoDiscover(configurator.isLicenseAutoDiscovery());
         builder.licenseControl(licenseControl);
+
+        BlackDuckProperties blackDuckProperties = new BlackDuckProperties();
+        blackDuckProperties.setBlackDuckRunChecks(configurator.isBlackDuckRunChecks());
+        blackDuckProperties.setBlackDuckAppName(configurator.getBlackDuckAppName());
+        blackDuckProperties.setBlackDuckAppVersion(configurator.getBlackDuckAppVersion());
+        builder.blackDuckProperties(blackDuckProperties);
+
         BuildRetention buildRetention = new BuildRetention(configurator.isDiscardBuildArtifacts());
         if (configurator.isDiscardOldBuilds()) {
             buildRetention = BuildRetentionFactory.createBuildRetention(build, configurator.isDiscardBuildArtifacts());

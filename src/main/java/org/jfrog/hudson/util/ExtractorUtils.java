@@ -207,6 +207,11 @@ public class ExtractorUtils {
                 configuration.info.licenseControl.setScopes(context.getScopes());
             }
         }
+
+        configuration.info.blackDuckProperties.setBlackDuckRunChecks(context.isBlackDuckRunChecks());
+        configuration.info.blackDuckProperties.setBlackDuckAppName(context.getBlackDuckAppName());
+        configuration.info.blackDuckProperties.setBlackDuckAppVersion(context.getBlackDuckAppVersion());
+
         if (context.isDiscardOldBuilds()) {
             LogRotator rotator = build.getProject().getLogRotator();
             if (rotator != null) {

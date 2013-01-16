@@ -235,7 +235,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                     .matrixParams(publisher.getMatrixParams()).evenIfUnstable(publisher.isEvenIfUnstable())
                     .enableIssueTrackerIntegration(publisher.isEnableIssueTrackerIntegration())
                     .aggregateBuildIssues(publisher.isAggregateBuildIssues())
-                    .aggregationBuildStatus(publisher.getAggregationBuildStatus()).build();
+                    .aggregationBuildStatus(publisher.getAggregationBuildStatus())
+                    .integrateBlackDuck(publisher.isBlackDuckRunChecks(), publisher.getBlackDuckAppName(),
+                            publisher.getBlackDuckAppVersion())
+                    .build();
 
             return context;
         }

@@ -53,6 +53,9 @@ public class PublisherContext {
     private boolean enableIssueTrackerIntegration;
     private boolean aggregateBuildIssues;
     private String aggregationBuildStatus;
+    private boolean blackDuckRunChecks;
+    private String blackDuckAppName;
+    private String blackDuckAppVersion;
 
     private PublisherContext() {
     }
@@ -163,6 +166,18 @@ public class PublisherContext {
 
     public String getAggregationBuildStatus() {
         return aggregationBuildStatus;
+    }
+
+    public boolean isBlackDuckRunChecks() {
+        return blackDuckRunChecks;
+    }
+
+    public String getBlackDuckAppName() {
+        return blackDuckAppName;
+    }
+
+    public String getBlackDuckAppVersion() {
+        return blackDuckAppVersion;
     }
 
     public static class Builder {
@@ -300,6 +315,14 @@ public class PublisherContext {
 
         public Builder aggregationBuildStatus(String aggregationBuildStatus) {
             publisher.aggregationBuildStatus = aggregationBuildStatus;
+            return this;
+        }
+
+        public Builder integrateBlackDuck(boolean blackDuckRunChecks, String blackDuckAppName,
+                                          String blackDuckAppVersion) {
+            publisher.blackDuckRunChecks = blackDuckRunChecks;
+            publisher.blackDuckAppName = blackDuckAppName;
+            publisher.blackDuckAppVersion = blackDuckAppVersion;
             return this;
         }
     }

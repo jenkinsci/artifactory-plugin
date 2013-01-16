@@ -86,6 +86,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private String artifactPattern;
     private boolean enableIssueTrackerIntegration;
     private boolean aggregateBuildIssues;
+    private boolean blackDuckRunChecks;
+    private String blackDuckAppName;
+    private String blackDuckAppVersion;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -94,7 +97,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
             String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
             String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, String matrixParams,
-            boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus) {
+            boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
+            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -117,6 +121,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.aggregateBuildIssues = aggregateBuildIssues;
+        this.blackDuckRunChecks = blackDuckRunChecks;
+        this.blackDuckAppName = blackDuckAppName;
+        this.blackDuckAppVersion = blackDuckAppVersion;
     }
 
     /**
@@ -278,6 +285,30 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.aggregationBuildStatus = aggregationBuildStatus;
     }
 
+    public boolean isBlackDuckRunChecks() {
+        return blackDuckRunChecks;
+    }
+
+    public void setBlackDuckRunChecks(boolean blackDuckRunChecks) {
+        this.blackDuckRunChecks = blackDuckRunChecks;
+    }
+
+    public String getBlackDuckAppName() {
+        return blackDuckAppName;
+    }
+
+    public void setBlackDuckAppName(String blackDuckAppName) {
+        this.blackDuckAppName = blackDuckAppName;
+    }
+
+    public String getBlackDuckAppVersion() {
+        return blackDuckAppVersion;
+    }
+
+    public void setBlackDuckAppVersion(String blackDuckAppVersion) {
+        this.blackDuckAppVersion = blackDuckAppVersion;
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(details.getArtifactoryUrl(), project);
@@ -299,8 +330,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern()).maven2Compatible(isM2Compatible())
                 .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
-                .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(
-                        getAggregationBuildStatus()).build();
+                .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
+                .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion())
+                .build();
         build.setResult(Result.SUCCESS);
         return new AntIvyBuilderEnvironment() {
             @Override
