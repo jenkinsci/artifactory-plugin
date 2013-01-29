@@ -16,20 +16,25 @@
 
 package org.jfrog.hudson.maven3;
 
-import hudson.*;
-import hudson.model.*;
-import hudson.remoting.VirtualChannel;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Util;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.Computer;
+import hudson.model.FreeStyleProject;
+import hudson.model.Result;
+import hudson.model.Run;
 import hudson.remoting.Which;
-import hudson.slaves.NodeProperty;
-import hudson.slaves.NodePropertyDescriptor;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.tasks.Maven;
-import hudson.tools.ToolInstallation;
-import hudson.tools.ToolLocationNodeProperty;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.DescribableList;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
@@ -42,7 +47,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.List;
 
 /**
  * Maven3 builder for free style projects. Hudson 1.392 added native support for maven 3 but this one is useful for free style.
@@ -87,13 +91,10 @@ public class Maven3Builder extends Builder {
             throws InterruptedException, IOException {
         EnvVars env = build.getEnvironment(listener);
         FilePath workDir = build.getModuleRoot();
-        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher.isUnix());
+        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher);
         String[] cmds = cmdLine.toCommandArray();
         try {
-            //listener.getLogger().println("Executing: " + cmdLine.toStringWithQuote());
-            int exitValue =
-                    launcher.launch().cmds(cmds).envs(env).stdout(listener)
-                            .pwd(workDir).join();
+            int exitValue = launcher.launch().cmds(cmds).envs(env).stdout(listener).pwd(workDir).join();
             boolean success = (exitValue == 0);
             build.setResult(success ? Result.SUCCESS : Result.FAILURE);
             return success;
@@ -106,9 +107,18 @@ public class Maven3Builder extends Builder {
     }
 
     private ArgumentListBuilder buildMavenCmdLine(AbstractBuild<?, ?> build, BuildListener listener,
-                                                  EnvVars env, boolean isUnix) throws IOException, InterruptedException {
+            EnvVars env, Launcher launcher) throws IOException, InterruptedException {
 
-        FilePath mavenHome = getMavenHomeDir(build, listener, env);
+        Maven.MavenInstallation mi = getMaven();
+        if (mi == null) {
+            listener.error("Couldn't find Maven executable.");
+            throw new Run.RunnerAbortedException();
+        } else {
+            mi = mi.forNode(Computer.currentComputer().getNode(), listener);
+            mi = mi.forEnvironment(env);
+        }
+
+        FilePath mavenHome = new FilePath(mi.getHomeDir());
 
         if (!mavenHome.exists()) {
             listener.error("Couldn't find Maven home: " + mavenHome.getRemote());
@@ -132,15 +142,13 @@ public class Maven3Builder extends Builder {
             javaPathBuilder.append(jdkBinPath).append("/");
         }
         javaPathBuilder.append("java");
-        if (!isUnix) {
+        if (!launcher.isUnix()) {
             javaPathBuilder.append(".exe");
         }
         args.add(javaPathBuilder.toString());
 
         // classpath
         args.add("-classpath");
-        //String cpSeparator = launcher.isUnix() ? ":" : ";";
-
         args.add(classWorldsJar.getRemote());
 
         // maven home
@@ -211,82 +219,14 @@ public class Maven3Builder extends Builder {
         return args;
     }
 
-    private FilePath getMavenHomeDir(AbstractBuild<?, ?> build, BuildListener listener, EnvVars env) {
-        Computer computer = Computer.currentComputer();
-        VirtualChannel virtualChannel = computer.getChannel();
-
-        String mavenHome = null;
-
-        //Check for a node defined tool if we are on a slave
-        if (computer instanceof SlaveComputer) {
-            mavenHome = getNodeDefinedMavenHome(build);
-        }
-
-        //Either we are on the master or that no node tool was defined
-        if (StringUtils.isBlank(mavenHome)) {
-            mavenHome = getJobDefinedMavenInstallation(listener, virtualChannel);
-        }
-
-        //Try to find the home via the env vars
-        if (StringUtils.isBlank(mavenHome)) {
-            mavenHome = getEnvDefinedMavenHome(env);
-        }
-        return new FilePath(virtualChannel, mavenHome);
-    }
-
-    private String getNodeDefinedMavenHome(AbstractBuild<?, ?> build) {
-        Node currentNode = build.getBuiltOn();
-        DescribableList<NodeProperty<?>, NodePropertyDescriptor> properties = currentNode.getNodeProperties();
-        ToolLocationNodeProperty toolLocation = properties.get(ToolLocationNodeProperty.class);
-        if (toolLocation != null) {
-
-            List<ToolLocationNodeProperty.ToolLocation> locations = toolLocation.getLocations();
-            if (locations != null) {
-                for (ToolLocationNodeProperty.ToolLocation location : locations) {
-                    if (location.getType().isSubTypeOf(Maven.MavenInstallation.class)) {
-                        String installationHome = location.getHome();
-                        if (StringUtils.isNotBlank(installationHome)) {
-                            return installationHome;
-                        }
-                    }
-                }
+    public Maven.MavenInstallation getMaven() {
+        Maven.MavenInstallation[] installations = getDescriptor().getInstallations();
+        for (Maven.MavenInstallation i : installations) {
+            if (mavenName != null && mavenName.equals(i.getName())) {
+                return i;
             }
         }
         return null;
-    }
-
-    private String getEnvDefinedMavenHome(EnvVars env) {
-        String mavenHome = env.get("MAVEN_HOME");
-        if (StringUtils.isNotBlank(mavenHome)) {
-            return mavenHome;
-        }
-
-        return env.get("M2_HOME");
-    }
-
-    private String getJobDefinedMavenInstallation(BuildListener listener, VirtualChannel channel) {
-        Maven.MavenInstallation mvn = getMavenInstallation();
-        if (mvn == null) {
-            listener.error("Maven version is not configured for this project. Can't determine which Maven to run");
-            throw new Run.RunnerAbortedException();
-        }
-        String mvnHome = mvn.getHome();
-        if (mvnHome == null) {
-            listener.error("Maven '%s' doesn't have its home set", mvn.getName());
-            throw new Run.RunnerAbortedException();
-        }
-        return mvnHome;
-    }
-
-    public Maven.MavenInstallation getMavenInstallation() {
-        Maven.MavenInstallation[] installations = getDescriptor().getInstallations();
-        for (Maven.MavenInstallation installation : installations) {
-            if (installation.getName().equals(mavenName)) {
-                return installation;
-            }
-        }
-        // not found, return the first installation if exists
-        return installations.length > 0 ? installations[0] : null;
     }
 
     @Override
@@ -301,17 +241,6 @@ public class Maven3Builder extends Builder {
             load();
         }
 
-        protected DescriptorImpl(Class<? extends Maven3Builder> clazz) {
-            super(clazz);
-        }
-
-        /**
-         * Obtains the {@link hudson.tasks.Maven.MavenInstallation.DescriptorImpl} instance.
-         */
-        public Maven.MavenInstallation.DescriptorImpl getToolDescriptor() {
-            return ToolInstallation.all().get(Maven.MavenInstallation.DescriptorImpl.class);
-        }
-
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return jobType.equals(FreeStyleProject.class);
@@ -319,7 +248,7 @@ public class Maven3Builder extends Builder {
 
         @Override
         public String getHelpFile() {
-            return "/plugin/artifactory/maven3/help.html";
+            return "/help/project-config/maven.html";
         }
 
         @Override
@@ -327,12 +256,8 @@ public class Maven3Builder extends Builder {
             return Messages.step_displayName();
         }
 
-        public Maven.DescriptorImpl getMavenDescriptor() {
-            return Hudson.getInstance().getDescriptorByType(Maven.DescriptorImpl.class);
-        }
-
         public Maven.MavenInstallation[] getInstallations() {
-            return getMavenDescriptor().getInstallations();
+            return Jenkins.getInstance().getDescriptorByType(Maven.DescriptorImpl.class).getInstallations();
         }
 
         @Override
