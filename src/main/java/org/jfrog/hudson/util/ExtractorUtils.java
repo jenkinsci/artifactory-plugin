@@ -208,9 +208,12 @@ public class ExtractorUtils {
             }
         }
 
-        configuration.info.blackDuckProperties.setBlackDuckRunChecks(context.isBlackDuckRunChecks());
-        configuration.info.blackDuckProperties.setBlackDuckAppName(context.getBlackDuckAppName());
-        configuration.info.blackDuckProperties.setBlackDuckAppVersion(context.getBlackDuckAppVersion());
+        configuration.info.blackDuckProperties.setRunChecks(context.isBlackDuckRunChecks());
+        configuration.info.blackDuckProperties.setAppName(context.getBlackDuckAppName());
+        configuration.info.blackDuckProperties.setAppVersion(context.getBlackDuckAppVersion());
+        configuration.info.blackDuckProperties.setReportRecipients(context.getBlackDuckReportRecipients());
+        configuration.info.blackDuckProperties.setScopes(context.getBlackDuckScopes());
+        configuration.info.blackDuckProperties.setIncludePublishedArtifacts(context.isBlackDuckIncludePublishedArtifacts());
 
         if (context.isDiscardOldBuilds()) {
             LogRotator rotator = build.getProject().getLogRotator();

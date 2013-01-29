@@ -114,9 +114,12 @@ public class AbstractBuildInfoDeployer {
         builder.licenseControl(licenseControl);
 
         BlackDuckProperties blackDuckProperties = new BlackDuckProperties();
-        blackDuckProperties.setBlackDuckRunChecks(configurator.isBlackDuckRunChecks());
-        blackDuckProperties.setBlackDuckAppName(configurator.getBlackDuckAppName());
-        blackDuckProperties.setBlackDuckAppVersion(configurator.getBlackDuckAppVersion());
+        blackDuckProperties.setRunChecks(configurator.isBlackDuckRunChecks());
+        blackDuckProperties.setAppName(configurator.getBlackDuckAppName());
+        blackDuckProperties.setAppVersion(configurator.getBlackDuckAppVersion());
+        blackDuckProperties.setReportRecipients(configurator.getBlackDuckReportRecipients());
+        blackDuckProperties.setScopes(configurator.getBlackDuckScopes());
+        blackDuckProperties.setIncludePublishedArtifacts(configurator.isBlackDuckIncludePublishedArtifacts());
         builder.blackDuckProperties(blackDuckProperties);
 
         BuildRetention buildRetention = new BuildRetention(configurator.isDiscardBuildArtifacts());

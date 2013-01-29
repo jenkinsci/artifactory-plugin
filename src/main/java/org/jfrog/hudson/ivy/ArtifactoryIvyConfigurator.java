@@ -89,6 +89,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private boolean blackDuckRunChecks;
     private String blackDuckAppName;
     private String blackDuckAppVersion;
+    private String blackDuckReportRecipients; //csv
+    private String blackDuckScopes; //csv
+    private boolean blackDuckIncludePublishedArtifacts;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -98,7 +101,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
             String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, String matrixParams,
             boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
-            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion) {
+            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
+            String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -124,6 +128,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.blackDuckRunChecks = blackDuckRunChecks;
         this.blackDuckAppName = blackDuckAppName;
         this.blackDuckAppVersion = blackDuckAppVersion;
+        this.blackDuckReportRecipients = blackDuckReportRecipients;
+        this.blackDuckScopes = blackDuckScopes;
+        this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
     }
 
     /**
@@ -309,6 +316,18 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.blackDuckAppVersion = blackDuckAppVersion;
     }
 
+    public String getBlackDuckReportRecipients() {
+        return blackDuckReportRecipients;
+    }
+
+    public String getBlackDuckScopes() {
+        return blackDuckScopes;
+    }
+
+    public boolean isBlackDuckIncludePublishedArtifacts() {
+        return blackDuckIncludePublishedArtifacts;
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(details.getArtifactoryUrl(), project);
@@ -331,7 +350,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern()).maven2Compatible(isM2Compatible())
                 .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
-                .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion())
+                .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
+                        getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts())
                 .build();
         build.setResult(Result.SUCCESS);
         return new AntIvyBuilderEnvironment() {

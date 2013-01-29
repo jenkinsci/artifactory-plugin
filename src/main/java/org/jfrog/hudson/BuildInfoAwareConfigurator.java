@@ -42,4 +42,10 @@ public interface BuildInfoAwareConfigurator {
     String getBlackDuckAppName();
 
     String getBlackDuckAppVersion();
+
+    String getBlackDuckReportRecipients();
+
+    String getBlackDuckScopes();
+
+    boolean isBlackDuckIncludePublishedArtifacts();
 }

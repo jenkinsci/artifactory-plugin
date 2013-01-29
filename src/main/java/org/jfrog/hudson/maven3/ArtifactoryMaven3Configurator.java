@@ -101,6 +101,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private boolean blackDuckRunChecks;
     private String blackDuckAppName;
     private String blackDuckAppVersion;
+    private String blackDuckReportRecipients; //csv
+    private String blackDuckScopes; //csv
+    private boolean blackDuckIncludePublishedArtifacts;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -110,7 +113,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
             boolean discardBuildArtifacts, String matrixParams,
             boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
-            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion) {
+            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
+            String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -132,6 +136,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.blackDuckRunChecks = blackDuckRunChecks;
         this.blackDuckAppName = blackDuckAppName;
         this.blackDuckAppVersion = blackDuckAppVersion;
+        this.blackDuckReportRecipients = blackDuckReportRecipients;
+        this.blackDuckScopes = blackDuckScopes;
+        this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -249,6 +256,18 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return blackDuckAppVersion;
     }
 
+    public String getBlackDuckReportRecipients() {
+        return blackDuckReportRecipients;
+    }
+
+    public String getBlackDuckScopes() {
+        return blackDuckScopes;
+    }
+
+    public boolean isBlackDuckIncludePublishedArtifacts() {
+        return blackDuckIncludePublishedArtifacts;
+    }
+
     public boolean isEnableIssueTrackerIntegration() {
         return enableIssueTrackerIntegration;
     }
@@ -302,7 +321,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
-                .integrateBlackDuck(blackDuckRunChecks, blackDuckAppName, blackDuckAppVersion)
+                .integrateBlackDuck(blackDuckRunChecks, blackDuckAppName, blackDuckAppVersion,
+                        blackDuckReportRecipients, blackDuckScopes, blackDuckIncludePublishedArtifacts)
                 .build();
         build.setResult(Result.SUCCESS);
         return new Environment() {

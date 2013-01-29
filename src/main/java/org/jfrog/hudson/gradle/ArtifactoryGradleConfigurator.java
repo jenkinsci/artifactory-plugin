@@ -107,6 +107,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean blackDuckRunChecks;
     private final String blackDuckAppName;
     private final String blackDuckAppVersion;
+    private String blackDuckReportRecipients; //csv
+    private String blackDuckScopes; //csv
+    private boolean blackDuckIncludePublishedArtifacts;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -119,7 +122,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
             boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
             boolean allowPromotionOfNonStagedBuilds, boolean blackDuckRunChecks, String blackDuckAppName,
-            String blackDuckAppVersion) {
+            String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
+            boolean blackDuckIncludePublishedArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -152,6 +156,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.blackDuckRunChecks = blackDuckRunChecks;
         this.blackDuckAppName = blackDuckAppName;
         this.blackDuckAppVersion = blackDuckAppVersion;
+        this.blackDuckReportRecipients = blackDuckReportRecipients;
+        this.blackDuckScopes = blackDuckScopes;
+        this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
     }
 
     public GradleReleaseWrapper getReleaseWrapper() {
@@ -302,6 +309,18 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return blackDuckAppVersion;
     }
 
+    public String getBlackDuckReportRecipients() {
+        return blackDuckReportRecipients;
+    }
+
+    public String getBlackDuckScopes() {
+        return blackDuckScopes;
+    }
+
+    public boolean isBlackDuckIncludePublishedArtifacts() {
+        return blackDuckIncludePublishedArtifacts;
+    }
+
     private String cleanString(String artifactPattern) {
         return StringUtils.removeEnd(StringUtils.removeStart(artifactPattern, "\""), "\"");
     }
@@ -405,7 +424,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
                         .aggregateBuildIssues(isAggregateBuildIssues())
                         .aggregationBuildStatus(getAggregationBuildStatus())
-                        .integrateBlackDuck(blackDuckRunChecks, blackDuckAppName, blackDuckAppVersion)
+                        .integrateBlackDuck(blackDuckRunChecks, blackDuckAppName, blackDuckAppVersion,
+                                blackDuckReportRecipients, blackDuckScopes, isBlackDuckIncludePublishedArtifacts())
                         .build();
 
                 ResolverContext resolverContext = null;

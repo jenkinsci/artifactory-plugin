@@ -56,6 +56,9 @@ public class PublisherContext {
     private boolean blackDuckRunChecks;
     private String blackDuckAppName;
     private String blackDuckAppVersion;
+    private String blackDuckReportRecipients; //csv
+    private String blackDuckScopes; //csv
+    private boolean blackDuckIncludePublishedArtifacts;
 
     private PublisherContext() {
     }
@@ -178,6 +181,18 @@ public class PublisherContext {
 
     public String getBlackDuckAppVersion() {
         return blackDuckAppVersion;
+    }
+
+    public String getBlackDuckReportRecipients() {
+        return blackDuckReportRecipients;
+    }
+
+    public String getBlackDuckScopes() {
+        return blackDuckScopes;
+    }
+
+    public boolean isBlackDuckIncludePublishedArtifacts() {
+        return blackDuckIncludePublishedArtifacts;
     }
 
     public static class Builder {
@@ -318,11 +333,14 @@ public class PublisherContext {
             return this;
         }
 
-        public Builder integrateBlackDuck(boolean blackDuckRunChecks, String blackDuckAppName,
-                                          String blackDuckAppVersion) {
-            publisher.blackDuckRunChecks = blackDuckRunChecks;
-            publisher.blackDuckAppName = blackDuckAppName;
-            publisher.blackDuckAppVersion = blackDuckAppVersion;
+        public Builder integrateBlackDuck(boolean runChecks, String appName, String appVersion,
+                                          String reportRecipients, String scopes, boolean includePublishedArtifacts) {
+            publisher.blackDuckRunChecks = runChecks;
+            publisher.blackDuckAppName = appName;
+            publisher.blackDuckAppVersion = appVersion;
+            publisher.blackDuckReportRecipients = reportRecipients;
+            publisher.blackDuckScopes = scopes;
+            publisher.blackDuckIncludePublishedArtifacts = includePublishedArtifacts;
             return this;
         }
     }

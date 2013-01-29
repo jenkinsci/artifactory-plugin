@@ -172,6 +172,18 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return null;
     }
 
+    public String getBlackDuckReportRecipients() {
+        return null;
+    }
+
+    public String getBlackDuckScopes() {
+        return null;
+    }
+
+    public boolean isBlackDuckIncludePublishedArtifacts() {
+        return false;
+    }
+
     public ArtifactoryServer getArtifactoryServer() {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
         for (ArtifactoryServer server : servers) {

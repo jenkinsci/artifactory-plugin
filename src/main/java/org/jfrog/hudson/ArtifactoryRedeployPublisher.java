@@ -115,6 +115,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private boolean blackDuckRunChecks;
     private String blackDuckAppName;
     private String blackDuckAppVersion;
+    private String blackDuckReportRecipients; //csv
+    private String blackDuckScopes; //csv
+    private boolean blackDuckIncludePublishedArtifacts;
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
@@ -125,7 +128,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
             boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
             boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
-            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion) {
+            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
+            String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -151,6 +155,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.blackDuckRunChecks = blackDuckRunChecks;
         this.blackDuckAppName = blackDuckAppName;
         this.blackDuckAppVersion = blackDuckAppVersion;
+        this.blackDuckReportRecipients = blackDuckReportRecipients;
+        this.blackDuckScopes = blackDuckScopes;
+        this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -285,6 +292,18 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public String getBlackDuckAppVersion() {
         return blackDuckAppVersion;
+    }
+
+    public String getBlackDuckReportRecipients() {
+        return blackDuckReportRecipients;
+    }
+
+    public String getBlackDuckScopes() {
+        return blackDuckScopes;
+    }
+
+    public boolean isBlackDuckIncludePublishedArtifacts() {
+        return blackDuckIncludePublishedArtifacts;
     }
 
     @Override
