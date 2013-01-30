@@ -120,6 +120,7 @@ public class AbstractBuildInfoDeployer {
         blackDuckProperties.setReportRecipients(configurator.getBlackDuckReportRecipients());
         blackDuckProperties.setScopes(configurator.getBlackDuckScopes());
         blackDuckProperties.setIncludePublishedArtifacts(configurator.isBlackDuckIncludePublishedArtifacts());
+        blackDuckProperties.setDisableComplianceAutoCheck(configurator.isBlackDuckDisableComplianceAutoCheck());
         builder.blackDuckProperties(blackDuckProperties);
 
         BuildRetention buildRetention = new BuildRetention(configurator.isDiscardBuildArtifacts());

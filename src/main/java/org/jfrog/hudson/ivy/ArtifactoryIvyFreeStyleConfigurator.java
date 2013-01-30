@@ -105,6 +105,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
+    private boolean blackDuckDisableComplianceAutoCheck;
 
     @DataBoundConstructor
     public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -117,7 +118,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             String matrixParams, boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
             String aggregationBuildStatus, boolean blackDuckRunChecks, String blackDuckAppName,
             String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
-            boolean blackDuckIncludePublishedArtifacts) {
+            boolean blackDuckIncludePublishedArtifacts, boolean blackDuckDisableComplianceAutoCheck) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -148,6 +149,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.blackDuckReportRecipients = blackDuckReportRecipients;
         this.blackDuckScopes = blackDuckScopes;
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
+        this.blackDuckDisableComplianceAutoCheck = blackDuckDisableComplianceAutoCheck;
     }
 
     /**
@@ -293,6 +295,10 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return blackDuckIncludePublishedArtifacts;
     }
 
+    public boolean isBlackDuckDisableComplianceAutoCheck() {
+        return blackDuckDisableComplianceAutoCheck;
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
@@ -315,7 +321,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 .ivyPattern(getIvyPattern()).enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
-                        getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts())
+                        getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
+                        isBlackDuckDisableComplianceAutoCheck())
                 .build();
 
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);

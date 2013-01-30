@@ -215,6 +215,11 @@
                                 <f:checkbox default="false" checked="${instance.blackDuckIncludePublishedArtifacts}"/>
                                 <label class="attach-previous">${%Include published artifacts}</label>
                             </f:entry>
+                            <f:entry field="blackDuckDisableComplianceAutoCheck"
+                                     help="/plugin/artifactory/help/common/help-blackDuckDisableComplianceAutoCheck.html">
+                                <f:checkbox default="false" checked="${instance.blackDuckDisableComplianceAutoCheck}"/>
+                                <label class="attach-previous">${%Disable automatic compliance checks}</label>
+                            </f:entry>
                         </f:optionalBlock>
                     </table>
                 </f:block>

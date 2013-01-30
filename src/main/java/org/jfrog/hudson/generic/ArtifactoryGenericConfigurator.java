@@ -184,6 +184,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return false;
     }
 
+    public boolean isBlackDuckDisableComplianceAutoCheck() {
+        return false;
+    }
+
     public ArtifactoryServer getArtifactoryServer() {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
         for (ArtifactoryServer server : servers) {

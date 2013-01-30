@@ -48,4 +48,6 @@ public interface BuildInfoAwareConfigurator {
     String getBlackDuckScopes();
 
     boolean isBlackDuckIncludePublishedArtifacts();
+
+    boolean isBlackDuckDisableComplianceAutoCheck();
 }

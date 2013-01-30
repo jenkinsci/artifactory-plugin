@@ -59,6 +59,7 @@ public class PublisherContext {
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
+    private boolean blackDuckDisableComplianceAutoCheck;
 
     private PublisherContext() {
     }
@@ -193,6 +194,10 @@ public class PublisherContext {
 
     public boolean isBlackDuckIncludePublishedArtifacts() {
         return blackDuckIncludePublishedArtifacts;
+    }
+
+    public boolean isBlackDuckDisableComplianceAutoCheck() {
+        return blackDuckDisableComplianceAutoCheck;
     }
 
     public static class Builder {
@@ -334,13 +339,15 @@ public class PublisherContext {
         }
 
         public Builder integrateBlackDuck(boolean runChecks, String appName, String appVersion,
-                                          String reportRecipients, String scopes, boolean includePublishedArtifacts) {
+                                          String reportRecipients, String scopes, boolean includePublishedArtifacts,
+                                          boolean disableComplianceAutoCheck) {
             publisher.blackDuckRunChecks = runChecks;
             publisher.blackDuckAppName = appName;
             publisher.blackDuckAppVersion = appVersion;
             publisher.blackDuckReportRecipients = reportRecipients;
             publisher.blackDuckScopes = scopes;
             publisher.blackDuckIncludePublishedArtifacts = includePublishedArtifacts;
+            publisher.blackDuckDisableComplianceAutoCheck = disableComplianceAutoCheck;
             return this;
         }
     }

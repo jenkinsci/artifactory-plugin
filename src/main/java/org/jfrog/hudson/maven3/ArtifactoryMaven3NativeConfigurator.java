@@ -238,7 +238,8 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                     .aggregationBuildStatus(publisher.getAggregationBuildStatus())
                     .integrateBlackDuck(publisher.isBlackDuckRunChecks(), publisher.getBlackDuckAppName(),
                             publisher.getBlackDuckAppVersion(), publisher.getBlackDuckReportRecipients(),
-                            publisher.getBlackDuckScopes(), publisher.isBlackDuckIncludePublishedArtifacts())
+                            publisher.getBlackDuckScopes(), publisher.isBlackDuckIncludePublishedArtifacts(),
+                            publisher.isBlackDuckDisableComplianceAutoCheck())
                     .build();
 
             return context;

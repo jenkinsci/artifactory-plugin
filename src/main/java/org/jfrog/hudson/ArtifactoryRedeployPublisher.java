@@ -118,6 +118,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
+    private boolean blackDuckDisableComplianceAutoCheck;
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
@@ -129,7 +130,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
             boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
             boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
-            String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts) {
+            String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
+            boolean blackDuckDisableComplianceAutoCheck) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -158,6 +160,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.blackDuckReportRecipients = blackDuckReportRecipients;
         this.blackDuckScopes = blackDuckScopes;
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
+        this.blackDuckDisableComplianceAutoCheck = blackDuckDisableComplianceAutoCheck;
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -304,6 +307,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isBlackDuckIncludePublishedArtifacts() {
         return blackDuckIncludePublishedArtifacts;
+    }
+
+    public boolean isBlackDuckDisableComplianceAutoCheck() {
+        return blackDuckDisableComplianceAutoCheck;
     }
 
     @Override
