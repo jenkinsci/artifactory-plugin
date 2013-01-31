@@ -118,7 +118,7 @@ public class Maven3Builder extends Builder {
             mi = mi.forEnvironment(env);
         }
 
-        FilePath mavenHome = new FilePath(mi.getHomeDir());
+        FilePath mavenHome = new FilePath(launcher.getChannel(), mi.getHome());
 
         if (!mavenHome.exists()) {
             listener.error("Couldn't find Maven home: " + mavenHome.getRemote());
