@@ -62,14 +62,6 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
             };
         }
 
-        /**
-         * If the resolver is active, let it build and environment (HAP-333)
-         * @see ArtifactoryMaven3NativeConfigurator#setUp(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
-         */
-        if (resolver != null) {
-            return new Environment() {
-            };
-        }
         return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher, resolver, listener);
     }
 }
