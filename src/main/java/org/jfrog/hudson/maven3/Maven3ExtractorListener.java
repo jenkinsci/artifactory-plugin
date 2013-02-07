@@ -56,8 +56,8 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
         ArtifactoryMaven3NativeConfigurator resolver = ActionableHelper.getBuildWrapper(
                 project, ArtifactoryMaven3NativeConfigurator.class);
 
-        // if the artifactory publisher is not active, return empty env.
-        if (publisher == null) {
+        // if the artifactory publisher and resolver are not active, return empty env.
+        if (publisher == null && resolver == null) {
             return new Environment() {
             };
         }
