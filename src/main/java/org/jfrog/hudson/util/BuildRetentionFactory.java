@@ -27,11 +27,12 @@ public class BuildRetentionFactory {
             return buildRetention;
         }
         if (rotator.getNumToKeep() > -1) {
-            buildRetention.setCount(rotator.getNumToKeep());
+            buildRetention.setCount((rotator.getArtifactNumToKeep() > 0 ? rotator.getArtifactNumToKeep() : rotator.getNumToKeep()));
         }
         if (rotator.getDaysToKeep() > -1) {
             Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.DAY_OF_YEAR, -rotator.getDaysToKeep());
+            calendar.add(Calendar.DAY_OF_YEAR, 
+                    -(rotator.getArtifactDaysToKeep() > 0 ? rotator.getArtifactDaysToKeep() : rotator.getDaysToKeep()));
             buildRetention.setMinimumBuildDate(new Date(calendar.getTimeInMillis()));
         }
         List<String> notToBeDeleted = ExtractorUtils.getBuildNumbersNotToBeDeleted(build);
