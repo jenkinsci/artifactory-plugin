@@ -111,6 +111,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return matrixParams;
     }
 
+    public boolean isDeployBuildInfo() {
+        return deployBuildInfo;
+    }
+
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
     }
