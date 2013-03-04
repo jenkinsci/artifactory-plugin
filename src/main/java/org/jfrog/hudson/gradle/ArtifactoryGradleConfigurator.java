@@ -110,7 +110,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
-    private boolean blackDuckDisableComplianceAutoCheck;
+    private boolean autoCreateMissingComponentRequests;
+    private boolean autoDiscardStaleComponentRequests;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -124,7 +125,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
             boolean allowPromotionOfNonStagedBuilds, boolean blackDuckRunChecks, String blackDuckAppName,
             String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
-            boolean blackDuckIncludePublishedArtifacts, boolean blackDuckDisableComplianceAutoCheck) {
+            boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
+            boolean autoDiscardStaleComponentRequests) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -160,7 +162,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.blackDuckReportRecipients = blackDuckReportRecipients;
         this.blackDuckScopes = blackDuckScopes;
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
-        this.blackDuckDisableComplianceAutoCheck = blackDuckDisableComplianceAutoCheck;
+        this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
+        this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
     }
 
     public GradleReleaseWrapper getReleaseWrapper() {
@@ -323,8 +326,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return blackDuckIncludePublishedArtifacts;
     }
 
-    public boolean isBlackDuckDisableComplianceAutoCheck() {
-        return blackDuckDisableComplianceAutoCheck;
+    public boolean isAutoCreateMissingComponentRequests() {
+        return autoCreateMissingComponentRequests;
+    }
+
+    public boolean isAutoDiscardStaleComponentRequests() {
+        return autoDiscardStaleComponentRequests;
     }
 
     private String cleanString(String artifactPattern) {
@@ -432,7 +439,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         .aggregationBuildStatus(getAggregationBuildStatus())
                         .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                                 getBlackDuckReportRecipients(), getBlackDuckScopes(),
-                                isBlackDuckIncludePublishedArtifacts(), isBlackDuckDisableComplianceAutoCheck())
+                                isBlackDuckIncludePublishedArtifacts(), isAutoCreateMissingComponentRequests(),
+                                isAutoDiscardStaleComponentRequests())
                         .build();
 
                 ResolverContext resolverContext = null;

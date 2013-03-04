@@ -59,7 +59,8 @@ public class PublisherContext {
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
-    private boolean blackDuckDisableComplianceAutoCheck;
+    private boolean autoCreateMissingComponentRequests;
+    private boolean autoDiscardStaleComponentRequests;
 
     private PublisherContext() {
     }
@@ -196,8 +197,12 @@ public class PublisherContext {
         return blackDuckIncludePublishedArtifacts;
     }
 
-    public boolean isBlackDuckDisableComplianceAutoCheck() {
-        return blackDuckDisableComplianceAutoCheck;
+    public boolean isAutoCreateMissingComponentRequests() {
+        return autoCreateMissingComponentRequests;
+    }
+
+    public boolean isAutoDiscardStaleComponentRequests() {
+        return autoDiscardStaleComponentRequests;
     }
 
     public static class Builder {
@@ -340,14 +345,16 @@ public class PublisherContext {
 
         public Builder integrateBlackDuck(boolean runChecks, String appName, String appVersion,
                                           String reportRecipients, String scopes, boolean includePublishedArtifacts,
-                                          boolean disableComplianceAutoCheck) {
+                                          boolean autoCreateMissingComponentRequests,
+                                          boolean autoDiscardStaleComponentRequests) {
             publisher.blackDuckRunChecks = runChecks;
             publisher.blackDuckAppName = appName;
             publisher.blackDuckAppVersion = appVersion;
             publisher.blackDuckReportRecipients = reportRecipients;
             publisher.blackDuckScopes = scopes;
             publisher.blackDuckIncludePublishedArtifacts = includePublishedArtifacts;
-            publisher.blackDuckDisableComplianceAutoCheck = disableComplianceAutoCheck;
+            publisher.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
+            publisher.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
             return this;
         }
     }

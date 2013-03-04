@@ -188,7 +188,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return false;
     }
 
-    public boolean isBlackDuckDisableComplianceAutoCheck() {
+    public boolean isAutoCreateMissingComponentRequests() {
+        return false;
+    }
+
+    public boolean isAutoDiscardStaleComponentRequests() {
         return false;
     }
 

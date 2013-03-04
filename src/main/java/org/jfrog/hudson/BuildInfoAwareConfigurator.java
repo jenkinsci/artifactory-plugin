@@ -49,5 +49,7 @@ public interface BuildInfoAwareConfigurator {
 
     boolean isBlackDuckIncludePublishedArtifacts();
 
-    boolean isBlackDuckDisableComplianceAutoCheck();
+    boolean isAutoCreateMissingComponentRequests();
+
+    boolean isAutoDiscardStaleComponentRequests();
 }

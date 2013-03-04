@@ -104,7 +104,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
-    private boolean blackDuckDisableComplianceAutoCheck;
+    private boolean autoCreateMissingComponentRequests;
+    private boolean autoDiscardStaleComponentRequests;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -116,7 +117,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
             boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
             String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-            boolean blackDuckDisableComplianceAutoCheck) {
+            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -141,7 +142,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.blackDuckReportRecipients = blackDuckReportRecipients;
         this.blackDuckScopes = blackDuckScopes;
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
-        this.blackDuckDisableComplianceAutoCheck = blackDuckDisableComplianceAutoCheck;
+        this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
+        this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -271,8 +273,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return blackDuckIncludePublishedArtifacts;
     }
 
-    public boolean isBlackDuckDisableComplianceAutoCheck() {
-        return blackDuckDisableComplianceAutoCheck;
+    public boolean isAutoCreateMissingComponentRequests() {
+        return autoCreateMissingComponentRequests;
+    }
+
+    public boolean isAutoDiscardStaleComponentRequests() {
+        return autoDiscardStaleComponentRequests;
     }
 
     public boolean isEnableIssueTrackerIntegration() {
@@ -330,7 +336,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
-                        isBlackDuckDisableComplianceAutoCheck())
+                        isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .build();
         build.setResult(Result.SUCCESS);
         return new Environment() {

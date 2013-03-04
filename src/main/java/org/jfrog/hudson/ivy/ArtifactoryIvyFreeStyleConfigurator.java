@@ -105,7 +105,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
-    private boolean blackDuckDisableComplianceAutoCheck;
+    private boolean autoCreateMissingComponentRequests;
+    private boolean autoDiscardStaleComponentRequests;
 
     @DataBoundConstructor
     public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -118,7 +119,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             String matrixParams, boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
             String aggregationBuildStatus, boolean blackDuckRunChecks, String blackDuckAppName,
             String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
-            boolean blackDuckIncludePublishedArtifacts, boolean blackDuckDisableComplianceAutoCheck) {
+            boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
+            boolean autoDiscardStaleComponentRequests) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -149,7 +151,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.blackDuckReportRecipients = blackDuckReportRecipients;
         this.blackDuckScopes = blackDuckScopes;
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
-        this.blackDuckDisableComplianceAutoCheck = blackDuckDisableComplianceAutoCheck;
+        this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
+        this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
     }
 
     /**
@@ -295,8 +298,12 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return blackDuckIncludePublishedArtifacts;
     }
 
-    public boolean isBlackDuckDisableComplianceAutoCheck() {
-        return blackDuckDisableComplianceAutoCheck;
+    public boolean isAutoCreateMissingComponentRequests() {
+        return autoCreateMissingComponentRequests;
+    }
+
+    public boolean isAutoDiscardStaleComponentRequests() {
+        return autoDiscardStaleComponentRequests;
     }
 
     @Override
@@ -322,7 +329,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
-                        isBlackDuckDisableComplianceAutoCheck())
+                        isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .build();
 
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);

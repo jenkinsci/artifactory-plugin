@@ -92,7 +92,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
-    private boolean blackDuckDisableComplianceAutoCheck;
+    private boolean autoCreateMissingComponentRequests;
+    private boolean autoDiscardStaleComponentRequests;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -104,7 +105,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
             boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
             String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-            boolean blackDuckDisableComplianceAutoCheck) {
+            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -133,7 +134,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.blackDuckReportRecipients = blackDuckReportRecipients;
         this.blackDuckScopes = blackDuckScopes;
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
-        this.blackDuckDisableComplianceAutoCheck = blackDuckDisableComplianceAutoCheck;
+        this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
+        this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
     }
 
     /**
@@ -331,8 +333,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return blackDuckIncludePublishedArtifacts;
     }
 
-    public boolean isBlackDuckDisableComplianceAutoCheck() {
-        return blackDuckDisableComplianceAutoCheck;
+    public boolean isAutoCreateMissingComponentRequests() {
+        return autoCreateMissingComponentRequests;
+    }
+
+    public boolean isAutoDiscardStaleComponentRequests() {
+        return autoDiscardStaleComponentRequests;
     }
 
     @Override
@@ -359,7 +365,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
-                        isBlackDuckDisableComplianceAutoCheck())
+                        isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .build();
         build.setResult(Result.SUCCESS);
         return new AntIvyBuilderEnvironment() {

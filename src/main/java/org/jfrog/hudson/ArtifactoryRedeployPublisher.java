@@ -118,7 +118,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
-    private boolean blackDuckDisableComplianceAutoCheck;
+    private boolean autoCreateMissingComponentRequests;
+    private boolean autoDiscardStaleComponentRequests;
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
@@ -131,7 +132,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
             boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
             String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-            boolean blackDuckDisableComplianceAutoCheck) {
+            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -160,7 +161,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.blackDuckReportRecipients = blackDuckReportRecipients;
         this.blackDuckScopes = blackDuckScopes;
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
-        this.blackDuckDisableComplianceAutoCheck = blackDuckDisableComplianceAutoCheck;
+        this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
+        this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
     }
 
     // NOTE: The following getters are used by jelly. Do not remove them
@@ -309,8 +311,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return blackDuckIncludePublishedArtifacts;
     }
 
-    public boolean isBlackDuckDisableComplianceAutoCheck() {
-        return blackDuckDisableComplianceAutoCheck;
+    public boolean isAutoCreateMissingComponentRequests() {
+        return autoCreateMissingComponentRequests;
+    }
+
+    public boolean isAutoDiscardStaleComponentRequests() {
+        return autoDiscardStaleComponentRequests;
     }
 
     @Override

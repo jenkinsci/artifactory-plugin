@@ -214,7 +214,8 @@ public class ExtractorUtils {
         configuration.info.blackDuckProperties.setReportRecipients(context.getBlackDuckReportRecipients());
         configuration.info.blackDuckProperties.setScopes(context.getBlackDuckScopes());
         configuration.info.blackDuckProperties.setIncludePublishedArtifacts(context.isBlackDuckIncludePublishedArtifacts());
-        configuration.info.blackDuckProperties.setDisableComplianceAutoCheck(context.isBlackDuckDisableComplianceAutoCheck());
+        configuration.info.blackDuckProperties.setAutoCreateMissingComponentRequests(context.isAutoCreateMissingComponentRequests());
+        configuration.info.blackDuckProperties.setAutoDiscardStaleComponentRequests(context.isAutoDiscardStaleComponentRequests());
 
         if (context.isDiscardOldBuilds()) {
             LogRotator rotator = build.getProject().getLogRotator();
