@@ -32,7 +32,7 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.gradle.plugin.artifactory.extractor.BuildInfoTask;
+import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoAwareConfigurator;
@@ -400,8 +400,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             } else {
                 tasks = gradleBuild.getTasks() + "";
             }
-            if (!StringUtils.contains(tasks, BuildInfoTask.BUILD_INFO_TASK_NAME)) {
-                setTargetsField(gradleBuild, "tasks", tasks + " " + BuildInfoTask.BUILD_INFO_TASK_NAME);
+            if (!StringUtils.contains(tasks, BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
+                setTargetsField(gradleBuild, "tasks", tasks + " " + BuildInfoBaseTask.BUILD_INFO_TASK_NAME);
             }
         } else {
             listener.getLogger().println("[Warning] No Gradle build configured");
