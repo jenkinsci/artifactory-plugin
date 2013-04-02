@@ -13,6 +13,7 @@ import org.jfrog.build.api.BuildAgent;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.api.BuildRetention;
 import org.jfrog.build.api.BuildType;
+import org.jfrog.build.api.Governance;
 import org.jfrog.build.api.LicenseControl;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.PromotionStatusBuilder;
@@ -122,7 +123,10 @@ public class AbstractBuildInfoDeployer {
         blackDuckProperties.setIncludePublishedArtifacts(configurator.isBlackDuckIncludePublishedArtifacts());
         blackDuckProperties.setAutoCreateMissingComponentRequests(configurator.isAutoCreateMissingComponentRequests());
         blackDuckProperties.setAutoDiscardStaleComponentRequests(configurator.isAutoDiscardStaleComponentRequests());
-        builder.blackDuckProperties(blackDuckProperties);
+
+        Governance governance = new Governance();
+        governance.setBlackDuckProperties(blackDuckProperties);
+        builder.governance(governance);
 
         BuildRetention buildRetention = new BuildRetention(configurator.isDiscardBuildArtifacts());
         if (configurator.isDiscardOldBuilds()) {
