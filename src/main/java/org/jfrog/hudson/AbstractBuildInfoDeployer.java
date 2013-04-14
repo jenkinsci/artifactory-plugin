@@ -7,11 +7,13 @@ import hudson.model.Cause;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Agent;
+import org.jfrog.build.api.BlackDuckProperties;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildAgent;
 import org.jfrog.build.api.BuildInfoProperties;
 import org.jfrog.build.api.BuildRetention;
 import org.jfrog.build.api.BuildType;
+import org.jfrog.build.api.Governance;
 import org.jfrog.build.api.LicenseControl;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.PromotionStatusBuilder;
@@ -111,6 +113,21 @@ public class AbstractBuildInfoDeployer {
         licenseControl.setIncludePublishedArtifacts(configurator.isIncludePublishArtifacts());
         licenseControl.setAutoDiscover(configurator.isLicenseAutoDiscovery());
         builder.licenseControl(licenseControl);
+
+        BlackDuckProperties blackDuckProperties = new BlackDuckProperties();
+        blackDuckProperties.setRunChecks(configurator.isBlackDuckRunChecks());
+        blackDuckProperties.setAppName(configurator.getBlackDuckAppName());
+        blackDuckProperties.setAppVersion(configurator.getBlackDuckAppVersion());
+        blackDuckProperties.setReportRecipients(configurator.getBlackDuckReportRecipients());
+        blackDuckProperties.setScopes(configurator.getBlackDuckScopes());
+        blackDuckProperties.setIncludePublishedArtifacts(configurator.isBlackDuckIncludePublishedArtifacts());
+        blackDuckProperties.setAutoCreateMissingComponentRequests(configurator.isAutoCreateMissingComponentRequests());
+        blackDuckProperties.setAutoDiscardStaleComponentRequests(configurator.isAutoDiscardStaleComponentRequests());
+
+        Governance governance = new Governance();
+        governance.setBlackDuckProperties(blackDuckProperties);
+        builder.governance(governance);
+
         BuildRetention buildRetention = new BuildRetention(configurator.isDiscardBuildArtifacts());
         if (configurator.isDiscardOldBuilds()) {
             buildRetention = BuildRetentionFactory.createBuildRetention(build, configurator.isDiscardBuildArtifacts());

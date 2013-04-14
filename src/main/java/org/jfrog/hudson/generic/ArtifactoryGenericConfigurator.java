@@ -164,6 +164,38 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return null;
     }
 
+    public boolean isBlackDuckRunChecks() {
+        return false;
+    }
+
+    public String getBlackDuckAppName() {
+        return null;
+    }
+
+    public String getBlackDuckAppVersion() {
+        return null;
+    }
+
+    public String getBlackDuckReportRecipients() {
+        return null;
+    }
+
+    public String getBlackDuckScopes() {
+        return null;
+    }
+
+    public boolean isBlackDuckIncludePublishedArtifacts() {
+        return false;
+    }
+
+    public boolean isAutoCreateMissingComponentRequests() {
+        return false;
+    }
+
+    public boolean isAutoDiscardStaleComponentRequests() {
+        return false;
+    }
+
     public ArtifactoryServer getArtifactoryServer() {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
         for (ArtifactoryServer server : servers) {
