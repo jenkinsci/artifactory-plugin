@@ -32,7 +32,7 @@
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
     <properties>
-        <buildinfo.version>2.1.x-SNAPSHOT</buildinfo.version>
+        <buildinfo.version>2.1.0</buildinfo.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
     </properties>
 
@@ -156,7 +156,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-ivy</artifactId>
-            <version>2.1.x-SNAPSHOT</version>
+            <version>2.1.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.ant</groupId>
@@ -171,12 +171,12 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-maven3</artifactId>
-            <version>2.1.x-SNAPSHOT</version>
+            <version>2.1.0</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-gradle</artifactId>
-            <version>2.1.x-SNAPSHOT</version>
+            <version>2.1.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.ant</groupId>
