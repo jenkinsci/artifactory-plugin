@@ -16,20 +16,9 @@
 
 package org.jfrog.hudson.maven3;
 
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Computer;
-import hudson.model.FreeStyleProject;
-import hudson.model.Result;
-import hudson.model.Run;
+import hudson.*;
+import hudson.model.*;
 import hudson.remoting.Which;
-import hudson.slaves.SlaveComputer;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.tasks.Maven;
@@ -46,7 +35,6 @@ import org.kohsuke.stapler.StaplerRequest;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.net.URLDecoder;
 
 /**
  * Maven3 builder for free style projects. Hudson 1.392 added native support for maven 3 but this one is useful for free style.
@@ -107,7 +95,7 @@ public class Maven3Builder extends Builder {
     }
 
     private ArgumentListBuilder buildMavenCmdLine(AbstractBuild<?, ?> build, BuildListener listener,
-            EnvVars env, Launcher launcher) throws IOException, InterruptedException {
+                                                  EnvVars env, Launcher launcher) throws IOException, InterruptedException {
 
         Maven.MavenInstallation mi = getMaven();
         if (mi == null) {
@@ -171,25 +159,8 @@ public class Maven3Builder extends Builder {
                 args.addKeyValuePair("-D", "m3plugin.lib", actualDependencyDirectory.getRemote(), false);
             }
 
-            URL classworldsResource =
-                    getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-freestyle.conf");
-
-            File classworldsConfFile = new File(URLDecoder.decode(classworldsResource.getFile(), "utf-8"));
-            if (!classworldsConfFile.exists()) {
-                listener.error("Unable to locate classworlds configuration file under " +
-                        classworldsConfFile.getAbsolutePath());
-                throw new Run.RunnerAbortedException();
-            }
-
-            //If we are on a remote slave, make a temp copy of the customized classworlds conf
-            if (Computer.currentComputer() instanceof SlaveComputer) {
-
-                FilePath remoteClassworlds = build.getWorkspace().createTextTempFile("classworlds", "conf", "", false);
-                remoteClassworlds.copyFrom(classworldsResource);
-                classworldsConfPath = remoteClassworlds.getRemote();
-            } else {
-                classworldsConfPath = classworldsConfFile.getCanonicalPath();
-            }
+            URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-freestyle.conf");
+            classworldsConfPath = copyClassWorldsFile(build, resource).getRemote();
         } else {
             classworldsConfPath = new FilePath(mavenHome, "bin/m2.conf").getRemote();
         }
@@ -217,6 +188,23 @@ public class Maven3Builder extends Builder {
         args.addTokenized(getGoals());
 
         return args;
+    }
+
+    /**
+     * Copies a classworlds file to a temporary location either on the local filesystem or on a slave depending on the
+     * node type.
+     *
+     * @return The path of the classworlds.conf file
+     */
+    private FilePath copyClassWorldsFile(AbstractBuild<?, ?> build, URL resource) {
+        try {
+            FilePath remoteClassworlds =
+                    build.getWorkspace().createTextTempFile("classworlds", "conf", "", false);
+            remoteClassworlds.copyFrom(resource);
+            return remoteClassworlds;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Maven.MavenInstallation getMaven() {
