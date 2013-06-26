@@ -150,6 +150,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <!--
+                ZStream is declared final in 1.0.7, which is what build-info-vcs pulls in.
+                This causes a conflict with jzlib-1.1.2 that newer Jenkins uses.
+                If we didn't put too many classes into plexus.core, this would have been a non-issue.
+                See JENKINS-18401
+             -->
+            <groupId>com.jcraft</groupId>
+            <artifactId>jzlib</artifactId>
+            <version>1.1.2</version>
+        </dependency>
 
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
