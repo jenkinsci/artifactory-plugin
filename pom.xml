@@ -32,7 +32,7 @@
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
     <properties>
-        <buildinfo.version>2.1.1</buildinfo.version>
+        <buildinfo.version>2.1.2</buildinfo.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
     </properties>
 
