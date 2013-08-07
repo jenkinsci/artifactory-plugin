@@ -18,8 +18,7 @@ package org.jfrog.hudson.release.maven;
 
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import hudson.maven.ModuleName;
-import org.jdom.input.SAXBuilder;
+import hudson.maven.ModuleName; 
 import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
 import org.junit.Test;
 
@@ -27,7 +26,8 @@ import java.io.File;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.Map;  
+import org.jdom.input.SAXBuilder;
 
 import static org.junit.Assert.*;
 
