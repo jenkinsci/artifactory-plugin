@@ -392,7 +392,7 @@
 
     <repositories>
         <repository>
-            <id>central</id>
+            <id>central.jfrog</id>
             <name>jfrog-apps-dist</name>
             <url>http://repo.jfrog.org/artifactory/libs-releases</url>
             <snapshots>
