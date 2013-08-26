@@ -35,13 +35,7 @@ import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.util.CredentialResolver;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.MavenVersionHelper;
-import org.jfrog.hudson.util.PluginDependencyHelper;
-import org.jfrog.hudson.util.PublisherContext;
-import org.jfrog.hudson.util.ResolverContext;
+import org.jfrog.hudson.util.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,7 +68,7 @@ public class MavenExtractorEnvironment extends Environment {
     private boolean initialized;
 
     public MavenExtractorEnvironment(MavenModuleSetBuild build, ArtifactoryRedeployPublisher publisher,
-            ArtifactoryMaven3NativeConfigurator resolver, BuildListener buildListener)
+                                     ArtifactoryMaven3NativeConfigurator resolver, BuildListener buildListener)
             throws IOException, InterruptedException {
         this.buildListener = buildListener;
         this.project = build.getProject();
@@ -239,7 +233,8 @@ public class MavenExtractorEnvironment extends Environment {
             FilePath actualDependencyDirectory =
                     PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
             mavenOpts.append(" ").append(MAVEN_PLUGIN_OPTS).append("=")
-                    .append(quote(actualDependencyDirectory.getRemote()));
+                    .append(quote(actualDependencyDirectory.getRemote()))
+                    .append(" -Dmaven3.interceptor.common=").append(quote(actualDependencyDirectory.getRemote()));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -284,5 +279,4 @@ public class MavenExtractorEnvironment extends Environment {
     public static void addCustomClassworlds(Map<String, String> env, String classworldsConfPath) {
         env.put(CLASSWORLDS_CONF_KEY, classworldsConfPath);
     }
-
 }
