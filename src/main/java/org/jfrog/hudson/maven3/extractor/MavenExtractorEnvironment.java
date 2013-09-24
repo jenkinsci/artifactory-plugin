@@ -16,10 +16,14 @@
 
 package org.jfrog.hudson.maven3.extractor;
 
+import com.google.common.collect.Lists;
 import hudson.EnvVars;
+import hudson.Extension;
 import hudson.FilePath;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
+import hudson.maven.PlexusModuleContributor;
+import hudson.maven.PlexusModuleContributorFactory;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
@@ -40,7 +44,8 @@ import org.jfrog.hudson.util.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.URL;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,17 +55,12 @@ import java.util.Map;
  * @author Tomer Cohen
  */
 public class MavenExtractorEnvironment extends Environment {
-    public static final String MAVEN_PLUGIN_OPTS = "-Dm3plugin.lib";
-    public static final String CLASSWORLDS_CONF_KEY = "classworlds.conf";
 
-    private final MavenModuleSet project;
-    private final String originalMavenOpts;
     private final ArtifactoryRedeployPublisher publisher;
     private final MavenModuleSetBuild build;
     private final ArtifactoryMaven3NativeConfigurator resolver;
     private final BuildListener buildListener;
     private final EnvVars envVars;
-    private FilePath classworldsConf;
     private String propertiesFilePath;
 
     // the build env vars method may be called again from another setUp of a wrapper so we need this flag to
@@ -71,11 +71,9 @@ public class MavenExtractorEnvironment extends Environment {
                                      ArtifactoryMaven3NativeConfigurator resolver, BuildListener buildListener)
             throws IOException, InterruptedException {
         this.buildListener = buildListener;
-        this.project = build.getProject();
         this.build = build;
         this.publisher = publisher;
         this.resolver = resolver;
-        this.originalMavenOpts = project.getMavenOpts();
         this.envVars = build.getEnvironment(buildListener);
     }
 
@@ -112,19 +110,8 @@ public class MavenExtractorEnvironment extends Environment {
         }
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
 
-        if (classworldsConf == null && !env.containsKey(CLASSWORLDS_CONF_KEY)) {
-            URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-native.conf");
-            classworldsConf = copyClassWorldsFile(build, resource);
-        }
-
-        if (classworldsConf != null) {
-            addCustomClassworlds(env, classworldsConf.getRemote());
-        }
-
         if (!initialized) {
             try {
-                build.getProject().setMavenOpts(appendNewMavenOpts(project, build, buildListener));
-
                 PublisherContext publisherContext = null;
                 if (publisher != null) {
                     publisherContext = createPublisherContext(publisher, build);
@@ -156,15 +143,6 @@ public class MavenExtractorEnvironment extends Environment {
         } catch (Exception e) {
             throw new RuntimeException("Unable to determine Maven version", e);
         }
-    }
-
-    @Override
-    public boolean tearDown(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
-        project.setMavenOpts(originalMavenOpts);
-        if (classworldsConf != null) {
-            classworldsConf.delete();
-        }
-        return true;
     }
 
     private PublisherContext createPublisherContext(ArtifactoryRedeployPublisher publisher, AbstractBuild build) {
@@ -203,80 +181,22 @@ public class MavenExtractorEnvironment extends Environment {
         return context;
     }
 
+    @Extension
+    public static class ArtifactoryPlexusContributor extends PlexusModuleContributorFactory {
 
-    /**
-     * Append custom Maven opts to the existing to the already existing ones. The opt that will be appended is the
-     * location Of the plugin for the Maven process to use.
-     */
-    public String appendNewMavenOpts(MavenModuleSet project, AbstractBuild build, BuildListener listener)
-            throws IOException {
-        String opts = project.getMavenOpts();
+        private static final String INCLUDED_FILES = "*.jar";
+        private static final String EXCLUDED_FILES = "classes.jar, *ivy*, *gradle*";
 
-        if (StringUtils.contains(opts, MAVEN_PLUGIN_OPTS)) {
-            listener.getLogger().println(
-                    "Property '" + MAVEN_PLUGIN_OPTS +
-                            "' is already part of MAVEN_OPTS. This is usually a leftover of " +
-                            "previous build which was forcibly stopped. Replacing the value with an updated one. " +
-                            "Please remove it from the job configuration.");
-            // this regex will remove the property and the value (the value either ends with a space or surrounded by quotes
-            opts = opts.replaceAll(MAVEN_PLUGIN_OPTS + "=([^\\s\"]+)|" + MAVEN_PLUGIN_OPTS + "=\"([^\"]*)\"", "")
-                    .trim();
+        @Override
+        public PlexusModuleContributor createFor(AbstractBuild<?, ?> context) throws IOException, InterruptedException {
+            File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
+            FilePath dependenciesDirectory = PluginDependencyHelper.getActualDependencyDirectory(context, maven3ExtractorJar);
+
+            FilePath[] files = dependenciesDirectory.list(INCLUDED_FILES, EXCLUDED_FILES);
+            List<FilePath> jars = Lists.newArrayList();
+            Collections.addAll(jars, files);
+
+            return PlexusModuleContributor.of(jars);
         }
-
-        StringBuilder mavenOpts = new StringBuilder();
-        if (StringUtils.isNotBlank(opts)) {
-            mavenOpts.append(opts);
-        }
-
-        File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
-        try {
-            FilePath actualDependencyDirectory =
-                    PluginDependencyHelper.getActualDependencyDirectory(build, maven3ExtractorJar);
-            mavenOpts.append(" ").append(MAVEN_PLUGIN_OPTS).append("=")
-                    .append(quote(actualDependencyDirectory.getRemote()))
-                    .append(" -Dmaven3.interceptor.common=").append(quote(actualDependencyDirectory.getRemote()));
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return mavenOpts.toString();
-    }
-
-    /**
-     * Adds quotes around strings containing spaces.
-     */
-    private static String quote(String arg) {
-
-        if (StringUtils.isNotBlank(arg) && arg.indexOf(' ') >= 0) {
-            return "\"" + arg + "\"";
-        } else {
-            return arg;
-        }
-    }
-
-    /**
-     * Copies a classworlds file to a temporary location either on the local filesystem or on a slave depending on the
-     * node type.
-     *
-     * @return The path of the classworlds.conf file
-     */
-    private FilePath copyClassWorldsFile(AbstractBuild<?, ?> build, URL resource) {
-        try {
-            FilePath remoteClassworlds =
-                    build.getWorkspace().createTextTempFile("classworlds", "conf", "", false);
-            remoteClassworlds.copyFrom(resource);
-            return remoteClassworlds;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Add a custom {@code classworlds.conf} file that will be read by the Maven build. Adds an environment variable
-     * {@code classwordls.conf} with the location of the classworlds file for Maven.
-     *
-     * @return The path of the classworlds.conf file
-     */
-    public static void addCustomClassworlds(Map<String, String> env, String classworldsConfPath) {
-        env.put(CLASSWORLDS_CONF_KEY, classworldsConfPath);
     }
 }
