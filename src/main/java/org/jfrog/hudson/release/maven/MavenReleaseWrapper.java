@@ -155,6 +155,12 @@ public class MavenReleaseWrapper extends BuildWrapper {
 
         return new Environment() {
             @Override
+            public void buildEnvVars(Map<String,String> env)    
+            {
+                env.put("ART_RELEASE","true"); 
+            }
+            
+            @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
                 // if we used alternative goals set back the original

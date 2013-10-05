@@ -15,7 +15,7 @@
  */
 
 package org.jfrog.hudson.release.scm.git;
-
+ 
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
@@ -155,7 +155,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
             gitEnvironment.put("GIT_COMMITTER_EMAIL", confEmail);
             gitEnvironment.put("GIT_AUTHOR_EMAIL", confEmail);
         }
-        GitAPI git = new GitAPI(gitExe, workingCopy, buildListener, new EnvVars(), null);
+        GitAPI git = new GitAPI(gitExe, new File(workingCopy.getName()), buildListener, new EnvVars());
         return git;
     }
 
