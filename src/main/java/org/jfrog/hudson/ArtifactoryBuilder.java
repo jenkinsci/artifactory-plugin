@@ -99,23 +99,29 @@ public class ArtifactoryBuilder extends Builder {
             return FormValidation.ok();
         }
 
-        /**
-         * Most chances this validation won't work, since there no proper way to explicitly request either deployer or
-         * resolver credentials from the global config form, so we can't check if we should use resolver or deployer
-         * credentials when testing the connection to the server
-         */
-        public FormValidation doCheckUrl(@QueryParameter final String value,
-                @QueryParameter final String username,
-                @QueryParameter final String password) throws ServletException {
-            if (StringUtils.isBlank(value)) {
+        public FormValidation doTestConnection(@QueryParameter("artifactoryUrl") final String url,
+                                               @QueryParameter("username") final String deployerUsername,
+                                               @QueryParameter("password") final String deployerPassword,
+                                               @QueryParameter("resolverCredentials") final boolean resolverCredentials,
+                                               @QueryParameter("resolverUsername") final String resolverUsername,
+                                               @QueryParameter("resolverPassword") final String resolverPassword) throws ServletException {
+
+            String username = deployerUsername;
+            String password = deployerPassword;
+            if (resolverCredentials && StringUtils.isNotBlank(resolverUsername) && StringUtils.isNotBlank(resolverPassword)) {
+                username = resolverUsername;
+                password = resolverPassword;
+            }
+
+            if (StringUtils.isBlank(url)) {
                 return FormValidation.error("Please set a valid Artifactory URL");
             }
 
             ArtifactoryBuildInfoClient client;
             if (StringUtils.isNotBlank(username)) {
-                client = new ArtifactoryBuildInfoClient(value, username, password, new NullLog());
+                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
             } else {
-                client = new ArtifactoryBuildInfoClient(value, new NullLog());
+                client = new ArtifactoryBuildInfoClient(url, new NullLog());
             }
             client.setConnectionTimeout(10);
             ArtifactoryVersion version;

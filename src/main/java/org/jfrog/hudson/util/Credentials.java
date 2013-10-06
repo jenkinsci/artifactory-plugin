@@ -17,6 +17,7 @@
 package org.jfrog.hudson.util;
 
 import hudson.util.Scrambler;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.Serializable;
@@ -37,8 +38,22 @@ public class Credentials implements Serializable {
      * @param username Username
      * @param password Clear-text password. Will be scrambled.
      */
-    @DataBoundConstructor
     public Credentials(String username, String password) {
+        this.username = username;
+        this.password = Scrambler.scramble(password);
+    }
+
+    /**
+     * Constructor bounded to global.jelly
+     * It
+     */
+    @DataBoundConstructor
+    public Credentials(String username, String password, String resolverUsername, String resolverPassword) {
+        if (StringUtils.isNotBlank(resolverUsername) && StringUtils.isNotBlank(resolverPassword)) {
+            username = resolverUsername;
+            password = resolverPassword;
+        }
+
         this.username = username;
         this.password = Scrambler.scramble(password);
     }

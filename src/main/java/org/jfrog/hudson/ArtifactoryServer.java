@@ -67,14 +67,14 @@ public class ArtifactoryServer implements Serializable {
     private transient volatile List<VirtualRepository> virtualRepositories;
 
     @DataBoundConstructor
-    public ArtifactoryServer(String serverId, String url, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
+    public ArtifactoryServer(String serverId, String artifactoryUrl, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
                              boolean bypassProxy) {
-        this.url = StringUtils.removeEnd(url, "/");
+        this.url = StringUtils.removeEnd(artifactoryUrl, "/");
         this.deployerCredentials = deployerCredentials;
         this.resolverCredentials = resolverCredentials;
         this.timeout = timeout > 0 ? timeout : DEFAULT_CONNECTION_TIMEOUT;
         this.bypassProxy = bypassProxy;
-        this.id = serverId == null || serverId.isEmpty() ? url.hashCode() + "@" + System.currentTimeMillis() : serverId;
+        this.id = serverId == null || serverId.isEmpty() ? artifactoryUrl.hashCode() + "@" + System.currentTimeMillis() : serverId;
     }
 
     public String getName() {
