@@ -61,6 +61,7 @@ public class PublisherContext {
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
+    private boolean filterExcludedArtifactsFromBuild;
 
     private PublisherContext() {
     }
@@ -203,6 +204,10 @@ public class PublisherContext {
 
     public boolean isAutoDiscardStaleComponentRequests() {
         return autoDiscardStaleComponentRequests;
+    }
+
+    public boolean isFilterExcludedArtifactsFromBuild() {
+        return filterExcludedArtifactsFromBuild;
     }
 
     public static class Builder {
@@ -355,6 +360,11 @@ public class PublisherContext {
             publisher.blackDuckIncludePublishedArtifacts = includePublishedArtifacts;
             publisher.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
             publisher.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
+            return this;
+        }
+
+        public Builder filterExcludedArtifactsFromBuild(boolean filterExcludedArtifactsFromBuild) {
+            publisher.filterExcludedArtifactsFromBuild = filterExcludedArtifactsFromBuild;
             return this;
         }
     }

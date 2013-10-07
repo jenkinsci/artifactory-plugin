@@ -176,6 +176,7 @@ public class MavenExtractorEnvironment extends Environment {
                         publisher.getBlackDuckScopes(), publisher.isBlackDuckIncludePublishedArtifacts(),
                         publisher.isAutoCreateMissingComponentRequests(),
                         publisher.isAutoDiscardStaleComponentRequests())
+                .filterExcludedArtifactsFromBuild(publisher.isFilterExcludedArtifactsFromBuild())
                 .build();
 
         return context;

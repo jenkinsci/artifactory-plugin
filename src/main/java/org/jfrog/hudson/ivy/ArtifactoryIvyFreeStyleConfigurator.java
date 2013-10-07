@@ -107,6 +107,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
+    private final boolean filterExcludedArtifactsFromBuild;
 
     @DataBoundConstructor
     public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -120,7 +121,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             String aggregationBuildStatus, boolean blackDuckRunChecks, String blackDuckAppName,
             String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
             boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
-            boolean autoDiscardStaleComponentRequests) {
+            boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -135,6 +136,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.disableLicenseAutoDiscovery = disableLicenseAutoDiscovery;
         this.ivyPattern = ivyPattern;
         this.aggregationBuildStatus = aggregationBuildStatus;
+        this.filterExcludedArtifactsFromBuild = filterExcludedArtifactsFromBuild;
         this.artifactPattern = clearApostrophes(artifactPattern);
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -306,6 +308,10 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return autoDiscardStaleComponentRequests;
     }
 
+    public boolean isFilterExcludedArtifactsFromBuild() {
+        return filterExcludedArtifactsFromBuild;
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
@@ -330,6 +336,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
+                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
                 .build();
 
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);

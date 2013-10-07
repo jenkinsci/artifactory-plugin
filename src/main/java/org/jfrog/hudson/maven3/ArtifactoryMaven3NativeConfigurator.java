@@ -241,6 +241,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                             publisher.getBlackDuckScopes(), publisher.isBlackDuckIncludePublishedArtifacts(),
                             publisher.isAutoCreateMissingComponentRequests(),
                             publisher.isAutoDiscardStaleComponentRequests())
+                    .filterExcludedArtifactsFromBuild(publisher.isFilterExcludedArtifactsFromBuild())
                     .build();
 
             return context;

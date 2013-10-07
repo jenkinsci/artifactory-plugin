@@ -106,6 +106,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
+    private final boolean filterExcludedArtifactsFromBuild;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -117,7 +118,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
             boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
             String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests) {
+            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
+            boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -132,6 +134,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.aggregateBuildIssues = aggregateBuildIssues;
         this.aggregationBuildStatus = aggregationBuildStatus;
+        this.filterExcludedArtifactsFromBuild = filterExcludedArtifactsFromBuild;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.deployBuildInfo = deployBuildInfo;
         this.deployArtifacts = deployArtifacts;
@@ -293,6 +296,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return aggregationBuildStatus;
     }
 
+    public boolean isFilterExcludedArtifactsFromBuild() {
+        return filterExcludedArtifactsFromBuild;
+    }
+
     public ArtifactoryServer getArtifactoryServer(String artifactoryServerName) {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
         for (ArtifactoryServer server : servers) {
@@ -337,6 +344,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
+                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
                 .build();
         build.setResult(Result.SUCCESS);
         return new Environment() {

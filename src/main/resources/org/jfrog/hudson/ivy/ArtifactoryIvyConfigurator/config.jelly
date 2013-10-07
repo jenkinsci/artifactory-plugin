@@ -97,6 +97,11 @@
                                     <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
                                 </f:entry>
                             </f:section>
+                            <f:entry field="filterExcludedArtifactsFromBuild"
+                                     help="/plugin/artifactory/help/common/help-filterExcludedArtifactsFromBuild.html">
+                                     <f:checkbox default="false" checked="${instance.filterExcludedArtifactsFromBuild}"/>
+                                     <label class="attach-previous">${%Filter excluded artifacts from build Info}</label>
+                            </f:entry>
                         </table>
                     </f:block>
                     <f:entry title="Deployment properties" field="matrixParams"

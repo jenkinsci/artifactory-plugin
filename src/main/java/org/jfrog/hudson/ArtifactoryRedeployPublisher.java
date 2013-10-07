@@ -120,6 +120,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
+    private final boolean filterExcludedArtifactsFromBuild;
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
@@ -132,7 +133,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
             boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
             String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests) {
+            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
+            boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -150,6 +152,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.matrixParams = matrixParams;
         this.aggregationBuildStatus = aggregationBuildStatus;
+        this.filterExcludedArtifactsFromBuild = filterExcludedArtifactsFromBuild;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.deployBuildInfo = deployBuildInfo;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
@@ -317,6 +320,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isAutoDiscardStaleComponentRequests() {
         return autoDiscardStaleComponentRequests;
+    }
+
+    public boolean isFilterExcludedArtifactsFromBuild() {
+        return filterExcludedArtifactsFromBuild;
     }
 
     @Override

@@ -112,6 +112,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
+    private final boolean filterExcludedArtifactsFromBuild;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -126,7 +127,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             boolean allowPromotionOfNonStagedBuilds, boolean blackDuckRunChecks, String blackDuckAppName,
             String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
             boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
-            boolean autoDiscardStaleComponentRequests) {
+            boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -145,6 +146,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.aggregateBuildIssues = aggregateBuildIssues;
         this.aggregationBuildStatus = aggregationBuildStatus;
+        this.filterExcludedArtifactsFromBuild = filterExcludedArtifactsFromBuild;
         this.artifactPattern = cleanString(artifactPattern);
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -334,6 +336,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return autoDiscardStaleComponentRequests;
     }
 
+    public boolean isFilterExcludedArtifactsFromBuild() {
+        return filterExcludedArtifactsFromBuild;
+    }
+
     private String cleanString(String artifactPattern) {
         return StringUtils.removeEnd(StringUtils.removeStart(artifactPattern, "\""), "\"");
     }
@@ -441,6 +447,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                 getBlackDuckReportRecipients(), getBlackDuckScopes(),
                                 isBlackDuckIncludePublishedArtifacts(), isAutoCreateMissingComponentRequests(),
                                 isAutoDiscardStaleComponentRequests())
+                        .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
                         .build();
 
                 ResolverContext resolverContext = null;
