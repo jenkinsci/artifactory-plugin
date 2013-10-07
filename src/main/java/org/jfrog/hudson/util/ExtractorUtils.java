@@ -308,6 +308,8 @@ public class ExtractorUtils {
         configuration.setPropertiesFile(propertiesFile.getRemote());
         env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFile.getRemote());
+        // Jenkins prefixes env variables with 'env' but we need it clean..
+        System.setProperty(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFile.getRemote());
         if (!(Computer.currentComputer() instanceof SlaveComputer)) {
             configuration.persistToPropertiesFile();
         } else {
