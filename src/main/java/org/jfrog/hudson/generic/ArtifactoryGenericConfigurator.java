@@ -2,13 +2,7 @@ package org.jfrog.hudson.generic;
 
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import jenkins.model.Jenkins;
@@ -20,14 +14,10 @@ import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.client.ProxyConfiguration;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoAwareConfigurator;
-import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
+import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -64,9 +54,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            String deployPattern, String resolvePattern, String matrixParams, boolean deployBuildInfo,
-            boolean includeEnvVars, IncludesExcludes envVarsPatterns, boolean discardOldBuilds,
-            boolean discardBuildArtifacts) {
+                                          String deployPattern, String resolvePattern, String matrixParams, boolean deployBuildInfo,
+                                          boolean includeEnvVars, IncludesExcludes envVarsPatterns, boolean discardOldBuilds,
+                                          boolean discardBuildArtifacts) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployPattern = deployPattern;
@@ -272,13 +262,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                     return true;    // build failed. Don't publish
                 }
 
-                Credentials preferredDeployer;
                 ArtifactoryServer server = getArtifactoryServer();
-                if (isOverridingDefaultDeployer()) {
-                    preferredDeployer = getOverridingDeployerCredentials();
-                } else {
-                    preferredDeployer = server.getResolvingCredentials();
-                }
+                Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(ArtifactoryGenericConfigurator.this, server);
                 ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
                         preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
                 try {
