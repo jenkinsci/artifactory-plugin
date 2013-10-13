@@ -19,9 +19,6 @@ package org.jfrog.hudson.release.scm.git;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
-import hudson.plugins.git.Branch;
-import hudson.plugins.git.Revision;
-import hudson.plugins.git.util.BuildData;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -64,10 +61,8 @@ public class GitCoordinator extends AbstractScmCoordinator {
         releaseBranch = releaseAction.getReleaseBranch();
 
         // find the current local built branch
-        BuildData buildData = build.getAction(BuildData.class);
-        Revision lastRevision = buildData.getLastBuiltRevision();
-        Branch branch = lastRevision.getBranches().iterator().next();
-        checkoutBranch = StringUtils.removeStart(branch.getName(), "origin/");
+        String gitBranchName = build.getEnvironment(listener).get("GIT_BRANCH");
+        checkoutBranch = StringUtils.substringAfter(gitBranchName, "/");
 
         scmManager = new GitManager(build, listener);
 
