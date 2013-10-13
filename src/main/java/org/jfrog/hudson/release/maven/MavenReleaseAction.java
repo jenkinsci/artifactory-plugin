@@ -187,7 +187,10 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
         MavenReleaseWrapper wrapper = getWrapper();
         String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
         StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
-        sb.append(getRootModule().getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
+        MavenModule rootModule = getRootModule();
+        if(rootModule != null) {
+            sb.append(rootModule.getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
+        }
         return sb.toString();
     }
 
@@ -195,7 +198,10 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
         MavenReleaseWrapper wrapper = getWrapper();
         String baseTagUrl = wrapper.getTagPrefix();
         StringBuilder sb = new StringBuilder(getBaseTagUrlAccordingToScm(baseTagUrl));
-        sb.append(getRootModule().getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
+        MavenModule rootModule = getRootModule();
+        if (rootModule != null) {
+            sb.append(rootModule.getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
+        }
         return sb.toString();
     }
 
