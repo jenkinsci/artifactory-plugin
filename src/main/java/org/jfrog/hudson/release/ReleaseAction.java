@@ -213,7 +213,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     }
 
     public String getTagComment() {
-        return tagComment;
+        return StringUtils.isNotBlank(tagComment) ? tagComment : getDefaultVcsConfig().getTagComment();
     }
 
     public String getNextDevelCommitComment() {
