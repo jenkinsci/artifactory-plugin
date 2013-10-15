@@ -36,11 +36,7 @@ import org.jfrog.hudson.util.PropertyUtils;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * {@inheritDoc} A release action which relates to Maven projects. All relevant information is taken from the {@code
@@ -143,10 +139,15 @@ public class GradleReleaseAction extends ReleaseAction<FreeStyleProject, Artifac
     public List<String> getRepositoryKeys() {
         ArtifactoryServer server = getArtifactoryServer();
         if (server != null) {
-            return getArtifactoryServer().getReleaseRepositoryKeysFirst();
+            return getArtifactoryServer().getReleaseRepositoryKeysFirst(getWrapper());
         } else {
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    public boolean isArtifactoryPro() {
+        return getArtifactoryServer().isArtifactoryPro(getWrapper());
     }
 
     @Override

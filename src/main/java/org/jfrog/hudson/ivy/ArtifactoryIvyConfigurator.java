@@ -20,12 +20,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.ivy.AntIvyBuildWrapper;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -34,19 +29,9 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoAwareConfigurator;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.FormValidations;
-import org.jfrog.hudson.util.IncludesExcludes;
-import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
-import org.jfrog.hudson.util.PluginDependencyHelper;
-import org.jfrog.hudson.util.PublisherContext;
+import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -408,6 +393,14 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             }
         }
         return null;
+    }
+
+    public List<String> getReleaseRepositoryKeysFirst() {
+        return RepositoriesUtils.getReleaseRepositoryKeysFirst(this, getArtifactoryServer());
+    }
+
+    public List<String> getSnapshotRepositoryKeysFirst() {
+        return RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
     }
 
     @Override

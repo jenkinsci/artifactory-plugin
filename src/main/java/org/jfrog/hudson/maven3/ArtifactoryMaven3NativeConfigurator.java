@@ -5,28 +5,15 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.ResolverOverrider;
-import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.util.CredentialResolver;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.MavenVersionHelper;
-import org.jfrog.hudson.util.PublisherContext;
-import org.jfrog.hudson.util.ResolverContext;
+import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -122,6 +109,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         return null;
     }
 
+    public List<VirtualRepository> getVirtualRepositoryKeys() {
+        return RepositoriesUtils.getVirtualRepositoryKeys(this, null, getArtifactoryServer());
+    }
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
@@ -197,7 +188,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             ResolverContext resolverContext = null;
             if (resolver != null) {
                 Credentials resolverCredentials = CredentialResolver.getPreferredResolver(
-                        resolver, resolver.getArtifactoryServer());
+                        resolver, publisher, resolver.getArtifactoryServer());
                 resolverContext = new ResolverContext(resolver.getArtifactoryServer(), resolver.getDetails(),
                         resolverCredentials);
             }

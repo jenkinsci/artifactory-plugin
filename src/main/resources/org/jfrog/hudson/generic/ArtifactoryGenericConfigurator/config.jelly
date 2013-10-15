@@ -10,7 +10,7 @@
                         <f:entry title="${%Target Repository}"
                                  help="/plugin/artifactory/help/common/help-deployRepository.html">
                             <select class="setting-input" name="repositoryKey">
-                                <j:forEach var="r" items="${s.repositoryKeys}">
+                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                     <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
                                 </j:forEach>
                             </select>

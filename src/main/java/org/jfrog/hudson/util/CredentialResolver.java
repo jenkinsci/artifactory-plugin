@@ -33,13 +33,13 @@ public abstract class CredentialResolver {
     /**
      * Decides and returns the preferred deployment credentials to use from this builder settings and selected server
      *
-     * @param overrider Deploy-overriding capable builder
-     * @param server    Selected Artifactory server
+     * @param deployerOverrider Deploy-overriding capable builder
+     * @param server            Selected Artifactory server
      * @return Preferred deployment credentials
      */
-    public static Credentials getPreferredDeployer(DeployerOverrider overrider, ArtifactoryServer server) {
-        if (overrider.isOverridingDefaultDeployer()) {
-            return overrider.getOverridingDeployerCredentials();
+    public static Credentials getPreferredDeployer(DeployerOverrider deployerOverrider, ArtifactoryServer server) {
+        if (deployerOverrider.isOverridingDefaultDeployer()) {
+            return deployerOverrider.getOverridingDeployerCredentials();
         }
 
         if (server != null) {
@@ -52,17 +52,21 @@ public abstract class CredentialResolver {
         return new Credentials(null, null);
     }
 
-
     /**
-     * Decides and returns the preferred deployment credentials to use from this builder settings and selected server
+     * Decides and returns the preferred resolver credentials to use from this builder settings and selected server
      *
-     * @param overrider Deploy-overriding capable builder
-     * @param server    Selected Artifactory server
-     * @return Preferred deployment credentials
+     * @param resolverOverrider Resolve-overriding capable builder
+     * @param deployerOverrider Deploy-overriding capable builder
+     * @param server            Selected Artifactory server
+     * @return Preferred resolver credentials
      */
-    public static Credentials getPreferredResolver(ResolverOverrider overrider, ArtifactoryServer server) {
-        if (overrider.isOverridingDefaultResolver()) {
-            return overrider.getOverridingResolverCredentials();
+    public static Credentials getPreferredResolver(ResolverOverrider resolverOverrider, DeployerOverrider deployerOverrider, ArtifactoryServer server) {
+        if (resolverOverrider != null && resolverOverrider.isOverridingDefaultResolver()) {
+            return resolverOverrider.getOverridingResolverCredentials();
+        }
+
+        if (deployerOverrider != null && deployerOverrider.isOverridingDefaultDeployer()) {
+            return deployerOverrider.getOverridingDeployerCredentials();
         }
 
         return server.getResolvingCredentials();

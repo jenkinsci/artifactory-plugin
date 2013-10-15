@@ -240,10 +240,6 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
         return VERSIONING.GLOBAL.name();
     }
 
-    public boolean isArtifactoryPro() {
-        return getArtifactoryServer().isArtifactoryPro();
-    }
-
     public String getDefaultGlobalReleaseVersion() {
         return (defaultGlobalModule != null) ? defaultGlobalModule.getReleaseVersion() : null;
     }
@@ -273,6 +269,9 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public abstract List<String> getRepositoryKeys();
+
+    @SuppressWarnings("UnusedDeclaration")
+    public abstract boolean isArtifactoryPro();
 
     public abstract ArtifactoryServer getArtifactoryServer();
 

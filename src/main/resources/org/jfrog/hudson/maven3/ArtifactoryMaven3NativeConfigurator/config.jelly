@@ -9,7 +9,7 @@
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                     <f:entry title="${%Resolution repository}">
                         <select class="setting-input" name="downloadRepositoryKey">
-                            <j:forEach var="r" items="${s.virtualRepositoryKeys}">
+                            <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
                                 <f:option selected="${r.displayName==instance.downloadRepositoryKey}"
                                           value="${r.value}">${r.displayName}
                                 </f:option>

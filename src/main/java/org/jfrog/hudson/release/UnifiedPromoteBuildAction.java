@@ -18,12 +18,7 @@ package org.jfrog.hudson.release;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildBadgeAction;
-import hudson.model.TaskAction;
-import hudson.model.TaskListener;
-import hudson.model.TaskThread;
-import hudson.model.User;
+import hudson.model.*;
 import hudson.security.ACL;
 import hudson.security.Permission;
 import jenkins.model.Jenkins;
@@ -36,12 +31,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.hudson.ArtifactoryPlugin;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoAwareConfigurator;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.PluginSettings;
-import org.jfrog.hudson.UserPluginInfo;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -145,7 +135,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         if (artifactoryServer == null) {
             return Lists.newArrayList();
         }
-        List<String> repos = artifactoryServer.getReleaseRepositoryKeysFirst();
+        List<String> repos = artifactoryServer.getReleaseRepositoryKeysFirst(configurator);
         repos.add(0, "");  // option not to move
         return repos;
     }
@@ -225,7 +215,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         if (artifactoryServer == null) {
             return Lists.newArrayList(UserPluginInfo.NO_PLUGIN);
         }
-        return artifactoryServer.getPromotionsUserPluginInfo();
+        return artifactoryServer.getPromotionsUserPluginInfo(configurator);
     }
 
     @Override

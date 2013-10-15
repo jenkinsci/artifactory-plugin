@@ -33,27 +33,14 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask;
-import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoAwareConfigurator;
-import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.PluginSettings;
-import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.UserPluginInfo;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.FormValidations;
-import org.jfrog.hudson.util.IncludesExcludes;
-import org.jfrog.hudson.util.OverridingDeployerCredentialsConverter;
-import org.jfrog.hudson.util.PublisherContext;
-import org.jfrog.hudson.util.ResolverContext;
+import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -73,7 +60,7 @@ import java.util.Map;
  *
  * @author Tomer Cohen
  */
-public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider,
+public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider, ResolverOverrider,
         BuildInfoAwareConfigurator {
     private ServerDetails details;
     private boolean deployArtifacts;
@@ -538,6 +525,31 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return null;
     }
 
+    public List<String> getReleaseRepositoryKeysFirst() {
+        return RepositoriesUtils.getReleaseRepositoryKeysFirst(this, getArtifactoryServer());
+    }
+
+    public List<String> getSnapshotRepositoryKeysFirst() {
+        return RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+    }
+
+    public boolean isOverridingDefaultResolver() {
+        return (getOverridingDeployerCredentials() != null);
+    }
+
+    public Credentials getOverridingResolverCredentials() {
+        return overridingDeployerCredentials;
+    }
+
+    public List<VirtualRepository> getVirtualRepositoryKeys() {
+        return RepositoriesUtils.getVirtualRepositoryKeys(this, this, getArtifactoryServer());
+    }
+
+    public List<UserPluginInfo> getStagingUserPluginInfo() {
+        ArtifactoryServer artifactoryServer = getArtifactoryServer();
+        return artifactoryServer.getStagingUserPluginInfo(this);
+    }
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
@@ -610,11 +622,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
-        }
-
-        public List<UserPluginInfo> getStagingUserPluginInfo() {
-            List<ArtifactoryServer> artifactoryServers = getArtifactoryServers();
-            return artifactoryServers.get(0).getStagingUserPluginInfo();
         }
 
         public boolean isJiraPluginEnabled() {

@@ -11,7 +11,7 @@
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Resolution repository}">
                             <select class="setting-input" name="downloadRepositoryKey">
-                                <j:forEach var="r" items="${s.virtualRepositoryKeys}">
+                                <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
                                     <f:option selected="${r.displayName==instance.downloadRepositoryKey}"
                                               value="${r.value}">${r.displayName}
                                     </f:option>
@@ -20,7 +20,7 @@
                         </f:entry>
                         <f:entry title="${%Publishing repository}">
                             <select class="setting-input" name="repositoryKey">
-                                <j:forEach var="r" items="${s.repositoryKeys}">
+                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                     <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
                                 </j:forEach>
                             </select>
@@ -28,7 +28,7 @@
                         <f:entry>
                             <f:dropdownList name="stagingPlugin" title="${%Custom staging configuration}"
                                             help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
-                                <j:forEach var="stagingPlugin" items="${s.stagingUserPluginInfo}" varStatus="loop">
+                                <j:forEach var="stagingPlugin" items="${instance.stagingUserPluginInfo}" varStatus="loop">
                                     <f:dropdownListBlock value="${stagingPlugin.pluginName}"
                                                          title="${stagingPlugin.pluginName}"
                                                          selected="${stagingPlugin.pluginName==instance.details.stagingPluginName}">

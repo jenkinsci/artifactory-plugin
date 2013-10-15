@@ -28,13 +28,7 @@ import hudson.maven.MavenBuild;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenAbstractArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -49,11 +43,7 @@ import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
-import org.jfrog.hudson.util.CredentialResolver;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.FormValidations;
-import org.jfrog.hudson.util.IncludesExcludes;
+import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -449,6 +439,19 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             }
         }
         return null;
+    }
+
+    public List<String> getReleaseRepositoryKeysFirst() {
+        return RepositoriesUtils.getReleaseRepositoryKeysFirst(this, getArtifactoryServer());
+    }
+
+    public List<String> getSnapshotRepositoryKeysFirst() {
+        return RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+    }
+
+    public List<UserPluginInfo> getStagingUserPluginInfo() {
+        ArtifactoryServer artifactoryServer = getArtifactoryServer();
+        return artifactoryServer.getStagingUserPluginInfo(this);
     }
 
     private Result getTreshold() {

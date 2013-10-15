@@ -10,7 +10,7 @@
                     <f:entry title="${%Target releases repository}"
                              help="/plugin/artifactory/help/common/help-deployReleases.html">
                         <select class="setting-input" name="repositoryKey">
-                            <j:forEach var="r" items="${s.releaseRepositoryKeysFirst}">
+                            <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                 <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
                             </j:forEach>
                         </select>
@@ -18,7 +18,7 @@
                     <f:entry title="${%Target snapshots repository}"
                              help="/plugin/artifactory/help/common/help-deploySnapshots.html">
                         <select class="setting-input" name="snapshotsRepositoryKey">
-                            <j:forEach var="r" items="${s.snapshotRepositoryKeysFirst}">
+                            <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
                                 <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
                                 </f:option>
                             </j:forEach>
@@ -27,7 +27,7 @@
                     <f:entry>
                         <f:dropdownList name="stagingPlugin" title="${%Custom staging configuration}"
                                         help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
-                            <j:forEach var="stagingPlugin" items="${s.stagingUserPluginInfo}" varStatus="loop">
+                            <j:forEach var="stagingPlugin" items="${instance.stagingUserPluginInfo}" varStatus="loop">
                                 <f:dropdownListBlock value="${stagingPlugin.pluginName}"
                                                      title="${stagingPlugin.pluginName}"
                                                      selected="${stagingPlugin.pluginName==instance.details.stagingPluginName}">
