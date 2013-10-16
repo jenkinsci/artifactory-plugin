@@ -225,14 +225,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
 
-        Credentials preferredDeployer;
-        ArtifactoryServer server = getArtifactoryServer();
-        if (isOverridingDefaultDeployer()) {
-            preferredDeployer = getOverridingDeployerCredentials();
-        } else {
-            preferredDeployer = server.getResolvingCredentials();
-        }
-
         hudson.ProxyConfiguration proxy = Jenkins.getInstance().proxy;
         ProxyConfiguration proxyConfiguration = null;
         if (proxy != null) {
@@ -242,8 +234,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             proxyConfiguration.username = proxy.getUserName();
             proxyConfiguration.password = proxy.getPassword();
         }
+
+        ArtifactoryServer server = getArtifactoryServer();
+        Credentials preferredResolver = CredentialResolver.getPreferredResolver(null, ArtifactoryGenericConfigurator.this, server);
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredDeployer.getUsername(), preferredDeployer.getPassword(), proxyConfiguration,
+                preferredResolver.getUsername(), preferredResolver.getPassword(), proxyConfiguration,
                 listener);
         try {
             GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener,
