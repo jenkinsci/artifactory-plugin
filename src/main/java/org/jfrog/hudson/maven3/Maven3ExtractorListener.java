@@ -18,15 +18,13 @@ package org.jfrog.hudson.maven3;
 
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
 import hudson.model.listeners.RunListener;
-import org.jfrog.hudson.ArtifactoryRedeployPublisher;
-import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.extractor.MavenExtractorEnvironment;
+import org.jfrog.hudson.maven3.extractor.MavenExtractorHelper;
 
 import java.io.IOException;
 
@@ -43,25 +41,13 @@ public class Maven3ExtractorListener extends RunListener<AbstractBuild> {
     @Override
     public Environment setUpEnvironment(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
-        // if not a native maven project return empty env.
-        if (!(build instanceof MavenModuleSetBuild)) {
+
+        MavenExtractorHelper.PublisherResolverTuple tuple = MavenExtractorHelper.getPublisherResolverTuple(build);
+        if (tuple == null) {
             return new Environment() {
             };
         }
 
-        MavenModuleSet project = (MavenModuleSet) build.getProject();
-
-        ArtifactoryRedeployPublisher publisher = ActionableHelper.getPublisher(project,
-                ArtifactoryRedeployPublisher.class);
-        ArtifactoryMaven3NativeConfigurator resolver = ActionableHelper.getBuildWrapper(
-                project, ArtifactoryMaven3NativeConfigurator.class);
-
-        // if the artifactory publisher and resolver are not active, return empty env.
-        if (publisher == null && resolver == null) {
-            return new Environment() {
-            };
-        }
-
-        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher, resolver, listener);
+        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, tuple.publisher, tuple.resolver, listener);
     }
 }

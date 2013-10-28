@@ -12,6 +12,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.maven3.extractor.MavenExtractorHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -84,19 +85,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             };
         }
 
-        MavenModuleSet project = (MavenModuleSet) build.getProject();
-
-        ArtifactoryRedeployPublisher publisher = ActionableHelper.getPublisher(project,
-                ArtifactoryRedeployPublisher.class);
-        ArtifactoryMaven3NativeConfigurator resolver = ActionableHelper.getBuildWrapper(
-                project, ArtifactoryMaven3NativeConfigurator.class);
-
-        // if the artifactory publisher and resolver are not active, return empty env.
-        if (publisher == null && resolver == null) {
+        MavenExtractorHelper.PublisherResolverTuple tuple = MavenExtractorHelper.getPublisherResolverTuple(build);
+        if (tuple == null) {
             return new Environment() {
             };
         }
-        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, publisher, resolver, listener);
+        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, tuple.publisher, tuple.resolver, listener);
     }
 
     public ArtifactoryServer getArtifactoryServer() {
@@ -170,7 +164,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         private final BuildListener buildListener;
 
         public MavenExtractorEnvironment(MavenModuleSetBuild build, ArtifactoryRedeployPublisher publisher,
-                ArtifactoryMaven3NativeConfigurator resolver, BuildListener buildListener)
+                                         ArtifactoryMaven3NativeConfigurator resolver, BuildListener buildListener)
                 throws IOException, InterruptedException {
             this.buildListener = buildListener;
             this.build = build;

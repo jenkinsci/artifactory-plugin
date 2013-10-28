@@ -190,6 +190,10 @@ public class MavenExtractorEnvironment extends Environment {
 
         @Override
         public PlexusModuleContributor createFor(AbstractBuild<?, ?> context) throws IOException, InterruptedException {
+            if (MavenExtractorHelper.isDisabled(context)) {
+                return null;
+            }
+
             File maven3ExtractorJar = Which.jarFile(BuildInfoRecorder.class);
             FilePath dependenciesDirectory = PluginDependencyHelper.getActualDependencyDirectory(context, maven3ExtractorJar);
 
