@@ -302,6 +302,10 @@
                         <f:textbox name="releaseBranchPrefix" value="${releaseWrapper.releaseBranchPrefix}"
                                    default="REL-BRANCH-"/>
                     </f:entry>
+                    <f:entry field="targetRemoteName" title="${%Target remote name}"
+                                 help="/plugin/artifactory/help/release/common/help-targetRemoteName.html">
+                            <f:textbox name="targetRemoteName" value="${instance.targetRemoteName}" />
+                    </f:entry>
                     <f:entry title="Release properties"
                              help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-releasePropsKeys.html">
                         <f:textbox name="releasePropsKeys" value="${releaseWrapper.releasePropsKeys}"/>

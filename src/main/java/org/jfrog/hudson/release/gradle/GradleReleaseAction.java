@@ -160,6 +160,11 @@ public class GradleReleaseAction extends ReleaseAction<FreeStyleProject, Artifac
     }
 
     @Override
+    public String getTargetRemoteName() {
+        return getReleaseWrapper().getTargetRemoteName();
+    }
+
+    @Override
     public String latestVersioningSelection() {
         return VERSIONING.PER_MODULE.name();
     }

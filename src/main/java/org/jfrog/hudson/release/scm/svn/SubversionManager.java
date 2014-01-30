@@ -23,21 +23,10 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.SubversionSCM;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
-import org.tmatesoft.svn.core.SVNCommitInfo;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
-import org.tmatesoft.svn.core.wc.SVNCommitClient;
-import org.tmatesoft.svn.core.wc.SVNCopyClient;
-import org.tmatesoft.svn.core.wc.SVNCopySource;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNWCClient;
-import org.tmatesoft.svn.core.wc.SVNWCUtil;
+import org.tmatesoft.svn.core.wc.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -147,7 +136,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
         }
     }
 
-    public String getRemoteUrl() {
+    public String getRemoteUrl(String defaultRemoteUrl) {
         return getLocation().remote;
     }
 

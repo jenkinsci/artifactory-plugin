@@ -138,10 +138,14 @@ public class GitManager extends AbstractScmManager<GitSCM> {
                 new DeleteRemoteTagCallable(tag, remoteRepository, getJenkinsScm(), buildListener, build, directory));
     }
 
-    public String getRemoteUrl() {
-        RemoteConfig remoteConfig = getJenkinsScm().getRepositories().get(0);
-        URIish uri = remoteConfig.getURIs().get(0);
-        return uri.toPrivateString();
+    public String getRemoteUrl(String defaultRemoteUrl) {
+        if (StringUtils.isBlank(defaultRemoteUrl)) {
+            RemoteConfig remoteConfig = getJenkinsScm().getRepositories().get(0);
+            URIish uri = remoteConfig.getURIs().get(0);
+            return uri.toPrivateString();
+        }
+
+        return defaultRemoteUrl;
     }
 
     private static GitAPI createGitAPI(EnvVars gitEnvironment,

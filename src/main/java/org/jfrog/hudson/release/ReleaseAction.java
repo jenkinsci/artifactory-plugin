@@ -163,6 +163,8 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
         return strategyRequestErrorMessage;
     }
 
+    public abstract String getTargetRemoteName();
+
     public String getTitle() {
         StringBuilder titleBuilder = new StringBuilder("Artifactory Pro Release Staging");
         if (strategyPluginExists && StringUtils.isNotBlank(getSelectedStagingPlugin().getPluginName())) {

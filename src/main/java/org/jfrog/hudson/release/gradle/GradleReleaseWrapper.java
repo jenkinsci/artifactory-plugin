@@ -44,6 +44,7 @@ public class GradleReleaseWrapper {
 
     private String tagPrefix;
     private String releaseBranchPrefix;
+    private String targetRemoteName;
     private String alternativeTasks;
     private String releasePropsKeys;
     private String nextIntegPropsKeys;
@@ -51,10 +52,11 @@ public class GradleReleaseWrapper {
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
-    public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeTasks,
-            String releasePropsKeys, String nextIntegPropsKeys) {
+    public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String targetRemoteName, String alternativeTasks,
+                                String releasePropsKeys, String nextIntegPropsKeys) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
+        this.targetRemoteName = targetRemoteName;
         this.alternativeTasks = alternativeTasks;
         this.releasePropsKeys = releasePropsKeys;
         this.nextIntegPropsKeys = nextIntegPropsKeys;
@@ -72,6 +74,14 @@ public class GradleReleaseWrapper {
     @SuppressWarnings({"UnusedDeclaration"})
     public void setTagPrefix(String tagPrefix) {
         this.tagPrefix = tagPrefix;
+    }
+
+    public String getTargetRemoteName() {
+        return targetRemoteName;
+    }
+
+    public void setTargetRemoteName(String targetRemoteName) {
+        this.targetRemoteName = targetRemoteName;
     }
 
     public String getReleasePropsKeys() {
@@ -166,7 +176,7 @@ public class GradleReleaseWrapper {
     }
 
     private boolean changeProperties(AbstractBuild build, GradleReleaseAction release, boolean releaseVersion,
-            BuildListener listener) throws IOException, InterruptedException {
+                                     BuildListener listener) throws IOException, InterruptedException {
         FilePath root = release.getModuleRoot(build.getEnvironment(listener));
         debuggingLogger.fine("Root directory is: " + root.getRemote());
         String[] modules = release.getReleaseProperties();

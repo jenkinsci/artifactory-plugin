@@ -97,13 +97,13 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
         if (modifiedFilesForReleaseVersion) {
             // push the current branch
-            scmManager.push(scmManager.getRemoteUrl(), state.currentWorkingBranch);
+            scmManager.push(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), state.currentWorkingBranch);
             state.releaseBranchPushed = true;
         }
 
         if (releaseAction.isCreateVcsTag()) {
             // push the tag
-            scmManager.pushTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
+            scmManager.pushTag(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl());
             state.tagPushed = true;
         }
     }
@@ -130,7 +130,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
             // pull before attempting to push changes?
             //scmManager.pull(scmManager.getRemoteUrl(), checkoutBranch);
             if (modifiedFilesForDevVersion) {
-                scmManager.push(scmManager.getRemoteUrl(), state.currentWorkingBranch);
+                scmManager.push(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), state.currentWorkingBranch);
             }
         } else {
             // go back to the original checkout branch (required to delete the release branch and reset the working copy)
@@ -141,13 +141,13 @@ public class GitCoordinator extends AbstractScmCoordinator {
                 safeDeleteBranch(releaseBranch);
             }
             if (state.releaseBranchPushed) {
-                safeDeleteRemoteBranch(scmManager.getRemoteUrl(), releaseBranch);
+                safeDeleteRemoteBranch(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), releaseBranch);
             }
             if (state.tagCreated) {
                 safeDeleteTag(releaseAction.getTagUrl());
             }
             if (state.tagPushed) {
-                safeDeleteRemoteTag(scmManager.getRemoteUrl(), releaseAction.getTagUrl());
+                safeDeleteRemoteTag(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl());
             }
             // reset changes done on the original checkout branch (next dev version)
             safeRevertWorkingCopy();

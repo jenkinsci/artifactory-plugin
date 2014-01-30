@@ -30,5 +30,5 @@ public interface ScmManager {
     void createTag(String tagUrl, String commitMessage)
             throws IOException, InterruptedException;
 
-    String getRemoteUrl();
+    String getRemoteUrl(String defaultRemoteUrl);
 }

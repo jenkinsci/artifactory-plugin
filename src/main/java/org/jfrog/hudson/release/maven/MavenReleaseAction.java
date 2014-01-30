@@ -193,7 +193,7 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
         String releaseBranchPrefix = wrapper.getReleaseBranchPrefix();
         StringBuilder sb = new StringBuilder(StringUtils.trimToEmpty(releaseBranchPrefix));
         MavenModule rootModule = getRootModule();
-        if(rootModule != null) {
+        if (rootModule != null) {
             sb.append(rootModule.getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
         }
         return sb.toString();
@@ -208,6 +208,10 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
             sb.append(rootModule.getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
         }
         return sb.toString();
+    }
+
+    public String getTargetRemoteName() {
+        return getWrapper().getTargetRemoteName();
     }
 
     private String getDefaultTagComment() {

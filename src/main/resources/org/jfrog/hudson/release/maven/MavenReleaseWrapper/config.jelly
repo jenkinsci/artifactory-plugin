@@ -9,6 +9,10 @@
              help="/plugin/artifactory/help/release/common/help-releaseBranchPrefix.html">
         <f:textbox name="releaseBranchPrefix" value="${instance.releaseBranchPrefix}" default="REL-BRANCH-"/>
     </f:entry>
+    <f:entry field="targetRemoteName" title="${%Target remote name}"
+             help="/plugin/artifactory/help/release/common/help-targetRemoteName.html">
+        <f:textbox name="targetRemoteName" value="${instance.targetRemoteName}"/>
+    </f:entry>
     <f:entry title="${%Default module version configuration}" field="defaultVersioning"
              help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-versioningDefault.html">
         <f:select/>

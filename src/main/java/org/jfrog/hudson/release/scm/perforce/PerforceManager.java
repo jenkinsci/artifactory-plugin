@@ -104,7 +104,7 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
         throw new UnsupportedOperationException("Use the overloaded method");
     }
 
-    public String getRemoteUrl() {
+    public String getRemoteUrl(String defaultRemoteUrl) {
         throw new UnsupportedOperationException("Remote URL not supported");
     }
 

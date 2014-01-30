@@ -24,12 +24,7 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.ModuleName;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.Result;
-import hudson.model.TaskListener;
+import hudson.model.*;
 import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -61,16 +56,18 @@ public class MavenReleaseWrapper extends BuildWrapper {
 
     private String tagPrefix;
     private String releaseBranchPrefix;
+    private String targetRemoteName;
     private String alternativeGoals;
     private String defaultVersioning;
 
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
-    public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeGoals,
-            String defaultVersioning) {
+    public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String targetRemoteName, String alternativeGoals,
+                               String defaultVersioning) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
+        this.targetRemoteName = targetRemoteName;
         this.alternativeGoals = alternativeGoals;
         this.defaultVersioning = defaultVersioning;
     }
@@ -82,6 +79,14 @@ public class MavenReleaseWrapper extends BuildWrapper {
     @SuppressWarnings({"UnusedDeclaration"})
     public void setTagPrefix(String tagPrefix) {
         this.tagPrefix = tagPrefix;
+    }
+
+    public String getTargetRemoteName() {
+        return targetRemoteName;
+    }
+
+    public void setTargetRemoteName(String targetRemoteName) {
+        this.targetRemoteName = targetRemoteName;
     }
 
     public String getReleaseBranchPrefix() {
@@ -191,7 +196,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
     }
 
     private boolean changeVersions(MavenModuleSetBuild mavenBuild, ReleaseAction release, boolean releaseVersion,
-            String scmUrl) throws IOException, InterruptedException {
+                                   String scmUrl) throws IOException, InterruptedException {
         FilePath moduleRoot = mavenBuild.getModuleRoot();
         // get the active modules only
         Collection<MavenModule> modules = mavenBuild.getProject().getDisabledModules(false);
