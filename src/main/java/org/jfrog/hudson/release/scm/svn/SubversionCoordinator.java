@@ -88,6 +88,6 @@ public class SubversionCoordinator extends AbstractScmCoordinator {
     }
 
     public String getRemoteUrlForPom() {
-        return scmManager.getRemoteUrl();
+        return scmManager.getRemoteUrl(null);
     }
 }
