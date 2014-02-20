@@ -19,6 +19,8 @@ package org.jfrog.hudson.maven3;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
+import hudson.matrix.MatrixProject;
+import hudson.matrix.MatrixProject.DescriptorImpl;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
@@ -376,7 +378,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class);
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
         }
 
         @Override
