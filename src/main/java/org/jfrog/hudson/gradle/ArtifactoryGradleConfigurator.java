@@ -24,6 +24,8 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
+import hudson.matrix.MatrixProject;
+import hudson.matrix.MatrixProject.DescriptorImpl;
 import hudson.plugins.gradle.Gradle;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -564,7 +566,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class);
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
         }
 
         @Override

@@ -5,6 +5,8 @@ import hudson.Launcher;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.matrix.MatrixProject;
+import hudson.matrix.MatrixProject.DescriptorImpl;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -313,7 +315,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class);
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
         }
 
         @Override

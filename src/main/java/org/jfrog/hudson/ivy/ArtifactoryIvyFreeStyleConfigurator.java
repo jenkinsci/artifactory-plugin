@@ -21,6 +21,8 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.*;
+import hudson.matrix.MatrixProject;
+import hudson.matrix.MatrixProject.DescriptorImpl;
 import hudson.remoting.Which;
 import hudson.tasks.Ant;
 import hudson.tasks.BuildWrapper;
@@ -422,7 +424,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class);
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
         }
 
         @Override
