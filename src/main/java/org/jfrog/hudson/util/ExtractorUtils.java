@@ -36,8 +36,6 @@ import org.jfrog.build.client.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.joda.time.DateTime;
-import org.joda.time.Days;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -222,7 +220,7 @@ public class ExtractorUtils {
                 configuration.info.setBuildRetentionCount(buildRetention.getCount());
             }
             if (buildRetention.getMinimumBuildDate() != null) {
-                int days = Days.daysBetween(new DateTime(buildRetention.getMinimumBuildDate()), new DateTime()).getDays();
+                long days = daysBetween(buildRetention.getMinimumBuildDate(), new Date());
                 configuration.info.setBuildRetentionMinimumDate(String.valueOf(days));
             }
             configuration.info.setDeleteBuildArtifacts(context.isDiscardBuildArtifacts());
@@ -260,6 +258,17 @@ public class ExtractorUtils {
             configuration.setEnvVarsExcludePatterns(envVarsPatterns.getExcludePatterns());
         }
         addMatrixParams(context, configuration.publisher, env);
+    }
+
+    // Naive implementation of the difference in days between two dates
+    private static long daysBetween(Date date1, Date date2) {
+        long diff;
+        if (date2.after(date1)) {
+            diff = date2.getTime() - date1.getTime();
+        } else {
+            diff = date1.getTime() - date2.getTime();
+        }
+        return diff / (24 * 60 * 60 * 1000);
     }
 
     /**
