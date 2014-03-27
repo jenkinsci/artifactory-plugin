@@ -81,6 +81,24 @@ public class ExtractorUtils {
     }
 
     /**
+     * Get the VCS url from the Jenkins build environment. The search will one of "SVN_REVISION", "GIT_COMMIT",
+     * "P4_CHANGELIST" in the environment.
+     *
+     * @param env Th Jenkins build environment.
+     * @return The vcs url for supported VCS
+     */
+    public static String getVcsUrl(Map<String, String> env) {
+        String url = env.get("SVN_URL");
+        if (StringUtils.isBlank(url)) {
+            url = env.get("GIT_URL");
+        }
+        if (StringUtils.isBlank(url)) {
+            url = env.get("P4PORT");
+        }
+        return url;
+    }
+
+    /**
      * Add build info properties that will be read by an external extractor. All properties are then saved into a {@code
      * buildinfo.properties} into a temporary location. The location is then put into an environment variable {@link
      * BuildInfoConfigProperties#PROP_PROPS_FILE} for the extractor to read.
@@ -153,6 +171,11 @@ public class ExtractorUtils {
         if (StringUtils.isNotBlank(vcsRevision)) {
             configuration.info.setVcsRevision(vcsRevision);
             configuration.publisher.addMatrixParam(BuildInfoFields.VCS_REVISION, vcsRevision);
+        }
+
+        String vcsUrl = getVcsUrl(env);
+        if (StringUtils.isNotBlank(vcsUrl)) {
+            configuration.info.setVcsUrl(vcsUrl);
         }
 
         if (StringUtils.isNotBlank(context.getArtifactsPattern())) {
