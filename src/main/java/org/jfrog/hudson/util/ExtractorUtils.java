@@ -24,11 +24,11 @@ import hudson.FilePath;
 import hudson.Util;
 import hudson.model.*;
 import hudson.slaves.SlaveComputer;
-import hudson.tasks.LogRotator;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
+import org.jfrog.build.api.BuildRetention;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.build.client.ClientProperties;
@@ -41,10 +41,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author Tomer Cohen
@@ -241,16 +238,15 @@ public class ExtractorUtils {
         configuration.info.blackDuckProperties.setAutoDiscardStaleComponentRequests(context.isAutoDiscardStaleComponentRequests());
 
         if (context.isDiscardOldBuilds()) {
-            LogRotator rotator = build.getProject().getLogRotator();
-            if (rotator != null) {
-                if (rotator.getNumToKeep() > -1) {
-                    configuration.info.setBuildRetentionDays(rotator.getNumToKeep());
-                }
-                if (rotator.getDaysToKeep() > -1) {
-                    configuration.info.setBuildRetentionMinimumDate(String.valueOf(rotator.getDaysToKeep()));
-                }
-                configuration.info.setDeleteBuildArtifacts(context.isDiscardBuildArtifacts());
+            BuildRetention buildRetention = BuildRetentionFactory.createBuildRetention(build, context.isDiscardBuildArtifacts());
+            if (buildRetention.getCount() > -1) {
+                configuration.info.setBuildRetentionCount(buildRetention.getCount());
             }
+            if (buildRetention.getMinimumBuildDate() != null) {
+                long days = daysBetween(buildRetention.getMinimumBuildDate(), new Date());
+                configuration.info.setBuildRetentionMinimumDate(String.valueOf(days));
+            }
+            configuration.info.setDeleteBuildArtifacts(context.isDiscardBuildArtifacts());
             configuration.info.setBuildNumbersNotToDelete(getBuildNumbersNotToBeDeletedAsString(build));
         }
         configuration.publisher.setPublishArtifacts(context.isDeployArtifacts());
@@ -285,6 +281,17 @@ public class ExtractorUtils {
             configuration.setEnvVarsExcludePatterns(envVarsPatterns.getExcludePatterns());
         }
         addMatrixParams(context, configuration.publisher, env);
+    }
+
+    // Naive implementation of the difference in days between two dates
+    private static long daysBetween(Date date1, Date date2) {
+        long diff;
+        if (date2.after(date1)) {
+            diff = date2.getTime() - date1.getTime();
+        } else {
+            diff = date1.getTime() - date2.getTime();
+        }
+        return diff / (24 * 60 * 60 * 1000);
     }
 
     /**

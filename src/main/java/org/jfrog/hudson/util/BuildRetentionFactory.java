@@ -2,6 +2,7 @@ package org.jfrog.hudson.util;
 
 import hudson.model.AbstractBuild;
 import hudson.tasks.LogRotator;
+import jenkins.model.BuildDiscarder;
 import org.jfrog.build.api.BuildRetention;
 
 import java.util.Calendar;
@@ -22,7 +23,11 @@ public class BuildRetentionFactory {
      */
     public static BuildRetention createBuildRetention(AbstractBuild build, boolean discardOldArtifacts) {
         BuildRetention buildRetention = new BuildRetention(discardOldArtifacts);
-        LogRotator rotator = build.getProject().getLogRotator();
+        LogRotator rotator = null;
+        BuildDiscarder buildDiscarder = build.getProject().getBuildDiscarder();
+        if (buildDiscarder != null && buildDiscarder instanceof LogRotator) {
+            rotator = (LogRotator)  buildDiscarder;
+        }
         if (rotator == null) {
             return buildRetention;
         }
