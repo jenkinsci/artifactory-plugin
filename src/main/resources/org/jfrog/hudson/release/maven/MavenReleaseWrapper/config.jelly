@@ -18,4 +18,8 @@
         <f:textbox name="alternativeGoals" value="${instance.alternativeGoals}"
                    default="${jenkins.artifactory.release.maven.alternativeGoalsDefault}"/>
     </f:entry>
+  	<f:entry title="">
+	    <f:checkbox name="prependArtifactId" checked="${instance.prependArtifactId}" default="true"
+	     			title="Include root module artifactId in the tag name?"/>
+	</f:entry>
 </j:jelly>
