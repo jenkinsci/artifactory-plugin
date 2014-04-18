@@ -63,16 +63,18 @@ public class MavenReleaseWrapper extends BuildWrapper {
     private String releaseBranchPrefix;
     private String alternativeGoals;
     private String defaultVersioning;
+    private Boolean prependArtifactId;
 
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
     public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String alternativeGoals,
-            String defaultVersioning) {
+            String defaultVersioning, Boolean prependArtifactId) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.alternativeGoals = alternativeGoals;
         this.defaultVersioning = defaultVersioning;
+        this.prependArtifactId = prependArtifactId;
     }
 
     public String getTagPrefix() {
@@ -112,6 +114,16 @@ public class MavenReleaseWrapper extends BuildWrapper {
     public void setDefaultVersioning(String defaultVersioning) {
         this.defaultVersioning = defaultVersioning;
     }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public Boolean getPrependArtifactId() {
+		return prependArtifactId;
+	}
+
+    @SuppressWarnings({"UnusedDeclaration"})
+	public void setPrependArtifactId(Boolean prependArtifactId) {
+		this.prependArtifactId = prependArtifactId;
+	}    
 
     @Override
     public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)

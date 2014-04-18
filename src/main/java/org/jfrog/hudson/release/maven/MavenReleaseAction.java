@@ -203,11 +203,16 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
         MavenReleaseWrapper wrapper = getWrapper();
         String baseTagUrl = wrapper.getTagPrefix();
         StringBuilder sb = new StringBuilder(getBaseTagUrlAccordingToScm(baseTagUrl));
-        MavenModule rootModule = getRootModule();
-        if (rootModule != null) {
-            sb.append(rootModule.getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
-        }
-        return sb.toString();
+        Boolean prependArtifactId = getDefaultPrependArtifactId();
+        if (prependArtifactId) {
+	        MavenModule rootModule = getRootModule();
+	        if (rootModule != null) {
+	            sb.append(rootModule.getModuleName().artifactId).append("-").append(getDefaultReleaseVersion());
+	        }
+        } else {
+        	sb.append(getDefaultReleaseVersion());
+        }        	
+    	return sb.toString();
     }
 
     private String getDefaultTagComment() {
@@ -231,5 +236,11 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
             return null;
         }
         return publisher.getRepositoryKey();
+    }
+    
+    private Boolean getDefaultPrependArtifactId() {
+    	MavenReleaseWrapper wrapper = getWrapper();
+    	Boolean prependArtifactId = wrapper.getPrependArtifactId();
+    	return prependArtifactId;
     }
 }
