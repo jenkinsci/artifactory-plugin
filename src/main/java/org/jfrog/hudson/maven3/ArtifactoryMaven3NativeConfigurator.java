@@ -46,8 +46,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         return details;
     }
 
-    public String getDownloadRepositoryKey() {
-        return details != null ? details.downloadRepositoryKey : null;
+    public String getDownloadReleaseRepositoryKey() {
+        return details != null ? details.downloadReleaseRepositoryKey : null;
+    }
+
+    public String getDownloadSnapshotRepositoryKey() {
+        return details != null ? details.downloadSnapshotRepositoryKey : null;
     }
 
     public String getArtifactoryName() {
@@ -202,7 +206,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 String stagingRepoKey = release.getStagingRepositoryKey();
                 if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
                     server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), stagingRepoKey,
-                            server.snapshotsRepositoryKey, server.downloadRepositoryKey);
+                            server.snapshotsRepositoryKey, server.downloadReleaseRepositoryKey, server.downloadSnapshotRepositoryKey);
                 }
             }
 

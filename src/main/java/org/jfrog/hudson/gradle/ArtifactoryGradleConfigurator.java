@@ -22,10 +22,9 @@ import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
-import hudson.matrix.MatrixProject;
-import hudson.matrix.MatrixProject.DescriptorImpl;
 import hudson.plugins.gradle.Gradle;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -105,18 +104,18 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
-            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
-            boolean deployBuildInfo, boolean runChecks, String violationRecipients,
-            boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
-            String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-            boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
-            boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
-            boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
-            boolean allowPromotionOfNonStagedBuilds, boolean blackDuckRunChecks, String blackDuckAppName,
-            String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
-            boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
-            boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild) {
+                                         boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
+                                         boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+                                         boolean deployBuildInfo, boolean runChecks, String violationRecipients,
+                                         boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
+                                         String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
+                                         boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
+                                         boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
+                                         boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
+                                         boolean allowPromotionOfNonStagedBuilds, boolean blackDuckRunChecks, String blackDuckAppName,
+                                         String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
+                                         boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
+                                         boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -245,8 +244,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return details != null ? details.repositoryKey : null;
     }
 
-    public String getDownloadRepositoryKey() {
-        return details != null ? details.downloadRepositoryKey : null;
+    public String getDownloadReleaseRepositoryKey() {
+        return details != null ? details.downloadReleaseRepositoryKey : null;
+    }
+
+    public String getDownloadSnapshotRepositoryKey() {
+        return details != null ? details.downloadSnapshotRepositoryKey : null;
     }
 
     public String getArtifactoryName() {
@@ -415,7 +418,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     }
                     serverDetails = new ServerDetails(
                             serverDetails.artifactoryName, serverDetails.getArtifactoryUrl(), stagingRepository,
-                            serverDetails.snapshotsRepositoryKey, serverDetails.downloadRepositoryKey);
+                            serverDetails.snapshotsRepositoryKey, serverDetails.downloadReleaseRepositoryKey, serverDetails.downloadSnapshotRepositoryKey);
                 }
                 PublisherContext publisherContext = new PublisherContext.Builder()
                         .artifactoryServer(getArtifactoryServer()).serverDetails(serverDetails)
@@ -440,7 +443,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         .build();
 
                 ResolverContext resolverContext = null;
-                if (StringUtils.isNotBlank(serverDetails.downloadRepositoryKey)) {
+                if (StringUtils.isNotBlank(serverDetails.downloadReleaseRepositoryKey)) {
                     // Resolution server and overriding credentials are currently shared by the deployer and resolver in
                     // the UI. So here we use the same server details and for credentials we try deployer override and
                     // then default resolver

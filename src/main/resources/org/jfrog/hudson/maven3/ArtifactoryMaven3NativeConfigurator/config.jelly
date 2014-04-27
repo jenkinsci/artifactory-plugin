@@ -1,5 +1,5 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form">
     <f:dropdownList name="details" title="${%Artifactory server}">
         <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
             <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
@@ -7,10 +7,19 @@
                     <input type="hidden" name="artifactoryName" value="${s.name}" field="artifactoryName"/>
                     <input type="hidden" name="artifactoryUrl" value="${s.url}" field="artifactoryUrl"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                    <f:entry title="${%Resolution repository}">
-                        <select class="setting-input" name="downloadRepositoryKey">
+                    <f:entry title="${%Resolution releases repository}">
+                        <select class="setting-input" name="downloadReleaseRepositoryKey">
                             <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                <f:option selected="${r.displayName==instance.downloadRepositoryKey}"
+                                <f:option selected="${r.displayName==instance.downloadReleaseRepositoryKey}"
+                                          value="${r.value}">${r.displayName}
+                                </f:option>
+                            </j:forEach>
+                        </select>
+                    </f:entry>
+                    <f:entry title="${%Resolution snapshots repository}">
+                        <select class="setting-input" name="downloadSnapshotRepositoryKey">
+                            <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                <f:option selected="${r.displayName==instance.downloadSnapshotRepositoryKey}"
                                           value="${r.value}">${r.displayName}
                                 </f:option>
                             </j:forEach>

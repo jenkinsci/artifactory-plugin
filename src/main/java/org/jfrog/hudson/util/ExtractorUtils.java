@@ -41,7 +41,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author Tomer Cohen
@@ -140,7 +143,8 @@ public class ExtractorUtils {
     private static void setResolverInfo(ArtifactoryClientConfiguration configuration, ResolverContext context) {
         configuration.setTimeout(context.getServer().getTimeout());
         configuration.resolver.setContextUrl(context.getServer().getUrl());
-        configuration.resolver.setRepoKey(context.getServerDetails().downloadRepositoryKey);
+        configuration.resolver.setRepoKey(context.getServerDetails().downloadReleaseRepositoryKey);
+        configuration.resolver.setDownloadSnapshotRepoKey(context.getServerDetails().downloadSnapshotRepositoryKey);
         configuration.resolver.setUsername(context.getCredentials().getUsername());
         configuration.resolver.setPassword(context.getCredentials().getPassword());
     }

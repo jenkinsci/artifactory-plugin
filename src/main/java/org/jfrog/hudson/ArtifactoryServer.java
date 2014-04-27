@@ -186,9 +186,9 @@ public class ArtifactoryServer implements Serializable {
         } finally {
             client.shutdown();
         }
-        virtualRepositories
-                .add(0, new VirtualRepository("-- To use Artifactory for resolution select a virtual repository --",
-                        ""));
+//        virtualRepositories
+//                .add(0, new VirtualRepository("-- To use Artifactory for resolution select a virtual repository --",
+//                        ""));
         return virtualRepositories;
     }
 

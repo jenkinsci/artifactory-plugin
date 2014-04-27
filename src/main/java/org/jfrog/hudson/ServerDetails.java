@@ -16,7 +16,12 @@
 
 package org.jfrog.hudson;
 
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import hudson.util.XStream2;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+
+import java.lang.reflect.Field;
 
 /**
  * Artifacts resolution and deployment configuration.
@@ -37,21 +42,28 @@ public class ServerDetails {
      * Key of the repository to deploy snapshot artifacts to. If not specified will use the repositoryKey
      */
     public final String snapshotsRepositoryKey;
+
+    /**
+     * Key of repository to use to download snapshots artifacts
+     */
+    public final String downloadSnapshotRepositoryKey;
+
     /**
      * Key of repository to use to download artifacts
      */
-    public final String downloadRepositoryKey;
+    public final String downloadReleaseRepositoryKey;
 
     private PluginSettings stagingPlugin;
 
     @DataBoundConstructor
     public ServerDetails(String artifactoryName, String artifactoryUrl, String repositoryKey, String snapshotsRepositoryKey,
-                         String downloadRepositoryKey) {
+                         String downloadReleaseRepositoryKey, String downloadSnapshotRepositoryKey) {
         this.artifactoryName = artifactoryName;
         this.artifactoryUrl = artifactoryUrl;
         this.repositoryKey = repositoryKey;
         this.snapshotsRepositoryKey = snapshotsRepositoryKey != null ? snapshotsRepositoryKey : repositoryKey;
-        this.downloadRepositoryKey = downloadRepositoryKey;
+        this.downloadReleaseRepositoryKey = downloadReleaseRepositoryKey;
+        this.downloadSnapshotRepositoryKey = downloadSnapshotRepositoryKey;
     }
 
     public PluginSettings getStagingPlugin() {
@@ -74,4 +86,44 @@ public class ServerDetails {
         //support legacy code when artifactoryName was the url
         return artifactoryUrl != null ? artifactoryUrl : artifactoryName;
     }
+
+    public static final class ConverterImpl extends XStream2.PassthruConverter<ServerDetails> {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
+        }
+
+        @Override
+        protected void callback(ServerDetails server, UnmarshallingContext context) {
+            Class<? extends ServerDetails> overrideClass = server.getClass();
+
+            try {
+                Field oldReleaseRepositoryField = overrideClass.getDeclaredField("downloadRepositoryKey");
+                oldReleaseRepositoryField.setAccessible(true);
+                Object oldReleaseRepositoryValue = oldReleaseRepositoryField.get(server);
+
+                if (oldReleaseRepositoryValue != null && StringUtils.isNotBlank((String) oldReleaseRepositoryValue)) {
+                    Field newReleaseRepositoryField = overrideClass.getDeclaredField("downloadReleaseRepositoryKey");
+                    newReleaseRepositoryField.setAccessible(true);
+                    newReleaseRepositoryField.set(server, oldReleaseRepositoryValue);
+
+                    Field newSnapshotRepositoryField = overrideClass.getDeclaredField("downloadReleaseRepositoryKey");
+                    newSnapshotRepositoryField.setAccessible(true);
+                    newSnapshotRepositoryField.set(server, oldReleaseRepositoryValue);
+                }
+
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    /**
+     * @deprecated: Use org.jfrog.hudson.ServerDetails#downloadReleaseRepositoryKey
+     */
+    @Deprecated
+    private String downloadRepositoryKey;
+
 }

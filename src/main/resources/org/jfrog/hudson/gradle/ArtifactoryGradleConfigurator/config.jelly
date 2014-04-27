@@ -10,9 +10,9 @@
                         <input type="hidden" name="artifactoryUrl" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Resolution repository}">
-                            <select class="setting-input" name="downloadRepositoryKey">
+                            <select class="setting-input" name="downloadReleaseRepositoryKey">
                                 <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                    <f:option selected="${r.displayName==instance.downloadRepositoryKey}"
+                                    <f:option selected="${r.displayName==instance.downloadReleaseRepositoryKey}"
                                               value="${r.value}">${r.displayName}
                                     </f:option>
                                 </j:forEach>
@@ -28,7 +28,8 @@
                         <f:entry>
                             <f:dropdownList name="stagingPlugin" title="${%Custom staging configuration}"
                                             help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
-                                <j:forEach var="stagingPlugin" items="${instance.stagingUserPluginInfo}" varStatus="loop">
+                                <j:forEach var="stagingPlugin" items="${instance.stagingUserPluginInfo}"
+                                           varStatus="loop">
                                     <f:dropdownListBlock value="${stagingPlugin.pluginName}"
                                                          title="${stagingPlugin.pluginName}"
                                                          selected="${stagingPlugin.pluginName==instance.details.stagingPluginName}">
@@ -147,55 +148,57 @@
                         </table>
                     </f:block>
 
-                <f:block>
-                    <table style="width:100%">
-                        <f:optionalBlock name="blackDuckRunChecks"
-                                         checked="${instance.blackDuckRunChecks}"
-                                         inline="true"
-                                         title="Run Black Duck Code Center compliance checks (requires Artifactory Pro)"
-                                         help="/plugin/artifactory/help/common/help-blackDuckRunChecks.html">
-                            <f:entry title="${%Code Center application name: }"
-                                     field="blackDuckAppName"
-                                     help="/plugin/artifactory/help/common/help-blackDuckAppName.html"
-                                     description="Black Duck Code Center application name.">
-                                <f:textbox value="${instance.blackDuckAppName}"/>
-                            </f:entry>
-                            <f:entry title="${%Code Center application version: }"
-                                     field="blackDuckAppVersion"
-                                     help="/plugin/artifactory/help/common/help-blackDuckAppVersion.html"
-                                     description="Black Duck Code Center application version.">
-                                <f:textbox value="${instance.blackDuckAppVersion}"/>
-                            </f:entry>
-                            <f:entry title="${%Send compliance report email to: }"
-                                     field="blackDuckReportRecipients"
-                                     help="/plugin/artifactory/help/common/help-blackDuckReportRecipients.html"
-                                     description="Space-separated list of recipient addresses.">
-                                <f:textbox value="${instance.blackDuckReportRecipients}"/>
-                            </f:entry>
-                            <f:entry title="${%Limit checks to the following scopes: }"
-                                     help="/plugin/artifactory/help/common/help-blackDuckScopes.html"
-                                     field="blackDuckScopes"
-                                     description="Space-separated list of scopes.">
-                                <f:textbox value="${instance.blackDuckScopes}"/>
-                            </f:entry>
-                            <f:entry field="blackDuckIncludePublishedArtifacts"
-                                     help="/plugin/artifactory/help/common/help-blackDuckIncludePublishedArtifacts.html">
-                                <f:checkbox default="false" checked="${instance.blackDuckIncludePublishedArtifacts}"/>
-                                <label class="attach-previous">${%Include published artifacts}</label>
-                            </f:entry>
-                            <f:entry field="autoCreateMissingComponentRequests"
-                                     help="/plugin/artifactory/help/common/help-autoCreateMissingComponentRequests.html">
-                                <f:checkbox default="true" checked="${instance.autoCreateMissingComponentRequests}"/>
-                                <label>${%Auto-create missing component requests}</label>
-                            </f:entry>
-                            <f:entry field="autoDiscardStaleComponentRequests"
-                                     help="/plugin/artifactory/help/common/help-autoDiscardStaleComponentRequests.html">
-                                <f:checkbox default="true" checked="${instance.autoDiscardStaleComponentRequests}"/>
-                                <label>${%Auto-discard stale component requests}</label>
-                            </f:entry>
-                        </f:optionalBlock>
-                    </table>
-                </f:block>
+                    <f:block>
+                        <table style="width:100%">
+                            <f:optionalBlock name="blackDuckRunChecks"
+                                             checked="${instance.blackDuckRunChecks}"
+                                             inline="true"
+                                             title="Run Black Duck Code Center compliance checks (requires Artifactory Pro)"
+                                             help="/plugin/artifactory/help/common/help-blackDuckRunChecks.html">
+                                <f:entry title="${%Code Center application name: }"
+                                         field="blackDuckAppName"
+                                         help="/plugin/artifactory/help/common/help-blackDuckAppName.html"
+                                         description="Black Duck Code Center application name.">
+                                    <f:textbox value="${instance.blackDuckAppName}"/>
+                                </f:entry>
+                                <f:entry title="${%Code Center application version: }"
+                                         field="blackDuckAppVersion"
+                                         help="/plugin/artifactory/help/common/help-blackDuckAppVersion.html"
+                                         description="Black Duck Code Center application version.">
+                                    <f:textbox value="${instance.blackDuckAppVersion}"/>
+                                </f:entry>
+                                <f:entry title="${%Send compliance report email to: }"
+                                         field="blackDuckReportRecipients"
+                                         help="/plugin/artifactory/help/common/help-blackDuckReportRecipients.html"
+                                         description="Space-separated list of recipient addresses.">
+                                    <f:textbox value="${instance.blackDuckReportRecipients}"/>
+                                </f:entry>
+                                <f:entry title="${%Limit checks to the following scopes: }"
+                                         help="/plugin/artifactory/help/common/help-blackDuckScopes.html"
+                                         field="blackDuckScopes"
+                                         description="Space-separated list of scopes.">
+                                    <f:textbox value="${instance.blackDuckScopes}"/>
+                                </f:entry>
+                                <f:entry field="blackDuckIncludePublishedArtifacts"
+                                         help="/plugin/artifactory/help/common/help-blackDuckIncludePublishedArtifacts.html">
+                                    <f:checkbox default="false"
+                                                checked="${instance.blackDuckIncludePublishedArtifacts}"/>
+                                    <label class="attach-previous">${%Include published artifacts}</label>
+                                </f:entry>
+                                <f:entry field="autoCreateMissingComponentRequests"
+                                         help="/plugin/artifactory/help/common/help-autoCreateMissingComponentRequests.html">
+                                    <f:checkbox default="true"
+                                                checked="${instance.autoCreateMissingComponentRequests}"/>
+                                    <label>${%Auto-create missing component requests}</label>
+                                </f:entry>
+                                <f:entry field="autoDiscardStaleComponentRequests"
+                                         help="/plugin/artifactory/help/common/help-autoDiscardStaleComponentRequests.html">
+                                    <f:checkbox default="true" checked="${instance.autoDiscardStaleComponentRequests}"/>
+                                    <label>${%Auto-discard stale component requests}</label>
+                                </f:entry>
+                            </f:optionalBlock>
+                        </table>
+                    </f:block>
 
                     <f:optionalBlock name="discardOldBuilds"
                                      checked="${instance.discardOldBuilds}"
@@ -265,8 +268,8 @@
                             </f:section>
                             <f:entry field="filterExcludedArtifactsFromBuild"
                                      help="/plugin/artifactory/help/common/help-filterExcludedArtifactsFromBuild.html">
-                                     <f:checkbox default="false" checked="${instance.filterExcludedArtifactsFromBuild}"/>
-                                     <label class="attach-previous">${%Filter excluded artifacts from build Info}</label>
+                                <f:checkbox default="false" checked="${instance.filterExcludedArtifactsFromBuild}"/>
+                                <label class="attach-previous">${%Filter excluded artifacts from build Info}</label>
                             </f:entry>
                         </table>
                     </f:block>
@@ -303,8 +306,8 @@
                                    default="REL-BRANCH-"/>
                     </f:entry>
                     <f:entry field="targetRemoteName" title="${%Target remote name}"
-                                 help="/plugin/artifactory/help/release/common/help-targetRemoteName.html">
-                            <f:textbox name="targetRemoteName" value="${instance.targetRemoteName}" />
+                             help="/plugin/artifactory/help/release/common/help-targetRemoteName.html">
+                        <f:textbox name="targetRemoteName" value="${instance.targetRemoteName}"/>
                     </f:entry>
                     <f:entry title="Release properties"
                              help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-releasePropsKeys.html">
