@@ -112,10 +112,15 @@ public class ServerDetails {
                 }
 
             } catch (NoSuchFieldException e) {
-                e.printStackTrace();
+                throw new RuntimeException(getConversionErrorMessage(server), e);
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                throw new RuntimeException(getConversionErrorMessage(server), e);
             }
+        }
+
+        private String getConversionErrorMessage(ServerDetails serverDetails) {
+            return String.format("Could not convert the class '%s' to use the new overriding Resolve repositories."
+                    , serverDetails.getClass().getName());
         }
     }
 
