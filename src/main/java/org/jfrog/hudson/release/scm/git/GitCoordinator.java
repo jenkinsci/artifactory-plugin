@@ -20,6 +20,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 
@@ -39,8 +40,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
     private GitManager scmManager;
     private String releaseBranch;
     private String checkoutBranch;
-    // the commit hash of the initial checkout
-    private String baseCommitIsh;
 
     private State state = new State();
 
@@ -65,8 +64,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
         checkoutBranch = StringUtils.substringAfter(gitBranchName, "/");
 
         scmManager = new GitManager(build, listener);
-
-        baseCommitIsh = scmManager.getCurrentCommitHash();
     }
 
     public void beforeReleaseVersionChange() throws IOException, InterruptedException {
@@ -97,13 +94,13 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
         if (modifiedFilesForReleaseVersion) {
             // push the current branch
-            scmManager.push(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), state.currentWorkingBranch);
+            scmManager.push(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), state.currentWorkingBranch);
             state.releaseBranchPushed = true;
         }
 
         if (releaseAction.isCreateVcsTag()) {
             // push the tag
-            scmManager.pushTag(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl());
+            scmManager.pushTag(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl());
             state.tagPushed = true;
         }
     }
@@ -130,7 +127,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
             // pull before attempting to push changes?
             //scmManager.pull(scmManager.getRemoteUrl(), checkoutBranch);
             if (modifiedFilesForDevVersion) {
-                scmManager.push(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), state.currentWorkingBranch);
+                scmManager.push(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), state.currentWorkingBranch);
             }
         } else {
             // go back to the original checkout branch (required to delete the release branch and reset the working copy)
@@ -141,13 +138,13 @@ public class GitCoordinator extends AbstractScmCoordinator {
                 safeDeleteBranch(releaseBranch);
             }
             if (state.releaseBranchPushed) {
-                safeDeleteRemoteBranch(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), releaseBranch);
+                safeDeleteRemoteBranch(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), releaseBranch);
             }
             if (state.tagCreated) {
                 safeDeleteTag(releaseAction.getTagUrl());
             }
             if (state.tagPushed) {
-                safeDeleteRemoteTag(scmManager.getRemoteUrl(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl());
+                safeDeleteRemoteTag(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl());
             }
             // reset changes done on the original checkout branch (next dev version)
             safeRevertWorkingCopy();
@@ -163,7 +160,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
         }
     }
 
-    private void safeDeleteRemoteBranch(String remoteRepository, String branch) {
+    private void safeDeleteRemoteBranch(RemoteConfig remoteRepository, String branch) {
         try {
             scmManager.deleteRemoteBranch(remoteRepository, branch);
         } catch (Exception e) {
@@ -181,9 +178,8 @@ public class GitCoordinator extends AbstractScmCoordinator {
         }
     }
 
-    private void safeDeleteRemoteTag(String remoteRepository, String tag) {
+    private void safeDeleteRemoteTag(RemoteConfig remoteRepository, String tag) {
         try {
-
             scmManager.deleteRemoteTag(remoteRepository, tag);
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to delete remote tag: ", e);
@@ -193,7 +189,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
     private void safeRevertWorkingCopy() {
         try {
-            scmManager.revertWorkingCopy(baseCommitIsh);
+            scmManager.revertWorkingCopy();
         } catch (Exception e) {
             debuggingLogger.log(Level.FINE, "Failed to revert working copy: ", e);
             log("Failed to revert working copy: " + e.getLocalizedMessage());

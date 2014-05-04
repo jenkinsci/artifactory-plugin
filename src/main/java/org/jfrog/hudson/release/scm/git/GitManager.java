@@ -16,22 +16,27 @@
 
 package org.jfrog.hudson.release.scm.git;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.TaskListener;
-import hudson.plugins.git.GitAPI;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitSCM;
-import hudson.remoting.VirtualChannel;
-import hudson.util.ArgumentListBuilder;
+import hudson.plugins.git.UserRemoteConfig;
+import hudson.security.ACL;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.jenkinsci.plugins.gitclient.Git;
+import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -46,98 +51,88 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         super(build, buildListener);
     }
 
-    public String getCurrentCommitHash() throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getJenkinsScm();
-        return workspace
-                .act(new CurrentCommitCallable(gitSCM, getWorkingDirectory(gitSCM, workspace), build, buildListener));
-    }
+    public void checkoutBranch(final String branch, final boolean create) throws IOException, InterruptedException {
+        GitClient client = getGitClient();
 
-    public String checkoutBranch(final String branch, final boolean create) throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getJenkinsScm();
-        FilePath workingDirectory = getWorkingDirectory(gitSCM, workspace);
-        return workspace
-                .act(new CheckoutBranchCallable(create, branch, gitSCM, buildListener, build, workingDirectory));
+        debuggingLogger.fine(String.format("Checkout Branch '%s' with create=%s", branch, create));
+        if (create) {
+            client.checkout(null, branch);
+        } else {
+            client.checkout(branch);
+        }
     }
 
     public void commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getJenkinsScm();
-        FilePath workingDirectory = getWorkingDirectory(gitSCM, workspace);
-        workspace.act(new CommitWorkingCopyCallable(commitMessage, gitSCM, buildListener, build,
-                workingDirectory));
+        GitClient client = getGitClient();
+
+        debuggingLogger.fine("Adding all files in the current directory");
+        client.add(".");
+
+        debuggingLogger.fine(String.format("Committing working copy with message '%s'", commitMessage));
+        client.commit(commitMessage);
     }
 
     public void createTag(final String tagName, final String commitMessage)
             throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getJenkinsScm();
-        FilePath workingDirectory = getWorkingDirectory(gitSCM, workspace);
-        workspace.act(new CreateTagCallable(tagName, commitMessage, gitSCM, buildListener, build, workingDirectory));
+        GitClient client = getGitClient();
+
+        log(buildListener, String.format("Creating tag '%s' with message '%s'", tagName, commitMessage));
+        client.tag(tagName, commitMessage);
     }
 
-    public String push(final String remoteRepository, final String branch) throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getJenkinsScm();
-        FilePath workingDirectory = getWorkingDirectory(gitSCM, workspace);
-        return workspace
-                .act(new PushCallable(branch, remoteRepository, gitSCM, buildListener, build, workingDirectory));
+    public void push(final RemoteConfig remoteRepository, final String branch) throws IOException, InterruptedException {
+        GitClient client = getGitClient();
+
+        log(buildListener, String.format("Pushing branch '%s' to '%s'", branch, getFirstGitURI(remoteRepository)));
+        client.push(remoteRepository.getName(), "refs/heads/" + branch);
     }
 
-    public String pushTag(final String remoteRepository, final String tagName)
-            throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        GitSCM gitSCM = getJenkinsScm();
-        FilePath directory = getWorkingDirectory(gitSCM, workspace);
-        return workspace
-                .act(new PushTagCallable(tagName, remoteRepository, gitSCM, buildListener, build, directory));
+    public void pushTag(final RemoteConfig remoteRepository, final String tagName) throws IOException, InterruptedException {
+        GitClient client = getGitClient();
+
+        String escapedTagName = tagName.replace(' ', '_');
+        log(buildListener, String.format("Pushing tag '%s' to '%s'", escapedTagName, getFirstGitURI(remoteRepository)));
+        client.push(remoteRepository.getName(), "refs/tags/" + escapedTagName);
     }
 
-    public String pull(final String remoteRepository, final String branch) throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
-        return workspace
-                .act(new PullCallable(remoteRepository, branch, getJenkinsScm(), buildListener, build,
-                        directory));
+    public void revertWorkingCopy() throws IOException, InterruptedException {
+        GitClient client = getGitClient();
+
+        log(buildListener, "Reverting git working copy (reset --hard)");
+        client.clean();
     }
 
-    public void revertWorkingCopy(final String commitIsh) throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
-        workspace.act(new RevertCallable(commitIsh, getJenkinsScm(), buildListener, build, directory));
+    public void deleteLocalBranch(final String branch) throws IOException, InterruptedException {
+        GitClient client = getGitClient();
+
+        log(buildListener, "Deleting local git branch: " + branch);
+        client.deleteBranch(branch);
     }
 
-    public String deleteLocalBranch(final String branch) throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
-        return workspace.act(new DeleteLocalBranchCallable(branch, getJenkinsScm(), buildListener, build, directory));
+    public void deleteRemoteBranch(final RemoteConfig remoteRepository, final String branch)
+    throws IOException, InterruptedException {
+        GitClient client = getGitClient();
+
+        log(buildListener, String.format("Deleting remote branch '%s' on '%s'", branch, getFirstGitURI(remoteRepository)));
+        client.push(remoteRepository.getName(), ":refs/heads/" + branch);
     }
 
-    public String deleteRemoteBranch(final String remoteRepository, final String branch)
-            throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
-        return workspace
-                .act(new DeleteRemoteBranchCallable(branch, remoteRepository, getJenkinsScm(), buildListener,
-                        build, directory));
+    public void deleteLocalTag(final String tag) throws IOException, InterruptedException {
+        GitClient client = getGitClient();
+
+        log(buildListener, "Deleting local tag: " + tag);
+        client.deleteTag(tag);
     }
 
-    public String deleteLocalTag(final String tag) throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
-        return workspace.act(new DeleteLocalTagCallable(tag, getJenkinsScm(), buildListener, build,
-                directory));
+    public void deleteRemoteTag(final RemoteConfig remoteRepository, final String tag)
+    throws IOException, InterruptedException {
+        GitClient client = getGitClient();
+
+        log(buildListener, String.format("Deleting remote tag '%s' from '%s'", tag, getFirstGitURI(remoteRepository)));
+        client.push(remoteRepository.getName(), ":refs/tags/" + tag);
     }
 
-    public String deleteRemoteTag(final String remoteRepository, final String tag)
-            throws IOException, InterruptedException {
-        FilePath workspace = build.getWorkspace();
-        FilePath directory = getWorkingDirectory(getJenkinsScm(), workspace);
-        return workspace.act(
-                new DeleteRemoteTagCallable(tag, remoteRepository, getJenkinsScm(), buildListener, build, directory));
-    }
-
+    // This method is currently in use only by the SvnCoordinator
     public String getRemoteUrl(String defaultRemoteUrl) {
         if (StringUtils.isBlank(defaultRemoteUrl)) {
             RemoteConfig remoteConfig = getJenkinsScm().getRepositories().get(0);
@@ -148,444 +143,91 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         return defaultRemoteUrl;
     }
 
-    private static GitAPI createGitAPI(EnvVars gitEnvironment,
-                                       TaskListener buildListener, String gitExe, FilePath workingCopy, String confName, String confEmail)
-            throws IOException {
-        if (StringUtils.isNotBlank(confName)) {
-            gitEnvironment.put("GIT_COMMITTER_NAME", confName);
-            gitEnvironment.put("GIT_AUTHOR_NAME", confName);
+    public RemoteConfig getRemoteConfig(String defaultRemoteName) throws IOException {
+        List<RemoteConfig> repositories = getJenkinsScm().getRepositories();
+        if (StringUtils.isBlank(defaultRemoteName)) {
+            if (repositories == null || repositories.isEmpty()) {
+                throw new GitException("Git remote config repositories are null or empty.");
+            }
+            return repositories.get(0);
         }
-        if (StringUtils.isNotBlank(confEmail)) {
-            gitEnvironment.put("GIT_COMMITTER_EMAIL", confEmail);
-            gitEnvironment.put("GIT_AUTHOR_EMAIL", confEmail);
+
+        for (RemoteConfig remoteConfig : repositories) {
+            if (remoteConfig.getName().equals(defaultRemoteName)) {
+                return remoteConfig;
+            }
         }
-        GitAPI git = new GitAPI(gitExe, workingCopy, buildListener, gitEnvironment, null);
-        return git;
+
+        throw new IOException("Target Remote Name doesn`t exist");
     }
 
-    private static FilePath getWorkingDirectory(GitSCM gitSCM, FilePath ws) throws IOException {
+    private GitClient getGitClient() throws IOException, InterruptedException {
+        FilePath directory = getWorkingDirectory(getJenkinsScm(), build.getWorkspace());
+        EnvVars env = build.getEnvironment(buildListener);
+
+        Git git = new Git(buildListener, env);
+        git.in(directory);
+
+        /*
+        * When init the git exe, the user dons`t have to add SSH credentials in the git plugin.
+        *  This solution automatically takes the user default SSH ($HOME/.ssh)
+        * */
+        git.using(getJenkinsScm().getGitExe(build.getBuiltOn(), buildListener)); // git.exe
+        GitClient client = git.getClient();
+
+        client.setCommitter(StringUtils.defaultIfEmpty(env.get("GIT_COMMITTER_NAME"), ""),
+                StringUtils.defaultIfEmpty(env.get("GIT_COMMITTER_EMAIL"), ""));
+        client.setAuthor(StringUtils.defaultIfEmpty(env.get("GIT_AUTHOR_NAME"), ""),
+                StringUtils.defaultIfEmpty(env.get("GIT_AUTHOR_EMAIL"), ""));
+
+        addRemoteRepoToConfig(client);
+
+        addCredentialsToGitClient(client);
+
+        return client;
+    }
+
+    private String getFirstGitURI(RemoteConfig remoteRepository) {
+        List<URIish> urIs = remoteRepository.getURIs();
+        if (urIs == null || urIs.isEmpty()) {
+            throw new GitException("Error performing push tag command, repository URIs are null or empty.");
+        }
+
+        return urIs.get(0).toString();
+    }
+
+    /*
+    * In cause the remote repository is not exists in the git config file
+    * */
+    private void addRemoteRepoToConfig(GitClient client) throws InterruptedException {
+        GitSCM gitScm = getJenkinsScm();
+        for (UserRemoteConfig uc : gitScm.getUserRemoteConfigs()) {
+            if (client.getRemoteUrl(uc.getName()) == null)
+                client.setRemoteUrl(uc.getName(), uc.getUrl());
+        }
+    }
+
+    private void addCredentialsToGitClient(GitClient client) {
+        GitSCM gitScm = getJenkinsScm();
+        for (UserRemoteConfig uc : gitScm.getUserRemoteConfigs()) {
+            if (uc.getCredentialsId() != null) {
+                String url = uc.getUrl();
+                StandardUsernameCredentials credentials = CredentialsMatchers
+                        .firstOrNull(
+                                CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
+                                        build.getProject(), ACL.SYSTEM, URIRequirementBuilder.fromUri(url).build()),
+                                CredentialsMatchers.allOf(CredentialsMatchers.withId(uc.getCredentialsId()),
+                                        GitClient.CREDENTIALS_MATCHER));
+                if (credentials != null) {
+                    client.addCredentials(url, credentials);
+                }
+            }
+        }
+    }
+
+    private FilePath getWorkingDirectory(GitSCM gitSCM, FilePath ws) throws IOException {
         // working directory might be relative to the workspace
         String relativeTargetDir = gitSCM.getRelativeTargetDir() == null ? "" : gitSCM.getRelativeTargetDir();
         return new FilePath(ws, relativeTargetDir);
-    }
-
-    private static class CurrentCommitCallable implements FilePath.FileCallable<String> {
-        private final FilePath workingCopy;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final String confName;
-        private final String confEmail;
-
-        private CurrentCommitCallable(GitSCM gitSCM, FilePath workingCopy, AbstractBuild build,
-                                      TaskListener listener) throws IOException, InterruptedException {
-            this.workingCopy = workingCopy;
-            this.listener = listener;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.confEmail = gitSCM.getGitConfigEmailToUse();
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, confEmail);
-                // commit all the modified files
-                String baseCommit = git.launchCommand("rev-parse", "--verify", "HEAD").trim();
-                debuggingLogger.fine(String.format("Base commit hash%s", baseCommit));
-                return baseCommit;
-            } catch (GitException e) {
-                throw new IOException("Failed retrieving current commit hash: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class CheckoutBranchCallable implements FilePath.FileCallable<String> {
-        private final boolean create;
-        private final String branch;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-
-        public CheckoutBranchCallable(boolean create, String branch, GitSCM gitSCM, TaskListener listener,
-                                      AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.create = create;
-            this.branch = branch;
-            this.listener = listener;
-            this.workingCopy = workingCopy;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                // commit all the modified files
-                ArgumentListBuilder args = new ArgumentListBuilder("checkout");
-                if (create) {
-                    args.add("-b"); // force create new branch
-                }
-                args.add(branch);
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String checkoutResult = git.launchCommand(args);
-                debuggingLogger.fine(String.format("Checkout result: %s", checkoutResult));
-                return checkoutResult;
-            } catch (GitException e) {
-                throw new IOException("Failed checkout branch: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class CommitWorkingCopyCallable implements FilePath.FileCallable<String> {
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final String commitMessage;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-
-        public CommitWorkingCopyCallable(String commitMessage, GitSCM gitSCM, TaskListener listener,
-                                         AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.commitMessage = commitMessage;
-            this.workingCopy = workingCopy;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                // commit all the modified files
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String commitOutput = git.launchCommand("commit", "--all", "-m", commitMessage);
-                debuggingLogger.fine(String.format("Reset command output:%n%s", commitOutput));
-                return commitOutput;
-            } catch (GitException e) {
-                throw new IOException("Git working copy commit failed: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class CreateTagCallable implements FilePath.FileCallable<String> {
-        private final String tagName;
-        private final String commitMessage;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-
-        public CreateTagCallable(String tagName, String commitMessage, GitSCM gitSCM, TaskListener listener,
-                                 AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.tagName = tagName;
-            this.commitMessage = commitMessage;
-            this.workingCopy = workingCopy;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                String escapedTagName = tagName.replace(' ', '_');
-                log(listener, String.format("Creating tag '%s'", escapedTagName));
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                if (git.tagExists(escapedTagName)) {
-                    throw new IOException("Git tag '" + escapedTagName + "' already exists");
-                }
-                String tagOutput = git.launchCommand("tag", "-a", escapedTagName, "-m", commitMessage);
-                debuggingLogger.fine(String.format("Tag command output:%n%s", tagOutput));
-                return tagOutput;
-            } catch (GitException e) {
-                throw new IOException("Git tag creation failed: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class PushCallable implements FilePath.FileCallable<String> {
-        private final String branch;
-        private final String remoteRepository;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-
-        public PushCallable(String branch, String remoteRepository, GitSCM gitSCM, TaskListener listener,
-                            AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.branch = branch;
-            this.remoteRepository = remoteRepository;
-            this.workingCopy = workingCopy;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                log(listener, String.format("Pushing branch '%s' to '%s'", branch, remoteRepository));
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String pushOutput = git.launchCommand("push", remoteRepository, "refs/heads/" + branch);
-                debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
-                return pushOutput;
-            } catch (GitException e) {
-                throw new IOException("Failed to push: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class PushTagCallable implements FilePath.FileCallable<String> {
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final String tagName;
-        private final String remoteRepository;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-
-
-        public PushTagCallable(String tagName, String remoteRepository, GitSCM gitSCM, TaskListener listener,
-                               AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.tagName = tagName;
-            this.remoteRepository = remoteRepository;
-            this.workingCopy = workingCopy;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                String escapedTagName = tagName.replace(' ', '_');
-                log(listener, String.format("Pushing tag '%s' to '%s'", tagName, remoteRepository));
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String pushOutput = git.launchCommand("push", remoteRepository, "refs/tags/" + escapedTagName);
-                debuggingLogger.fine(String.format("Push tag command output:%n%s", pushOutput));
-                return pushOutput;
-            } catch (GitException e) {
-                throw new IOException("Failed to push tag: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class PullCallable implements FilePath.FileCallable<String> {
-        private final String remoteRepository;
-        private final String branch;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-
-        public PullCallable(String remoteRepository, String branch, GitSCM gitSCM, TaskListener listener,
-                            AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.remoteRepository = remoteRepository;
-            this.branch = branch;
-            this.workingCopy = workingCopy;
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                log(listener, "Pulling changes");
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String pushOutput = git.launchCommand("pull", remoteRepository, branch);
-                debuggingLogger.fine(String.format("Pull command output:%n%s", pushOutput));
-                return pushOutput;
-            } catch (GitException e) {
-                throw new IOException("Failed to pull: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class RevertCallable implements FilePath.FileCallable<String> {
-        private final String commitIsh;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-
-        public RevertCallable(String commitIsh, GitSCM gitSCM, TaskListener listener,
-                              AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.commitIsh = commitIsh;
-            this.workingCopy = workingCopy;
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                log(listener, "Reverting git working copy back to initial commit: " + commitIsh);
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String resetOutput = git.launchCommand("reset", "--hard", commitIsh);
-                debuggingLogger.fine(String.format("Reset command output:%n%s", resetOutput));
-                return resetOutput;
-            } catch (GitException e) {
-                throw new IOException("Failed to reset working copy: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class DeleteLocalBranchCallable implements FilePath.FileCallable<String> {
-        private final String branch;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-
-        public DeleteLocalBranchCallable(String branch, GitSCM gitSCM, TaskListener listener,
-                                         AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.branch = branch;
-            this.workingCopy = workingCopy;
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                log(listener, "Deleting local git branch: " + branch);
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String output = git.launchCommand("branch", "-D", branch);
-                debuggingLogger.fine(String.format("Delete branch output:%n%s", output));
-                return output;
-            } catch (GitException e) {
-                throw new IOException("Git branch deletion failed: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class DeleteRemoteBranchCallable implements FilePath.FileCallable<String> {
-        private final String branch;
-        private final String remoteRepository;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-
-
-        public DeleteRemoteBranchCallable(String branch, String remoteRepository, GitSCM gitSCM, TaskListener listener,
-                                          AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.branch = branch;
-            this.remoteRepository = remoteRepository;
-            this.workingCopy = workingCopy;
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException {
-            try {
-                log(listener, String.format("Deleting remote branch '%s' on '%s'", branch, remoteRepository));
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String pushOutput = git.launchCommand("push", remoteRepository, ":refs/heads/" + branch);
-                debuggingLogger.fine(String.format("Push command output:%n%s", pushOutput));
-                return pushOutput;
-            } catch (GitException e) {
-                throw new IOException("Failed to push: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class DeleteLocalTagCallable implements FilePath.FileCallable<String> {
-        private final String tag;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-
-        public DeleteLocalTagCallable(String tag, GitSCM gitSCM, TaskListener listener,
-                                      AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.tag = tag;
-            this.workingCopy = workingCopy;
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                log(listener, "Deleting local tag: " + tag);
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String output = git.launchCommand("tag", "-d", tag);
-                debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
-                return output;
-            } catch (GitException e) {
-                throw new IOException("Git tag deletion failed: " + e.getMessage());
-            }
-        }
-    }
-
-    private static class DeleteRemoteTagCallable implements FilePath.FileCallable<String> {
-        private final String tag;
-        private final String remoteRepository;
-        private final TaskListener listener;
-        private final EnvVars envVars;
-        private final String gitExe;
-        private final FilePath workingCopy;
-        private final String confName;
-        private final String email;
-
-        public DeleteRemoteTagCallable(String tag, String remoteRepository, GitSCM gitSCM, TaskListener listener,
-                                       AbstractBuild build, FilePath workingCopy) throws IOException, InterruptedException {
-            this.tag = tag;
-            this.remoteRepository = remoteRepository;
-            this.workingCopy = workingCopy;
-            this.envVars = build.getEnvironment(listener);
-            this.gitExe = gitSCM.getGitExe(build.getBuiltOn(), listener);
-            this.listener = listener;
-            this.confName = gitSCM.getGitConfigNameToUse();
-            this.email = gitSCM.getGitConfigEmailToUse();
-        }
-
-        public String invoke(File ws, VirtualChannel channel) throws IOException, InterruptedException {
-            try {
-                log(listener, String.format("Deleting remote tag '%s' from '%s'", tag, remoteRepository));
-                GitAPI git = createGitAPI(envVars, listener, gitExe, workingCopy, confName, email);
-                String output = git.launchCommand("push", remoteRepository, ":refs/tags/" + tag);
-                debuggingLogger.fine(String.format("Delete tag output:%n%s", output));
-                return output;
-            } catch (GitException e) {
-                throw new IOException("Git tag deletion failed: " + e.getMessage());
-            }
-        }
     }
 }
