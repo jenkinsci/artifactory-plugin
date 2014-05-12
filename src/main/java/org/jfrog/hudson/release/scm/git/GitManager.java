@@ -158,7 +158,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
             }
         }
 
-        throw new IOException("Target Remote Name doesn`t exist");
+        throw new IOException("Target Remote Name: " + defaultRemoteName + " ,doesn`t exist");
     }
 
     private GitClient getGitClient() throws IOException, InterruptedException {
@@ -201,9 +201,9 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     * */
     private void addRemoteRepoToConfig(GitClient client) throws InterruptedException {
         GitSCM gitScm = getJenkinsScm();
-        for (UserRemoteConfig uc : gitScm.getUserRemoteConfigs()) {
+        for (RemoteConfig uc : gitScm.getRepositories()) {
             if (client.getRemoteUrl(uc.getName()) == null)
-                client.setRemoteUrl(uc.getName(), uc.getUrl());
+                client.setRemoteUrl(uc.getName(), uc.getURIs().get(0).toPrivateASCIIString());
         }
     }
 
