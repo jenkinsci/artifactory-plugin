@@ -90,12 +90,29 @@ public class ExtractorUtils {
     public static String getVcsUrl(Map<String, String> env) {
         String url = env.get("SVN_URL");
         if (StringUtils.isBlank(url)) {
-            url = env.get("GIT_URL");
+            url = publicGitUrl(env.get("GIT_URL"));
         }
         if (StringUtils.isBlank(url)) {
             url = env.get("P4PORT");
         }
         return url;
+    }
+
+    /*
+    *   Git publish the repository credentials in the Url,
+    *   this method will discard it.
+    */
+    private static String publicGitUrl(String gitUrl) {
+        if (gitUrl != null && gitUrl.contains("@")) {
+            StringBuilder sb = new StringBuilder(gitUrl);
+            int start = sb.indexOf("https://");
+            int end = sb.indexOf("@") + 1;
+            sb = sb.replace(start, end, StringUtils.EMPTY);
+
+            return "https://" + sb.toString();
+        }
+
+        return gitUrl;
     }
 
     /**
