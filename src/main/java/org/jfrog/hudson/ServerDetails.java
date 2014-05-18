@@ -27,13 +27,7 @@ import java.lang.reflect.Field;
  * Artifacts resolution and deployment configuration.
  */
 public class ServerDetails {
-    /**
-     * Artifactory server URL
-     */
-    private final String artifactoryUrl;
-
     public final String artifactoryName;
-
     /**
      * Key of the repository to deploy release artifacts to
      */
@@ -42,18 +36,24 @@ public class ServerDetails {
      * Key of the repository to deploy snapshot artifacts to. If not specified will use the repositoryKey
      */
     public final String snapshotsRepositoryKey;
-
     /**
      * Key of repository to use to download snapshots artifacts
      */
     public final String downloadSnapshotRepositoryKey;
-
     /**
      * Key of repository to use to download artifacts
      */
     public final String downloadReleaseRepositoryKey;
-
+    /**
+     * Artifactory server URL
+     */
+    private final String artifactoryUrl;
     private PluginSettings stagingPlugin;
+    /**
+     * @deprecated: Use org.jfrog.hudson.ServerDetails#downloadReleaseRepositoryKey
+     */
+    @Deprecated
+    private String downloadRepositoryKey;
 
     @DataBoundConstructor
     public ServerDetails(String artifactoryName, String artifactoryUrl, String repositoryKey, String snapshotsRepositoryKey,
@@ -70,12 +70,12 @@ public class ServerDetails {
         return stagingPlugin;
     }
 
-    public String getStagingPluginName() {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
-    }
-
     public void setStagingPlugin(PluginSettings stagingPlugin) {
         this.stagingPlugin = stagingPlugin;
+    }
+
+    public String getStagingPluginName() {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
     }
 
     public String getPluginParamValue(String pluginName, String paramKey) {
@@ -106,7 +106,7 @@ public class ServerDetails {
                     newReleaseRepositoryField.setAccessible(true);
                     newReleaseRepositoryField.set(server, oldReleaseRepositoryValue);
 
-                    Field newSnapshotRepositoryField = overrideClass.getDeclaredField("downloadReleaseRepositoryKey");
+                    Field newSnapshotRepositoryField = overrideClass.getDeclaredField("downloadSnapshotRepositoryKey");
                     newSnapshotRepositoryField.setAccessible(true);
                     newSnapshotRepositoryField.set(server, oldReleaseRepositoryValue);
                 }
@@ -123,12 +123,5 @@ public class ServerDetails {
                     , serverDetails.getClass().getName());
         }
     }
-
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.ServerDetails#downloadReleaseRepositoryKey
-     */
-    @Deprecated
-    private String downloadRepositoryKey;
 
 }
