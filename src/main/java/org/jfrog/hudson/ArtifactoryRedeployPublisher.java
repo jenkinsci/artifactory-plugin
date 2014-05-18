@@ -38,7 +38,9 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
@@ -47,8 +49,10 @@ import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -58,7 +62,12 @@ import java.util.Map;
  *
  * @author Yossi Shaul
  */
+
 public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOverrider, BuildInfoAwareConfigurator {
+    /**
+     * Deploy even if the build is unstable (failed tests)
+     */
+    public final boolean evenIfUnstable;
     /**
      * Repository URL and repository to deploy artifacts to.
      */
@@ -73,35 +82,23 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      * Include environment variables in the generated build info
      */
     private final boolean includeEnvVars;
-
-    private boolean deployBuildInfo;
-
     private final IncludesExcludes envVarsPatterns;
-    /**
-     * Deploy even if the build is unstable (failed tests)
-     */
-    public final boolean evenIfUnstable;
-
     private final boolean runChecks;
-
     private final String violationRecipients;
-
     private final boolean includePublishArtifacts;
-
     private final boolean passIdentifiedDownstream;
-
     private final String scopes;
-
     private final boolean licenseAutoDiscovery;
     private final boolean disableLicenseAutoDiscovery;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
-    private String aggregationBuildStatus;
     private final boolean enableIssueTrackerIntegration;
-    private boolean aggregateBuildIssues;
     private final boolean allowPromotionOfNonStagedBuilds;
-
+    private final boolean filterExcludedArtifactsFromBuild;
+    private boolean deployBuildInfo;
+    private String aggregationBuildStatus;
+    private boolean aggregateBuildIssues;
     private boolean blackDuckRunChecks;
     private String blackDuckAppName;
     private String blackDuckAppVersion;
@@ -110,21 +107,28 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
-    private final boolean filterExcludedArtifactsFromBuild;
+    /**
+     * @deprecated: Use org.jfrog.hudson.ArtifactoryRedeployPublisher#deployBuildInfo
+     */
+    @Deprecated
+    private transient Boolean skipBuildInfoDeploy;
+
+
+    // NOTE: The following getters are used by jelly. Do not remove them
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
-            IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
-            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
-            boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
-            String violationRecipients, boolean includePublishArtifacts, String scopes,
-            boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
-            boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
-            boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
-            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
-            String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
-            boolean filterExcludedArtifactsFromBuild) {
+                                        IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
+                                        boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+                                        boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
+                                        String violationRecipients, boolean includePublishArtifacts, String scopes,
+                                        boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
+                                        boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
+                                        boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
+                                        boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
+                                        String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
+                                        boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
+                                        boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -157,8 +161,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
         this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
     }
-
-    // NOTE: The following getters are used by jelly. Do not remove them
 
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean isDeployArtifacts() {
@@ -407,7 +409,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return Boolean.parseBoolean(env.get(ExtractorUtils.EXTRACTOR_USED));
     }
 
-
     private void verifySupportedArtifactoryVersion(ArtifactoryBuildInfoClient client) throws Exception {
         // get the version of artifactory, if it is an unsupported version, an UnsupportedOperationException
         // will be thrown, and no deployment will commence.
@@ -445,14 +446,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return null;
     }
 
-    public List<String> getReleaseRepositoryKeysFirst() {
-        return RepositoriesUtils.getReleaseRepositoryKeysFirst(this, getArtifactoryServer());
-    }
-
-    public List<String> getSnapshotRepositoryKeysFirst() {
-        return RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-    }
-
     public List<UserPluginInfo> getStagingUserPluginInfo() {
         ArtifactoryServer artifactoryServer = getArtifactoryServer();
         return artifactoryServer.getStagingUserPluginInfo(this);
@@ -466,14 +459,82 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
     }
 
+    public List<String> getReleaseRepositoryKeysFirst() {
+        if (getDescriptor().releaseRepositoryKeysFirst == null) {
+            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+            return getDescriptor().releaseRepositoryKeysFirst;
+        }
+
+        return getDescriptor().releaseRepositoryKeysFirst;
+    }
+
+    public List<String> getSnapshotRepositoryKeysFirst() {
+        if (getDescriptor().snapshotRepositoryKeysFirst == null) {
+            getDescriptor().snapshotRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+            return getDescriptor().snapshotRepositoryKeysFirst;
+        }
+
+        return getDescriptor().snapshotRepositoryKeysFirst;
+    }
+
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+        private List<String> releaseRepositoryKeysFirst;
+        private List<String> snapshotRepositoryKeysFirst;
+
         public DescriptorImpl() {
+            super(ArtifactoryRedeployPublisher.class);
+            load();
         }
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return jobType == MavenModuleSet.class;
+        }
+
+        @JavaScriptMethod
+        public List<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            if (artifactoryServer == null)
+                return releaseRepositoryKeysFirst;
+
+            String username;
+            String password;
+            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+                username = credentialsUsername;
+                password = credentialsPassword;
+            } else {
+                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+                username = deployedCredentials.getUsername();
+                password = deployedCredentials.getPassword();
+            }
+
+            ArtifactoryBuildInfoClient client;
+            if (StringUtils.isNotBlank(username)) {
+                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
+            } else {
+                client = new ArtifactoryBuildInfoClient(url, new NullLog());
+            }
+            client.setConnectionTimeout(10);
+
+            if (Jenkins.getInstance().proxy != null) {
+                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            try {
+                releaseRepositoryKeysFirst = client.getLocalRepositoriesKeys();
+                Collections.sort(releaseRepositoryKeysFirst);
+                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+
+                return releaseRepositoryKeysFirst;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            /*
+            * In case of Exception, we write error in the Javascript scope!
+            * */
+            return Lists.newArrayList();
         }
 
         @Override
@@ -492,7 +553,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                                 public boolean apply(String input) {
                                     return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
                                 }
-                            });
+                            }
+                    );
                     for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
                         String key = settingsEntry.getKey();
                         paramMap.put(key, pluginSettings.getString(key));
@@ -505,6 +567,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             }
             return publisher;
         }
+
 
         @Override
         public String getDisplayName() {
@@ -528,6 +591,29 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return descriptor.getArtifactoryServers();
         }
 
+        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
+            List<ArtifactoryServer> servers = getArtifactoryServers();
+            for (ArtifactoryServer server : servers) {
+                if (server.getUrl().equals(artifactoryUrl)) {
+                    return server;
+                }
+            }
+            return null;
+        }
+
+        public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+            ProxyConfiguration proxyConfiguration = null;
+            if (proxy != null) {
+                proxyConfiguration = new ProxyConfiguration();
+                proxyConfiguration.host = proxy.name;
+                proxyConfiguration.port = proxy.port;
+                proxyConfiguration.username = proxy.getUserName();
+                proxyConfiguration.password = proxy.getPassword();
+            }
+
+            return proxyConfiguration;
+        }
+
         public boolean isJiraPluginEnabled() {
             return (Jenkins.getInstance().getPlugin("jira") != null);
         }
@@ -548,11 +634,5 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             }
         }
     }
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.ArtifactoryRedeployPublisher#deployBuildInfo
-     */
-    @Deprecated
-    private transient Boolean skipBuildInfoDeploy;
 
 }

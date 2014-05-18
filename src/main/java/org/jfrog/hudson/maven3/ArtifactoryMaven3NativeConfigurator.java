@@ -1,5 +1,6 @@
 package org.jfrog.hudson.maven3;
 
+import com.google.common.collect.Lists;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
@@ -8,8 +9,12 @@ import hudson.maven.MavenModuleSetBuild;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.util.NullLog;
+import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.extractor.MavenExtractorHelper;
@@ -17,6 +22,7 @@ import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -108,7 +114,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public List<VirtualRepository> getVirtualRepositoryKeys() {
-        return RepositoriesUtils.getVirtualRepositoryKeys(this, null, getArtifactoryServer());
+        if (getDescriptor().virtualRepositoryKeys == null) {
+            getDescriptor().virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(this, null, getArtifactoryServer());
+            return getDescriptor().virtualRepositoryKeys;
+        }
+
+        return getDescriptor().virtualRepositoryKeys;
     }
 
     @Override
@@ -120,8 +131,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         return Boolean.parseBoolean(env.get(ExtractorUtils.EXTRACTOR_USED));
     }
 
-    @Extension(optional = true)
+    @Extension
     public static class DescriptorImpl extends BuildWrapperDescriptor {
+        private List<VirtualRepository> virtualRepositoryKeys;
+
         public DescriptorImpl() {
             super(ArtifactoryMaven3NativeConfigurator.class);
             load();
@@ -130,6 +143,50 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return MavenModuleSet.class.equals(item.getClass());
+        }
+
+        @JavaScriptMethod
+        public List<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            if (artifactoryServer == null)
+                return virtualRepositoryKeys;
+
+            String username;
+            String password;
+            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+                username = credentialsUsername;
+                password = credentialsPassword;
+            } else {
+                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+                username = deployedCredentials.getUsername();
+                password = deployedCredentials.getPassword();
+            }
+
+            ArtifactoryBuildInfoClient client;
+            if (StringUtils.isNotBlank(username)) {
+                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
+            } else {
+                client = new ArtifactoryBuildInfoClient(url, new NullLog());
+            }
+            client.setConnectionTimeout(10);
+
+            if (Jenkins.getInstance().proxy != null) {
+                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            try {
+                virtualRepositoryKeys = RepositoriesUtils.generateVirtualRepos(client);
+                Collections.sort(virtualRepositoryKeys);
+
+                return virtualRepositoryKeys;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            /*
+            * In case of Exception, we write error in the Javascript scope!
+            * */
+            return Lists.newArrayList();
         }
 
         @Override
@@ -158,6 +215,29 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
+        }
+
+        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
+            List<ArtifactoryServer> servers = getArtifactoryServers();
+            for (ArtifactoryServer server : servers) {
+                if (server.getUrl().equals(artifactoryUrl)) {
+                    return server;
+                }
+            }
+            return null;
+        }
+
+        public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+            ProxyConfiguration proxyConfiguration = null;
+            if (proxy != null) {
+                proxyConfiguration = new ProxyConfiguration();
+                proxyConfiguration.host = proxy.name;
+                proxyConfiguration.port = proxy.port;
+                proxyConfiguration.username = proxy.getUserName();
+                proxyConfiguration.password = proxy.getPassword();
+            }
+
+            return proxyConfiguration;
         }
     }
 

@@ -8,3 +8,4 @@ build
 *.iws
 work
 .idea
+*.bat

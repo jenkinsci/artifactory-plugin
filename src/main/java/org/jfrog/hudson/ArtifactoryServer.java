@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.model.BuildListener;
@@ -29,6 +28,7 @@ import org.jfrog.build.client.*;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
+import org.jfrog.hudson.util.RepositoriesUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -49,15 +49,12 @@ public class ArtifactoryServer implements Serializable {
     private static final Logger log = Logger.getLogger(ArtifactoryServer.class.getName());
 
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;    // 5 Minutes
-
-    private final String url;
-    private final String id;
-
-    private final Credentials deployerCredentials;
-    private Credentials resolverCredentials;
-
     // Network timeout in seconds to use both for connection establishment and for unanswered requests
     private int timeout = DEFAULT_CONNECTION_TIMEOUT;
+    private final String url;
+    private final String id;
+    private final Credentials deployerCredentials;
+    private Credentials resolverCredentials;
     private boolean bypassProxy;
 
     /**
@@ -66,6 +63,16 @@ public class ArtifactoryServer implements Serializable {
     private transient volatile List<String> repositories;
 
     private transient volatile List<VirtualRepository> virtualRepositories;
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String userName;
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String password;    // base64 scrambled password
 
     @DataBoundConstructor
     public ArtifactoryServer(String serverId, String artifactoryUrl, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
@@ -153,28 +160,12 @@ public class ArtifactoryServer implements Serializable {
         }
     }
 
-    private static class RepositoryComparator implements Comparator<String>, Serializable {
-
-        public int compare(String o1, String o2) {
-            if (o1.contains("snapshot") && !o2.contains("snapshot")) {
-                return 1;
-            } else {
-                return -1;
-            }
-        }
-    }
-
     public List<VirtualRepository> getVirtualRepositoryKeys(ResolverOverrider resolverOverrider, DeployerOverrider deployerOverrider) {
         Credentials credentials = CredentialResolver.getPreferredResolver(resolverOverrider, deployerOverrider, this);
         ArtifactoryBuildInfoClient client = createArtifactoryClient(credentials.getUsername(),
                 credentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
-            List<String> keys = client.getVirtualRepositoryKeys();
-            virtualRepositories = Lists.newArrayList(Lists.transform(keys, new Function<String, VirtualRepository>() {
-                public VirtualRepository apply(String from) {
-                    return new VirtualRepository(from, from);
-                }
-            }));
+            virtualRepositories = RepositoriesUtils.generateVirtualRepos(client);
         } catch (IOException e) {
             if (log.isLoggable(Level.FINE)) {
                 log.log(Level.WARNING, "Could not obtain virtual repositories list from '" + url + "'", e);
@@ -252,7 +243,6 @@ public class ArtifactoryServer implements Serializable {
         return proxyConfiguration;
     }
 
-
     /**
      * This method might run on slaves, this is why we provide it with a proxy from the master config
      */
@@ -267,24 +257,6 @@ public class ArtifactoryServer implements Serializable {
         }
 
         return client;
-    }
-
-    /**
-     * When upgrading from an older version, a user might have resolver credentials as local variables. This converter
-     * Will check for existing old resolver credentials and "move" them to a credentials object instead
-     */
-    public static final class ConverterImpl extends XStream2.PassthruConverter<ArtifactoryServer> {
-
-        public ConverterImpl(XStream2 xstream) {
-            super(xstream);
-        }
-
-        @Override
-        protected void callback(ArtifactoryServer server, UnmarshallingContext context) {
-            if (StringUtils.isNotBlank(server.userName) && (server.resolverCredentials == null)) {
-                server.resolverCredentials = new Credentials(server.userName, Scrambler.descramble(server.password));
-            }
-        }
     }
 
     /**
@@ -303,18 +275,6 @@ public class ArtifactoryServer implements Serializable {
 
         return new Credentials(null, null);
     }
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String userName;
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String password;    // base64 scrambled password
 
     private void gatherUserPluginInfo(List<UserPluginInfo> infosToReturn, String pluginKey, DeployerOverrider deployerOverrider) {
         Credentials credentials = CredentialResolver.getPreferredDeployer(deployerOverrider, this);
@@ -339,6 +299,35 @@ public class ArtifactoryServer implements Serializable {
             log.log(Level.WARNING, "Failed to obtain user plugin info: " + e.getMessage());
         } finally {
             client.shutdown();
+        }
+    }
+
+    private static class RepositoryComparator implements Comparator<String>, Serializable {
+
+        public int compare(String o1, String o2) {
+            if (o1.contains("snapshot") && !o2.contains("snapshot")) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+    }
+
+    /**
+     * When upgrading from an older version, a user might have resolver credentials as local variables. This converter
+     * Will check for existing old resolver credentials and "move" them to a credentials object instead
+     */
+    public static final class ConverterImpl extends XStream2.PassthruConverter<ArtifactoryServer> {
+
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
+        }
+
+        @Override
+        protected void callback(ArtifactoryServer server, UnmarshallingContext context) {
+            if (StringUtils.isNotBlank(server.userName) && (server.resolverCredentials == null)) {
+                server.resolverCredentials = new Credentials(server.userName, Scrambler.descramble(server.password));
+            }
         }
     }
 }

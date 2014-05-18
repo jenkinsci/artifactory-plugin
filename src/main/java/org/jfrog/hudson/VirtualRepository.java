@@ -5,7 +5,7 @@ package org.jfrog.hudson;
  *
  * @author Tomer Cohen
  */
-public class VirtualRepository {
+public class VirtualRepository implements Comparable<VirtualRepository> {
 
     private final String displayName;
     private final String value;
@@ -21,5 +21,9 @@ public class VirtualRepository {
 
     public String getValue() {
         return value;
+    }
+
+    public int compareTo(VirtualRepository o) {
+        return this.displayName.compareTo(o.displayName);
     }
 }

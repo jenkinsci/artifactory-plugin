@@ -18,6 +18,7 @@ package org.jfrog.hudson.gradle;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
@@ -33,6 +34,9 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.util.NullLog;
+import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -45,13 +49,11 @@ import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -63,15 +65,12 @@ import java.util.Map;
  */
 public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider, ResolverOverrider,
         BuildInfoAwareConfigurator {
-    private ServerDetails details;
-    private boolean deployArtifacts;
-    private final Credentials overridingDeployerCredentials;
     public final boolean deployMaven;
     public final boolean deployIvy;
     public final String remotePluginLocation;
-    private IncludesExcludes envVarsPatterns;
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
+    private final Credentials overridingDeployerCredentials;
     private final boolean runChecks;
     private final String violationRecipients;
     private final boolean includePublishArtifacts;
@@ -81,7 +80,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final String ivyPattern;
     private final boolean enableIssueTrackerIntegration;
     private final boolean aggregateBuildIssues;
-    private String aggregationBuildStatus;
     private final String artifactPattern;
     private final boolean notM2Compatible;
     private final IncludesExcludes artifactDeploymentPatterns;
@@ -95,12 +93,26 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean blackDuckRunChecks;
     private final String blackDuckAppName;
     private final String blackDuckAppVersion;
+    private final boolean filterExcludedArtifactsFromBuild;
+    private ServerDetails details;
+    private boolean deployArtifacts;
+    private IncludesExcludes envVarsPatterns;
+    private String aggregationBuildStatus;
     private String blackDuckReportRecipients; //csv
     private String blackDuckScopes; //csv
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
-    private final boolean filterExcludedArtifactsFromBuild;
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String username;
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String scrambledPassword;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -531,11 +543,21 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
-        return RepositoriesUtils.getReleaseRepositoryKeysFirst(this, getArtifactoryServer());
+        if (getDescriptor().releaseRepositoryKeysFirst == null) {
+            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+            return getDescriptor().releaseRepositoryKeysFirst;
+        }
+
+        return getDescriptor().releaseRepositoryKeysFirst;
     }
 
     public List<String> getSnapshotRepositoryKeysFirst() {
-        return RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+        if (getDescriptor().snapshotRepositoryKeysFirst == null) {
+            getDescriptor().snapshotRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+            return getDescriptor().snapshotRepositoryKeysFirst;
+        }
+
+        return getDescriptor().snapshotRepositoryKeysFirst;
     }
 
     public boolean isOverridingDefaultResolver() {
@@ -547,7 +569,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public List<VirtualRepository> getVirtualRepositoryKeys() {
-        return RepositoriesUtils.getVirtualRepositoryKeys(this, this, getArtifactoryServer());
+        if (getDescriptor().virtualRepositoryKeys == null) {
+            getDescriptor().virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(this, null, getArtifactoryServer());
+            return getDescriptor().virtualRepositoryKeys;
+        }
+
+        return getDescriptor().virtualRepositoryKeys;
     }
 
     public List<UserPluginInfo> getStagingUserPluginInfo() {
@@ -562,6 +589,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
+        private List<String> releaseRepositoryKeysFirst;
+        private List<String> snapshotRepositoryKeysFirst;
+        private List<VirtualRepository> virtualRepositoryKeys;
+
+
         public DescriptorImpl() {
             super(ArtifactoryGradleConfigurator.class);
             load();
@@ -570,6 +602,95 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+        }
+
+        @JavaScriptMethod
+        public List<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            if (artifactoryServer == null)
+                return releaseRepositoryKeysFirst;
+
+            String username;
+            String password;
+            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+                username = credentialsUsername;
+                password = credentialsPassword;
+            } else {
+                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+                username = deployedCredentials.getUsername();
+                password = deployedCredentials.getPassword();
+            }
+
+            ArtifactoryBuildInfoClient client;
+            if (StringUtils.isNotBlank(username)) {
+                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
+            } else {
+                client = new ArtifactoryBuildInfoClient(url, new NullLog());
+            }
+            client.setConnectionTimeout(10);
+
+            if (Jenkins.getInstance().proxy != null) {
+                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            try {
+                releaseRepositoryKeysFirst = client.getLocalRepositoriesKeys();
+                Collections.sort(releaseRepositoryKeysFirst);
+                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+
+                return releaseRepositoryKeysFirst;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            /*
+            * In case of Exception, we write error in the Javascript scope!
+            * */
+            return Lists.newArrayList();
+        }
+
+        @JavaScriptMethod
+        public List<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            if (artifactoryServer == null)
+                return virtualRepositoryKeys;
+
+            String username;
+            String password;
+            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+                username = credentialsUsername;
+                password = credentialsPassword;
+            } else {
+                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+                username = deployedCredentials.getUsername();
+                password = deployedCredentials.getPassword();
+            }
+
+            ArtifactoryBuildInfoClient client;
+            if (StringUtils.isNotBlank(username)) {
+                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
+            } else {
+                client = new ArtifactoryBuildInfoClient(url, new NullLog());
+            }
+            client.setConnectionTimeout(10);
+
+            if (Jenkins.getInstance().proxy != null) {
+                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            try {
+                virtualRepositoryKeys = RepositoriesUtils.generateVirtualRepos(client);
+                Collections.sort(virtualRepositoryKeys);
+
+                return virtualRepositoryKeys;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            /*
+            * In case of Exception, we write error in the Javascript scope!
+            * */
+            return Lists.newArrayList();
         }
 
         @Override
@@ -600,7 +721,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                 public boolean apply(String input) {
                                     return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
                                 }
-                            });
+                            }
+                    );
                     for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
                         String key = settingsEntry.getKey();
                         paramMap.put(key, pluginSettings.getString(key));
@@ -627,6 +749,29 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
+        }
+
+        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
+            List<ArtifactoryServer> servers = getArtifactoryServers();
+            for (ArtifactoryServer server : servers) {
+                if (server.getUrl().equals(artifactoryUrl)) {
+                    return server;
+                }
+            }
+            return null;
+        }
+
+        public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+            ProxyConfiguration proxyConfiguration = null;
+            if (proxy != null) {
+                proxyConfiguration = new ProxyConfiguration();
+                proxyConfiguration.host = proxy.name;
+                proxyConfiguration.port = proxy.port;
+                proxyConfiguration.username = proxy.getUserName();
+                proxyConfiguration.password = proxy.getPassword();
+            }
+
+            return proxyConfiguration;
         }
 
         public boolean isJiraPluginEnabled() {
@@ -692,16 +837,4 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             run.getActions().remove(releaseAction);
         }
     }
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String username;
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String scrambledPassword;
 }

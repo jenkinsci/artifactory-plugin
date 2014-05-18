@@ -18,19 +18,22 @@ package org.jfrog.hudson;
 
 import hudson.maven.MavenModuleSet;
 import org.jfrog.hudson.util.IncludesExcludes;
+import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.HudsonTestCase;
+import org.jvnet.hudson.test.JenkinsRule;
 
 /**
  * Integration test of {@link org.jfrog.hudson.ArtifactoryRedeployPublisher} configuration.
  *
  * @author Yossi Shaul
  */
-public class ArtifactoryRedeployPublisherITest extends HudsonTestCase {
+public class ArtifactoryRedeployPublisherITest {
+    @Rule
+    public JenkinsRule j = new JenkinsRule();
 
     @Test
     public void testConfigurationRoundTrip() throws Exception {
-        MavenModuleSet project = createMavenProject();
+        MavenModuleSet project = j.createMavenProject();
 
         ArtifactoryRedeployPublisher before = new ArtifactoryRedeployPublisher(null, true,
                 new IncludesExcludes("", ""),
@@ -39,10 +42,10 @@ public class ArtifactoryRedeployPublisherITest extends HudsonTestCase {
         project.getPublishersList().add(before);
 
         // submit the configuration form
-        submit(createWebClient().getPage(project, "configure").getFormByName("config"));
+        j.submit(j.createWebClient().getPage(project, "configure").getFormByName("config"));
 
         ArtifactoryRedeployPublisher after = project.getPublishersList().get(ArtifactoryRedeployPublisher.class);
 
-        assertEqualDataBoundBeans(before, after);
+        j.assertEqualDataBoundBeans(before, after);
     }
 }

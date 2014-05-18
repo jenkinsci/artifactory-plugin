@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.maven3;
 
+import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
@@ -28,6 +29,9 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.util.NullLog;
+import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
@@ -35,9 +39,11 @@ import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -66,24 +72,20 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private final boolean includeEnvVars;
 
     private final boolean deployBuildInfo;
-    private IncludesExcludes envVarsPatterns;
     private final boolean runChecks;
-
     private final String violationRecipients;
-
     private final boolean includePublishArtifacts;
-
     private final String scopes;
-
-    private boolean licenseAutoDiscovery;
-    private boolean disableLicenseAutoDiscovery;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
     private final boolean enableIssueTrackerIntegration;
+    private final boolean filterExcludedArtifactsFromBuild;
+    private IncludesExcludes envVarsPatterns;
+    private boolean licenseAutoDiscovery;
+    private boolean disableLicenseAutoDiscovery;
     private boolean aggregateBuildIssues;
     private String aggregationBuildStatus;
-
     private boolean blackDuckRunChecks;
     private String blackDuckAppName;
     private String blackDuckAppVersion;
@@ -92,20 +94,36 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
-    private final boolean filterExcludedArtifactsFromBuild;
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String username;
+
+    // NOTE: The following getters are used by jelly. Do not remove them
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String scrambledPassword;
+    /**
+     * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator#deployBuildInfo
+     */
+    @Deprecated
+    private transient boolean skipBuildInfoDeploy;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts, boolean deployBuildInfo,
-            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
-            boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-            String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
-            boolean discardBuildArtifacts, String matrixParams,
-            boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
-            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
-            String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
-            boolean filterExcludedArtifactsFromBuild) {
+                                         IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts, boolean deployBuildInfo,
+                                         boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+                                         boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+                                         String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
+                                         boolean discardBuildArtifacts, String matrixParams,
+                                         boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
+                                         boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
+                                         String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
+                                         boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
+                                         boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -134,8 +152,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
         this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
     }
-
-    // NOTE: The following getters are used by jelly. Do not remove them
 
     public ServerDetails getDetails() {
         return details;
@@ -297,11 +313,21 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
-        return RepositoriesUtils.getReleaseRepositoryKeysFirst(this, getArtifactoryServer());
+        if (getDescriptor().releaseRepositoryKeysFirst == null) {
+            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+            return getDescriptor().releaseRepositoryKeysFirst;
+        }
+
+        return getDescriptor().releaseRepositoryKeysFirst;
     }
 
     public List<String> getSnapshotRepositoryKeysFirst() {
-        return RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+        if (getDescriptor().snapshotRepositoryKeysFirst == null) {
+            getDescriptor().snapshotRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+            return getDescriptor().snapshotRepositoryKeysFirst;
+        }
+
+        return getDescriptor().snapshotRepositoryKeysFirst;
     }
 
     @Override
@@ -371,6 +397,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
+        private List<String> releaseRepositoryKeysFirst;
+        private List<String> snapshotRepositoryKeysFirst;
+
         public DescriptorImpl() {
             super(ArtifactoryMaven3Configurator.class);
             load();
@@ -379,6 +408,51 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+        }
+
+        @JavaScriptMethod
+        public List<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            if (artifactoryServer == null)
+                return releaseRepositoryKeysFirst;
+
+            String username;
+            String password;
+            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+                username = credentialsUsername;
+                password = credentialsPassword;
+            } else {
+                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+                username = deployedCredentials.getUsername();
+                password = deployedCredentials.getPassword();
+            }
+
+            ArtifactoryBuildInfoClient client;
+            if (StringUtils.isNotBlank(username)) {
+                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
+            } else {
+                client = new ArtifactoryBuildInfoClient(url, new NullLog());
+            }
+            client.setConnectionTimeout(10);
+
+            if (Jenkins.getInstance().proxy != null) {
+                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            try {
+                releaseRepositoryKeysFirst = client.getLocalRepositoriesKeys();
+                Collections.sort(releaseRepositoryKeysFirst);
+                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+
+                return releaseRepositoryKeysFirst;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            /*
+            * In case of Exception, we write error in the Javascript scope!
+            * */
+            return Lists.newArrayList();
         }
 
         @Override
@@ -411,6 +485,29 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         public boolean isJiraPluginEnabled() {
             return (Jenkins.getInstance().getPlugin("jira") != null);
         }
+
+        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
+            List<ArtifactoryServer> servers = getArtifactoryServers();
+            for (ArtifactoryServer server : servers) {
+                if (server.getUrl().equals(artifactoryUrl)) {
+                    return server;
+                }
+            }
+            return null;
+        }
+
+        public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+            ProxyConfiguration proxyConfiguration = null;
+            if (proxy != null) {
+                proxyConfiguration = new ProxyConfiguration();
+                proxyConfiguration.host = proxy.name;
+                proxyConfiguration.port = proxy.port;
+                proxyConfiguration.username = proxy.getUserName();
+                proxyConfiguration.password = proxy.getPassword();
+            }
+
+            return proxyConfiguration;
+        }
     }
 
     /**
@@ -421,23 +518,5 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             super(xstream);
         }
     }
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String username;
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String scrambledPassword;
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator#deployBuildInfo
-     */
-    @Deprecated
-    private transient boolean skipBuildInfoDeploy;
 
 }

@@ -1,30 +1,77 @@
 <!--suppress XmlUnusedNamespaceDeclaration -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:r="/lib/jfrog">
     <f:section title="${%Artifactory Configuration}">
         <f:dropdownList name="details" title="${%Artifactory server}">
             <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
                 <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                     <f:nested>
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
-                        <input type="hidden" name="artifactoryUrl" value="${s.url}"/>
+                        <input type="hidden" name="artifactoryUrl" id="artifactoryUrl" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Resolution repository}">
-                            <select class="setting-input" name="downloadReleaseRepositoryKey">
-                                <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                    <f:option selected="${r.displayName==instance.downloadReleaseRepositoryKey}"
-                                              value="${r.value}">${r.displayName}
-                                    </f:option>
-                                </j:forEach>
+                            <select class="setting-input" name="downloadReleaseRepositoryKey"
+                                    id="gradleDownloadReleaseRepositoryKey">
+                                <j:choose>
+                                    <j:when test="${instance.downloadReleaseRepositoryKey == null}">
+                                        <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                            <f:option selected="${r.displayName==instance.downloadReleaseRepositoryKey}"
+                                                      value="${r.value}">${r.displayName}
+                                            </f:option>
+                                        </j:forEach>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <f:option selected="instance.downloadReleaseRepositoryKey}"
+                                                  value="${instance.downloadReleaseRepositoryKey}">
+                                            ${instance.downloadReleaseRepositoryKey}
+                                        </f:option>
+                                    </j:otherwise>
+                                </j:choose>
                             </select>
                         </f:entry>
+
+                        <script>
+                            var gradleResolveBind =
+                            <st:bind value="${descriptor}"/>
+                        </script>
+                        <r:virtualRepos title="${%Refresh Repositories}" progress="${%Refreshing...}"
+                                        bind="gradleResolveBind"
+                                        on="gradleDownloadReleaseRepositoryKey"
+                                        repoUrl="$('artifactoryUrl').value"
+                                        credentialUserName="'none'"
+                                        credentialPassword="'none'"
+                                        isCredential="false"/>
+
                         <f:entry title="${%Publishing repository}">
-                            <select class="setting-input" name="repositoryKey">
-                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                    <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
-                                </j:forEach>
+                            <select class="setting-input" name="repositoryKey" id="gradleRepositoryKey">
+                                <j:choose>
+                                    <j:when test="${instance.repositoryKey == null}">
+                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                            <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
+                                            </f:option>
+                                        </j:forEach>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <f:option selected="instance.repositoryKey}"
+                                                  value="${instance.repositoryKey}">${instance.repositoryKey}
+                                        </f:option>
+                                    </j:otherwise>
+                                </j:choose>
                             </select>
                         </f:entry>
+
+                        <script>
+                            var gradleDeployBind =
+                            <st:bind value="${descriptor}"/>
+                        </script>
+                        <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
+                                 bind="gradleDeployBind"
+                                 on="gradleRepositoryKey"
+                                 repoUrl="$('artifactoryUrl').value"
+                                 credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
+                                 credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"
+                                 isCredential="$('overridingDeployerCredentials').down('input').checked"/>
+
                         <f:entry>
                             <f:dropdownList name="stagingPlugin" title="${%Custom staging configuration}"
                                             help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
@@ -62,7 +109,7 @@
             </table>
         </f:block>
         <f:block>
-            <table style="width:100%">
+            <table style="width:100%" id="overridingDeployerCredentials">
                 <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
                 <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
                                  title="Override default deployer credentials"

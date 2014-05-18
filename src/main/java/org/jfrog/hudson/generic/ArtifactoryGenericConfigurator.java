@@ -1,5 +1,6 @@
 package org.jfrog.hudson.generic;
 
+import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
@@ -13,6 +14,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.dependency.BuildDependency;
+import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.client.ProxyConfiguration;
@@ -25,9 +27,11 @@ import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.RepositoriesUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -54,6 +58,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final boolean discardBuildArtifacts;
     private transient List<Dependency> publishedDependencies;
     private transient List<BuildDependency> buildDependencies;
+    /**
+     * Don't need it anymore since now the slave uses it's own client to deploy the artifacts
+     */
+    @Deprecated
+    private transient String keepArchivedArtifacts;
 
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
@@ -200,7 +209,12 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
-        return RepositoriesUtils.getReleaseRepositoryKeysFirst(this, getArtifactoryServer());
+        if (getDescriptor().releaseRepositoryKeysFirst == null) {
+            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+            return getDescriptor().releaseRepositoryKeysFirst;
+        }
+
+        return getDescriptor().releaseRepositoryKeysFirst;
     }
 
     public List<String> getSnapshotRepositoryKeysFirst() {
@@ -308,6 +322,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
+        private List<String> releaseRepositoryKeysFirst;
+
         public DescriptorImpl() {
             super(ArtifactoryGenericConfigurator.class);
             load();
@@ -316,6 +332,51 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+        }
+
+        @JavaScriptMethod
+        public List<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            if (artifactoryServer == null)
+                return releaseRepositoryKeysFirst;
+
+            String username;
+            String password;
+            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+                username = credentialsUsername;
+                password = credentialsPassword;
+            } else {
+                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+                username = deployedCredentials.getUsername();
+                password = deployedCredentials.getPassword();
+            }
+
+            ArtifactoryBuildInfoClient client;
+            if (StringUtils.isNotBlank(username)) {
+                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
+            } else {
+                client = new ArtifactoryBuildInfoClient(url, new NullLog());
+            }
+            client.setConnectionTimeout(10);
+
+            if (Jenkins.getInstance().proxy != null) {
+                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            try {
+                releaseRepositoryKeysFirst = client.getLocalRepositoriesKeys();
+                Collections.sort(releaseRepositoryKeysFirst);
+                // snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+
+                return releaseRepositoryKeysFirst;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            /*
+            * In case of Exception, we write error in the Javascript scope!
+            * */
+            return Lists.newArrayList();
         }
 
         @Override
@@ -340,11 +401,28 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
         }
-    }
 
-    /**
-     * Don't need it anymore since now the slave uses it's own client to deploy the artifacts
-     */
-    @Deprecated
-    private transient String keepArchivedArtifacts;
+        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
+            List<ArtifactoryServer> servers = getArtifactoryServers();
+            for (ArtifactoryServer server : servers) {
+                if (server.getUrl().equals(artifactoryUrl)) {
+                    return server;
+                }
+            }
+            return null;
+        }
+
+        public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+            ProxyConfiguration proxyConfiguration = null;
+            if (proxy != null) {
+                proxyConfiguration = new ProxyConfiguration();
+                proxyConfiguration.host = proxy.name;
+                proxyConfiguration.port = proxy.port;
+                proxyConfiguration.username = proxy.getUserName();
+                proxyConfiguration.password = proxy.getPassword();
+            }
+
+            return proxyConfiguration;
+        }
+    }
 }

@@ -28,10 +28,12 @@
                                      title="Use Different Resolver Credentials"
                                      help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverCredentials.html">
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-                        <f:entry title="User Name" help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverUserName.html">
+                        <f:entry title="User Name"
+                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverUserName.html">
                             <f:textbox field="resolverUsername" value="${resolverCredentials.username}"/>
                         </f:entry>
-                        <f:entry title="Password" help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverPassword.html">
+                        <f:entry title="Password"
+                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverPassword.html">
                             <f:password field="resolverPassword" value="${resolverCredentials.password}"/>
                         </f:entry>
                     </f:optionalBlock>
@@ -49,8 +51,9 @@
                     </f:advanced>
 
                     <f:validateButton
-                       title="${%Test Connection}" progress="${%Testing...}"
-                       method="testConnection" with="artifactoryUrl,username,password,resolverCredentials,resolverUsername,resolverPassword" />
+                            title="${%Test Connection}" progress="${%Testing...}"
+                            method="testConnection"
+                            with="artifactoryUrl,username,password,resolverCredentials,resolverUsername,resolverPassword"/>
 
                     <f:entry title="">
                         <div align="right">

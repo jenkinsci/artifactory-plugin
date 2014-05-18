@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.ivy;
 
+import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -28,6 +29,9 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.util.NullLog;
+import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -35,10 +39,12 @@ import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -49,10 +55,13 @@ import java.util.Map;
 public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements DeployerOverrider,
         BuildInfoAwareConfigurator {
 
-    private ServerDetails details;
     private final Credentials overridingDeployerCredentials;
-    private boolean deployArtifacts;
     private final IncludesExcludes artifactDeploymentPatterns;
+    private final boolean discardBuildArtifacts;
+    private final String matrixParams;
+    private final boolean filterExcludedArtifactsFromBuild;
+    private ServerDetails details;
+    private boolean deployArtifacts;
     private boolean deployBuildInfo;
     private boolean includeEnvVars;
     private IncludesExcludes envVarsPatterns;
@@ -63,8 +72,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private boolean licenseAutoDiscovery;
     private boolean disableLicenseAutoDiscovery;
     private boolean discardOldBuilds;
-    private final boolean discardBuildArtifacts;
-    private final String matrixParams;
     private boolean notM2Compatible;
     private String ivyPattern;
     private String aggregationBuildStatus;
@@ -79,20 +86,29 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
-    private final boolean filterExcludedArtifactsFromBuild;
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String username;
+    /**
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     */
+    @Deprecated
+    private transient String password;
 
     @DataBoundConstructor
     public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-            boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
-            boolean includeEnvVars, IncludesExcludes envVarsPatterns,
-            boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
-            String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
-            String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, String matrixParams,
-            boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
-            boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
-            String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-            boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
-            boolean filterExcludedArtifactsFromBuild) {
+                                      boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
+                                      boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+                                      boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
+                                      String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
+                                      String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, String matrixParams,
+                                      boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
+                                      boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
+                                      String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
+                                      boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
+                                      boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -153,12 +169,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return notM2Compatible;
     }
 
-    public boolean isDiscardBuildArtifacts() {
-        return discardBuildArtifacts;
-    }
-
     public void setNotM2Compatible(boolean notM2Compatible) {
         this.notM2Compatible = notM2Compatible;
+    }
+
+    public boolean isDiscardBuildArtifacts() {
+        return discardBuildArtifacts;
     }
 
     public boolean isDiscardOldBuilds() {
@@ -201,12 +217,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return runChecks;
     }
 
-    public boolean isDisableLicenseAutoDiscovery() {
-        return disableLicenseAutoDiscovery;
+    public void setRunChecks(boolean runChecks) {
+        this.runChecks = runChecks;
     }
 
-    public void setLicenseAutoDiscovery(boolean licenseAutoDiscovery) {
-        this.licenseAutoDiscovery = licenseAutoDiscovery;
+    public boolean isDisableLicenseAutoDiscovery() {
+        return disableLicenseAutoDiscovery;
     }
 
     public String getScopes() {
@@ -217,8 +233,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return licenseAutoDiscovery;
     }
 
-    public void setRunChecks(boolean runChecks) {
-        this.runChecks = runChecks;
+    public void setLicenseAutoDiscovery(boolean licenseAutoDiscovery) {
+        this.licenseAutoDiscovery = licenseAutoDiscovery;
     }
 
     public boolean isDeployArtifacts() {
@@ -253,12 +269,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return details != null ? details.getArtifactoryUrl() : null;
     }
 
-    public void setViolationRecipients(String violationRecipients) {
-        this.violationRecipients = violationRecipients;
-    }
-
     public String getViolationRecipients() {
         return violationRecipients;
+    }
+
+    public void setViolationRecipients(String violationRecipients) {
+        this.violationRecipients = violationRecipients;
     }
 
     public boolean isEnableIssueTrackerIntegration() {
@@ -396,11 +412,21 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
-        return RepositoriesUtils.getReleaseRepositoryKeysFirst(this, getArtifactoryServer());
+        if (getDescriptor().releaseRepositoryKeysFirst == null) {
+            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+            return getDescriptor().releaseRepositoryKeysFirst;
+        }
+
+        return getDescriptor().releaseRepositoryKeysFirst;
     }
 
     public List<String> getSnapshotRepositoryKeysFirst() {
-        return RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+        if (getDescriptor().snapshotRepositoryKeysFirst == null) {
+            getDescriptor().snapshotRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
+            return getDescriptor().snapshotRepositoryKeysFirst;
+        }
+
+        return getDescriptor().snapshotRepositoryKeysFirst;
     }
 
     @Override
@@ -410,6 +436,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
+        private List<String> releaseRepositoryKeysFirst;
+        private List<String> snapshotRepositoryKeysFirst;
+
         public DescriptorImpl() {
             super(ArtifactoryIvyConfigurator.class);
             load();
@@ -418,6 +447,51 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return "hudson.ivy.IvyModuleSet".equals(item.getClass().getName());
+        }
+
+        @JavaScriptMethod
+        public List<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            if (artifactoryServer == null)
+                return releaseRepositoryKeysFirst;
+
+            String username;
+            String password;
+            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+                username = credentialsUsername;
+                password = credentialsPassword;
+            } else {
+                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+                username = deployedCredentials.getUsername();
+                password = deployedCredentials.getPassword();
+            }
+
+            ArtifactoryBuildInfoClient client;
+            if (StringUtils.isNotBlank(username)) {
+                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
+            } else {
+                client = new ArtifactoryBuildInfoClient(url, new NullLog());
+            }
+            client.setConnectionTimeout(10);
+
+            if (Jenkins.getInstance().proxy != null) {
+                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            try {
+                releaseRepositoryKeysFirst = client.getLocalRepositoriesKeys();
+                Collections.sort(releaseRepositoryKeysFirst);
+                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+
+                return releaseRepositoryKeysFirst;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            /*
+            * In case of Exception, we write error in the Javascript scope!
+            * */
+            return Lists.newArrayList();
         }
 
         @Override
@@ -456,6 +530,29 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             return descriptor.getArtifactoryServers();
         }
 
+        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
+            List<ArtifactoryServer> servers = getArtifactoryServers();
+            for (ArtifactoryServer server : servers) {
+                if (server.getUrl().equals(artifactoryUrl)) {
+                    return server;
+                }
+            }
+            return null;
+        }
+
+        public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+            ProxyConfiguration proxyConfiguration = null;
+            if (proxy != null) {
+                proxyConfiguration = new ProxyConfiguration();
+                proxyConfiguration.host = proxy.name;
+                proxyConfiguration.port = proxy.port;
+                proxyConfiguration.username = proxy.getUserName();
+                proxyConfiguration.password = proxy.getPassword();
+            }
+
+            return proxyConfiguration;
+        }
+
         public boolean isJiraPluginEnabled() {
             return (Jenkins.getInstance().getPlugin("jira") != null);
         }
@@ -469,16 +566,4 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             super(xstream);
         }
     }
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String username;
-
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String password;
 }
