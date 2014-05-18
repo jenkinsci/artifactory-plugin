@@ -103,7 +103,7 @@ public class ExtractorUtils {
     *   this method will discard it.
     */
     private static String publicGitUrl(String gitUrl) {
-        if (gitUrl != null && gitUrl.contains("@")) {
+        if (gitUrl != null && gitUrl.contains("https://") && gitUrl.contains("@")) {
             StringBuilder sb = new StringBuilder(gitUrl);
             int start = sb.indexOf("https://");
             int end = sb.indexOf("@") + 1;
