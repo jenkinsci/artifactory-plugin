@@ -455,31 +455,9 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             if (artifactoryServer == null)
                 return releaseRepositoryKeysFirst;
 
-            String username;
-            String password;
-            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
-                username = credentialsUsername;
-                password = credentialsPassword;
-            } else {
-                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
-                username = deployedCredentials.getUsername();
-                password = deployedCredentials.getPassword();
-            }
-
-            ArtifactoryBuildInfoClient client;
-            if (StringUtils.isNotBlank(username)) {
-                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
-            } else {
-                client = new ArtifactoryBuildInfoClient(url, new NullLog());
-            }
-            client.setConnectionTimeout(10);
-
-            if (Jenkins.getInstance().proxy != null) {
-                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
-            }
-
             try {
-                releaseRepositoryKeysFirst = client.getLocalRepositoriesKeys();
+                releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
+                        overridingDeployerCredentials, artifactoryServer);
                 Collections.sort(releaseRepositoryKeysFirst);
                 snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
 
@@ -538,19 +516,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 }
             }
             return null;
-        }
-
-        public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
-            ProxyConfiguration proxyConfiguration = null;
-            if (proxy != null) {
-                proxyConfiguration = new ProxyConfiguration();
-                proxyConfiguration.host = proxy.name;
-                proxyConfiguration.port = proxy.port;
-                proxyConfiguration.username = proxy.getUserName();
-                proxyConfiguration.password = proxy.getPassword();
-            }
-
-            return proxyConfiguration;
         }
 
         public boolean isJiraPluginEnabled() {

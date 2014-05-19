@@ -2,7 +2,11 @@ package org.jfrog.hudson.util;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ResolverOverrider;
@@ -52,5 +56,81 @@ public abstract class RepositoriesUtils {
         }));
 
         return virtualRepositories;
+    }
+
+    public static List<VirtualRepository> getVirtualRepositoryKeys(String url, String credentialsUsername,
+                                                                   String credentialsPassword, boolean overridingDeployerCredentials,
+                                                                   ArtifactoryServer artifactoryServer) throws IOException {
+        List<VirtualRepository> virtualRepositories;
+        String username;
+        String password;
+        if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+            username = credentialsUsername;
+            password = credentialsPassword;
+        } else {
+            Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+            username = deployedCredentials.getUsername();
+            password = deployedCredentials.getPassword();
+        }
+
+        ArtifactoryBuildInfoClient client;
+        if (StringUtils.isNotBlank(username)) {
+            client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
+        } else {
+            client = new ArtifactoryBuildInfoClient(url, new NullLog());
+        }
+        client.setConnectionTimeout(10);
+
+        if (Jenkins.getInstance().proxy != null) {
+            client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+        }
+
+        virtualRepositories = RepositoriesUtils.generateVirtualRepos(client);
+        return virtualRepositories;
+    }
+
+    public static List<String> getLocalRepositories(String url, String credentialsUsername,
+                                                    String credentialsPassword, boolean overridingDeployerCredentials,
+                                                    ArtifactoryServer artifactoryServer) throws IOException {
+        List<String> localRepository;
+        String username;
+        String password;
+        if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+            username = credentialsUsername;
+            password = credentialsPassword;
+        } else {
+            Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+            username = deployedCredentials.getUsername();
+            password = deployedCredentials.getPassword();
+        }
+
+        ArtifactoryBuildInfoClient client;
+        if (StringUtils.isNotBlank(username)) {
+            client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
+        } else {
+            client = new ArtifactoryBuildInfoClient(url, new NullLog());
+        }
+        client.setConnectionTimeout(10);
+
+        if (Jenkins.getInstance().proxy != null) {
+            client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+        }
+
+        localRepository = client.getLocalRepositoriesKeys();
+
+        return localRepository;
+    }
+
+    private static ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+        ProxyConfiguration proxyConfiguration = null;
+        if (proxy != null) {
+            proxyConfiguration = new ProxyConfiguration();
+            proxyConfiguration.host = proxy.name;
+            proxyConfiguration.port = proxy.port;
+            proxyConfiguration.username = proxy.getUserName();
+            proxyConfiguration.password = proxy.getPassword();
+        }
+
+        return proxyConfiguration;
     }
 }

@@ -3,18 +3,16 @@ package org.jfrog.hudson.generic;
 import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.matrix.MatrixProject;
-import hudson.matrix.MatrixProject.DescriptorImpl;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.dependency.BuildDependency;
-import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.client.ProxyConfiguration;
@@ -340,33 +338,12 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             if (artifactoryServer == null)
                 return releaseRepositoryKeysFirst;
 
-            String username;
-            String password;
-            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
-                username = credentialsUsername;
-                password = credentialsPassword;
-            } else {
-                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
-                username = deployedCredentials.getUsername();
-                password = deployedCredentials.getPassword();
-            }
-
-            ArtifactoryBuildInfoClient client;
-            if (StringUtils.isNotBlank(username)) {
-                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
-            } else {
-                client = new ArtifactoryBuildInfoClient(url, new NullLog());
-            }
-            client.setConnectionTimeout(10);
-
-            if (Jenkins.getInstance().proxy != null) {
-                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
-            }
-
             try {
-                releaseRepositoryKeysFirst = client.getLocalRepositoriesKeys();
+                releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
+                        overridingDeployerCredentials, artifactoryServer);
+
                 Collections.sort(releaseRepositoryKeysFirst);
-                // snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+//                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
 
                 return releaseRepositoryKeysFirst;
             } catch (Exception e) {
@@ -410,19 +387,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 }
             }
             return null;
-        }
-
-        public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
-            ProxyConfiguration proxyConfiguration = null;
-            if (proxy != null) {
-                proxyConfiguration = new ProxyConfiguration();
-                proxyConfiguration.host = proxy.name;
-                proxyConfiguration.port = proxy.port;
-                proxyConfiguration.username = proxy.getUserName();
-                proxyConfiguration.password = proxy.getPassword();
-            }
-
-            return proxyConfiguration;
         }
     }
 }

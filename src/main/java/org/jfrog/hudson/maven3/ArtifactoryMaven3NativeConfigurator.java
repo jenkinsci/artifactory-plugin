@@ -9,12 +9,8 @@ import hudson.maven.MavenModuleSetBuild;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.extractor.MavenExtractorHelper;
@@ -151,31 +147,9 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             if (artifactoryServer == null)
                 return virtualRepositoryKeys;
 
-            String username;
-            String password;
-            if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
-                username = credentialsUsername;
-                password = credentialsPassword;
-            } else {
-                Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
-                username = deployedCredentials.getUsername();
-                password = deployedCredentials.getPassword();
-            }
-
-            ArtifactoryBuildInfoClient client;
-            if (StringUtils.isNotBlank(username)) {
-                client = new ArtifactoryBuildInfoClient(url, username, password, new NullLog());
-            } else {
-                client = new ArtifactoryBuildInfoClient(url, new NullLog());
-            }
-            client.setConnectionTimeout(10);
-
-            if (Jenkins.getInstance().proxy != null) {
-                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
-            }
-
             try {
-                virtualRepositoryKeys = RepositoriesUtils.generateVirtualRepos(client);
+                virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(url, credentialsUsername, credentialsPassword,
+                        overridingDeployerCredentials, artifactoryServer);
                 Collections.sort(virtualRepositoryKeys);
 
                 return virtualRepositoryKeys;
@@ -225,19 +199,6 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 }
             }
             return null;
-        }
-
-        public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
-            ProxyConfiguration proxyConfiguration = null;
-            if (proxy != null) {
-                proxyConfiguration = new ProxyConfiguration();
-                proxyConfiguration.host = proxy.name;
-                proxyConfiguration.port = proxy.port;
-                proxyConfiguration.username = proxy.getUserName();
-                proxyConfiguration.password = proxy.getPassword();
-            }
-
-            return proxyConfiguration;
         }
     }
 
