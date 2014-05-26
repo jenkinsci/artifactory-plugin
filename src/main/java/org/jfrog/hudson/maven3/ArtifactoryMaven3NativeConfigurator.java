@@ -110,7 +110,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public List<VirtualRepository> getVirtualRepositoryKeys() {
-        if (getDescriptor().virtualRepositoryKeys == null) {
+        if (getDownloadReleaseRepositoryKey() == null || getDownloadSnapshotRepositoryKey() == null) {
             getDescriptor().virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(this, null, getArtifactoryServer());
             return getDescriptor().virtualRepositoryKeys;
         }

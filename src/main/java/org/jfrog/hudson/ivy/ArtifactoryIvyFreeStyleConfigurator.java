@@ -21,9 +21,8 @@ import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.*;
 import hudson.matrix.MatrixProject;
-import hudson.matrix.MatrixProject.DescriptorImpl;
+import hudson.model.*;
 import hudson.remoting.Which;
 import hudson.tasks.Ant;
 import hudson.tasks.BuildWrapper;
@@ -33,9 +32,6 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -419,21 +415,12 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
-        if (getDescriptor().releaseRepositoryKeysFirst == null) {
+        if (getRepositoryKey() == null) {
             getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
             return getDescriptor().releaseRepositoryKeysFirst;
         }
 
         return getDescriptor().releaseRepositoryKeysFirst;
-    }
-
-    public List<String> getSnapshotRepositoryKeysFirst() {
-        if (getDescriptor().snapshotRepositoryKeysFirst == null) {
-            getDescriptor().snapshotRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-            return getDescriptor().snapshotRepositoryKeysFirst;
-        }
-
-        return getDescriptor().snapshotRepositoryKeysFirst;
     }
 
     @Override
@@ -444,8 +431,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<String> releaseRepositoryKeysFirst;
-        private List<String> snapshotRepositoryKeysFirst;
-
 
         public DescriptorImpl() {
             super(ArtifactoryIvyFreeStyleConfigurator.class);
@@ -467,7 +452,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
                         overridingDeployerCredentials, artifactoryServer);
                 Collections.sort(releaseRepositoryKeysFirst);
-                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
 
                 return releaseRepositoryKeysFirst;
             } catch (Exception e) {

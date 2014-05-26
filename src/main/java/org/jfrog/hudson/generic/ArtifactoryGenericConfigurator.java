@@ -207,16 +207,12 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
-        if (getDescriptor().releaseRepositoryKeysFirst == null) {
+        if (getRepositoryKey() == null) {
             getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
             return getDescriptor().releaseRepositoryKeysFirst;
         }
 
         return getDescriptor().releaseRepositoryKeysFirst;
-    }
-
-    public List<String> getSnapshotRepositoryKeysFirst() {
-        return RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
     }
 
     @Override

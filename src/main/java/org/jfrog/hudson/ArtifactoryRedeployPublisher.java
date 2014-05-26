@@ -458,7 +458,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
-        if (getDescriptor().releaseRepositoryKeysFirst == null) {
+        if (getRepositoryKey() == null) {
             getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
             return getDescriptor().releaseRepositoryKeysFirst;
         }
@@ -466,8 +466,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return getDescriptor().releaseRepositoryKeysFirst;
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public List<String> getSnapshotRepositoryKeysFirst() {
-        if (getDescriptor().snapshotRepositoryKeysFirst == null) {
+        if (getSnapshotsRepositoryKey() == null) {
             getDescriptor().snapshotRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
             return getDescriptor().snapshotRepositoryKeysFirst;
         }

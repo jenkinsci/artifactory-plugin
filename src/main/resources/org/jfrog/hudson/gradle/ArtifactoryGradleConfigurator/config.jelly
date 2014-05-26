@@ -11,10 +11,10 @@
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Resolution repository}">
                             <select class="setting-input" name="downloadReleaseRepositoryKey"
-                                    id="gradleDownloadReleaseRepositoryKey">
+                                    id="gradleDownloadReleaseRepositoryKey${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.downloadReleaseRepositoryKey == null}">
-                                        <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                    <j:when test="${instance.virtualRepositoryKeys != null}">
+                                    <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
                                             <f:option selected="${r.displayName==instance.downloadReleaseRepositoryKey}"
                                                       value="${r.value}">${r.displayName}
                                             </f:option>
@@ -36,17 +36,17 @@
                         </script>
                         <r:virtualRepos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                         bind="gradleResolveBind"
-                                        on="gradleDownloadReleaseRepositoryKey"
+                                        on="gradleDownloadReleaseRepositoryKey${s.url}"
                                         repoUrl="$('artifactoryUrl').value"
                                         credentialUserName="'none'"
                                         credentialPassword="'none'"
                                         isCredential="false"/>
 
                         <f:entry title="${%Publishing repository}">
-                            <select class="setting-input" name="repositoryKey" id="gradleRepositoryKey">
+                            <select class="setting-input" name="repositoryKey" id="gradleRepositoryKey${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.repositoryKey == null}">
-                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                    <j:when test="${instance.releaseRepositoryKeysFirst != null}">
+                                    <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                             <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
                                             </f:option>
                                         </j:forEach>
@@ -66,7 +66,7 @@
                         </script>
                         <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                  bind="gradleDeployBind"
-                                 on="gradleRepositoryKey"
+                                 on="gradleRepositoryKey${s.url}"
                                  repoUrl="$('artifactoryUrl').value"
                                  credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                                  credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"

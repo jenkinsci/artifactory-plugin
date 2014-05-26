@@ -4,11 +4,12 @@
 
 function virtualRepos(button, paramList, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
     button = button._button;
+    var spinner = $(button).up("DIV").next();
+    spinner.style.display = "block";
+    var target = spinner.next();
+    target.innerHTML = "";
 
     bind.refreshVirtualRepo(artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
-        var spinner = $(button).up("DIV").next();
-        spinner.style.display = "block";
-        var target = spinner.next();
 
         if (t.responseObject().length === 0) {
             spinner.style.display = "none";

@@ -13,10 +13,10 @@
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                     <f:entry title="${%Resolution releases repository}">
                         <select class="setting-input" name="downloadReleaseRepositoryKey"
-                                id="downloadReleaseRepositoryKey">
+                                id="downloadReleaseRepositoryKey${s.url}">
                             <j:choose>
-                                <j:when test="${instance.downloadReleaseRepositoryKey == null}">
-                                    <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                <j:when test="${instance.virtualRepositoryKeys != null}">
+                                <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
                                         <f:option selected="${r.displayName==instance.downloadReleaseRepositoryKey}"
                                                   value="${r.value}">${r.displayName}
                                         </f:option>
@@ -34,10 +34,10 @@
                     </f:entry>
                     <f:entry title="${%Resolution snapshots repository}">
                         <select class="setting-input" name="downloadSnapshotRepositoryKey"
-                                id="downloadSnapshotRepositoryKey">
+                                id="downloadSnapshotRepositoryKey${s.url}">
                             <j:choose>
-                                <j:when test="${instance.downloadSnapshotRepositoryKey == null}">
-                                    <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                <j:when test="${instance.virtualRepositoryKeys != null}">
+                                <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
                                         <f:option selected="${r.displayName==instance.downloadSnapshotRepositoryKey}"
                                                   value="${r.value}">${r.displayName}
                                         </f:option>
@@ -60,7 +60,7 @@
                     </script>
                     <r:virtualRepos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                     bind="maven3NativeResolveBind"
-                                    on="downloadReleaseRepositoryKey,downloadSnapshotRepositoryKey"
+                                    on="downloadReleaseRepositoryKey${s.url},downloadSnapshotRepositoryKey${s.url}"
                                     repoUrl="$('artifactoryUrlResolve').value"
                                     credentialUserName="$('overridingResolverCredentials').down('input[type=text]').value"
                                     credentialPassword="$('overridingResolverCredentials').down('input[type=password]').value"

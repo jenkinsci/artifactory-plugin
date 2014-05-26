@@ -11,10 +11,10 @@
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Publishing repository}">
-                            <select class="setting-input" name="repositoryKey" id="ivyFreeRepositoryKey">
+                            <select class="setting-input" name="repositoryKey" id="ivyFreeRepositoryKey${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.repositoryKey == null}">
-                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                    <j:when test="${instance.releaseRepositoryKeysFirst != null}">
+                                    <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                             <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
                                             </f:option>
                                         </j:forEach>
@@ -34,7 +34,7 @@
                         </script>
                         <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                  bind="ivyFreeDeployBind"
-                                 on="ivyFreeRepositoryKey"
+                                 on="ivyFreeRepositoryKey${s.url}"
                                  repoUrl="$('artifactoryUrlDeploy').value"
                                  credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                                  credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"

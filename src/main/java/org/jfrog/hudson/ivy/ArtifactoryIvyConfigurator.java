@@ -412,21 +412,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
-        if (getDescriptor().releaseRepositoryKeysFirst == null) {
+        if (getRepositoryKey() == null) {
             getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
             return getDescriptor().releaseRepositoryKeysFirst;
         }
 
         return getDescriptor().releaseRepositoryKeysFirst;
-    }
-
-    public List<String> getSnapshotRepositoryKeysFirst() {
-        if (getDescriptor().snapshotRepositoryKeysFirst == null) {
-            getDescriptor().snapshotRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-            return getDescriptor().snapshotRepositoryKeysFirst;
-        }
-
-        return getDescriptor().snapshotRepositoryKeysFirst;
     }
 
     @Override
@@ -437,7 +428,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<String> releaseRepositoryKeysFirst;
-        private List<String> snapshotRepositoryKeysFirst;
 
         public DescriptorImpl() {
             super(ArtifactoryIvyConfigurator.class);
@@ -459,7 +449,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
                         overridingDeployerCredentials, artifactoryServer);
                 Collections.sort(releaseRepositoryKeysFirst);
-                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
 
                 return releaseRepositoryKeysFirst;
             } catch (Exception e) {

@@ -4,11 +4,12 @@
 
 function repos(button, paramList, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
     button = button._button;
+    var spinner = $(button).up("DIV").next();
+    spinner.style.display = "block";
+    var target = spinner.next();
+    target.innerHTML = "";
 
     bind.refreshRepo(artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
-        var spinner = $(button).up("DIV").next();
-        spinner.style.display = "block";
-        var target = spinner.next();
 
         if (t.responseObject().length === 0) {
             spinner.style.display = "none";
@@ -27,6 +28,7 @@ function repos(button, paramList, artifactoryUrl, deployUsername, deployPassword
 
                     var option = document.createElement("option");
                     option.text = item;
+                    option.value = item;
                     //var sel = $(controlTagId).options[$(controlTagId).selectedIndex];
                     select.appendChild(option);
                 });

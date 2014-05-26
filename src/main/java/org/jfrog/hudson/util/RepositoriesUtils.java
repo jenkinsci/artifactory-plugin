@@ -68,7 +68,7 @@ public abstract class RepositoriesUtils {
             username = credentialsUsername;
             password = credentialsPassword;
         } else {
-            Credentials deployedCredentials = artifactoryServer.getDeployerCredentials();
+            Credentials deployedCredentials = artifactoryServer.getResolvingCredentials();
             username = deployedCredentials.getUsername();
             password = deployedCredentials.getPassword();
         }

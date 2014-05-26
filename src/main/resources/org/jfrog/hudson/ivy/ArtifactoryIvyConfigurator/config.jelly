@@ -27,10 +27,10 @@
                                field="artifactoryUrl"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Target repository}">
-                            <select class="setting-input" name="repositoryKey" id="ivyRepositoryKey">
+                            <select class="setting-input" name="repositoryKey" id="ivyRepositoryKey${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.repositoryKey == null}">
-                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                    <j:when test="${instance.releaseRepositoryKeysFirst != null}">
+                                    <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                             <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
                                             </f:option>
                                         </j:forEach>

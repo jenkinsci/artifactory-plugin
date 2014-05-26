@@ -9,10 +9,10 @@
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Target Repository}"
                                  help="/plugin/artifactory/help/common/help-deployRepository.html">
-                            <select class="setting-input" name="repositoryKey" id="genericRepositoryKey">
+                            <select class="setting-input" name="repositoryKey" id="genericRepositoryKey${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.repositoryKey == null}">
-                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                    <j:when test="${instance.releaseRepositoryKeysFirst != null}">
+                                    <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                             <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
                                             </f:option>
                                         </j:forEach>
@@ -32,7 +32,7 @@
                         </script>
                         <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                  bind="genericDeployBind"
-                                 on="genericRepositoryKey"
+                                 on="genericRepositoryKey${s.url}"
                                  repoUrl="$('artifactoryUrlDeploy').value"
                                  credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                                  credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"

@@ -15,10 +15,10 @@
 
                         <!--<j:invoke var="releaseRepos" on="${instance}" method="getReleaseRepositoryKeysFirst"/>
                         <f:editableComboBox field="repositoryKey" items="${releaseRepos}"/>-->
-                        <select class="setting-input" name="repositoryKey" id="repositoryKey">
+                        <select class="setting-input" name="repositoryKey" id="publishRepositoryKey${s.url}">
                             <j:choose>
-                                <j:when test="${instance.releaseRepositoryKeysFirst == null}">
-                                    <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                <j:when test="${instance.releaseRepositoryKeysFirst != null}">
+                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                         <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
                                     </j:forEach>
                                 </j:when>
@@ -33,10 +33,11 @@
                     </f:entry>
                     <f:entry title="${%Target snapshots repository}"
                              help="/plugin/artifactory/help/common/help-deploySnapshots.html">
-                        <select class="setting-input" name="snapshotsRepositoryKey" id="snapshotsRepositoryKey">
+                        <select class="setting-input" name="snapshotsRepositoryKey"
+                                id="publishSnapshotsRepositoryKey${s.url}">
                             <j:choose>
-                                <j:when test="${instance.snapshotsRepositoryKey == null}">
-                                    <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
+                                <j:when test="${instance.snapshotRepositoryKeysFirst != null}">
+                                <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
                                         <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
                                         </f:option>
                                     </j:forEach>
@@ -57,7 +58,7 @@
                     </script>
                     <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                              bind="publisherDeployBind"
-                             on="repositoryKey,snapshotsRepositoryKey"
+                             on="publishRepositoryKey${s.url},publishSnapshotsRepositoryKey${s.url}"
                              repoUrl="$('artifactoryUrlDeploy').value"
                              credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                              credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"
