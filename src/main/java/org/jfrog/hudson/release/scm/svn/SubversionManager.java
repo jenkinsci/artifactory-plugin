@@ -57,7 +57,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
      */
     public void commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
         build.getWorkspace().act(new SVNCommitWorkingCopyCallable(commitMessage, getLocation(),
-                getSvnAuthenticationProvider(), buildListener));
+                getSvnAuthenticationProvider(build), buildListener));
     }
 
     /**
@@ -71,7 +71,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     public void createTag(final String tagUrl, final String commitMessage)
             throws IOException, InterruptedException {
         build.getWorkspace()
-                .act(new SVNCreateTagCallable(tagUrl, commitMessage, getLocation(), getSvnAuthenticationProvider(),
+                .act(new SVNCreateTagCallable(tagUrl, commitMessage, getLocation(), getSvnAuthenticationProvider(build),
                         buildListener));
     }
 
@@ -80,7 +80,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
      */
     public void revertWorkingCopy() throws IOException, InterruptedException {
         build.getWorkspace()
-                .act(new RevertWorkingCopyCallable(getLocation(), getSvnAuthenticationProvider(), buildListener));
+                .act(new RevertWorkingCopyCallable(getLocation(), getSvnAuthenticationProvider(build), buildListener));
     }
 
     /**
@@ -117,7 +117,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     }
 
     private void cleanupWorkingCopy() throws IOException, InterruptedException {
-        build.getWorkspace().act(new CleanupCallable(getLocation(), getSvnAuthenticationProvider(), buildListener));
+        build.getWorkspace().act(new CleanupCallable(getLocation(), getSvnAuthenticationProvider(build), buildListener));
     }
 
     public void safeRevertTag(String tagUrl, String commitMessageSuffix) {
@@ -145,14 +145,23 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     }
 
     private ISVNAuthenticationManager createAuthenticationManager() {
-        ISVNAuthenticationProvider sap = getSvnAuthenticationProvider();
+        ISVNAuthenticationProvider sap = getSvnAuthenticationProvider(build);
         ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
         sam.setAuthenticationProvider(sap);
         return sam;
     }
 
-    private ISVNAuthenticationProvider getSvnAuthenticationProvider() {
-        ISVNAuthenticationProvider sap = getJenkinsScm().getDescriptor().createAuthenticationProvider();
+    private ISVNAuthenticationProvider getSvnAuthenticationProvider(AbstractBuild<?, ?> build) {
+        ISVNAuthenticationProvider sap;
+        try {
+            sap = getJenkinsScm().createAuthenticationProvider(build.getParent(), getLocation());
+        } catch (NoSuchMethodError e) {
+            //fallback for versions under 2.x of org.jenkins-ci.plugins:subversion
+            buildListener.getLogger().println(
+                    "[RELEASE] You are using an old subversion jenkins plugin, please consider upgrading.");
+            sap = getJenkinsScm().getDescriptor().createAuthenticationProvider(build.getParent());
+        }
+
         if (sap == null) {
             throw new AbortException("Subversion authentication info is not set.");
         }
@@ -160,13 +169,14 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
     }
 
     private static class SVNCommitWorkingCopyCallable implements FilePath.FileCallable<Object> {
+        private static final long serialVersionUID = 1L;
         private final String commitMessage;
         private final SubversionSCM.ModuleLocation location;
         private final ISVNAuthenticationProvider authProvider;
         private final TaskListener buildListener;
 
         public SVNCommitWorkingCopyCallable(String commitMessage, SubversionSCM.ModuleLocation location,
-                ISVNAuthenticationProvider provider, TaskListener listener) {
+                                            ISVNAuthenticationProvider provider, TaskListener listener) {
             this.commitMessage = commitMessage;
             this.location = location;
             authProvider = provider;
@@ -189,11 +199,10 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
                 }
                 return null;
             } catch (SVNException e) {
+                debuggingLogger.log(Level.FINE, "Failed to Commit WorkingCopy", e);
                 throw new IOException(e.getMessage());
             }
         }
-
-        private static final long serialVersionUID = 1L;
     }
 
     /**
@@ -241,6 +250,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
                 }
                 return null;
             } catch (SVNException e) {
+                debuggingLogger.log(Level.FINE, "Failed to create tag", e);
                 throw new IOException("Subversion tag creation failed: " + e.getMessage());
             }
         }
@@ -269,6 +279,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
                 wcClient.doRevert(new File[]{workingCopy}, SVNDepth.INFINITY, null);
                 return null;
             } catch (SVNException e) {
+                debuggingLogger.log(Level.FINE, "Failed Revert WorkingCopy ", e);
                 throw new IOException(e.getMessage());
             }
         }
@@ -296,6 +307,7 @@ public class SubversionManager extends AbstractScmManager<SubversionSCM> {
                 wcClient.doCleanup(workingCopy);
                 return null;
             } catch (SVNException e) {
+                debuggingLogger.log(Level.FINE, "Failed Cleanup ", e);
                 throw new IOException(e.getMessage());
             }
         }
