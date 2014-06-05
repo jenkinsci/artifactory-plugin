@@ -58,9 +58,9 @@ function compareSelectTags(newRepos, oldRepos) {
         return true;
 
     var ans = true;
-    [].forEach.call(newRepos, function (elmNew) {
+    [].forEach.call(oldRepos, function (elmOld) {
         var flag = false;
-        [].forEach.call(oldRepos, function (elmOld) {
+        [].forEach.call(newRepos, function (elmNew) {
             if (elmNew.value === elmOld.value && !flag)
                 flag = true;
         });
