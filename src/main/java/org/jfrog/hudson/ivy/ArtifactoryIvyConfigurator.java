@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson.ivy;
 
-import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -29,9 +28,6 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -439,6 +435,16 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             return "hudson.ivy.IvyModuleSet".equals(item.getClass().getName());
         }
 
+        /**
+         * This method triggered from the client side by Ajax call.
+         * The Element that trig is the "Refresh Repositories" button.
+         *
+         * @param url                           the artifactory url
+         * @param credentialsUsername           override credentials user name
+         * @param credentialsPassword           override credentials password
+         * @param overridingDeployerCredentials user choose to override credentials
+         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         */
         @JavaScriptMethod
         public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<String> response = new RefreshRepository<String>();

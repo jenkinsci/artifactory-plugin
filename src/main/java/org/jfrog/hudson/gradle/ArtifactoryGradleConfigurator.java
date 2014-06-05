@@ -18,7 +18,6 @@ package org.jfrog.hudson.gradle;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
@@ -589,6 +588,16 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
         }
 
+        /**
+         * This method triggered from the client side by Ajax call.
+         * The Element that trig is the "Refresh Repositories" button.
+         *
+         * @param url                           the artifactory url
+         * @param credentialsUsername           override credentials user name
+         * @param credentialsPassword           override credentials password
+         * @param overridingDeployerCredentials user choose to override credentials
+         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         */
         @JavaScriptMethod
         public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<String> response = new RefreshRepository<String>();
@@ -616,6 +625,22 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return response;
         }
 
+        /**
+         * This method triggered from the client side by Ajax call.
+         * The Element that trig is the "Refresh Repositories" button.
+         *
+         * @param url
+         *       the artifactory url
+         * @param credentialsUsername
+         *       override credentials user name
+         * @param credentialsPassword
+         *       override credentials password
+         * @param overridingDeployerCredentials
+         *       user choose to override credentials
+         *
+         * @return
+         *       {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         */
         @JavaScriptMethod
         public RefreshRepository<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<VirtualRepository> response = new RefreshRepository<VirtualRepository>();

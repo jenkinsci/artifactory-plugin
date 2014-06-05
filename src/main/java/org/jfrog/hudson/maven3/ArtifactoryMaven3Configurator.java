@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson.maven3;
 
-import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.matrix.MatrixProject;
@@ -406,6 +405,16 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
         }
 
+        /**
+         * This method triggered from the client side by Ajax call.
+         * The Element that trig is the "Refresh Repositories" button.
+         *
+         * @param url                           the artifactory url
+         * @param credentialsUsername           override credentials user name
+         * @param credentialsPassword           override credentials password
+         * @param overridingDeployerCredentials user choose to override credentials
+         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         */
         @JavaScriptMethod
         public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<String> response = new RefreshRepository<String>();

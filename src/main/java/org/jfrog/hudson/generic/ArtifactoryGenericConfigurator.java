@@ -1,6 +1,5 @@
 package org.jfrog.hudson.generic;
 
-import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.matrix.MatrixProject;
@@ -19,10 +18,7 @@ import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
-import org.jfrog.hudson.util.CredentialResolver;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.IncludesExcludes;
-import org.jfrog.hudson.util.RepositoriesUtils;
+import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
@@ -328,28 +324,42 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
         }
 
+        /**
+         * This method triggered from the client side by Ajax call.
+         * The Element that trig is the "Refresh Repositories" button.
+         *
+         * @param url                           the artifactory url
+         * @param credentialsUsername           override credentials user name
+         * @param credentialsPassword           override credentials password
+         * @param overridingDeployerCredentials user choose to override credentials
+         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         */
         @JavaScriptMethod
-        public List<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            RefreshRepository<String> response = new RefreshRepository<String>();
             ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
-            if (artifactoryServer == null)
-                return releaseRepositoryKeysFirst;
+/*            if (artifactoryServer == null)
+                return releaseRepositoryKeysFirst;*/
 
             try {
                 releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
                         overridingDeployerCredentials, artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
-//                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+                response.setRepos(releaseRepositoryKeysFirst);
+                response.setSuccess(true);
 
-                return releaseRepositoryKeysFirst;
+                return response;
             } catch (Exception e) {
                 e.printStackTrace();
+                response.setResponseMessage(e.getMessage());
+                response.setSuccess(false);
             }
 
             /*
             * In case of Exception, we write error in the Javascript scope!
             * */
-            return Lists.newArrayList();
+            return response;
         }
 
         @Override

@@ -491,6 +491,16 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return jobType == MavenModuleSet.class;
         }
 
+        /**
+         * This method triggered from the client side by Ajax call.
+         * The Element that trig is the "Refresh Repositories" button.
+         *
+         * @param url                           the artifactory url
+         * @param credentialsUsername           override credentials user name
+         * @param credentialsPassword           override credentials password
+         * @param overridingDeployerCredentials user choose to override credentials
+         * @return {@link RefreshRepository} object that represents the response of the repositories
+         */
         @JavaScriptMethod
         public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<String> response = new RefreshRepository<String>();

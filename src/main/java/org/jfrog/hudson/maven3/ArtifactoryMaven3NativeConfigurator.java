@@ -140,6 +140,16 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             return MavenModuleSet.class.equals(item.getClass());
         }
 
+        /**
+         * This method triggered from the client side by Ajax call.
+         * The Element that trig is the "Refresh Repositories" button.
+         *
+         * @param url                           the artifactory url
+         * @param credentialsUsername           override credentials user name
+         * @param credentialsPassword           override credentials password
+         * @param overridingDeployerCredentials user choose to override credentials
+         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         */
         @JavaScriptMethod
         public RefreshRepository<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<VirtualRepository> response = new RefreshRepository<VirtualRepository>();
