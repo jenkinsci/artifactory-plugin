@@ -407,11 +407,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         }
 
         @JavaScriptMethod
-        public List<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            RefreshRepository<String> response = new RefreshRepository<String>();
             ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
-            if (artifactoryServer == null)
-                return releaseRepositoryKeysFirst;
-
+//            if (artifactoryServer == null)
+//                return releaseRepositoryKeysFirst;
 
             try {
                 releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
@@ -419,16 +419,20 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+                response.setRepos(releaseRepositoryKeysFirst);
+                response.setSuccess(true);
 
-                return releaseRepositoryKeysFirst;
+                return response;
             } catch (Exception e) {
                 e.printStackTrace();
+                response.setResponseMessage(e.getMessage());
+                response.setSuccess(false);
             }
 
             /*
             * In case of Exception, we write error in the Javascript scope!
             * */
-            return Lists.newArrayList();
+            return response;
         }
 
         @Override

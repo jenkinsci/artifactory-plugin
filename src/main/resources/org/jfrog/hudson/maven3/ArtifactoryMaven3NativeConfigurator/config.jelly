@@ -15,19 +15,20 @@
                         <select class="setting-input" name="downloadReleaseRepositoryKey"
                                 id="downloadReleaseRepositoryKey${s.url}">
                             <j:choose>
-                                <j:when test="${instance.virtualRepositoryKeys != null}">
-                                <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                <j:when test="${instance.downloadReleaseRepositoryKey != null}">
+                                    <f:option selected="${instance.downloadReleaseRepositoryKey}"
+                                              value="${instance.downloadReleaseRepositoryKey}">
+                                        ${instance.downloadReleaseRepositoryKey}
+                                    </f:option>
+                                </j:when>
+                                <j:otherwise>
+                                    <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
                                         <f:option selected="${r.displayName==instance.downloadReleaseRepositoryKey}"
                                                   value="${r.value}">${r.displayName}
                                         </f:option>
                                     </j:forEach>
-                                </j:when>
-                                <j:otherwise>
-                                    <f:option selected="instance.downloadReleaseRepositoryKey}"
-                                              value="${instance.downloadReleaseRepositoryKey}">
-                                        ${instance.downloadReleaseRepositoryKey}
-                                    </f:option>
                                 </j:otherwise>
+
                             </j:choose>
 
                         </select>
@@ -36,18 +37,18 @@
                         <select class="setting-input" name="downloadSnapshotRepositoryKey"
                                 id="downloadSnapshotRepositoryKey${s.url}">
                             <j:choose>
-                                <j:when test="${instance.virtualRepositoryKeys != null}">
-                                <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                <j:when test="${instance.downloadSnapshotRepositoryKey != null}">
+                                    <f:option selected="${instance.downloadSnapshotRepositoryKey}"
+                                              value="${instance.downloadSnapshotRepositoryKey}">
+                                        ${instance.downloadSnapshotRepositoryKey}
+                                    </f:option>
+                                </j:when>
+                                <j:otherwise>
+                                    <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
                                         <f:option selected="${r.displayName==instance.downloadSnapshotRepositoryKey}"
                                                   value="${r.value}">${r.displayName}
                                         </f:option>
                                     </j:forEach>
-                                </j:when>
-                                <j:otherwise>
-                                    <f:option selected="instance.downloadSnapshotRepositoryKey}"
-                                              value="${instance.downloadSnapshotRepositoryKey}">
-                                        ${instance.downloadSnapshotRepositoryKey}
-                                    </f:option>
                                 </j:otherwise>
                             </j:choose>
                         </select>
@@ -72,7 +73,7 @@
     </f:dropdownList>
     <f:block>
         <table style="width:100%" id="overridingResolverCredentials">
-        <j:set var="overridingResolverCredentials" value="${instance.overridingResolverCredentials}"/>
+            <j:set var="overridingResolverCredentials" value="${instance.overridingResolverCredentials}"/>
             <f:optionalBlock name="overridingResolverCredentials" checked="${overridingResolverCredentials != null}"
                              title="Override default resolution credentials"
                              help="/plugin/artifactory/help/common/help-overridingResolverCredentials.html">

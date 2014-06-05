@@ -13,16 +13,16 @@
                         <f:entry title="${%Publishing repository}">
                             <select class="setting-input" name="repositoryKey" id="ivyFreeRepositoryKey${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.releaseRepositoryKeysFirst != null}">
-                                    <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                    <j:when test="${instance.repositoryKey != null}">
+                                        <f:option selected="${instance.repositoryKey}"
+                                                  value="${instance.repositoryKey}">${instance.repositoryKey}
+                                        </f:option>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                             <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
                                             </f:option>
                                         </j:forEach>
-                                    </j:when>
-                                    <j:otherwise>
-                                        <f:option selected="instance.repositoryKey}"
-                                                  value="${instance.repositoryKey}">${instance.repositoryKey}
-                                        </f:option>
                                     </j:otherwise>
                                 </j:choose>
                             </select>

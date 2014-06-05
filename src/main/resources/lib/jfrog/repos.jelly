@@ -47,5 +47,6 @@
             ${attrs.progress}
         </div>
         <div><!-- this is where the error message goes --></div>
+        <div><!-- this is where the warning message goes --></div>
     </f:entry>
 </j:jelly>

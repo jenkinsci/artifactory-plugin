@@ -31,13 +31,13 @@
                             <select class="setting-input" name="repositoryKey" id="repositoryKey${s.url}">
                                 <j:choose>
                                     <j:when test="${instance.releaseRepositoryKeysFirst != null}">
-                                    <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                             <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
                                             </f:option>
                                         </j:forEach>
                                     </j:when>
                                     <j:otherwise>
-                                        <f:option selected="instance.repositoryKey}"
+                                        <f:option selected="${instance.repositoryKey}"
                                                   value="${instance.repositoryKey}">${instance.repositoryKey}
                                         </f:option>
                                     </j:otherwise>
@@ -50,13 +50,13 @@
                                     id="snapshotsRepositoryKey${s.url}">
                                 <j:choose>
                                     <j:when test="${instance.snapshotRepositoryKeysFirst != null}">
-                                    <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
+                                        <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
                                             <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
                                             </f:option>
                                         </j:forEach>
                                     </j:when>
                                     <j:otherwise>
-                                        <f:option selected="instance.snapshotsRepositoryKey}"
+                                        <f:option selected="${instance.snapshotsRepositoryKey}"
                                                   value="${instance.snapshotsRepositoryKey}">
                                             ${instance.snapshotsRepositoryKey}
                                         </f:option>

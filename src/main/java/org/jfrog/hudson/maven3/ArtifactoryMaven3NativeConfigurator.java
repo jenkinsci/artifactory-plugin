@@ -1,6 +1,5 @@
 package org.jfrog.hudson.maven3;
 
-import com.google.common.collect.Lists;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
@@ -142,25 +141,30 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         }
 
         @JavaScriptMethod
-        public List<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshRepository<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            RefreshRepository<VirtualRepository> response = new RefreshRepository<VirtualRepository>();
             ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
-            if (artifactoryServer == null)
-                return virtualRepositoryKeys;
+            /*if (artifactoryServer == null)
+                return virtualRepositoryKeys;*/
 
             try {
                 virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(url, credentialsUsername, credentialsPassword,
                         overridingDeployerCredentials, artifactoryServer);
                 Collections.sort(virtualRepositoryKeys);
+                response.setRepos(virtualRepositoryKeys);
+                response.setSuccess(true);
 
-                return virtualRepositoryKeys;
+                return response;
             } catch (Exception e) {
                 e.printStackTrace();
+                response.setResponseMessage(e.getMessage());
+                response.setSuccess(false);
             }
 
             /*
-            * In case of Exception, we write error in the Javascript scope!
+            * In case of Exception, we write the error in the Javascript scope!
             * */
-            return Lists.newArrayList();
+            return response;
         }
 
         @Override

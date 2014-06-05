@@ -112,7 +112,7 @@ public abstract class RepositoriesUtils {
         }
         client.setConnectionTimeout(10);
 
-        if (Jenkins.getInstance().proxy != null) {
+        if (Jenkins.getInstance().proxy != null && !artifactoryServer.isBypassProxy()) {
             client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
         }
 
