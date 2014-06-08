@@ -136,20 +136,15 @@ public class ExtractorUtils {
 
         if (publisherContext != null) {
             setPublisherInfo(env, build, publisherContext, configuration);
+            setProxy(publisherContext.getArtifactoryServer(), configuration);
         }
 
         if (resolverContext != null) {
             setResolverInfo(configuration, resolverContext);
+            setProxy(resolverContext.getServer(), configuration);
         }
 
 
-        // TODO: distinguish between resolving bypass and deployment bypass
-        if (!resolverContext.getServer().isBypassProxy() && Jenkins.getInstance().proxy != null) {
-            configuration.proxy.setHost(Jenkins.getInstance().proxy.name);
-            configuration.proxy.setPort(Jenkins.getInstance().proxy.port);
-            configuration.proxy.setUsername(Jenkins.getInstance().proxy.getUserName());
-            configuration.proxy.setPassword(Jenkins.getInstance().proxy.getPassword());
-        }
 
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
                 publisherContext.isEnableIssueTrackerIntegration()) {
@@ -164,6 +159,16 @@ public class ExtractorUtils {
         addEnvVars(env, build, configuration, envVarsPatterns);
         persistConfiguration(build, configuration, env);
         return configuration;
+    }
+
+    private static void setProxy(ArtifactoryServer server, ArtifactoryClientConfiguration configuration) {
+        // TODO: distinguish between resolving bypass and deployment bypass
+        if (!server.isBypassProxy() && Jenkins.getInstance().proxy != null) {
+            configuration.proxy.setHost(Jenkins.getInstance().proxy.name);
+            configuration.proxy.setPort(Jenkins.getInstance().proxy.port);
+            configuration.proxy.setUsername(Jenkins.getInstance().proxy.getUserName());
+            configuration.proxy.setPassword(Jenkins.getInstance().proxy.getPassword());
+        }
     }
 
     private static void setResolverInfo(ArtifactoryClientConfiguration configuration, ResolverContext context) {
