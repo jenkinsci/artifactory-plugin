@@ -53,7 +53,8 @@
                     <f:validateButton
                             title="${%Test Connection}" progress="${%Testing...}"
                             method="testConnection"
-                            with="artifactoryUrl,username,password,resolverCredentials,resolverUsername,resolverPassword"/>
+                            with="artifactoryUrl,username,password,resolverCredentials,resolverUsername,resolverPassword,
+                                                artifactory.timeout"/>
 
                     <f:entry title="">
                         <div align="right">

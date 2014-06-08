@@ -25,12 +25,14 @@ import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ArtifactoryVersion;
+import org.jfrog.hudson.util.RepositoriesUtils;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -104,7 +106,8 @@ public class ArtifactoryBuilder extends Builder {
                                                @QueryParameter("password") final String deployerPassword,
                                                @QueryParameter("resolverCredentials") final boolean resolverCredentials,
                                                @QueryParameter("resolverUsername") final String resolverUsername,
-                                               @QueryParameter("resolverPassword") final String resolverPassword) throws ServletException {
+                                               @QueryParameter("resolverPassword") final String resolverPassword,
+                                               @QueryParameter("artifactory.timeout") final String timeout) throws ServletException {
 
             String username = deployerUsername;
             String password = deployerPassword;
@@ -123,7 +126,18 @@ public class ArtifactoryBuilder extends Builder {
             } else {
                 client = new ArtifactoryBuildInfoClient(url, new NullLog());
             }
-            client.setConnectionTimeout(10);
+
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
+
+            if (!artifactoryServer.isBypassProxy() && Jenkins.getInstance().proxy != null) {
+                client.setProxyConfiguration(RepositoriesUtils.createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            if (StringUtils.isNotBlank(timeout))
+                client.setConnectionTimeout(Integer.parseInt(timeout));
+            else
+                client.setConnectionTimeout(artifactoryServer.getTimeout());
+
             ArtifactoryVersion version;
             try {
                 version = client.verifyCompatibleArtifactoryVersion();
