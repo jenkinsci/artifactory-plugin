@@ -142,6 +142,15 @@ public class ExtractorUtils {
             setResolverInfo(configuration, resolverContext);
         }
 
+
+        // TODO: distinguish between resolving bypass and deployment bypass
+        if (!resolverContext.getServer().isBypassProxy() && Jenkins.getInstance().proxy != null) {
+            configuration.proxy.setHost(Jenkins.getInstance().proxy.name);
+            configuration.proxy.setPort(Jenkins.getInstance().proxy.port);
+            configuration.proxy.setUsername(Jenkins.getInstance().proxy.getUserName());
+            configuration.proxy.setPassword(Jenkins.getInstance().proxy.getPassword());
+        }
+
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
                 publisherContext.isEnableIssueTrackerIntegration()) {
             new IssuesTrackerHelper(build, listener, publisherContext.isAggregateBuildIssues(),
