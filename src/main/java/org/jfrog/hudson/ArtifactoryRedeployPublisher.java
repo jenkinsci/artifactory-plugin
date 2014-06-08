@@ -504,7 +504,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         @JavaScriptMethod
         public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<String> response = new RefreshRepository<String>();
-            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
            /* if (artifactoryServer == null)
                 return releaseRepositoryKeysFirst;*/
 
@@ -582,16 +582,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                     Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
             return descriptor.getArtifactoryServers();
-        }
-
-        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
-            List<ArtifactoryServer> servers = getArtifactoryServers();
-            for (ArtifactoryServer server : servers) {
-                if (server.getUrl().equals(artifactoryUrl)) {
-                    return server;
-                }
-            }
-            return null;
         }
 
         public boolean isJiraPluginEnabled() {

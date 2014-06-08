@@ -11,7 +11,7 @@ function repos(button, paramList, artifactoryUrl, deployUsername, deployPassword
     var warning = target.next();
     warning.innerHTML = "";
 
-    bind.refreshRepo(artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+    bind.refreshRepo($(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
         var response = t.responseObject();
         if (!response.success) {
             spinner.style.display = "none";

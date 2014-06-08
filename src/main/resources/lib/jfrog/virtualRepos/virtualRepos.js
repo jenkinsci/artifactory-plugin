@@ -11,7 +11,7 @@ function virtualRepos(button, paramList, artifactoryUrl, deployUsername, deployP
     var warning = target.next();
     warning.innerHTML = "";
 
-    bind.refreshVirtualRepo(artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+    bind.refreshVirtualRepo($(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
         var response = t.responseObject();
         if (!response.success) {
             spinner.style.display = "none";

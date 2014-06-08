@@ -23,7 +23,7 @@
                 <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                     <f:nested>
                         <input type="hidden" name="artifactoryName" value="${s.name}" field="artifactoryName"/>
-                        <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy" value="${s.url}"
+                        <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"
                                field="artifactoryUrl"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Target repository}">
@@ -50,8 +50,8 @@
                         </script>
                         <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                  bind="ivyDeployBind"
-                                 on="ivyRepositoryKey"
-                                 repoUrl="$('artifactoryUrlDeploy').value"
+                                 on="ivyRepositoryKey${s.url}"
+                                 repoUrl="artifactoryUrlDeploy${s.url}"
                                  credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                                  credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"
                                  isCredential="$('overridingDeployerCredentials').down('input').checked"/>

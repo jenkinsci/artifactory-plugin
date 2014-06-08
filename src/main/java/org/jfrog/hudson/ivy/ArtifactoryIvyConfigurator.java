@@ -29,7 +29,10 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
-import org.jfrog.hudson.*;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
+import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.*;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -398,13 +401,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     }
 
     public ArtifactoryServer getArtifactoryServer() {
-        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        for (ArtifactoryServer server : servers) {
-            if (server.getName().equals(getArtifactoryName())) {
-                return server;
-            }
-        }
-        return null;
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
@@ -448,7 +445,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         @JavaScriptMethod
         public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<String> response = new RefreshRepository<String>();
-            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
             /*if (artifactoryServer == null)
                 return releaseRepositoryKeysFirst;*/
 
@@ -503,19 +500,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
          * @return can be empty but never null.
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
-            ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
-                    Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
-            return descriptor.getArtifactoryServers();
-        }
-
-        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
-            List<ArtifactoryServer> servers = getArtifactoryServers();
-            for (ArtifactoryServer server : servers) {
-                if (server.getUrl().equals(artifactoryUrl)) {
-                    return server;
-                }
-            }
-            return null;
+            return RepositoriesUtils.getArtifactoryServers();
         }
 
         public boolean isJiraPluginEnabled() {

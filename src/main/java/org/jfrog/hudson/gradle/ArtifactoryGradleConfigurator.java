@@ -525,13 +525,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public ArtifactoryServer getArtifactoryServer() {
-        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        for (ArtifactoryServer server : servers) {
-            if (server.getName().equals(getArtifactoryName())) {
-                return server;
-            }
-        }
-        return null;
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
@@ -601,7 +595,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         @JavaScriptMethod
         public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<String> response = new RefreshRepository<String>();
-            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
             /*if (artifactoryServer == null)
                 return releaseRepositoryKeysFirst;*/
 
@@ -629,22 +623,16 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url
-         *       the artifactory url
-         * @param credentialsUsername
-         *       override credentials user name
-         * @param credentialsPassword
-         *       override credentials password
-         * @param overridingDeployerCredentials
-         *       user choose to override credentials
-         *
-         * @return
-         *       {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         * @param url                           the artifactory url
+         * @param credentialsUsername           override credentials user name
+         * @param credentialsPassword           override credentials password
+         * @param overridingDeployerCredentials user choose to override credentials
+         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
          */
         @JavaScriptMethod
         public RefreshRepository<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<VirtualRepository> response = new RefreshRepository<VirtualRepository>();
-            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
             /*if (artifactoryServer == null)
                 return virtualRepositoryKeys;*/
 
@@ -721,19 +709,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
          * @return can be empty but never null.
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
-            ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
-                    Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
-            return descriptor.getArtifactoryServers();
-        }
-
-        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
-            List<ArtifactoryServer> servers = getArtifactoryServers();
-            for (ArtifactoryServer server : servers) {
-                if (server.getUrl().equals(artifactoryUrl)) {
-                    return server;
-                }
-            }
-            return null;
+            return RepositoriesUtils.getArtifactoryServers();
         }
 
         public boolean isJiraPluginEnabled() {

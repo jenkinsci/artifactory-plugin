@@ -298,13 +298,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public ArtifactoryServer getArtifactoryServer(String artifactoryServerName) {
-        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        for (ArtifactoryServer server : servers) {
-            if (server.getName().equals(artifactoryServerName)) {
-                return server;
-            }
-        }
-        return null;
+        return RepositoriesUtils.getArtifactoryServer(artifactoryServerName, getDescriptor().getArtifactoryServers());
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
@@ -418,7 +412,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         @JavaScriptMethod
         public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<String> response = new RefreshRepository<String>();
-            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 //            if (artifactoryServer == null)
 //                return releaseRepositoryKeysFirst;
 
@@ -466,23 +460,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          * @return can be empty but never null.
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
-            ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
-                    Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
-            return descriptor.getArtifactoryServers();
+            return RepositoriesUtils.getArtifactoryServers();
         }
 
         public boolean isJiraPluginEnabled() {
             return (Jenkins.getInstance().getPlugin("jira") != null);
-        }
-
-        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
-            List<ArtifactoryServer> servers = getArtifactoryServers();
-            for (ArtifactoryServer server : servers) {
-                if (server.getUrl().equals(artifactoryUrl)) {
-                    return server;
-                }
-            }
-            return null;
         }
     }
 

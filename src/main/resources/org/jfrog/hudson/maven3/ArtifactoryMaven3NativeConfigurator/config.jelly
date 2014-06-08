@@ -8,7 +8,7 @@
             <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                 <f:nested>
                     <input type="hidden" name="artifactoryName" value="${s.name}" field="artifactoryName"/>
-                    <input type="hidden" name="artifactoryUrl" value="${s.url}" id="artifactoryUrlResolve"
+                    <input type="hidden" name="artifactoryUrl" value="${s.url}" id="artifactoryUrlResolve${s.url}"
                            field="artifactoryUrl"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                     <f:entry title="${%Resolution releases repository}">
@@ -62,7 +62,7 @@
                     <r:virtualRepos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                     bind="maven3NativeResolveBind"
                                     on="downloadReleaseRepositoryKey${s.url},downloadSnapshotRepositoryKey${s.url}"
-                                    repoUrl="$('artifactoryUrlResolve').value"
+                                    repoUrl="artifactoryUrlResolve${s.url}"
                                     credentialUserName="$('overridingResolverCredentials').down('input[type=text]').value"
                                     credentialPassword="$('overridingResolverCredentials').down('input[type=password]').value"
                                     isCredential="$('overridingResolverCredentials').down('input').checked"/>

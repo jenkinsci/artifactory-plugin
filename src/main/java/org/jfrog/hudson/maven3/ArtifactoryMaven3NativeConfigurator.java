@@ -5,7 +5,10 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
@@ -153,7 +156,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         @JavaScriptMethod
         public RefreshRepository<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshRepository<VirtualRepository> response = new RefreshRepository<VirtualRepository>();
-            ArtifactoryServer artifactoryServer = getArtifactoryServer(url);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
             /*if (artifactoryServer == null)
                 return virtualRepositoryKeys;*/
 
@@ -200,19 +203,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          * @return can be empty but never null.
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
-            ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
-                    Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
-            return descriptor.getArtifactoryServers();
-        }
-
-        public ArtifactoryServer getArtifactoryServer(String artifactoryUrl) {
-            List<ArtifactoryServer> servers = getArtifactoryServers();
-            for (ArtifactoryServer server : servers) {
-                if (server.getUrl().equals(artifactoryUrl)) {
-                    return server;
-                }
-            }
-            return null;
+            return RepositoriesUtils.getArtifactoryServers();
         }
     }
 

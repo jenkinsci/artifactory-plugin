@@ -2,15 +2,13 @@ package org.jfrog.hudson.util;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import hudson.model.Hudson;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ProxyConfiguration;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.ResolverOverrider;
-import org.jfrog.hudson.VirtualRepository;
+import org.jfrog.hudson.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -79,9 +77,9 @@ public abstract class RepositoriesUtils {
         } else {
             client = new ArtifactoryBuildInfoClient(url, new NullLog());
         }
-        client.setConnectionTimeout(10);
+        client.setConnectionTimeout(artifactoryServer.getTimeout());
 
-        if (Jenkins.getInstance().proxy != null) {
+        if (Jenkins.getInstance().proxy != null && !artifactoryServer.isBypassProxy()) {
             client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
         }
 
@@ -110,7 +108,7 @@ public abstract class RepositoriesUtils {
         } else {
             client = new ArtifactoryBuildInfoClient(url, new NullLog());
         }
-        client.setConnectionTimeout(10);
+        client.setConnectionTimeout(artifactoryServer.getTimeout());
 
         if (Jenkins.getInstance().proxy != null && !artifactoryServer.isBypassProxy()) {
             client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
@@ -121,7 +119,7 @@ public abstract class RepositoriesUtils {
         return localRepository;
     }
 
-    private static ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+    public static ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
         ProxyConfiguration proxyConfiguration = null;
         if (proxy != null) {
             proxyConfiguration = new ProxyConfiguration();
@@ -132,5 +130,26 @@ public abstract class RepositoriesUtils {
         }
 
         return proxyConfiguration;
+    }
+
+    public static ArtifactoryServer getArtifactoryServer(String artifactoryIdentity, List<ArtifactoryServer> artifactoryServers) {
+        List<ArtifactoryServer> servers = artifactoryServers;
+        for (ArtifactoryServer server : servers) {
+            if (server.getUrl().equals(artifactoryIdentity) || server.getName().equals(artifactoryIdentity)) {
+                return server;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the list of {@link org.jfrog.hudson.ArtifactoryServer} configured.
+     *
+     * @return can be empty but never null.
+     */
+    public static List<ArtifactoryServer> getArtifactoryServers() {
+        ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
+                Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
+        return descriptor.getArtifactoryServers();
     }
 }
