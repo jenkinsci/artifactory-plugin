@@ -129,14 +129,12 @@ public class ArtifactoryBuilder extends Builder {
 
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
-            if (!artifactoryServer.isBypassProxy() && Jenkins.getInstance().proxy != null) {
+            if (((artifactoryServer != null && !artifactoryServer.isBypassProxy()) || artifactoryServer == null) && Jenkins.getInstance().proxy != null) {
                 client.setProxyConfiguration(RepositoriesUtils.createProxyConfiguration(Jenkins.getInstance().proxy));
             }
 
             if (StringUtils.isNotBlank(timeout))
                 client.setConnectionTimeout(Integer.parseInt(timeout));
-            else
-                client.setConnectionTimeout(artifactoryServer.getTimeout());
 
             ArtifactoryVersion version;
             try {
