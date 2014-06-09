@@ -57,6 +57,13 @@ public class MavenVersionHelper {
         return foundVersion.compareTo(neededVersion) < 0;
     }
 
+    public static boolean isLowerThanMaven3(MavenModuleSetBuild build) {
+        ComparableVersion foundVersion = new ComparableVersion(build.getMavenVersionUsed());
+        ComparableVersion neededVersion = new ComparableVersion(MINIMUM_MAVEN_VERSION);
+
+        return foundVersion.compareTo(neededVersion) < 0;
+    }
+
     /**
      * @return True if the Maven version of this build is at least {@link MavenVersionHelper#MINIMUM_MAVEN_VERSION}
      */

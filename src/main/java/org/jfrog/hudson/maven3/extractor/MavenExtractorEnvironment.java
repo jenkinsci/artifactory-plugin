@@ -190,7 +190,7 @@ public class MavenExtractorEnvironment extends Environment {
 
         @Override
         public PlexusModuleContributor createFor(AbstractBuild<?, ?> context) throws IOException, InterruptedException {
-            if (MavenExtractorHelper.isDisabled(context)) {
+            if (MavenExtractorHelper.isDisabled(context) || MavenVersionHelper.isLowerThanMaven3(((MavenModuleSetBuild) context))) {
                 return null;
             }
 
