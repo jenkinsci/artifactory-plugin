@@ -136,12 +136,12 @@ public class ExtractorUtils {
 
         if (publisherContext != null) {
             setPublisherInfo(env, build, publisherContext, configuration);
-            setProxy(publisherContext.getArtifactoryServer(), configuration);
+            // setProxy(publisherContext.getArtifactoryServer(), configuration);
         }
 
         if (resolverContext != null) {
             setResolverInfo(configuration, resolverContext);
-            setProxy(resolverContext.getServer(), configuration);
+            // setProxy(resolverContext.getServer(), configuration);
         }
 
 
