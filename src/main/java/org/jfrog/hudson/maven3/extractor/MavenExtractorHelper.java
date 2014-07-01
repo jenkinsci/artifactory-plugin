@@ -43,6 +43,26 @@ public abstract class MavenExtractorHelper {
         return publisherResolverTuple;
     }
 
+    public static PublisherResolverTuple getResolverTuple(AbstractBuild build) {
+        if (!(build instanceof MavenModuleSetBuild)) {
+            return null;
+        }
+
+        MavenModuleSet project = (MavenModuleSet) build.getProject();
+
+        ArtifactoryMaven3NativeConfigurator resolver = ActionableHelper.getBuildWrapper(
+                project, ArtifactoryMaven3NativeConfigurator.class);
+
+        if (resolver == null) {
+            return null;
+        }
+
+        PublisherResolverTuple publisherResolverTuple = new PublisherResolverTuple();
+        publisherResolverTuple.resolver = resolver;
+
+        return publisherResolverTuple;
+    }
+
     public static class PublisherResolverTuple {
         public ArtifactoryRedeployPublisher publisher;
         public ArtifactoryMaven3NativeConfigurator resolver;

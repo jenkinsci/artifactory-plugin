@@ -338,6 +338,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         if (isExtractorUsed(build.getEnvironment(listener))) {
             if (deployBuildInfo) {
+                //Add build info icon to Jenkins job
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));

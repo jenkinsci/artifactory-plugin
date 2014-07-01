@@ -18,6 +18,7 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.extractor.MavenExtractorHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.publisher.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
@@ -93,7 +94,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             };
         }
 
-        MavenExtractorHelper.PublisherResolverTuple tuple = MavenExtractorHelper.getPublisherResolverTuple(build);
+        /**
+         * Only Resolve handling
+         * */
+        MavenExtractorHelper.PublisherResolverTuple tuple = MavenExtractorHelper.getResolverTuple(build);
         if (tuple == null) {
             return new Environment() {
             };

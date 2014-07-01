@@ -19,20 +19,13 @@ package org.jfrog.hudson.action;
 import com.google.common.collect.Lists;
 import hudson.maven.MavenBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildableItemWithBuildWrappers;
-import hudson.model.Cause;
-import hudson.model.CauseAction;
-import hudson.model.Descriptor;
-import hudson.model.Hudson;
-import hudson.model.Project;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
 import hudson.util.DescribableList;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.util.publisher.PublisherFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -69,13 +62,9 @@ public abstract class ActionableHelper {
      * @return The project publisher of the given type. Null if not found.
      */
     public static <T extends Publisher> T getPublisher(AbstractProject<?, ?> project, Class<T> type) {
-        DescribableList<Publisher, Descriptor<Publisher>> publishersList = project.getPublishersList();
-        for (Publisher publisher : publishersList) {
-            if (type.isInstance(publisher)) {
-                return type.cast(publisher);
-            }
-        }
-        return null;
+        PublisherFactory<T> factory = new PublisherFactory<T>();
+
+        return factory.create(project.getPublishersList(), type);
     }
 
     /**

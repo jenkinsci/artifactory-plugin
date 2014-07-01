@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.util;
+package org.jfrog.hudson.util.publisher;
 
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.util.IncludesExcludes;
 
 /**
  * Container class for build context fields
