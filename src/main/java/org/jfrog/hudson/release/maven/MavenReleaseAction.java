@@ -88,8 +88,13 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
     }
 
     @Override
-    protected PluginSettings getSelectedStagingPlugin() {
-        return getPublisher().getDetails().getStagingPlugin();
+    protected PluginSettings getSelectedStagingPlugin() throws Exception {
+        return getPublisher().getSelectedStagingPlugin();
+    }
+
+    @Override
+    protected String getSelectedStagingPluginName() {
+        return getPublisher().getDetails().getUserPluginKey();
     }
 
     @Override

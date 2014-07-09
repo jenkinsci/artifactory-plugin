@@ -119,12 +119,10 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     public void init() throws Exception {
         initBuilderSpecific();
         resetFields();
-        PluginSettings selectedStagingPluginSettings = getSelectedStagingPlugin();
-        if ((selectedStagingPluginSettings != null) &&
-                !UserPluginInfo.NO_PLUGIN_KEY.equals(selectedStagingPluginSettings.getPluginName())) {
+        if (!UserPluginInfo.NO_PLUGIN_KEY.equals(getSelectedStagingPluginName())) {
+            PluginSettings selectedStagingPluginSettings = getSelectedStagingPlugin();
             try {
-                stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings,
-                        Util.rawEncode(project.getName()));
+                stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings, Util.rawEncode(project.getName()));
             } catch (Exception e) {
                 log.log(Level.WARNING, "Failed to obtain staging strategy: " + e.getMessage(), e);
                 strategyRequestFailed = true;
@@ -167,8 +165,9 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
 
     public String getTitle() {
         StringBuilder titleBuilder = new StringBuilder("Artifactory Pro Release Staging");
-        if (strategyPluginExists && StringUtils.isNotBlank(getSelectedStagingPlugin().getPluginName())) {
-            titleBuilder.append(" - Using the '").append(getSelectedStagingPlugin().getPluginName())
+        String pluginName = getSelectedStagingPluginName();
+        if (strategyPluginExists && StringUtils.isNotBlank(pluginName)) {
+            titleBuilder.append(" - Using the '").append(pluginName)
                     .append("' staging plugin.");
         }
         return titleBuilder.toString();
@@ -399,7 +398,9 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
      */
     protected abstract void doPerModuleVersioning(StaplerRequest req);
 
-    protected abstract PluginSettings getSelectedStagingPlugin();
+    protected abstract PluginSettings getSelectedStagingPlugin() throws Exception;
+
+    protected abstract String getSelectedStagingPluginName();
 
     protected abstract void prepareBuilderSpecificDefaultGlobalModule();
 

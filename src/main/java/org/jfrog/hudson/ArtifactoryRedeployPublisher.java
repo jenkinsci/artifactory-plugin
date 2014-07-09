@@ -50,9 +50,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * {@link Publisher} for {@link hudson.maven.MavenModuleSetBuild} to deploy artifacts to Artifactory only after a build
@@ -110,7 +108,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      */
     @Deprecated
     private transient Boolean skipBuildInfoDeploy;
-
 
     // NOTE: The following getters are used by jelly. Do not remove them
 
@@ -262,6 +259,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return details != null ?
                 (details.snapshotsRepositoryKey != null ? details.snapshotsRepositoryKey : details.repositoryKey) :
                 null;
+    }
+
+    public String getUserPluginKey() {
+        return details != null ? details.getUserPluginKey() : null;
     }
 
     public boolean isEnableIssueTrackerIntegration() {
@@ -444,17 +445,20 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return null;
     }
 
-    public List<UserPluginInfo> getStagingUserPluginInfo() {
-        ArtifactoryServer artifactoryServer = getArtifactoryServer();
-        return artifactoryServer.getStagingUserPluginInfo(this);
-    }
-
     private Result getTreshold() {
         if (evenIfUnstable) {
             return Result.UNSTABLE;
         } else {
             return Result.SUCCESS;
         }
+    }
+
+    public List<String> getUserPluginKeys() {
+        if (getUserPluginKey() == null) {
+            getDescriptor().refreshUserPlugins(getArtifactoryServer(), overridingDeployerCredentials.getUsername(), overridingDeployerCredentials.getPassword(), isOverridingDefaultDeployer());
+        }
+
+        return getDescriptor().userPluginKeys;
     }
 
     public List<String> getReleaseRepositoryKeysFirst() {
@@ -476,19 +480,48 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return getDescriptor().snapshotRepositoryKeysFirst;
     }
 
+    public PluginSettings getSelectedStagingPlugin() throws Exception {
+        List<UserPluginInfo> pluginInfoList = getArtifactoryServer().getStagingUserPluginInfo(this);
+        return details.getSelectedStagingPlugin(pluginInfoList);
+    }
+
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+
         private List<String> releaseRepositoryKeysFirst;
         private List<String> snapshotRepositoryKeysFirst;
+        private List<String> userPluginKeys;
 
         public DescriptorImpl() {
             super(ArtifactoryRedeployPublisher.class);
             load();
         }
 
-        @Override
-        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-            return jobType == MavenModuleSet.class;
+        private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
+            releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+            Collections.sort(releaseRepositoryKeysFirst);
+            snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+        }
+
+        private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final String credentialsUsername, final String credentialsPassword, final boolean overridingDeployerCredentials) {
+            List<UserPluginInfo> pluginInfoList = artifactoryServer.getStagingUserPluginInfo(new DeployerOverrider() {
+                public boolean isOverridingDefaultDeployer() {
+                    return overridingDeployerCredentials;
+                }
+                public Credentials getOverridingDeployerCredentials() {
+                    if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+                        return new Credentials(credentialsUsername, credentialsPassword);
+                    }
+                    return null;
+                }
+            });
+
+            ArrayList<String> list = new ArrayList<String>(pluginInfoList.size());
+            for (UserPluginInfo plugin : pluginInfoList) {
+                list.add(plugin.getPluginName());
+            }
+
+            userPluginKeys = list;
         }
 
         /**
@@ -499,68 +532,38 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
          * @param credentialsUsername           override credentials user name
          * @param credentialsPassword           override credentials password
          * @param overridingDeployerCredentials user choose to override credentials
-         * @return {@link RefreshRepository} object that represents the response of the repositories
+         * @return {@link RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
-            RefreshRepository<String> response = new RefreshRepository<String>();
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
-           /* if (artifactoryServer == null)
-                return releaseRepositoryKeysFirst;*/
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            RefreshServerResponse response = new RefreshServerResponse();
 
             try {
-                releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
+                ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
+                refreshRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                refreshUserPlugins(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
 
-                Collections.sort(releaseRepositoryKeysFirst);
-                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
-                response.setRepos(releaseRepositoryKeysFirst);
+                response.setRepositories(releaseRepositoryKeysFirst);
+                response.setUserPlugins(userPluginKeys);
                 response.setSuccess(true);
-
-                return response;
             } catch (Exception e) {
                 e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
                 response.setSuccess(false);
             }
-
-            /*
-            * In case of Exception, we write error in the Javascript scope!
-            * */
             return response;
+        }
+
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return jobType == MavenModuleSet.class;
         }
 
         @Override
         public ArtifactoryRedeployPublisher newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             ArtifactoryRedeployPublisher publisher = req.bindJSON(ArtifactoryRedeployPublisher.class, formData);
-            if (formData.has("details")) {
-                JSONObject serverDetails = formData.getJSONObject("details");
-                if (serverDetails.has("stagingPlugin")) {
-                    PluginSettings settings = new PluginSettings();
-                    Map<String, String> paramMap = Maps.newHashMap();
-                    JSONObject pluginSettings = serverDetails.getJSONObject("stagingPlugin");
-                    String pluginName = pluginSettings.getString("pluginName");
-                    settings.setPluginName(pluginName);
-                    Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
-                            new Predicate<String>() {
-                                public boolean apply(String input) {
-                                    return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
-                                }
-                            }
-                    );
-                    for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
-                        String key = settingsEntry.getKey();
-                        paramMap.put(key, pluginSettings.getString(key));
-                    }
-                    if (!paramMap.isEmpty()) {
-                        settings.setParamMap(paramMap);
-                    }
-                    publisher.details.setStagingPlugin(settings);
-                }
-            }
             return publisher;
         }
-
 
         @Override
         public String getDisplayName() {

@@ -23,10 +23,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A wrapper that takes over artifacts resolution and using the configured repository for resolution.<p/>
@@ -143,6 +140,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             return MavenModuleSet.class.equals(item.getClass());
         }
 
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
+            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+            Collections.sort(virtualRepositoryKeys);
+        }
+
         /**
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
@@ -151,22 +153,17 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          * @param credentialsUsername           override credentials user name
          * @param credentialsPassword           override credentials password
          * @param overridingDeployerCredentials user choose to override credentials
-         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshRepository<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
-            RefreshRepository<VirtualRepository> response = new RefreshRepository<VirtualRepository>();
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
-            /*if (artifactoryServer == null)
-                return virtualRepositoryKeys;*/
 
             try {
-                virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(url, credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
-                Collections.sort(virtualRepositoryKeys);
-                response.setRepos(virtualRepositoryKeys);
+                refreshVirtualRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                response.setVirtualRepositories(virtualRepositoryKeys);
                 response.setSuccess(true);
-
                 return response;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -252,7 +249,8 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 String stagingRepoKey = release.getStagingRepositoryKey();
                 if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
                     server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), stagingRepoKey,
-                            server.snapshotsRepositoryKey, server.downloadReleaseRepositoryKey, server.downloadSnapshotRepositoryKey);
+                            server.snapshotsRepositoryKey, server.downloadReleaseRepositoryKey, server.downloadSnapshotRepositoryKey,
+                            server.downloadReleaseRepositoryDisplayName, server.downloadSnapshotRepositoryDisplayName);
                 }
             }
 

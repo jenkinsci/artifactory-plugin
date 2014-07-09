@@ -407,14 +407,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          * @param credentialsUsername           override credentials user name
          * @param credentialsPassword           override credentials password
          * @param overridingDeployerCredentials user choose to override credentials
-         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
-            RefreshRepository<String> response = new RefreshRepository<String>();
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
-//            if (artifactoryServer == null)
-//                return releaseRepositoryKeysFirst;
 
             try {
                 releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
@@ -422,7 +420,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
-                response.setRepos(releaseRepositoryKeysFirst);
+                response.setRepositories(releaseRepositoryKeysFirst);
                 response.setSuccess(true);
 
                 return response;

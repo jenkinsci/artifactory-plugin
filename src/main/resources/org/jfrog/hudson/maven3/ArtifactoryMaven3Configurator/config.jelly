@@ -28,50 +28,48 @@
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Target releases repository}"
                                  help="/plugin/artifactory/help/common/help-deployReleases.html">
-                            <select class="setting-input" name="repositoryKey" id="repositoryKey${s.url}">
+                            <select class="setting-input" name="repositoryKey" id="maven3RepositoryKeys-${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.releaseRepositoryKeysFirst != null}">
+                                    <j:when test="${instance.repositoryKey != null}">
+                                        <f:option selected="${instance.repositoryKey}"
+                                              value="${instance.repositoryKey}">${instance.repositoryKey}
+                                        </f:option>
+                                    </j:when>
+                                    <j:otherwise>
                                         <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
                                             <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
                                             </f:option>
                                         </j:forEach>
-                                    </j:when>
-                                    <j:otherwise>
-                                        <f:option selected="${instance.repositoryKey}"
-                                                  value="${instance.repositoryKey}">${instance.repositoryKey}
-                                        </f:option>
                                     </j:otherwise>
                                 </j:choose>
                             </select>
                         </f:entry>
                         <f:entry title="${%Target snapshots repository}"
                                  help="/plugin/artifactory/help/common/help-deploySnapshots.html">
-                            <select class="setting-input" name="snapshotsRepositoryKey"
-                                    id="snapshotsRepositoryKey${s.url}">
+                            <select class="setting-input" name="snapshotsRepositoryKey" id="maven3SnapshotsRepositoryKeys-${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.snapshotRepositoryKeysFirst != null}">
-                                        <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
-                                            <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
-                                            </f:option>
-                                        </j:forEach>
-                                    </j:when>
-                                    <j:otherwise>
+                                    <j:when test="${instance.snapshotsRepositoryKey != null}">
                                         <f:option selected="${instance.snapshotsRepositoryKey}"
                                                   value="${instance.snapshotsRepositoryKey}">
                                             ${instance.snapshotsRepositoryKey}
                                         </f:option>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
+                                            <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
+                                            </f:option>
+                                        </j:forEach>
                                     </j:otherwise>
                                 </j:choose>
                             </select>
                         </f:entry>
-
                         <script>
                             var maven3DeployBind =
                             <st:bind value="${descriptor}"/>
                         </script>
                         <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                  bind="maven3DeployBind"
-                                 on="repositoryKey${s.url},snapshotsRepositoryKey${s.url}"
+                                 method="artifactoryMaven3Configurator"
                                  repoUrl="artifactoryUrlDeploy${s.url}"
                                  credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                                  credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"

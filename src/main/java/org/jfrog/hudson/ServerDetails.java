@@ -22,6 +22,10 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.lang.reflect.Field;
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Artifacts resolution and deployment configuration.
@@ -45,10 +49,22 @@ public class ServerDetails {
      */
     public final String downloadReleaseRepositoryKey;
     /**
+     * Display name of repository to use to download snapshots artifacts
+     */
+    public final String downloadSnapshotRepositoryDisplayName;
+    /**
+     * Display name of repository to use to download artifacts
+     */
+    public final String downloadReleaseRepositoryDisplayName;
+
+
+    /**
      * Artifactory server URL
      */
     private final String artifactoryUrl;
-    private PluginSettings stagingPlugin;
+
+    private String userPluginKey;
+
     /**
      * @deprecated: Use org.jfrog.hudson.ServerDetails#downloadReleaseRepositoryKey
      */
@@ -57,29 +73,45 @@ public class ServerDetails {
 
     @DataBoundConstructor
     public ServerDetails(String artifactoryName, String artifactoryUrl, String repositoryKey, String snapshotsRepositoryKey,
-                         String downloadReleaseRepositoryKey, String downloadSnapshotRepositoryKey) {
+                         String downloadReleaseRepositoryKey, String downloadSnapshotRepositoryKey,
+                         String downloadReleaseRepositoryDisplayName, String downloadSnapshotRepositoryDisplayName,
+                         String userPluginKey) {
         this.artifactoryName = artifactoryName;
         this.artifactoryUrl = artifactoryUrl;
         this.repositoryKey = repositoryKey;
         this.snapshotsRepositoryKey = snapshotsRepositoryKey != null ? snapshotsRepositoryKey : repositoryKey;
         this.downloadReleaseRepositoryKey = downloadReleaseRepositoryKey;
         this.downloadSnapshotRepositoryKey = downloadSnapshotRepositoryKey;
+        this.downloadReleaseRepositoryDisplayName = downloadReleaseRepositoryDisplayName;
+        this.downloadSnapshotRepositoryDisplayName = downloadSnapshotRepositoryDisplayName;
+        this.userPluginKey = userPluginKey;
     }
 
-    public PluginSettings getStagingPlugin() {
-        return stagingPlugin;
+    public ServerDetails(String artifactoryName, String artifactoryUrl, String repositoryKey, String snapshotsRepositoryKey,
+                         String downloadReleaseRepositoryKey, String downloadSnapshotRepositoryKey,
+                         String downloadReleaseRepositoryDisplayName, String downloadSnapshotRepositoryDisplayName) {
+        this(artifactoryName, artifactoryUrl, repositoryKey, snapshotsRepositoryKey, downloadReleaseRepositoryKey,
+                downloadSnapshotRepositoryKey, downloadReleaseRepositoryDisplayName, downloadSnapshotRepositoryDisplayName, null);
     }
 
-    public void setStagingPlugin(PluginSettings stagingPlugin) {
-        this.stagingPlugin = stagingPlugin;
+    public PluginSettings getSelectedStagingPlugin(List<UserPluginInfo> pluginInfoList) throws Exception {
+        for (UserPluginInfo plugin : pluginInfoList) {
+            if (plugin.getPluginName().equals(userPluginKey)) {
+                List<UserPluginInfoParam> params = plugin.getPluginParams();
+                Map<String, String> map = new HashMap<String, String>();
+                for (UserPluginInfoParam param : params) {
+                    map.put(((String)param.getKey()), ((String)param.getDefaultValue()));
+                }
+
+                return new PluginSettings(plugin.getPluginName(), map);
+            }
+        }
+
+        throw new Exception("Could not retrieve from Artifactory a staging plugin matching the configured plugin name: " + userPluginKey);
     }
 
-    public String getStagingPluginName() {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
-    }
-
-    public String getPluginParamValue(String pluginName, String paramKey) {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(pluginName, paramKey) : null;
+    public String getUserPluginKey() {
+        return userPluginKey;
     }
 
     public String getArtifactoryUrl() {

@@ -8,44 +8,44 @@
             <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                 <f:nested>
                     <input type="hidden" name="artifactoryName" value="${s.name}" field="artifactoryName"/>
-                    <input type="hidden" name="artifactoryUrl" value="${s.url}" id="artifactoryUrlResolve${s.url}"
+                    <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"
                            field="artifactoryUrl"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
+                    <input type="hidden" name="downloadReleaseRepositoryDisplayName" id="downloadReleaseRepositoryDisplayName-${s.url}" value=""/>
+                    <input type="hidden" name="downloadSnapshotRepositoryDisplayName" id="downloadSnapshotRepositoryDisplayName-${s.url}" value=""/>
                     <f:entry title="${%Resolution releases repository}">
-                        <select class="setting-input" name="downloadReleaseRepositoryKey"
-                                id="downloadReleaseRepositoryKey${s.url}">
+                        <select class="setting-input" name="downloadReleaseRepositoryKey" id="maven3NativeReleaseRepositoryKeys-${s.url}"
+                                onchange="document.getElementById('downloadReleaseRepositoryDisplayName-${s.url}').value=document.getElementById('maven3NativeReleaseRepositoryKeys-${s.url}').options[this.selectedIndex].text">
                             <j:choose>
                                 <j:when test="${instance.downloadReleaseRepositoryKey != null}">
                                     <f:option selected="${instance.downloadReleaseRepositoryKey}"
                                               value="${instance.downloadReleaseRepositoryKey}">
-                                        ${instance.downloadReleaseRepositoryKey}
+                                        ${instance.details.downloadReleaseRepositoryDisplayName}
                                     </f:option>
                                 </j:when>
                                 <j:otherwise>
                                     <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                        <f:option selected="${r.displayName==instance.downloadReleaseRepositoryKey}"
+                                        <f:option selected="${r.value==instance.downloadReleaseRepositoryKey}"
                                                   value="${r.value}">${r.displayName}
                                         </f:option>
                                     </j:forEach>
                                 </j:otherwise>
-
                             </j:choose>
-
                         </select>
                     </f:entry>
                     <f:entry title="${%Resolution snapshots repository}">
-                        <select class="setting-input" name="downloadSnapshotRepositoryKey"
-                                id="downloadSnapshotRepositoryKey${s.url}">
+                        <select class="setting-input" name="downloadSnapshotRepositoryKey" id="maven3NativeSnapshotRepositoryKeys-${s.url}"
+                                onchange="document.getElementById('downloadSnapshotRepositoryDisplayName-${s.url}').value=document.getElementById('maven3NativeSnapshotRepositoryKeys-${s.url}').options[this.selectedIndex].text">>
                             <j:choose>
                                 <j:when test="${instance.downloadSnapshotRepositoryKey != null}">
                                     <f:option selected="${instance.downloadSnapshotRepositoryKey}"
                                               value="${instance.downloadSnapshotRepositoryKey}">
-                                        ${instance.downloadSnapshotRepositoryKey}
+                                        ${instance.details.downloadSnapshotRepositoryDisplayName}
                                     </f:option>
                                 </j:when>
                                 <j:otherwise>
                                     <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                        <f:option selected="${r.displayName==instance.downloadSnapshotRepositoryKey}"
+                                        <f:option selected="${r.value==instance.downloadSnapshotRepositoryKey}"
                                                   value="${r.value}">${r.displayName}
                                         </f:option>
                                     </j:forEach>
@@ -53,20 +53,17 @@
                             </j:choose>
                         </select>
                     </f:entry>
-
-
                     <script>
                         var maven3NativeResolveBind =
                         <st:bind value="${descriptor}"/>
                     </script>
-                    <r:virtualRepos title="${%Refresh Repositories}" progress="${%Refreshing...}"
-                                    bind="maven3NativeResolveBind"
-                                    on="downloadReleaseRepositoryKey${s.url},downloadSnapshotRepositoryKey${s.url}"
-                                    repoUrl="artifactoryUrlResolve${s.url}"
-                                    credentialUserName="$('overridingResolverCredentials').down('input[type=text]').value"
-                                    credentialPassword="$('overridingResolverCredentials').down('input[type=password]').value"
-                                    isCredential="$('overridingResolverCredentials').down('input').checked"/>
-
+                    <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
+                             bind="maven3NativeResolveBind"
+                             method="artifactoryMaven3NativeConfigurator"
+                             repoUrl="artifactoryUrlDeploy${s.url}"
+                             credentialUserName="$('overridingResolverCredentials').down('input[type=text]').value"
+                             credentialPassword="$('overridingResolverCredentials').down('input[type=password]').value"
+                             isCredential="$('overridingResolverCredentials').down('input').checked"/>
                 </f:nested>
             </f:dropdownListBlock>
         </j:forEach>

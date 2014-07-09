@@ -2,7 +2,7 @@
  * @author Lior Hasson
  */
 
-function repos(button, paramList, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+function repos(button, method, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
     button = button._button;
     var spinner = $(button).up("DIV").next();
     spinner.style.display = "block";
@@ -11,65 +11,330 @@ function repos(button, paramList, artifactoryUrl, deployUsername, deployPassword
     var warning = target.next();
     warning.innerHTML = "";
 
-    bind.refreshRepo($(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
-        var response = t.responseObject();
-        if (!response.success) {
-            spinner.style.display = "none";
-            target.innerHTML = response.responseMessage;//"Connection with Artifactory server failed!";
-            target.addClassName('error');
-            target.style.color = "red";
-        }
-        else {
-            var oldValueExistsInNewList = true;
-            paramList.split(',').each(function (controlTagId) {
-                var select = $(controlTagId);
-                var old = $(controlTagId).clone(true);
-                while (select.firstChild) {
-                    select.removeChild(select.firstChild);
-                }
-
-                response.repos.forEach(function (item) {
-
-                    var option = document.createElement("option");
-                    option.text = item;
-                    option.value = item;
-                    //var sel = $(controlTagId).options[$(controlTagId).selectedIndex];
-                    select.appendChild(option);
-                });
-
-                if (oldValueExistsInNewList)
-                    oldValueExistsInNewList = compareSelectTags(select, old);
-            });
-            spinner.style.display = "none";
-            target.innerHTML = "Repositories refreshed successfully";
-            target.removeClassName('error');
-            target.style.color = "green";
-
-            if (!oldValueExistsInNewList) {
-                warning.innerHTML = "Warning! One of your previously configured repositories does not exist.";
-                warning.style.color = "orange"
-            }
-        }
-    });
+    if (method == "artifactoryIvyFreeStyleConfigurator") {
+        artifactoryIvyFreeStyleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+    } else
+    if (method == "artifactoryGenericConfigurator") {
+        artifactoryGenericConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+    } else
+    if (method == "artifactoryMaven3NativeConfigurator") {
+        artifactoryMaven3NativeConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+    } else
+    if (method == "artifactoryMaven3Configurator") {
+        artifactoryMaven3Configurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+    } else
+    if (method == "artifactoryGradleConfigurator") {
+        artifactoryGradleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+    } else
+    if (method == "artifactoryRedeployPublisher") {
+        artifactoryRedeployPublisher(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+    }
 };
 
-function compareSelectTags(newRepos, oldRepos) {
-    if (oldRepos.options.length == 0)
-        return true;
+function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
 
-    var ans = true;
-    [].forEach.call(oldRepos, function (elmOld) {
-        var flag = false;
-        [].forEach.call(newRepos, function (elmNew) {
-            if (elmNew.value === elmOld.value && !flag)
-                flag = true;
-        });
-        if (!flag) {
-            ans = flag;
-            return ans;
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
         }
+        else {
+            var select = document.getElementById("ivyFreeRepositoryKeys-" + artifactoryUrl);
+            var oldSelect = select.cloneNode(true);
+            removeElements(select);
+            fillSelect(select, response.repositories);
+            setSelectValue(select, oldSelect.value);
 
+            var oldValueExistsInNewList = compareSelectTags(select, oldSelect);
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
     });
-    return ans;
 }
 
+function artifactoryGenericConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        }
+        else {
+            var select = document.getElementById("genericRepositoryKeys-" + artifactoryUrl);
+            var oldSelect = select.cloneNode(true);
+            removeElements(select);
+            fillSelect(select, response.repositories);
+            setSelectValue(select, oldSelect.value);
+
+            var oldValueExistsInNewList = compareSelectTags(select, oldSelect);
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        }
+        else {
+            var selectRelease = document.getElementById("maven3NativeReleaseRepositoryKeys-" + artifactoryUrl);
+            var selectSnapshot = document.getElementById("maven3NativeSnapshotRepositoryKeys-" + artifactoryUrl);
+
+            var oldSelectRelease = selectRelease.cloneNode(true);
+            var oldSelectSnapshot = selectSnapshot.cloneNode(true);
+
+            removeElements(selectRelease);
+            removeElements(selectSnapshot);
+
+            fillVirtualReposSelect(selectRelease, response.virtualRepositories);
+            fillVirtualReposSelect(selectSnapshot, response.virtualRepositories);
+
+            setSelectValue(selectRelease, oldSelectRelease.value);
+            setSelectValue(selectSnapshot, oldSelectSnapshot.value);
+
+            var oldValueExistsInNewList = true;
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectRelease, oldSelectRelease);
+            }
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectSnapshot, oldSelectSnapshot);
+            }
+
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function artifactoryMaven3Configurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        }
+        else {
+            var selectRelease = document.getElementById("maven3RepositoryKeys-" + artifactoryUrl);
+            var selectSnapshot = document.getElementById("maven3SnapshotsRepositoryKeys-" + artifactoryUrl);
+
+            var oldSelectRelease = selectRelease.cloneNode(true);
+            var oldSelectSnapshot = selectSnapshot.cloneNode(true);
+
+            removeElements(selectRelease);
+            removeElements(selectSnapshot);
+
+            fillSelect(selectRelease, response.repositories);
+            fillSelect(selectSnapshot, response.repositories);
+
+            setSelectValue(selectRelease, oldSelectRelease.value);
+            setSelectValue(selectSnapshot, oldSelectSnapshot.value);
+
+            var oldValueExistsInNewList = true;
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectRelease, oldSelectRelease);
+            }
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectSnapshot, oldSelectSnapshot);
+            }
+
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        }
+        else {
+            var selectResolution = document.getElementById("gradleResolutionRepositoryKeys-" + artifactoryUrl);
+            var selectPublish = document.getElementById("gradlePublishRepositoryKeys-" + artifactoryUrl);
+            var selectPlugins = document.getElementById("gradleCustomStagingConfiguration-" + artifactoryUrl);
+
+            var oldSelectResolution = selectResolution.cloneNode(true);
+            var oldSelectPublish = selectPublish.cloneNode(true);
+            var oldSelectPlugins = selectPlugins.cloneNode(true);
+
+            removeElements(selectResolution);
+            removeElements(selectPublish);
+            removeElements(selectPlugins);
+
+            fillVirtualReposSelect(selectResolution, response.virtualRepositories);
+            fillSelect(selectPublish, response.repositories);
+            fillSelect(selectPlugins, response.userPlugins);
+
+            setSelectValue(selectResolution, oldSelectResolution.value);
+            setSelectValue(selectPublish, oldSelectPublish.value);
+            setSelectValue(selectPlugins, oldSelectPlugins.value);
+
+            var oldValueExistsInNewList = true;
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectResolution, oldSelectResolution);
+            }
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectPublish, oldSelectPublish);
+            }
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectPlugins, oldSelectPlugins);
+            }
+
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function artifactoryRedeployPublisher(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        }
+        else {
+            var selectRelease = document.getElementById("publishRepositoryKey-" + artifactoryUrl);
+            var selectSnapshot = document.getElementById("publishSnapshotsRepositoryKeys-" + artifactoryUrl);
+            var selectPlugins = document.getElementById("customStagingConfiguration-" + artifactoryUrl);
+
+            var oldSelectRelease = selectRelease.cloneNode(true);
+            var oldSelectSnapshot = selectSnapshot.cloneNode(true);
+            var oldSelectPlugins = selectPlugins.cloneNode(true);
+
+            removeElements(selectRelease);
+            removeElements(selectSnapshot);
+            removeElements(selectPlugins);
+
+            fillSelect(selectSnapshot, response.repositories);
+            fillSelect(selectRelease, response.repositories);
+            fillSelect(selectPlugins, response.userPlugins);
+
+            setSelectValue(selectRelease, oldSelectRelease.value);
+            setSelectValue(selectSnapshot, oldSelectSnapshot.value);
+            setSelectValue(selectPlugins, oldSelectPlugins.value);
+
+            var oldValueExistsInNewList = true;
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectRelease, oldSelectRelease);
+            }
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectSnapshot, oldSelectSnapshot);
+            }
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectPlugins, oldSelectPlugins);
+            }
+
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function fillSelect(select, list) {
+    for(var i=0; i < list.length; i++) {
+        var item = list[i];
+        var option = document.createElement("option");
+        option.text = item;
+        option.value = item;
+        select.appendChild(option);
+    }
+}
+
+function fillVirtualReposSelect(select, list) {
+    for(var i=0; i < list.length; i++) {
+        var item = list[i];
+        var option = document.createElement("option");
+        option.text = item.displayName;
+        option.value = item.value;
+        select.appendChild(option);
+    }
+    select.onchange();
+}
+
+function displaySuccessMessage(spinner, target) {
+    spinner.style.display = "none";
+    target.innerHTML = "Items refreshed successfully";
+    target.removeClassName('error');
+    target.style.color = "green";
+}
+
+function displayErrorResponse(spinner, target, message) {
+    spinner.style.display = "none";
+    target.innerHTML = message;
+    target.addClassName('error');
+    target.style.color = "red";
+}
+
+function displayWarningMessage(warning) {
+    warning.innerHTML = "Warning! One of your previously configured items does not exist.";
+    warning.style.color = "orange"
+}
+
+function removeElements(e) {
+    while (e.firstChild) {
+        e.removeChild(e.firstChild);
+    }
+}
+
+function setSelectValue(select, value) {
+    for(var i=0; i < select.options.length; i++) {
+        if(select.options[i].value == value) {
+            select.selectedIndex = i;
+            return;
+        }
+    }
+}
+
+function compareSelectTags(newRepos, oldRepos) {
+    if (oldRepos.options.length == 0) {
+        return true;
+    }
+
+    for(var i=0; i < oldRepos.length; i++) {
+        var itemOld = oldRepos[i].value;
+
+        var flag = false;
+        for(var j=0; j < newRepos.length; j++) {
+            itemNew = newRepos[j].value;
+            if (itemNew.value === itemOld.value) {
+                flag = true;
+                break;
+            }
+        }
+        if (!flag) {
+            return false;
+        }
+    }
+    return true;
+}

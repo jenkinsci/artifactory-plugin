@@ -252,6 +252,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return details != null ? details.repositoryKey : null;
     }
 
+    public String getUserPluginKey() {
+        return details != null ? details.getUserPluginKey() : null;
+    }
+
     public String getDownloadReleaseRepositoryKey() {
         return details != null ? details.downloadReleaseRepositoryKey : null;
     }
@@ -422,7 +426,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     }
                     serverDetails = new ServerDetails(
                             serverDetails.artifactoryName, serverDetails.getArtifactoryUrl(), stagingRepository,
-                            serverDetails.snapshotsRepositoryKey, serverDetails.downloadReleaseRepositoryKey, serverDetails.downloadSnapshotRepositoryKey);
+                            serverDetails.snapshotsRepositoryKey, serverDetails.downloadReleaseRepositoryKey, serverDetails.downloadSnapshotRepositoryKey,
+                            serverDetails.downloadReleaseRepositoryDisplayName, serverDetails.downloadSnapshotRepositoryDisplayName);
                 }
                 PublisherContext publisherContext = new PublisherContext.Builder()
                         .artifactoryServer(getArtifactoryServer()).serverDetails(serverDetails)
@@ -528,6 +533,16 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
+    public List<String> getUserPluginKeys() {
+        if (getUserPluginKey() == null) {
+            String username = overridingDeployerCredentials != null ? overridingDeployerCredentials.getUsername() : null;
+            String password = overridingDeployerCredentials != null ? overridingDeployerCredentials.getPassword() : null;
+            getDescriptor().refreshUserPlugins(getArtifactoryServer(), username, password, isOverridingDefaultDeployer());
+        }
+
+        return getDescriptor().userPluginKeys;
+    }
+
     public List<String> getReleaseRepositoryKeysFirst() {
         if (getRepositoryKey() == null) {
             getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
@@ -561,6 +576,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return artifactoryServer.getStagingUserPluginInfo(this);
     }
 
+    public PluginSettings getSelectedStagingPlugin() throws Exception {
+        List<UserPluginInfo> pluginInfoList = getArtifactoryServer().getStagingUserPluginInfo(this);
+        return details.getSelectedStagingPlugin(pluginInfoList);
+    }
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
@@ -570,7 +590,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<String> releaseRepositoryKeysFirst;
         private List<VirtualRepository> virtualRepositoryKeys;
-
+        private List<String> userPluginKeys;
 
         public DescriptorImpl() {
             super(ArtifactoryGradleConfigurator.class);
@@ -582,41 +602,35 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
         }
 
-        /**
-         * This method triggered from the client side by Ajax call.
-         * The Element that trig is the "Refresh Repositories" button.
-         *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
-         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
-         */
-        @JavaScriptMethod
-        public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
-            RefreshRepository<String> response = new RefreshRepository<String>();
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
-            /*if (artifactoryServer == null)
-                return releaseRepositoryKeysFirst;*/
+        private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
+            releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+            Collections.sort(releaseRepositoryKeysFirst);
+        }
 
-            try {
-                releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
-                Collections.sort(releaseRepositoryKeysFirst);
-                response.setRepos(releaseRepositoryKeysFirst);
-                response.setSuccess(true);
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
+            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+            Collections.sort(virtualRepositoryKeys);
+        }
 
-                return response;
-            } catch (Exception e) {
-                e.printStackTrace();
-                response.setResponseMessage(e.getMessage());
-                response.setSuccess(false);
+        private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final String credentialsUsername, final String credentialsPassword, final boolean overridingDeployerCredentials) {
+            List<UserPluginInfo> pluginInfoList = artifactoryServer.getStagingUserPluginInfo(new DeployerOverrider() {
+                public boolean isOverridingDefaultDeployer() {
+                    return overridingDeployerCredentials;
+                }
+                public Credentials getOverridingDeployerCredentials() {
+                    if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
+                        return new Credentials(credentialsUsername, credentialsPassword);
+                    }
+                    return null;
+                }
+            });
+
+            ArrayList<String> list = new ArrayList<String>(pluginInfoList.size());
+            for (UserPluginInfo plugin : pluginInfoList) {
+                list.add(plugin.getPluginName());
             }
 
-            /*
-            * In case of Exception, we write error in the Javascript scope!
-            * */
-            return response;
+            userPluginKeys = list;
         }
 
         /**
@@ -627,32 +641,27 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
          * @param credentialsUsername           override credentials user name
          * @param credentialsPassword           override credentials password
          * @param overridingDeployerCredentials user choose to override credentials
-         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         * @return {@link RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshRepository<VirtualRepository> refreshVirtualRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
-            RefreshRepository<VirtualRepository> response = new RefreshRepository<VirtualRepository>();
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
-            /*if (artifactoryServer == null)
-                return virtualRepositoryKeys;*/
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            RefreshServerResponse response = new RefreshServerResponse();
 
             try {
-                virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(url, credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
-                Collections.sort(virtualRepositoryKeys);
-                response.setRepos(virtualRepositoryKeys);
-                response.setSuccess(true);
+                ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
+                refreshRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                refreshVirtualRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                refreshUserPlugins(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
 
-                return response;
+                response.setRepositories(releaseRepositoryKeysFirst);
+                response.setVirtualRepositories(virtualRepositoryKeys);
+                response.setUserPlugins(userPluginKeys);
+                response.setSuccess(true);
             } catch (Exception e) {
                 e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
                 response.setSuccess(false);
             }
-
-            /*
-            * In case of Exception, we write error in the Javascript scope!
-            * */
             return response;
         }
 
@@ -671,31 +680,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         @Override
         public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             ArtifactoryGradleConfigurator wrapper = (ArtifactoryGradleConfigurator) super.newInstance(req, formData);
-            if (formData.has("details")) {
-                JSONObject detailsObject = formData.getJSONObject("details");
-                if (detailsObject.has("stagingPlugin")) {
-                    PluginSettings settings = new PluginSettings();
-                    Map<String, String> paramMap = Maps.newHashMap();
-                    JSONObject pluginSettings = detailsObject.getJSONObject("stagingPlugin");
-                    String pluginName = pluginSettings.getString("pluginName");
-                    settings.setPluginName(pluginName);
-                    Map<String, Object> filteredPluginSettings = Maps.filterKeys(pluginSettings,
-                            new Predicate<String>() {
-                                public boolean apply(String input) {
-                                    return StringUtils.isNotBlank(input) && !"pluginName".equals(input);
-                                }
-                            }
-                    );
-                    for (Map.Entry<String, Object> settingsEntry : filteredPluginSettings.entrySet()) {
-                        String key = settingsEntry.getKey();
-                        paramMap.put(key, pluginSettings.getString(key));
-                    }
-                    if (!paramMap.isEmpty()) {
-                        settings.setParamMap(paramMap);
-                    }
-                    wrapper.getDetails().setStagingPlugin(settings);
-                }
-            }
             return wrapper;
         }
 
