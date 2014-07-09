@@ -36,6 +36,7 @@ import org.jfrog.build.client.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.util.publisher.PublisherContext;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -143,7 +144,6 @@ public class ExtractorUtils {
             setResolverInfo(configuration, resolverContext);
             // setProxy(resolverContext.getServer(), configuration);
         }
-
 
 
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&

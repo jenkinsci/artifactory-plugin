@@ -30,6 +30,7 @@ import hudson.model.Environment;
 import hudson.remoting.Which;
 import hudson.scm.NullChangeLogParser;
 import hudson.scm.NullSCM;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
@@ -40,6 +41,9 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.publisher.PublisherContext;
+import org.jfrog.hudson.util.publisher.PublisherFactory;
+import org.jfrog.hudson.util.publisher.PublisherFlexible;
 
 import java.io.File;
 import java.io.IOException;
@@ -108,6 +112,11 @@ public class MavenExtractorEnvironment extends Environment {
         if (!isMavenVersionValid()) {
             return;
         }
+
+        if (isFlexibleEnable()) {
+            return;
+        }
+
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
 
         if (!initialized) {
@@ -143,6 +152,21 @@ public class MavenExtractorEnvironment extends Environment {
         } catch (Exception e) {
             throw new RuntimeException("Unable to determine Maven version", e);
         }
+    }
+
+    /**
+     * Check to see if the Artifactory plugin is wrapped under Flexible plugin.
+     * If true, we will disable Maven extractor, and override the environment from the plugin
+     * (like Maven 2 behavior)
+     */
+    private boolean isFlexibleEnable() {
+        if (Jenkins.getInstance().getPlugin(PublisherFactory.FLEXIBLE_PLUGIN) != null) {
+            PublisherFlexible<ArtifactoryRedeployPublisher> flexible = new PublisherFlexible<ArtifactoryRedeployPublisher>();
+            if (flexible.isPublisherWrapped(build.getProject(), ArtifactoryRedeployPublisher.class))
+                return true;
+        }
+
+        return false;
     }
 
     private PublisherContext createPublisherContext(ArtifactoryRedeployPublisher publisher, AbstractBuild build) {
