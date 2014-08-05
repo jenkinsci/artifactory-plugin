@@ -36,9 +36,7 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -277,13 +275,88 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     public abstract ArtifactoryServer getArtifactoryServer();
 
     /**
+     * This method is used to initiate a release staging process using the api.
+     * The method is invoked by the following URL pattern:
+     * <Jenkins server>/Jenkins>/job/<Project>/release/api?<Optional arguments>
+     */
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void doApi(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
+        try {
+            // Enforce release permissions
+            project.checkPermission(ArtifactoryPlugin.RELEASE);
+            // In case a staging user plugin is configured, the init() method invoke it:
+            init();
+            // Read the values provided by the staging user plugin and assign them to data members in this class.
+            // Those values can be overriden by URL arguments sent with the API:
+            readStagingPluginValues();
+            // Read values from the request and override the staging plugin values:
+            overrideStagingPluginParams(req);
+            // Schedule the release build:
+            if (!project.scheduleBuild(0, new Cause.UserIdCause(), this)) {
+                log.log(Level.SEVERE, "Failed to schedule a release build following a Release API invocation");
+                resp.setStatus(StaplerResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Release API invocation failed: " + e.getMessage(), e);
+            resp.setStatus(StaplerResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Form submission is calling this method
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
-        // enforce release permissions
+        // Enforce release permissions
         project.checkPermission(ArtifactoryPlugin.RELEASE);
+        readRequestParams(req, false);
+        // Schedule release build
+        if (project.scheduleBuild(0, new Cause.UserIdCause(), this)) {
+            // Redirect to the project page
+            resp.sendRedirect(project.getAbsoluteUrl());
+        }
+    }
 
+    private void overrideStagingPluginParams(StaplerRequest req) throws Exception {
+        req.bindParameters(this);
+        String versioningStr = req.getParameter("versioning");
+        if (versioningStr != null) {
+            versioning = VERSIONING.valueOf(versioningStr);
+            switch (versioning) {
+                case GLOBAL:
+                    doGlobalVersioning(req);
+                    break;
+                case PER_MODULE:
+                    doPerModuleVersioning(req);
+            }
+        }
+        if (req.getParameter("createVcsTag") != null) {
+            createVcsTag = true;
+        }
+        if (req.getParameter("tagUrl") != null) {
+            tagUrl = req.getParameter("tagUrl");
+        }
+        if (req.getParameter("tagComment") != null) {
+            tagComment = req.getParameter("tagComment");
+        }
+        if (req.getParameter("nextDevelCommitComment") != null) {
+            nextDevelCommitComment = req.getParameter("nextDevelCommitComment");
+        }
+        if (req.getParameter("createReleaseBranch") != null) {
+            createReleaseBranch = true;
+        }
+        if (req.getParameter("releaseBranch") != null) {
+            releaseBranch = req.getParameter("releaseBranch");
+        }
+        if (req.getParameter("repositoryKey") != null) {
+            stagingRepositoryKey = req.getParameter("repositoryKey");
+        }
+        if (req.getParameter("stagingComment") != null) {
+            stagingComment = req.getParameter("stagingComment");
+        }
+    }
+
+    private void readRequestParams(StaplerRequest req, boolean api) {
         req.bindParameters(this);
 
         String versioningStr = req.getParameter("versioning");
@@ -295,6 +368,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
             case PER_MODULE:
                 doPerModuleVersioning(req);
         }
+
         createVcsTag = req.getParameter("createVcsTag") != null;
         if (createVcsTag) {
             tagUrl = req.getParameter("tagUrl");
@@ -308,12 +382,6 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
 
         stagingRepositoryKey = req.getParameter("repositoryKey");
         stagingComment = req.getParameter("stagingComment");
-
-        // schedule release build
-        if (project.scheduleBuild(0, new Cause.UserIdCause(), this)) {
-            // redirect to the project page
-            resp.sendRedirect(project.getAbsoluteUrl());
-        }
     }
 
     public abstract String getReleaseVersionFor(Object moduleName);
@@ -343,6 +411,11 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     protected void doGlobalVersioning(StaplerRequest req) {
         releaseVersion = req.getParameter("releaseVersion");
         nextVersion = req.getParameter("nextVersion");
+    }
+
+    protected void doGlobalVersioning() {
+        releaseVersion = defaultGlobalModule.getReleaseVersion();
+        nextVersion = defaultGlobalModule.getNextDevelopmentVersion();
     }
 
     protected W getWrapper() {
@@ -398,6 +471,8 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
      */
     protected abstract void doPerModuleVersioning(StaplerRequest req);
 
+    protected abstract void doPerModuleVersioning(Map<String, VersionedModule> defaultModules);
+
     protected abstract PluginSettings getSelectedStagingPlugin() throws Exception;
 
     protected abstract String getSelectedStagingPluginName();
@@ -411,6 +486,31 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     protected abstract void prepareBuilderSpecificDefaultPromotionConfig();
 
     protected void prepareBuilderSpecificDefaultVersioning() {
+    }
+
+    /**
+        Read the values provided by the staging user plugin and assign them to data members in this class.
+        Those values can be overriden by URL arguments sent with the API:
+     */
+    private void readStagingPluginValues() {
+        versioning = VERSIONING.valueOf(defaultVersioning);
+
+        createVcsTag = defaultVcsConfig.isCreateTag();
+        tagUrl = defaultVcsConfig.getTagUrlOrName();
+        tagComment = defaultVcsConfig.getTagComment();
+        nextDevelCommitComment = defaultVcsConfig.getNextDevelopmentVersionComment();
+        createReleaseBranch = defaultVcsConfig.isUseReleaseBranch();
+        releaseBranch = defaultVcsConfig.getReleaseBranchName();
+        stagingRepositoryKey = defaultPromotionConfig.getTargetRepository();
+        stagingComment = defaultPromotionConfig.getComment();
+
+        switch (versioning) {
+            case GLOBAL:
+                doGlobalVersioning();
+                break;
+            case PER_MODULE:
+                doPerModuleVersioning(defaultModules);
+        }
     }
 
     private void prepareDefaultVersioning() {

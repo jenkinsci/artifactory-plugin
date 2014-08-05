@@ -115,6 +115,20 @@ public class MavenReleaseAction extends ReleaseAction<MavenModuleSet, MavenRelea
     }
 
     @Override
+    protected void doPerModuleVersioning(Map<String, VersionedModule> defaultModules) {
+        releaseVersionPerModule = Maps.newHashMap();
+        nextVersionPerModule = Maps.newHashMap();
+
+        for(Map.Entry<String, VersionedModule> entry : defaultModules.entrySet()) {
+            VersionedModule versionedModule  = entry.getValue();
+            ModuleName module = ModuleName.fromString(versionedModule.getModuleName());
+
+            releaseVersionPerModule.put(module, versionedModule.getReleaseVersion());
+            nextVersionPerModule.put(module, versionedModule.getNextDevelopmentVersion());
+        }
+    }
+
+    @Override
     public String getReleaseVersionFor(Object moduleName) {
         ModuleName mavenModuleName = (ModuleName) moduleName;
         switch (versioning) {

@@ -240,7 +240,25 @@ public class GradleReleaseAction extends ReleaseAction<FreeStyleProject, Artifac
     }
 
     @Override
+    protected void doPerModuleVersioning(Map<String, VersionedModule> defaultModules) {
+        releaseVersionPerModule = Maps.newHashMap();
+        nextVersionPerModule = Maps.newHashMap();
+
+        for(Map.Entry<String, VersionedModule> entry : defaultModules.entrySet()) {
+            VersionedModule versionedModule  = entry.getValue();
+            String module = versionedModule.getModuleName();
+            releaseVersionPerModule.put(module, versionedModule.getReleaseVersion());
+            nextVersionPerModule.put(module, versionedModule.getNextDevelopmentVersion());
+        }
+    }
+
+    @Override
     protected void prepareBuilderSpecificDefaultGlobalModule() {
+    }
+
+    @Override
+    protected void prepareBuilderSpecificDefaultVersioning() {
+        defaultVersioning = VERSIONING.PER_MODULE.toString();
     }
 
     @Override
