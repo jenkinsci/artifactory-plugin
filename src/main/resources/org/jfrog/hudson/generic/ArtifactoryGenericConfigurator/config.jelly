@@ -31,7 +31,7 @@
                         </script>
                         <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                  bind="genericDeployBind"
-                                 method="artifactoryGenericConfigurator"
+                                 jsFunction="artifactoryGenericConfigurator"
                                  repoUrl="artifactoryUrlDeploy${s.url}"
                                  credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                                  credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"

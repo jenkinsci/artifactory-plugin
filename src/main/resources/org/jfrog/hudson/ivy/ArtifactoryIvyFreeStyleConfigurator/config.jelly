@@ -34,7 +34,7 @@
                         </script>
                         <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                  bind="ivyFreeDeployBind"
-                                 method="artifactoryIvyFreeStyleConfigurator"
+                                 jsFunction="artifactoryIvyFreeStyleConfigurator"
                                  repoUrl="artifactoryUrlDeploy${s.url}"
                                  credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                                  credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"

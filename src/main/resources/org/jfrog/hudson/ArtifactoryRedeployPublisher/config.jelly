@@ -74,7 +74,7 @@
                 </script>
                 <r:repos title="${%Refresh}" progress="${%Refreshing...}"
                                   bind="bindToDescriptor"
-                                  method="artifactoryRedeployPublisher"
+                                  jsFunction="artifactoryRedeployPublisher"
                                   repoUrl="artifactoryUrlDeploy${s.url}"
                                   credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                                   credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"

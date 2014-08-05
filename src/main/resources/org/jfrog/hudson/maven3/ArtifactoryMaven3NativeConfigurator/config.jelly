@@ -59,7 +59,7 @@
                     </script>
                     <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                              bind="maven3NativeResolveBind"
-                             method="artifactoryMaven3NativeConfigurator"
+                             jsFunction="artifactoryMaven3NativeConfigurator"
                              repoUrl="artifactoryUrlDeploy${s.url}"
                              credentialUserName="$('overridingResolverCredentials').down('input[type=text]').value"
                              credentialPassword="$('overridingResolverCredentials').down('input[type=password]').value"

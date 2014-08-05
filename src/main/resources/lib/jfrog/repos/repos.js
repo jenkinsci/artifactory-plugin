@@ -2,7 +2,7 @@
  * @author Lior Hasson
  */
 
-function repos(button, method, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+function repos(button, jsFunction, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
     button = button._button;
     var spinner = $(button).up("DIV").next();
     spinner.style.display = "block";
@@ -11,22 +11,22 @@ function repos(button, method, artifactoryUrl, deployUsername, deployPassword, o
     var warning = target.next();
     warning.innerHTML = "";
 
-    if (method == "artifactoryIvyFreeStyleConfigurator") {
+    if (jsFunction == "artifactoryIvyFreeStyleConfigurator") {
         artifactoryIvyFreeStyleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     } else
-    if (method == "artifactoryGenericConfigurator") {
+    if (jsFunction == "artifactoryGenericConfigurator") {
         artifactoryGenericConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     } else
-    if (method == "artifactoryMaven3NativeConfigurator") {
+    if (jsFunction == "artifactoryMaven3NativeConfigurator") {
         artifactoryMaven3NativeConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     } else
-    if (method == "artifactoryMaven3Configurator") {
+    if (jsFunction == "artifactoryMaven3Configurator") {
         artifactoryMaven3Configurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     } else
-    if (method == "artifactoryGradleConfigurator") {
+    if (jsFunction == "artifactoryGradleConfigurator") {
         artifactoryGradleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     } else
-    if (method == "artifactoryRedeployPublisher") {
+    if (jsFunction == "artifactoryRedeployPublisher") {
         artifactoryRedeployPublisher(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     }
 };
@@ -266,6 +266,7 @@ function fillSelect(select, list) {
         var item = list[i];
         var option = document.createElement("option");
         option.text = item;
+        option.innerText = item;
         option.value = item;
         select.appendChild(option);
     }
@@ -276,6 +277,7 @@ function fillVirtualReposSelect(select, list) {
         var item = list[i];
         var option = document.createElement("option");
         option.text = item.displayName;
+        option.innerText = item.displayName;
         option.value = item.value;
         select.appendChild(option);
     }

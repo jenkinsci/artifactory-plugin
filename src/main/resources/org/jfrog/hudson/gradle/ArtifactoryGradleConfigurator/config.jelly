@@ -72,7 +72,7 @@
                         </script>
                         <r:repos title="${%Refresh}" progress="${%Refreshing...}"
                                  bind="bindToDescriptor"
-                                 method="artifactoryGradleConfigurator"
+                                 jsFunction="artifactoryGradleConfigurator"
                                  repoUrl="artifactoryUrlDeploy${s.url}"
                                  credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
                                  credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"

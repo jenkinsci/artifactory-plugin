@@ -11,7 +11,7 @@
         <st:attribute name="bind" use="required">
             Caption of the controls we want to refresh.
         </st:attribute>
-        <st:attribute name="method" use="required">
+        <st:attribute name="jsFunction" use="required">
             The name of the javascript function to be executed as a result of clicking the button
         </st:attribute>
         <st:attribute name="repoUrl" use="required">
@@ -33,7 +33,7 @@
         <div style="float:right">
             <input type="button" value="${title}" class="yui-button validate-button"
                    onclick="repos(this,
-                                '${method}',
+                                '${jsFunction}',
                                 '${repoUrl}',
                                 ${credentialUserName},
                                 ${credentialPassword},
