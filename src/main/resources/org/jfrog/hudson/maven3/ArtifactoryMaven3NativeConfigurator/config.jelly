@@ -3,6 +3,30 @@
          xmlns:r="/lib/jfrog"
          xmlns:st="jelly:stapler"
         >
+    <script language="javascript">
+        function onReleaseResolutionSelectChange(url) {
+            var textFieldRelease = document.getElementById('downloadReleaseRepositoryDisplayName-' + url);
+            var selectFieldRelease = document.getElementById('maven3NativeReleaseRepositoryKeys-' + url);
+
+            var releaseDisplayName = selectFieldRelease.options[selectFieldRelease.selectedIndex].text;
+            if (releaseDisplayName == undefined || releaseDisplayName == null || releaseDisplayName == '') {
+                releaseDisplayName = selectFieldRelease.options[selectFieldRelease.selectedIndex].innerText;
+            }
+            textFieldRelease.value = releaseDisplayName;
+        }
+
+        function onSnapshotResolutionSelectChange(url) {
+            var textFieldSnapshot = document.getElementById('downloadSnapshotRepositoryDisplayName-' + url);
+            var selectFieldSnapshot = document.getElementById('maven3NativeSnapshotRepositoryKeys-' + url);
+
+            var snapshotDisplayName = selectFieldSnapshot.options[selectFieldSnapshot.selectedIndex].text;
+            if (snapshotDisplayName == undefined || snapshotDisplayName == null || snapshotDisplayName == '') {
+                snapshotDisplayName = selectFieldSnapshot.options[selectFieldSnapshot.selectedIndex].innerText;
+            }
+            textFieldSnapshot.value = snapshotDisplayName;
+        }
+
+    </script>
     <f:dropdownList name="details" title="${%Artifactory server}">
         <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
             <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
@@ -11,11 +35,11 @@
                     <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"
                            field="artifactoryUrl"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                    <input type="hidden" name="downloadReleaseRepositoryDisplayName" id="downloadReleaseRepositoryDisplayName-${s.url}" value=""/>
-                    <input type="hidden" name="downloadSnapshotRepositoryDisplayName" id="downloadSnapshotRepositoryDisplayName-${s.url}" value=""/>
+                    <input type="hidden" name="downloadReleaseRepositoryDisplayName" id="downloadReleaseRepositoryDisplayName-${s.url}" value="${instance.details.downloadReleaseRepositoryDisplayName}"/>
+                    <input type="hidden" name="downloadSnapshotRepositoryDisplayName" id="downloadSnapshotRepositoryDisplayName-${s.url}" value="${instance.details.downloadSnapshotRepositoryDisplayName}"/>
                     <f:entry title="${%Resolution releases repository}">
                         <select class="setting-input" name="downloadReleaseRepositoryKey" id="maven3NativeReleaseRepositoryKeys-${s.url}"
-                                onchange="document.getElementById('downloadReleaseRepositoryDisplayName-${s.url}').value=document.getElementById('maven3NativeReleaseRepositoryKeys-${s.url}').options[this.selectedIndex].text">
+                                onchange="onReleaseResolutionSelectChange('${s.url}')">
                             <j:choose>
                                 <j:when test="${instance.downloadReleaseRepositoryKey != null}">
                                     <f:option selected="${instance.downloadReleaseRepositoryKey}"
@@ -35,7 +59,7 @@
                     </f:entry>
                     <f:entry title="${%Resolution snapshots repository}">
                         <select class="setting-input" name="downloadSnapshotRepositoryKey" id="maven3NativeSnapshotRepositoryKeys-${s.url}"
-                                onchange="document.getElementById('downloadSnapshotRepositoryDisplayName-${s.url}').value=document.getElementById('maven3NativeSnapshotRepositoryKeys-${s.url}').options[this.selectedIndex].text">>
+                                onchange="onSnapshotResolutionSelectChange('${s.url}')">
                             <j:choose>
                                 <j:when test="${instance.downloadSnapshotRepositoryKey != null}">
                                     <f:option selected="${instance.downloadSnapshotRepositoryKey}"

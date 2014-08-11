@@ -36,16 +36,16 @@
                                  bind="ivyFreeDeployBind"
                                  jsFunction="artifactoryIvyFreeStyleConfigurator"
                                  repoUrl="artifactoryUrlDeploy${s.url}"
-                                 credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
-                                 credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"
-                                 isCredential="$('overridingDeployerCredentials').down('input').checked"/>
+                                 credentialUserName="$('overridingDeployerCredentials-ivy').down('input[type=text]').value"
+                                 credentialPassword="$('overridingDeployerCredentials-ivy').down('input[type=password]').value"
+                                 isCredential="$('overridingDeployerCredentials-ivy').down('input').checked"/>
 
                     </f:nested>
                 </f:dropdownListBlock>
             </j:forEach>
         </f:dropdownList>
         <f:block>
-            <table style="width:100%" id="overridingDeployerCredentials">
+            <table style="width:100%" id="overridingDeployerCredentials-ivy">
                 <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
                 <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
                                  title="Override default deployer credentials"

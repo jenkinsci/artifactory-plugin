@@ -74,9 +74,9 @@
                                  bind="bindToDescriptor"
                                  jsFunction="artifactoryGradleConfigurator"
                                  repoUrl="artifactoryUrlDeploy${s.url}"
-                                 credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
-                                 credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"
-                                 isCredential="$('overridingDeployerCredentials').down('input').checked"/>
+                                 credentialUserName="$('overridingDeployerCredentials-gradle').down('input[type=text]').value"
+                                 credentialPassword="$('overridingDeployerCredentials-gradle').down('input[type=password]').value"
+                                 isCredential="$('overridingDeployerCredentials-gradle').down('input').checked"/>
 
                     </f:nested>
                 </f:dropdownListBlock>
@@ -92,7 +92,7 @@
             </table>
         </f:block>
         <f:block>
-            <table style="width:100%" id="overridingDeployerCredentials">
+            <table style="width:100%" id="overridingDeployerCredentials-gradle">
                 <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
                 <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
                                  title="Override default deployer credentials"
