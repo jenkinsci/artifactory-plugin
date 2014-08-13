@@ -91,10 +91,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             };
         }
 
-        /**
-         * Only Resolve handling
-         * */
-        MavenExtractorHelper.PublisherResolverTuple tuple = MavenExtractorHelper.getResolverTuple(build);
+        MavenExtractorHelper.PublisherResolverTuple tuple = MavenExtractorHelper.getPublisherResolverTuple(build);
         if (tuple == null) {
             return new Environment() {
             };
