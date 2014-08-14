@@ -28,6 +28,9 @@ function repos(button, jsFunction, artifactoryUrl, deployUsername, deployPasswor
     } else
     if (jsFunction == "artifactoryRedeployPublisher") {
         artifactoryRedeployPublisher(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+    } else
+    if (jsFunction == "artifactoryIvyConfigurator") {
+        artifactoryIvyConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     }
 };
 
@@ -251,6 +254,35 @@ function artifactoryRedeployPublisher(spinner, artifactoryUrl, deployUsername, d
             }
             if (oldValueExistsInNewList) {
                 oldValueExistsInNewList = compareSelectTags(selectPlugins, oldSelectPlugins);
+            }
+
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function artifactoryIvyConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        }
+        else {
+            var select = document.getElementById("publishRepositoryKey-" + artifactoryUrl);
+            var oldSelect = select.cloneNode(true);
+            removeElements(select);
+            fillSelect(select, response.repositories);
+            setSelectValue(select, oldSelect.value);
+
+            var oldValueExistsInNewList = true;
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(select, oldSelect);
             }
 
             if (!oldValueExistsInNewList) {

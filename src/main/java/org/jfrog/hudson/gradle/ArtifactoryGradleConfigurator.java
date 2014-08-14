@@ -589,9 +589,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private List<String> releaseRepositoryKeysFirst;
-        private List<VirtualRepository> virtualRepositoryKeys;
-        private List<String> userPluginKeys;
+        private List<String> releaseRepositoryKeysFirst = Collections.emptyList();
+        private List<VirtualRepository> virtualRepositoryKeys = Collections.emptyList();
+        private List<String> userPluginKeys = Collections.emptyList();
 
         public DescriptorImpl() {
             super(ArtifactoryGradleConfigurator.class);

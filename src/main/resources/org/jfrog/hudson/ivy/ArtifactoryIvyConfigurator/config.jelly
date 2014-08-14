@@ -22,12 +22,12 @@
             <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
                 <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                     <f:nested>
-                        <input type="hidden" name="artifactoryName" value="${s.name}" field="artifactoryName"/>
-                        <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"
-                               field="artifactoryUrl"/>
+                        <input type="hidden" name="artifactoryName" value="${s.name}"/>
+                        <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <f:entry title="${%Target repository}">
-                            <select class="setting-input" name="repositoryKey" id="ivyRepositoryKey${s.url}">
+                        <f:entry title="${%Target Repository}"
+                                 help="/plugin/artifactory/help/common/help-deployRepository.html">
+                            <select class="setting-input" name="repositoryKey" id="publishRepositoryKey-${s.url}">
                                 <j:choose>
                                     <j:when test="${instance.repositoryKey != null}">
                                         <f:option selected="${instance.repositoryKey}"
@@ -43,25 +43,24 @@
                                 </j:choose>
                             </select>
                         </f:entry>
-
                         <script>
                             var ivyDeployBind =
                             <st:bind value="${descriptor}"/>
                         </script>
                         <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                                  bind="ivyDeployBind"
-                                 on="ivyRepositoryKey${s.url}"
+                                 jsFunction="artifactoryIvyConfigurator"
                                  repoUrl="artifactoryUrlDeploy${s.url}"
-                                 credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
-                                 credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"
-                                 isCredential="$('overridingDeployerCredentials').down('input').checked"/>
+                                 credentialUserName="$('overridingDeployerCredentials-ivy-project').down('input[type=text]').value"
+                                 credentialPassword="$('overridingDeployerCredentials-ivy-project').down('input[type=password]').value"
+                                 isCredential="$('overridingDeployerCredentials-ivy-project').down('input').checked"/>
 
                     </f:nested>
                 </f:dropdownListBlock>
             </j:forEach>
         </f:dropdownList>
         <f:block>
-            <table style="width:100%" id="overridingDeployerCredentials">
+            <table style="width:100%" id="overridingDeployerCredentials-ivy-project">
                 <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
                 <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
                                  title="Override default deployer credentials"

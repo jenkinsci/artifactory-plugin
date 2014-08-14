@@ -348,9 +348,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 response.setSuccess(false);
             }
 
-            /*
-            * In case of Exception, we write error in the Javascript scope!
-            * */
             return response;
         }
 

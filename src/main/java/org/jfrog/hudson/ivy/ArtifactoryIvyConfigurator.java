@@ -441,20 +441,19 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
          * @param credentialsUsername           override credentials user name
          * @param credentialsPassword           override credentials password
          * @param overridingDeployerCredentials user choose to override credentials
-         * @return {@link org.jfrog.hudson.util.RefreshRepository} object that represents the response of the repositories
+         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshRepository<String> refreshRepo(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
-            RefreshRepository<String> response = new RefreshRepository<String>();
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
-            /*if (artifactoryServer == null)
-                return releaseRepositoryKeysFirst;*/
 
             try {
                 releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
                         overridingDeployerCredentials, artifactoryServer);
+
                 Collections.sort(releaseRepositoryKeysFirst);
-                response.setRepos(releaseRepositoryKeysFirst);
+                response.setRepositories(releaseRepositoryKeysFirst);
                 response.setSuccess(true);
 
                 return response;
@@ -464,9 +463,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 response.setSuccess(false);
             }
 
-            /*
-            * In case of Exception, we write error in the Javascript scope!
-            * */
             return response;
         }
 
