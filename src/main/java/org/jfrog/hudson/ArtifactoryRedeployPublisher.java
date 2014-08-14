@@ -455,10 +455,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public List<String> getUserPluginKeys() {
-        if (getUserPluginKey() == null) {
-            getDescriptor().refreshUserPlugins(getArtifactoryServer(), overridingDeployerCredentials.getUsername(), overridingDeployerCredentials.getPassword(), isOverridingDefaultDeployer());
-        }
-
         return getDescriptor().userPluginKeys;
     }
 

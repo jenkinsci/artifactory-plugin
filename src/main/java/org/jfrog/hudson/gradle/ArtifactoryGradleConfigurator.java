@@ -535,12 +535,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public List<String> getUserPluginKeys() {
-        if (getUserPluginKey() == null) {
-            String username = overridingDeployerCredentials != null ? overridingDeployerCredentials.getUsername() : null;
-            String password = overridingDeployerCredentials != null ? overridingDeployerCredentials.getPassword() : null;
-            getDescriptor().refreshUserPlugins(getArtifactoryServer(), username, password, isOverridingDefaultDeployer());
-        }
-
         return getDescriptor().userPluginKeys;
     }
 
