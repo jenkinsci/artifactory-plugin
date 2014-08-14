@@ -489,9 +489,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-        private List<String> releaseRepositoryKeysFirst;
-        private List<String> snapshotRepositoryKeysFirst;
-        private List<String> userPluginKeys;
+        private List<String> releaseRepositoryKeysFirst = Collections.emptyList();;
+        private List<String> snapshotRepositoryKeysFirst = Collections.emptyList();;
+        private List<String> userPluginKeys = Collections.emptyList();
 
         public DescriptorImpl() {
             super(ArtifactoryRedeployPublisher.class);
