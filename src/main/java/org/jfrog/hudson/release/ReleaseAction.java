@@ -171,15 +171,6 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
         return titleBuilder.toString();
     }
 
-    public String getIconFileName() {
-        if (project.hasPermission(ArtifactoryPlugin.RELEASE)) {
-            return "/plugin/artifactory/images/artifactory-release.png";
-        }
-
-        // return null to hide the action (doSubmit will also perform permission check if someone tries direct link)
-        return null;
-    }
-
     /**
      * @return The message to display on the left panel for the perform release action.
      */
@@ -280,7 +271,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
      * <Jenkins server>/Jenkins>/job/<Project>/release/api?<Optional arguments>
      */
     @SuppressWarnings({"UnusedDeclaration"})
-    public void doApi(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
+    protected void doApi(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         try {
             // Enforce release permissions
             project.checkPermission(ArtifactoryPlugin.RELEASE);

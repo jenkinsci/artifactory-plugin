@@ -39,7 +39,9 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
+import org.jfrog.hudson.release.gradle.BaseGradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
+import org.jfrog.hudson.release.gradle.GradleReleaseApiAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.publisher.PublisherContext;
@@ -351,7 +353,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 ActionableHelper.getArtifactoryProjectAction(details.getArtifactoryUrl(), project);
         if (getReleaseWrapper() != null) {
             List actions = new ArrayList();
-            actions.add(new GradleReleaseAction((FreeStyleProject) project));
+            actions.add(new GradleReleaseAction((FreeStyleProject)project));
+            actions.add(new GradleReleaseApiAction((FreeStyleProject)project));
             actions.addAll(action);
             return actions;
         }
@@ -720,7 +723,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 return;
             }
 
-            GradleReleaseAction releaseAction = run.getAction(GradleReleaseAction.class);
+            BaseGradleReleaseAction releaseAction = run.getAction(BaseGradleReleaseAction.class);
             if (releaseAction == null) {
                 return;
             }
