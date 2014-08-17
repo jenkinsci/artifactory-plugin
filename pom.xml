@@ -129,7 +129,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-api</artifactId>
-            <version>${buildinfo.version}</version>
+            <version>2.3.x-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.thoughtworks.xstream</groupId>
@@ -140,7 +140,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-client</artifactId>
-            <version>${buildinfo.version}</version>
+            <version>2.3.x-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.thoughtworks.xstream</groupId>
@@ -151,7 +151,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor</artifactId>
-            <version>${buildinfo.version}</version>
+            <version>2.3.x-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.thoughtworks.xstream</groupId>
@@ -162,7 +162,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-vcs</artifactId>
-            <version>${buildinfo.version}</version>
+            <version>2.3.x-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.thoughtworks.xstream</groupId>
@@ -261,6 +261,11 @@
             <groupId>org.jdom</groupId>
             <artifactId>jdom</artifactId>
             <version>1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ivy</groupId>
+            <artifactId>ivy</artifactId>
+            <version>2.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
