@@ -16,9 +16,7 @@
 
 package org.jfrog.hudson.gradle;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -353,9 +351,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 ActionableHelper.getArtifactoryProjectAction(details.getArtifactoryUrl(), project);
         if (getReleaseWrapper() != null) {
             List actions = new ArrayList();
+            actions.addAll(action);
             actions.add(new GradleReleaseAction((FreeStyleProject)project));
             actions.add(new GradleReleaseApiAction((FreeStyleProject)project));
-            actions.addAll(action);
             return actions;
         }
         return action;
@@ -512,7 +510,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public boolean isRelease(AbstractBuild build) {
-        return getReleaseWrapper() != null && build.getAction(GradleReleaseAction.class) != null;
+        boolean actionExists = build.getAction(GradleReleaseAction.class) != null || build.getAction(GradleReleaseApiAction.class) != null;
+        return getReleaseWrapper() != null && actionExists;
     }
 
     private Gradle getLastGradleBuild(AbstractProject project) {
@@ -723,7 +722,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 return;
             }
 
-            BaseGradleReleaseAction releaseAction = run.getAction(BaseGradleReleaseAction.class);
+            BaseGradleReleaseAction releaseAction = run.getAction(GradleReleaseAction.class);
+            if (releaseAction == null) {
+                releaseAction = run.getAction(GradleReleaseApiAction.class);
+            }
             if (releaseAction == null) {
                 return;
             }

@@ -22,7 +22,6 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.lang.reflect.Field;
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,6 +110,13 @@ public class ServerDetails {
     }
 
     public String getUserPluginKey() {
+        // The following if statement is for backward compatibility with version 2.2.3 and below of the plugin.
+        // Without the below code, upgrade from 2.2.3 or below to 2.2.4 and above will cause the staging configuration to be lost.
+        // This should be eventually removed.
+        if (userPluginKey == null && stagingPlugin != null) {
+            userPluginKey = stagingPlugin.getPluginName();
+        }
+
         return userPluginKey;
     }
 
@@ -156,4 +162,27 @@ public class ServerDetails {
         }
     }
 
+    // The following "PluginSettings" property and method are for backward comparability with version 2.2.3 of the plugin.
+    // Version 2.2.4 does not need the below code.
+    // Without the below code, upgrade from 2.2.3 and below to 2.2.4 and above will cause the staging configuration to be lost.
+    // Once the below code is eventually removed, the relevant code from the getUserPluginKey() method in this class should be
+    // also removed.
+
+    private PluginSettings stagingPlugin;
+
+    public PluginSettings getStagingPlugin() {
+        return stagingPlugin;
+    }
+
+    public void setStagingPlugin(PluginSettings stagingPlugin) {
+        this.stagingPlugin = stagingPlugin;
+    }
+
+    public String getStagingPluginName() {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
+    }
+
+    public String getPluginParamValue(String pluginName, String paramKey) {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(pluginName, paramKey) : null;
+    }
 }

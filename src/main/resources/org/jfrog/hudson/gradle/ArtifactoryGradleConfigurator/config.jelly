@@ -48,7 +48,7 @@
                             </select>
                         </f:entry>
                         <f:entry title="${%Custom staging configuration}"
-                                 help="/plugin/artifactory/help/common/help-deploySnapshots.html">
+                                 help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
                             <select class="setting-input" name="userPluginKey" id="gradleCustomStagingConfiguration-${s.url}">
                                 <j:choose>
                                     <j:when test="${instance.details.userPluginKey != null}">

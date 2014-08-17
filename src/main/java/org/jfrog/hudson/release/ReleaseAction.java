@@ -24,6 +24,8 @@ import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Cause;
 import hudson.tasks.BuildWrapper;
 import org.apache.commons.lang.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
 import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.PluginSettings;
@@ -31,6 +33,7 @@ import org.jfrog.hudson.UserPluginInfo;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
+import org.jfrog.hudson.util.ErrorResponse;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -266,13 +269,12 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     public abstract ArtifactoryServer getArtifactoryServer();
 
     /**
-     * This method is used to initiate a release staging process using the api.
-     * The method is invoked by the following URL pattern:
-     * <Jenkins server>/Jenkins>/job/<Project>/release/api?<Optional arguments>
+     * This method is used to initiate a release staging process using the Artifactory Release Staging API.
      */
     @SuppressWarnings({"UnusedDeclaration"})
     protected void doApi(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         try {
+            log.log(Level.INFO, "Initiating Artifactory Release Staging using API");
             // Enforce release permissions
             project.checkPermission(ArtifactoryPlugin.RELEASE);
             // In case a staging user plugin is configured, the init() method invoke it:
@@ -288,8 +290,12 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
                 resp.setStatus(StaplerResponse.SC_INTERNAL_SERVER_ERROR);
             }
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Release API invocation failed: " + e.getMessage(), e);
+            log.log(Level.SEVERE, "Artifactory Release Staging API invocation failed: " + e.getMessage(), e);
             resp.setStatus(StaplerResponse.SC_INTERNAL_SERVER_ERROR);
+            ErrorResponse errorResponse = new ErrorResponse(StaplerResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
+            resp.getWriter().write(mapper.writeValueAsString(errorResponse));
         }
     }
 
@@ -321,7 +327,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
                     doPerModuleVersioning(req);
             }
         }
-        if (req.getParameter("createVcsTag") != null) {
+        if (req.getParameter("createVcsTag") != null && !"false".equals(req.getParameter("createVcsTag"))) {
             createVcsTag = true;
         }
         if (req.getParameter("tagUrl") != null) {

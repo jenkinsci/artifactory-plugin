@@ -8,7 +8,10 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 
 /**
- * Created by user on 17/08/2014.
+ * This class is used for managing the Artifactory Release Staging functionality for Gradle projects using the Artifactory
+ * Release Staging API.
+ * The API is invoked using a URL with the following pattern:
+ * <Jenkins server>/Jenkins>/job/<Project>/artifactory/staging?<Arguments List>
  */
 public class GradleReleaseApiAction extends BaseGradleReleaseAction {
 

@@ -3,6 +3,9 @@ package org.jfrog.hudson.release.maven;
 import hudson.maven.MavenModuleSet;
 import org.jfrog.hudson.ArtifactoryPlugin;
 
+/**
+ * This class is used for managing the Artifactory Release Staging functionality for Maven projects from Jenkins UI.
+ */
 public class MavenReleaseAction extends BaseMavenReleaseAction {
 
     public MavenReleaseAction(MavenModuleSet project) {

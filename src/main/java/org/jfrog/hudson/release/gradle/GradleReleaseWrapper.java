@@ -23,6 +23,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -136,7 +137,10 @@ public class GradleReleaseWrapper {
 
     public void setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
-        final GradleReleaseAction releaseAction = build.getAction(GradleReleaseAction.class);
+        BaseGradleReleaseAction releaseAction = build.getAction(GradleReleaseAction.class);
+        if (releaseAction == null) {
+            releaseAction = build.getAction(GradleReleaseApiAction.class);
+        }
         if (releaseAction == null) {
             // this is a normal non release build, continue with normal environment
             return;
@@ -145,7 +149,7 @@ public class GradleReleaseWrapper {
         scmCoordinator = AbstractScmCoordinator.createScmCoordinator(build, listener, releaseAction);
         scmCoordinator.prepare();
         // TODO: replace the versioning mode with something else
-        if (!releaseAction.getVersioning().equals(GradleReleaseAction.VERSIONING.NONE)) {
+        if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
             scmCoordinator.beforeReleaseVersionChange();
             // change to release properties values
             boolean modified = changeProperties(build, releaseAction, true, listener);
@@ -159,10 +163,14 @@ public class GradleReleaseWrapper {
             // revert will happen by the listener
             return true;
         }
-        final GradleReleaseAction releaseAction = build.getAction(GradleReleaseAction.class);
+        BaseGradleReleaseAction releaseAction = build.getAction(GradleReleaseAction.class);
+        if (releaseAction == null) {
+            releaseAction = build.getAction(GradleReleaseApiAction.class);
+        }
+
         try {
             scmCoordinator.afterSuccessfulReleaseVersionBuild();
-            if (!releaseAction.getVersioning().equals(GradleReleaseAction.VERSIONING.NONE)) {
+            if (!releaseAction.getVersioning().equals(ReleaseAction.VERSIONING.NONE)) {
                 scmCoordinator.beforeDevelopmentVersionChange();
                 boolean modified = changeProperties(build, releaseAction, false, listener);
                 scmCoordinator.afterDevelopmentVersionChange(modified);
@@ -175,7 +183,7 @@ public class GradleReleaseWrapper {
         return true;
     }
 
-    private boolean changeProperties(AbstractBuild build, GradleReleaseAction release, boolean releaseVersion,
+    private boolean changeProperties(AbstractBuild build, BaseGradleReleaseAction release, boolean releaseVersion,
                                      BuildListener listener) throws IOException, InterruptedException {
         FilePath root = release.getModuleRoot(build.getEnvironment(listener));
         debuggingLogger.fine("Root directory is: " + root.getRemote());
