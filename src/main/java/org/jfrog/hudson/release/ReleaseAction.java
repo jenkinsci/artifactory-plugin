@@ -327,7 +327,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
                     doPerModuleVersioning(req);
             }
         }
-        if (req.getParameter("createVcsTag") != null && !"false".equals(req.getParameter("createVcsTag"))) {
+        if (!"false".equals(req.getParameter("createVcsTag"))) {
             createVcsTag = true;
         }
         if (req.getParameter("tagUrl") != null) {
@@ -339,7 +339,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
         if (req.getParameter("nextDevelCommitComment") != null) {
             nextDevelCommitComment = req.getParameter("nextDevelCommitComment");
         }
-        if (req.getParameter("createReleaseBranch") != null) {
+        if (!"false".equals(req.getParameter("createReleaseBranch"))) {
             createReleaseBranch = true;
         }
         if (req.getParameter("releaseBranch") != null) {

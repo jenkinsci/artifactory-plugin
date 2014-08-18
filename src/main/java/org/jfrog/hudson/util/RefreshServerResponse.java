@@ -1,5 +1,6 @@
 package org.jfrog.hudson.util;
 
+import org.jfrog.hudson.PluginSettings;
 import org.jfrog.hudson.VirtualRepository;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 public class RefreshServerResponse {
     private List<String> repositories;
     private List<VirtualRepository> virtualRepositories;
-    private List<String> userPlugins;
+    private List<PluginSettings> userPlugins;
     private String responseMessage;
     private boolean success;
 
@@ -30,11 +31,11 @@ public class RefreshServerResponse {
         this.virtualRepositories = virtualRepositories;
     }
 
-    public List<String> getUserPlugins() {
+    public List<PluginSettings> getUserPlugins() {
         return userPlugins;
     }
 
-    public void setUserPlugins(List<String> userPlugins) {
+    public void setUserPlugins(List<PluginSettings> userPlugins) {
         this.userPlugins = userPlugins;
     }
 

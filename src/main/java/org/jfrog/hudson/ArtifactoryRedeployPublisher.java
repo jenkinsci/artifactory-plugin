@@ -454,7 +454,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
     }
 
-    public List<String> getUserPluginKeys() {
+    public List<PluginSettings> getUserPluginKeys() {
         return getDescriptor().userPluginKeys;
     }
 
@@ -478,8 +478,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public PluginSettings getSelectedStagingPlugin() throws Exception {
-        List<UserPluginInfo> pluginInfoList = getArtifactoryServer().getStagingUserPluginInfo(this);
-        return details.getSelectedStagingPlugin(pluginInfoList);
+        return details.getStagingPlugin();
     }
 
     @Extension
@@ -487,7 +486,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         private List<String> releaseRepositoryKeysFirst = Collections.emptyList();;
         private List<String> snapshotRepositoryKeysFirst = Collections.emptyList();;
-        private List<String> userPluginKeys = Collections.emptyList();
+        private List<PluginSettings> userPluginKeys = Collections.emptyList();
 
         public DescriptorImpl() {
             super(ArtifactoryRedeployPublisher.class);
@@ -513,9 +512,15 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 }
             });
 
-            ArrayList<String> list = new ArrayList<String>(pluginInfoList.size());
-            for (UserPluginInfo plugin : pluginInfoList) {
-                list.add(plugin.getPluginName());
+            ArrayList<PluginSettings> list = new ArrayList<PluginSettings>(pluginInfoList.size());
+            for (UserPluginInfo p : pluginInfoList) {
+                Map<String, String> paramsMap = Maps.newHashMap();
+                List<UserPluginInfoParam> params = p.getPluginParams();
+                for(UserPluginInfoParam param : params) {
+                    paramsMap.put(((String)param.getKey()), ((String)param.getDefaultValue()));
+                }
+                PluginSettings plugin = new PluginSettings(p.getPluginName(), paramsMap);
+                list.add(plugin);
             }
 
             userPluginKeys = list;

@@ -17,6 +17,7 @@
 package org.jfrog.hudson.gradle;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -429,7 +430,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     serverDetails = new ServerDetails(
                             serverDetails.artifactoryName, serverDetails.getArtifactoryUrl(), stagingRepository,
                             serverDetails.snapshotsRepositoryKey, serverDetails.downloadReleaseRepositoryKey, serverDetails.downloadSnapshotRepositoryKey,
-                            serverDetails.downloadReleaseRepositoryDisplayName, serverDetails.downloadSnapshotRepositoryDisplayName);
+                            serverDetails.getDownloadReleaseRepositoryDisplayName(), serverDetails.getDownloadSnapshotRepositoryDisplayName());
                 }
                 PublisherContext publisherContext = new PublisherContext.Builder()
                         .artifactoryServer(getArtifactoryServer()).serverDetails(serverDetails)
@@ -536,7 +537,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
-    public List<String> getUserPluginKeys() {
+    public List<PluginSettings> getUserPluginKeys() {
         return getDescriptor().userPluginKeys;
     }
 
@@ -574,8 +575,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public PluginSettings getSelectedStagingPlugin() throws Exception {
-        List<UserPluginInfo> pluginInfoList = getArtifactoryServer().getStagingUserPluginInfo(this);
-        return details.getSelectedStagingPlugin(pluginInfoList);
+        return details.getStagingPlugin();
     }
 
     @Override
@@ -587,7 +587,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<String> releaseRepositoryKeysFirst = Collections.emptyList();
         private List<VirtualRepository> virtualRepositoryKeys = Collections.emptyList();
-        private List<String> userPluginKeys = Collections.emptyList();
+        private List<PluginSettings> userPluginKeys = Collections.emptyList();
 
         public DescriptorImpl() {
             super(ArtifactoryGradleConfigurator.class);
@@ -622,9 +622,16 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 }
             });
 
-            ArrayList<String> list = new ArrayList<String>(pluginInfoList.size());
-            for (UserPluginInfo plugin : pluginInfoList) {
-                list.add(plugin.getPluginName());
+            ArrayList<PluginSettings> list = new ArrayList<PluginSettings>(pluginInfoList.size());
+            for (UserPluginInfo p : pluginInfoList) {
+                Map<String, String> paramsMap = Maps.newHashMap();
+                List<UserPluginInfoParam> params = p.getPluginParams();
+                for(UserPluginInfoParam param : params) {
+                    paramsMap.put(((String)param.getKey()), ((String)param.getDefaultValue()));
+                }
+
+                PluginSettings plugin = new PluginSettings(p.getPluginName(), paramsMap);
+                list.add(plugin);
             }
 
             userPluginKeys = list;

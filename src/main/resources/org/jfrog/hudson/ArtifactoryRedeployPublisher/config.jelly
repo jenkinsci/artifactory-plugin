@@ -2,7 +2,7 @@
          xmlns:f="/lib/form"
          xmlns:r="/lib/jfrog"
          xmlns:st="jelly:stapler"
-        >
+        >"
 <f:dropdownList name="details" title="${%Artifactory server}">
     <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
         <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
@@ -51,22 +51,34 @@
                 </f:entry>
                 <f:entry title="${%Custom staging configuration}"
                          help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
-                    <select class="setting-input" name="userPluginKey" id="customStagingConfiguration-${s.url}">
+                    <select class="setting-input" name="userPluginKey" id="customStagingConfiguration-${s.url}"
+                            onchange="setStagingParamsSelectedValue(this)">
                         <j:choose>
-                            <j:when test="${instance.details.userPluginKey != null}">
-                                <f:option selected="${instance.details.userPluginKey}"
-                                          value="${instance.details.userPluginKey}">
-                                    ${instance.details.userPluginKey}
+                            <j:when test="${instance.details.stagingPlugin != null}">
+                                <f:option selected="${instance.details.stagingPlugin.pluginName}"
+                                          value="${instance.details.stagingPlugin.pluginName}">
+                                    ${instance.details.stagingPlugin.pluginName}
                                 </f:option>
                             </j:when>
                             <j:otherwise>
                                 <j:forEach var="r" items="${instance.userPluginKeys}">
-                                    <f:option selected="${r==instance.userPluginKeys}" value="${r}">${r}
+                                    <f:option selected="${r.pluginName==instance.details.stagingPlugin.pluginName}" value="${r.pluginName}">${r.pluginName}
                                     </f:option>
                                 </j:forEach>
                             </j:otherwise>
                         </j:choose>
                     </select>
+                    <div id="stagingParamsDiv">
+                        <j:choose>
+                            <j:when test="${instance.details.stagingPlugin != null}">
+                                <j:choose>
+                                    <j:when test="${instance.details.stagingPlugin.paramsString != ''}">
+                                        <input class='setting-input' name='userPluginParams' id='stagingParams-${instance.details.stagingPlugin.pluginName}' type='text' value='${instance.details.stagingPlugin.paramsString}' />
+                                    </j:when>
+                                </j:choose>
+                            </j:when>
+                        </j:choose>
+                    </div>
                 </f:entry>
                 <script>
                     var bindToDescriptor =

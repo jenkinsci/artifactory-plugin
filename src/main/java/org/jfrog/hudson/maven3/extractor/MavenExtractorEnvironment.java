@@ -178,7 +178,7 @@ public class MavenExtractorEnvironment extends Environment {
             if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
                 server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), stagingRepoKey,
                         server.snapshotsRepositoryKey, server.downloadReleaseRepositoryKey, server.downloadSnapshotRepositoryKey,
-                        server.downloadReleaseRepositoryDisplayName, server.downloadSnapshotRepositoryDisplayName);
+                        server.getDownloadReleaseRepositoryDisplayName(), server.getDownloadSnapshotRepositoryDisplayName());
             }
         }
 

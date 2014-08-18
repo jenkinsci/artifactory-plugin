@@ -190,11 +190,13 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, 
 
             fillVirtualReposSelect(selectResolution, response.virtualRepositories);
             fillSelect(selectPublish, response.repositories);
-            fillSelect(selectPlugins, response.userPlugins);
+            fillStagingPluginsSelect(selectPlugins, response.userPlugins);
+            createStagingParamsInputs(response.userPlugins);
 
             setSelectValue(selectResolution, oldSelectResolution.value);
             setSelectValue(selectPublish, oldSelectPublish.value);
             setSelectValue(selectPlugins, oldSelectPlugins.value);
+            setStagingParamsSelectedValue(selectPlugins);
 
             var oldValueExistsInNewList = true;
             if (oldValueExistsInNewList) {
@@ -239,11 +241,13 @@ function artifactoryRedeployPublisher(spinner, artifactoryUrl, deployUsername, d
 
             fillSelect(selectSnapshot, response.repositories);
             fillSelect(selectRelease, response.repositories);
-            fillSelect(selectPlugins, response.userPlugins);
+            fillStagingPluginsSelect(selectPlugins, response.userPlugins);
+            createStagingParamsInputs(response.userPlugins);
 
             setSelectValue(selectRelease, oldSelectRelease.value);
             setSelectValue(selectSnapshot, oldSelectSnapshot.value);
             setSelectValue(selectPlugins, oldSelectPlugins.value);
+            setStagingParamsSelectedValue(selectPlugins);
 
             var oldValueExistsInNewList = true;
             if (oldValueExistsInNewList) {
@@ -314,6 +318,50 @@ function fillVirtualReposSelect(select, list) {
         select.appendChild(option);
     }
     select.onchange();
+}
+
+function fillStagingPluginsSelect(select, list) {
+    for(var i=0; i < list.length; i++) {
+        var item = list[i];
+        var option = document.createElement("option");
+        option.text = item.pluginName;
+        option.innerText = item.pluginName;
+        option.value = item.pluginName;
+        select.appendChild(option);
+    }
+}
+
+function createStagingParamsInputs(list) {
+    var str = "";
+    for (var i = 0; i < list.length; i++) {
+        var item = list[i];
+        str += "<input class='setting-input' style='display:none' id='stagingParams-" + item.pluginName + "' type='text' value='" + item.paramsString + "' />";
+    }
+
+    document.getElementById("stagingParamsDiv").innerHTML = str;
+}
+
+function setStagingParamsSelectedValue(select) {
+    for(var i=0; i < select.options.length; i++) {
+        var display = (i == select.selectedIndex) ? "" : "none";
+        var inputName = "stagingParams-" + select.options[i].value;
+        var input = document.getElementById(inputName);
+        input.style.display = display;
+        if (display == "") {
+            input.setAttribute("name", "userPluginParams");
+        } else {
+            input.setAttribute("name", "");
+        }
+
+        if (display == "") {
+            var div = document.getElementById("stagingParamsDiv");
+            if (input.value == "") {
+                div.style.display = "none";
+            } else {
+                div.style.display = "";
+            }
+        }
+    }
 }
 
 function displaySuccessMessage(spinner, target) {

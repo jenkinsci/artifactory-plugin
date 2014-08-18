@@ -16,14 +16,13 @@
 
 package org.jfrog.hudson;
 
+import com.google.common.collect.Maps;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.util.XStream2;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,19 +49,21 @@ public class ServerDetails {
     /**
      * Display name of repository to use to download snapshots artifacts
      */
-    public final String downloadSnapshotRepositoryDisplayName;
+    private String downloadSnapshotRepositoryDisplayName;
     /**
      * Display name of repository to use to download artifacts
      */
-    public final String downloadReleaseRepositoryDisplayName;
-
-
+    private String downloadReleaseRepositoryDisplayName;
     /**
      * Artifactory server URL
      */
     private final String artifactoryUrl;
 
+    private PluginSettings stagingPlugin;
+
     private String userPluginKey;
+
+    private String userPluginParams;
 
     /**
      * @deprecated: Use org.jfrog.hudson.ServerDetails#downloadReleaseRepositoryKey
@@ -74,7 +75,7 @@ public class ServerDetails {
     public ServerDetails(String artifactoryName, String artifactoryUrl, String repositoryKey, String snapshotsRepositoryKey,
                          String downloadReleaseRepositoryKey, String downloadSnapshotRepositoryKey,
                          String downloadReleaseRepositoryDisplayName, String downloadSnapshotRepositoryDisplayName,
-                         String userPluginKey) {
+                         String userPluginKey, String userPluginParams) {
         this.artifactoryName = artifactoryName;
         this.artifactoryUrl = artifactoryUrl;
         this.repositoryKey = repositoryKey;
@@ -84,40 +85,66 @@ public class ServerDetails {
         this.downloadReleaseRepositoryDisplayName = downloadReleaseRepositoryDisplayName;
         this.downloadSnapshotRepositoryDisplayName = downloadSnapshotRepositoryDisplayName;
         this.userPluginKey = userPluginKey;
+        this.userPluginParams = userPluginParams;
+
+        createStagingPlugin();
     }
 
     public ServerDetails(String artifactoryName, String artifactoryUrl, String repositoryKey, String snapshotsRepositoryKey,
                          String downloadReleaseRepositoryKey, String downloadSnapshotRepositoryKey,
                          String downloadReleaseRepositoryDisplayName, String downloadSnapshotRepositoryDisplayName) {
         this(artifactoryName, artifactoryUrl, repositoryKey, snapshotsRepositoryKey, downloadReleaseRepositoryKey,
-                downloadSnapshotRepositoryKey, downloadReleaseRepositoryDisplayName, downloadSnapshotRepositoryDisplayName, null);
-    }
-
-    public PluginSettings getSelectedStagingPlugin(List<UserPluginInfo> pluginInfoList) throws Exception {
-        for (UserPluginInfo plugin : pluginInfoList) {
-            if (plugin.getPluginName().equals(userPluginKey)) {
-                List<UserPluginInfoParam> params = plugin.getPluginParams();
-                Map<String, String> map = new HashMap<String, String>();
-                for (UserPluginInfoParam param : params) {
-                    map.put(((String)param.getKey()), ((String)param.getDefaultValue()));
-                }
-
-                return new PluginSettings(plugin.getPluginName(), map);
-            }
-        }
-
-        throw new Exception("Could not retrieve from Artifactory a staging plugin matching the configured plugin name: " + userPluginKey);
+                downloadSnapshotRepositoryKey, downloadReleaseRepositoryDisplayName, downloadSnapshotRepositoryDisplayName, null, null);
     }
 
     public String getUserPluginKey() {
+        return stagingPlugin != null ? stagingPlugin.getPluginName() : null;
+    }
+
+    public void createStagingPlugin() {
+        if (stagingPlugin == null) {
+            stagingPlugin = new PluginSettings();
+        }
+        if (userPluginKey != null) {
+            stagingPlugin.setPluginName(userPluginKey);
+        }
+        if (userPluginParams != null) {
+            Map<String, String> paramsMap = Maps.newHashMap();
+            String[] params = userPluginParams.split(" ");
+            for(String param : params) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length == 2) {
+                    paramsMap.put(keyValue[0], keyValue[1]);
+                }
+            }
+            stagingPlugin.setParamMap(paramsMap);
+        }
+    }
+
+    public String getDownloadReleaseRepositoryDisplayName() {
         // The following if statement is for backward compatibility with version 2.2.3 and below of the plugin.
-        // Without the below code, upgrade from 2.2.3 or below to 2.2.4 and above will cause the staging configuration to be lost.
+        // Without the below code, upgrade from 2.2.3 or below to 2.2.4 and above will cause the configuration to be lost.
         // This should be eventually removed.
-        if (userPluginKey == null && stagingPlugin != null) {
-            userPluginKey = stagingPlugin.getPluginName();
+        if (downloadReleaseRepositoryDisplayName == null && downloadReleaseRepositoryKey != null) {
+            return downloadReleaseRepositoryKey;
         }
 
-        return userPluginKey;
+        return downloadReleaseRepositoryDisplayName;
+    }
+
+    public String getDownloadSnapshotRepositoryDisplayName() {
+        // The following if statement is for backward compatibility with version 2.2.3 and below of the plugin.
+        // Without the below code, upgrade from 2.2.3 or below to 2.2.4 and above will cause the configuration to be lost.
+        // This should be eventually removed.
+        if (downloadSnapshotRepositoryDisplayName == null && downloadSnapshotRepositoryKey != null) {
+            return downloadSnapshotRepositoryKey;
+        }
+
+        return downloadSnapshotRepositoryDisplayName;
+    }
+
+    public PluginSettings getStagingPlugin() {
+        return stagingPlugin;
     }
 
     public String getArtifactoryUrl() {
@@ -160,18 +187,6 @@ public class ServerDetails {
             return String.format("Could not convert the class '%s' to use the new overriding Resolve repositories."
                     , serverDetails.getClass().getName());
         }
-    }
-
-    // The following "PluginSettings" property and method are for backward comparability with version 2.2.3 of the plugin.
-    // Version 2.2.4 does not need the below code.
-    // Without the below code, upgrade from 2.2.3 and below to 2.2.4 and above will cause the staging configuration to be lost.
-    // Once the below code is eventually removed, the relevant code from the getUserPluginKey() method in this class should be
-    // also removed.
-
-    private PluginSettings stagingPlugin;
-
-    public PluginSettings getStagingPlugin() {
-        return stagingPlugin;
     }
 
     public void setStagingPlugin(PluginSettings stagingPlugin) {

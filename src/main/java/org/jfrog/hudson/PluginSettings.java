@@ -1,5 +1,8 @@
 package org.jfrog.hudson;
 
+import com.google.common.collect.Lists;
+
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,6 +31,15 @@ public class PluginSettings {
 
     public Map<String, String> getParamMap() {
         return paramMap;
+    }
+
+    public String getParamsString() {
+        StringBuilder sb = new StringBuilder();
+        for(Map.Entry<String, String> entry : paramMap.entrySet()) {
+            sb.append(entry.getKey()).append("=").append(entry.getValue()).append(" ");
+        }
+
+        return sb.toString();
     }
 
     public void setParamMap(Map<String, String> paramMap) {
