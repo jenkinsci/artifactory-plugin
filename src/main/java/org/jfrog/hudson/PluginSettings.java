@@ -35,8 +35,10 @@ public class PluginSettings {
 
     public String getParamsString() {
         StringBuilder sb = new StringBuilder();
-        for(Map.Entry<String, String> entry : paramMap.entrySet()) {
-            sb.append(entry.getKey()).append("=").append(entry.getValue()).append(" ");
+        if (paramMap != null) {
+            for(Map.Entry<String, String> entry : paramMap.entrySet()) {
+                sb.append(entry.getKey()).append("=").append(entry.getValue()).append(" ");
+            }
         }
 
         return sb.toString();
