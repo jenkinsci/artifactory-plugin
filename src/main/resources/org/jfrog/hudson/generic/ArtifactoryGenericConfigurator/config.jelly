@@ -11,17 +11,21 @@
                                  help="/plugin/artifactory/help/common/help-deployRepository.html">
                             <select class="setting-input" name="repositoryKey" id="genericRepositoryKeys-${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.repositoryKey != null}">
-                                        <f:option selected="${instance.repositoryKey}"
-                                                  value="${instance.repositoryKey}">${instance.repositoryKey}
-                                        </f:option>
+                                    <j:when test="${s.name==instance.artifactoryName}">
+                                        <j:choose>
+                                            <j:when test="${instance.repositoryKey != null}">
+                                                <f:option selected="${instance.repositoryKey}"
+                                                          value="${instance.repositoryKey}">${instance.repositoryKey}
+                                                </f:option>
+                                            </j:when>
+                                            <j:otherwise>
+                                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                                    <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
+                                                    </f:option>
+                                                </j:forEach>
+                                            </j:otherwise>
+                                        </j:choose>
                                     </j:when>
-                                    <j:otherwise>
-                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                            <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
-                                            </f:option>
-                                        </j:forEach>
-                                    </j:otherwise>
                                 </j:choose>
                             </select>
                         </f:entry>

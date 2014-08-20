@@ -12,38 +12,46 @@
                         <input type="hidden" name="downloadReleaseRepositoryDisplayName" id="downloadReleaseRepositoryDisplayName-${s.url}" value=""/>
                         <f:entry title="${%Resolution repository}">
                             <select class="setting-input" name="downloadReleaseRepositoryKey" id="gradleResolutionRepositoryKeys-${s.url}"
-                                    onchange="document.getElementById('downloadReleaseRepositoryDisplayName-${s.url}').value=document.getElementById('gradleResolutionRepositoryKeys-${s.url}').options[this.selectedIndex].text">>
+                                    onchange="document.getElementById('downloadReleaseRepositoryDisplayName-${s.url}').value=document.getElementById('gradleResolutionRepositoryKeys-${s.url}').options[this.selectedIndex].text">
                                 <j:choose>
-                                    <j:when test="${instance.details.downloadReleaseRepositoryKey != null}">
-                                        <f:option selected="${instance.details.downloadReleaseRepositoryKey}"
-                                                  value="${instance.details.downloadReleaseRepositoryKey}">
-                                            ${instance.details.downloadReleaseRepositoryKey}
-                                        </f:option>
+                                    <j:when test="${s.name==instance.artifactoryName}">
+                                        <j:choose>
+                                            <j:when test="${instance.details.downloadReleaseRepositoryKey != null}">
+                                                <f:option selected="${instance.details.downloadReleaseRepositoryKey}"
+                                                          value="${instance.details.downloadReleaseRepositoryKey}">
+                                                    ${instance.details.downloadReleaseRepositoryKey}
+                                                </f:option>
+                                            </j:when>
+                                            <j:otherwise>
+                                                <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                                    <f:option selected="${r.value==instance.details.downloadReleaseRepositoryKey}"
+                                                              value="${r.value}">${r.displayName}
+                                                    </f:option>
+                                                </j:forEach>
+                                            </j:otherwise>
+                                        </j:choose>
                                     </j:when>
-                                    <j:otherwise>
-                                        <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                            <f:option selected="${r.value==instance.details.downloadReleaseRepositoryKey}"
-                                                      value="${r.value}">${r.displayName}
-                                            </f:option>
-                                        </j:forEach>
-                                    </j:otherwise>
                                 </j:choose>
                             </select>
                         </f:entry>
                         <f:entry title="${%Publishing repository}">
                             <select class="setting-input" name="repositoryKey" id="gradlePublishRepositoryKeys-${s.url}">
                                 <j:choose>
-                                    <j:when test="${instance.details.repositoryKey != null}">
-                                        <f:option selected="${instance.details.repositoryKey}"
-                                                  value="${instance.details.repositoryKey}">${instance.details.repositoryKey}
-                                        </f:option>
+                                    <j:when test="${s.name==instance.artifactoryName}">
+                                        <j:choose>
+                                            <j:when test="${instance.details.repositoryKey != null}">
+                                                <f:option selected="${instance.details.repositoryKey}"
+                                                          value="${instance.details.repositoryKey}">${instance.details.repositoryKey}
+                                                </f:option>
+                                            </j:when>
+                                            <j:otherwise>
+                                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                                    <f:option selected="${r==instance.details.repositoryKey}" value="${r}">${r}
+                                                    </f:option>
+                                                </j:forEach>
+                                            </j:otherwise>
+                                        </j:choose>
                                     </j:when>
-                                    <j:otherwise>
-                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                            <f:option selected="${r==instance.details.repositoryKey}" value="${r}">${r}
-                                            </f:option>
-                                        </j:forEach>
-                                    </j:otherwise>
                                 </j:choose>
                             </select>
                         </f:entry>
@@ -52,26 +60,34 @@
                             <select class="setting-input" name="userPluginKey" id="gradleCustomStagingConfiguration-${s.url}"
                                     onchange="setStagingParamsSelectedValue(this)">
                                 <j:choose>
-                                    <j:when test="${instance.details.stagingPlugin != null}">
-                                        <f:option selected="${instance.details.stagingPlugin.pluginName}"
-                                                  value="${instance.details.stagingPlugin.pluginName}">
-                                            ${instance.details.stagingPlugin.pluginName}
-                                        </f:option>
+                                    <j:when test="${s.name==instance.artifactoryName}">
+                                        <j:choose>
+                                            <j:when test="${instance.details.stagingPlugin != null}">
+                                                <f:option selected="${instance.details.stagingPlugin.pluginName}"
+                                                          value="${instance.details.stagingPlugin.pluginName}">
+                                                    ${instance.details.stagingPlugin.pluginName}
+                                                </f:option>
+                                            </j:when>
+                                            <j:otherwise>
+                                                <j:forEach var="r" items="${instance.userPluginKeys}">
+                                                    <f:option selected="${r.pluginName==instance.details.stagingPlugin.pluginName}" value="${r.pluginName}">${r.pluginName}
+                                                    </f:option>
+                                                </j:forEach>
+                                            </j:otherwise>
+                                        </j:choose>
                                     </j:when>
-                                    <j:otherwise>
-                                        <j:forEach var="r" items="${instance.userPluginKeys}">
-                                            <f:option selected="${r.pluginName==instance.details.stagingPlugin.pluginName}" value="${r.pluginName}">${r.pluginName}
-                                            </f:option>
-                                        </j:forEach>
-                                    </j:otherwise>
                                 </j:choose>
                             </select>
                             <div id="stagingParamsDiv">
                                 <j:choose>
-                                    <j:when test="${instance.details.stagingPlugin != null}">
+                                    <j:when test="${s.name==instance.artifactoryName}">
                                         <j:choose>
-                                            <j:when test="${instance.details.stagingPlugin.paramsString != ''}">
-                                                <input class='setting-input' name='userPluginParams' id='stagingParams-${instance.details.stagingPlugin.pluginName}' type='text' value='${instance.details.stagingPlugin.paramsString}' />
+                                            <j:when test="${instance.details.stagingPlugin != null}">
+                                                <j:choose>
+                                                    <j:when test="${instance.details.stagingPlugin.paramsString != ''}">
+                                                        <input class='setting-input' name='userPluginParams' id='stagingParams-${instance.details.stagingPlugin.pluginName}' type='text' value='${instance.details.stagingPlugin.paramsString}' />
+                                                    </j:when>
+                                                </j:choose>
                                             </j:when>
                                         </j:choose>
                                     </j:when>

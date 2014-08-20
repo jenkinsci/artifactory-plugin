@@ -41,19 +41,23 @@
                         <select class="setting-input" name="downloadReleaseRepositoryKey" id="maven3NativeReleaseRepositoryKeys-${s.url}"
                                 onchange="onReleaseResolutionSelectChange('${s.url}')">
                             <j:choose>
-                                <j:when test="${instance.downloadReleaseRepositoryKey != null}">
-                                    <f:option selected="${instance.downloadReleaseRepositoryKey}"
-                                              value="${instance.downloadReleaseRepositoryKey}">
-                                        ${instance.details.downloadReleaseRepositoryDisplayName}
-                                    </f:option>
+                                <j:when test="${s.name==instance.artifactoryName}">
+                                    <j:choose>
+                                        <j:when test="${instance.downloadReleaseRepositoryKey != null}">
+                                            <f:option selected="${instance.downloadReleaseRepositoryKey}"
+                                                      value="${instance.downloadReleaseRepositoryKey}">
+                                                ${instance.details.downloadReleaseRepositoryDisplayName}
+                                            </f:option>
+                                        </j:when>
+                                        <j:otherwise>
+                                            <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                                <f:option selected="${r.value==instance.downloadReleaseRepositoryKey}"
+                                                          value="${r.value}">${r.displayName}
+                                                </f:option>
+                                            </j:forEach>
+                                        </j:otherwise>
+                                    </j:choose>
                                 </j:when>
-                                <j:otherwise>
-                                    <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                        <f:option selected="${r.value==instance.downloadReleaseRepositoryKey}"
-                                                  value="${r.value}">${r.displayName}
-                                        </f:option>
-                                    </j:forEach>
-                                </j:otherwise>
                             </j:choose>
                         </select>
                     </f:entry>
@@ -61,19 +65,23 @@
                         <select class="setting-input" name="downloadSnapshotRepositoryKey" id="maven3NativeSnapshotRepositoryKeys-${s.url}"
                                 onchange="onSnapshotResolutionSelectChange('${s.url}')">
                             <j:choose>
-                                <j:when test="${instance.downloadSnapshotRepositoryKey != null}">
-                                    <f:option selected="${instance.downloadSnapshotRepositoryKey}"
-                                              value="${instance.downloadSnapshotRepositoryKey}">
-                                        ${instance.details.downloadSnapshotRepositoryDisplayName}
-                                    </f:option>
+                                <j:when test="${s.name==instance.artifactoryName}">
+                                    <j:choose>
+                                        <j:when test="${instance.downloadSnapshotRepositoryKey != null}">
+                                            <f:option selected="${instance.downloadSnapshotRepositoryKey}"
+                                                      value="${instance.downloadSnapshotRepositoryKey}">
+                                                ${instance.details.downloadSnapshotRepositoryDisplayName}
+                                            </f:option>
+                                        </j:when>
+                                        <j:otherwise>
+                                            <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
+                                                <f:option selected="${r.value==instance.downloadSnapshotRepositoryKey}"
+                                                          value="${r.value}">${r.displayName}
+                                                </f:option>
+                                            </j:forEach>
+                                        </j:otherwise>
+                                    </j:choose>
                                 </j:when>
-                                <j:otherwise>
-                                    <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                        <f:option selected="${r.value==instance.downloadSnapshotRepositoryKey}"
-                                                  value="${r.value}">${r.displayName}
-                                        </f:option>
-                                    </j:forEach>
-                                </j:otherwise>
                             </j:choose>
                         </select>
                     </f:entry>

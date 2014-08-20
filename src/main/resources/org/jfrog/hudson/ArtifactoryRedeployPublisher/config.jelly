@@ -17,16 +17,21 @@
                     <f:editableComboBox field="repositoryKey" items="${releaseRepos}"/>-->
                     <select class="setting-input" name="repositoryKey" id="publishRepositoryKey-${s.url}">
                         <j:choose>
-                            <j:when test="${instance.repositoryKey != null}">
-                                <f:option selected="${instance.repositoryKey}"
-                                      value="${instance.repositoryKey}">${instance.repositoryKey}
-                                </f:option>
+                            <j:when test="${s.name==instance.artifactoryName}">
+                                <j:choose>
+                                    <j:when test="${instance.repositoryKey != null}">
+                                        <f:option selected="${instance.repositoryKey}"
+                                                  value="${instance.repositoryKey}">${instance.repositoryKey}
+                                        </f:option>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
+                                            <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
+                                        </j:forEach>
+                                    </j:otherwise>
+                                </j:choose>
+
                             </j:when>
-                            <j:otherwise>
-                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                    <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
-                                </j:forEach>
-                            </j:otherwise>
                         </j:choose>
                     </select>
                 </f:entry>
@@ -34,18 +39,22 @@
                          help="/plugin/artifactory/help/common/help-deploySnapshots.html">
                     <select class="setting-input" name="snapshotsRepositoryKey" id="publishSnapshotsRepositoryKeys-${s.url}">
                         <j:choose>
-                            <j:when test="${instance.snapshotsRepositoryKey != null}">
-                                <f:option selected="${instance.snapshotsRepositoryKey}"
-                                          value="${instance.snapshotsRepositoryKey}">
-                                    ${instance.snapshotsRepositoryKey}
-                                </f:option>
+                            <j:when test="${s.name==instance.artifactoryName}">
+                                <j:choose>
+                                    <j:when test="${instance.snapshotsRepositoryKey != null}">
+                                        <f:option selected="${instance.snapshotsRepositoryKey}"
+                                                  value="${instance.snapshotsRepositoryKey}">
+                                            ${instance.snapshotsRepositoryKey}
+                                        </f:option>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
+                                            <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
+                                            </f:option>
+                                        </j:forEach>
+                                    </j:otherwise>
+                                </j:choose>
                             </j:when>
-                            <j:otherwise>
-                                <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
-                                    <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
-                                    </f:option>
-                                </j:forEach>
-                            </j:otherwise>
                         </j:choose>
                     </select>
                 </f:entry>
@@ -54,26 +63,34 @@
                     <select class="setting-input" name="userPluginKey" id="customStagingConfiguration-${s.url}"
                             onchange="setStagingParamsSelectedValue(this)">
                         <j:choose>
-                            <j:when test="${instance.details.stagingPlugin != null}">
-                                <f:option selected="${instance.details.stagingPlugin.pluginName}"
-                                          value="${instance.details.stagingPlugin.pluginName}">
-                                    ${instance.details.stagingPlugin.pluginName}
-                                </f:option>
+                            <j:when test="${s.name==instance.artifactoryName}">
+                                <j:choose>
+                                    <j:when test="${instance.details.stagingPlugin != null}">
+                                        <f:option selected="${instance.details.stagingPlugin.pluginName}"
+                                                  value="${instance.details.stagingPlugin.pluginName}">
+                                            ${instance.details.stagingPlugin.pluginName}
+                                        </f:option>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <j:forEach var="r" items="${instance.userPluginKeys}">
+                                            <f:option selected="${r.pluginName==instance.details.stagingPlugin.pluginName}" value="${r.pluginName}">${r.pluginName}
+                                            </f:option>
+                                        </j:forEach>
+                                    </j:otherwise>
+                                </j:choose>
                             </j:when>
-                            <j:otherwise>
-                                <j:forEach var="r" items="${instance.userPluginKeys}">
-                                    <f:option selected="${r.pluginName==instance.details.stagingPlugin.pluginName}" value="${r.pluginName}">${r.pluginName}
-                                    </f:option>
-                                </j:forEach>
-                            </j:otherwise>
                         </j:choose>
                     </select>
                     <div id="stagingParamsDiv">
                         <j:choose>
-                            <j:when test="${instance.details.stagingPlugin != null}">
+                            <j:when test="${s.name==instance.artifactoryName}">
                                 <j:choose>
-                                    <j:when test="${instance.details.stagingPlugin.paramsString != ''}">
-                                        <input class='setting-input' name='userPluginParams' id='stagingParams-${instance.details.stagingPlugin.pluginName}' type='text' value='${instance.details.stagingPlugin.paramsString}' />
+                                    <j:when test="${instance.details.stagingPlugin != null}">
+                                        <j:choose>
+                                            <j:when test="${instance.details.stagingPlugin.paramsString != ''}">
+                                                <input class='setting-input' name='userPluginParams' id='stagingParams-${instance.details.stagingPlugin.pluginName}' type='text' value='${instance.details.stagingPlugin.paramsString}' />
+                                            </j:when>
+                                        </j:choose>
                                     </j:when>
                                 </j:choose>
                             </j:when>
