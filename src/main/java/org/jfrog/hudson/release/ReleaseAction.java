@@ -407,8 +407,12 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
      * @param req The request that is coming from the form when staging.
      */
     protected void doGlobalVersioning(StaplerRequest req) {
-        releaseVersion = req.getParameter("releaseVersion");
-        nextVersion = req.getParameter("nextVersion");
+        if (req.getParameter("releaseVersion") != null) {
+            releaseVersion = req.getParameter("releaseVersion");
+        }
+        if (req.getParameter("nextVersion") != null) {
+            nextVersion = req.getParameter("nextVersion");
+        }
     }
 
     protected void doGlobalVersioning() {
