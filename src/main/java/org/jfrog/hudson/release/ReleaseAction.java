@@ -328,34 +328,21 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
             }
         }
 
-        if (req.getParameter("createVcsTag") != null) {
-            if (!"false".equals(req.getParameter("createVcsTag"))) {
-                createVcsTag = true;
-                if (req.getParameter("tagUrl") != null) {
-                    tagUrl = req.getParameter("tagUrl");
-                }
-                if (req.getParameter("tagComment") != null) {
-                    tagComment = req.getParameter("tagComment");
-                }
-            } else {
-                createVcsTag = false;
-                tagUrl = null;
-                tagComment = null;
-            }
+        if (req.getParameter("createVcsTag") != null && !"false".equals(req.getParameter("createVcsTag"))) {
+            createVcsTag = true;
         }
-
-        if (req.getParameter("createReleaseBranch") != null) {
-            if (!"false".equals(req.getParameter("createReleaseBranch"))) {
-                createReleaseBranch = true;
-                if (req.getParameter("releaseBranch") != null) {
-                    releaseBranch = req.getParameter("releaseBranch");
-                }
-            } else {
-                createReleaseBranch = false;
-                releaseBranch = null;
-            }
+        if (req.getParameter("tagUrl") != null) {
+            tagUrl = req.getParameter("tagUrl");
         }
-
+        if (req.getParameter("tagComment") != null) {
+            tagComment = req.getParameter("tagComment");
+        }
+        if (req.getParameter("createReleaseBranch") != null && !"false".equals(req.getParameter("createReleaseBranch"))) {
+             createReleaseBranch = true;
+        }
+        if (req.getParameter("releaseBranch") != null) {
+            releaseBranch = req.getParameter("releaseBranch");
+        }
         if (req.getParameter("nextDevelCommitComment") != null) {
             nextDevelCommitComment = req.getParameter("nextDevelCommitComment");
         }
