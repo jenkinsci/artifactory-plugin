@@ -349,10 +349,10 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
                 createReleaseBranch = true;
                 if (req.getParameter("releaseBranch") != null) {
                     releaseBranch = req.getParameter("releaseBranch");
-                } else {
-                    createReleaseBranch = false;
-                    releaseBranch = null;
                 }
+            } else {
+                createReleaseBranch = false;
+                releaseBranch = null;
             }
         }
 
