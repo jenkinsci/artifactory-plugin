@@ -168,11 +168,15 @@
                             </table>
                         </f:block>
                     </f:optionalBlock>
-                    <f:entry field="allowPromotionOfNonStagedBuilds"
-                             help="/plugin/artifactory/help/common/help-allowPromotionOfNonStagedBuilds.html">
-                        <f:checkbox default="false" checked="${instance.allowPromotionOfNonStagedBuilds}"/>
-                        <label class="attach-previous">${%Allow promotion of non-staged builds}</label>
-                    </f:entry>
+                    <f:block>
+                        <table style="width:100%">
+                            <f:optionalBlock field="allowPromotionOfNonStagedBuilds"
+                                             help="/plugin/artifactory/help/common/help-allowPromotionOfNonStagedBuilds.html"
+                                             title="Allow promotion of non-staged builds"
+                                             inline="true">
+                            </f:optionalBlock>
+                        </table>
+                    </f:block>
                     <f:block>
                         <table style="width:100%">
                             <f:optionalBlock name="runChecks"
