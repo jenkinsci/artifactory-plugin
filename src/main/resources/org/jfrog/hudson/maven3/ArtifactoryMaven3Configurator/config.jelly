@@ -173,6 +173,15 @@
                     </f:optionalBlock>
                     <f:block>
                         <table style="width:100%">
+                            <f:optionalBlock field="recordAllDependencies"
+                                             help="/plugin/artifactory/help/common/help-recordAllDependencies.html"
+                                             title="Record implicit project dependencies and build-time dependencies"
+                                             inline="true">
+                            </f:optionalBlock>
+                        </table>
+                    </f:block>
+                    <f:block>
+                        <table style="width:100%">
                             <f:optionalBlock name="runChecks"
                                              checked="${instance.runChecks}"
                                              title="Run Artifactory license checks (requires Artifactory Pro)"

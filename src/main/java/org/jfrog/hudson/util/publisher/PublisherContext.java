@@ -63,6 +63,7 @@ public class PublisherContext {
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
     private boolean filterExcludedArtifactsFromBuild;
+    private boolean recordAllDependencies;
 
     private PublisherContext() {
     }
@@ -97,6 +98,10 @@ public class PublisherContext {
 
     public boolean isSkipBuildInfoDeploy() {
         return skipBuildInfoDeploy;
+    }
+
+    public boolean isRecordAllDependencies() {
+        return recordAllDependencies;
     }
 
     public boolean isIncludeEnvVars() {
@@ -281,6 +286,11 @@ public class PublisherContext {
 
         public Builder skipBuildInfoDeploy(boolean skipBuildInfoDeploy) {
             publisher.skipBuildInfoDeploy = skipBuildInfoDeploy;
+            return this;
+        }
+
+        public Builder recordAllDependencies(boolean recordAllDependencies) {
+            publisher.recordAllDependencies = recordAllDependencies;
             return this;
         }
 

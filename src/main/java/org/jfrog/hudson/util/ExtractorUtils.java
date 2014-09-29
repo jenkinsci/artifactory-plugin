@@ -309,6 +309,7 @@ public class ExtractorUtils {
         }
         configuration.publisher.setFilterExcludedArtifactsFromBuild(context.isFilterExcludedArtifactsFromBuild());
         configuration.publisher.setPublishBuildInfo(!context.isSkipBuildInfoDeploy());
+        configuration.publisher.setRecordAllDependencies(context.isRecordAllDependencies());
         configuration.setIncludeEnvVars(context.isIncludeEnvVars());
         IncludesExcludes envVarsPatterns = context.getEnvVarsPatterns();
         if (envVarsPatterns != null) {

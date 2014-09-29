@@ -93,6 +93,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean allowPromotionOfNonStagedBuilds;
     private final boolean filterExcludedArtifactsFromBuild;
     private boolean deployBuildInfo;
+    private final boolean recordAllDependencies;
     private String aggregationBuildStatus;
     private boolean aggregateBuildIssues;
     private boolean blackDuckRunChecks;
@@ -119,11 +120,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                                         String violationRecipients, boolean includePublishArtifacts, String scopes,
                                         boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
                                         boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
-                                        boolean aggregateBuildIssues, String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
-                                        boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
-                                        String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-                                        boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
-                                        boolean filterExcludedArtifactsFromBuild) {
+                                        boolean aggregateBuildIssues, String aggregationBuildStatus,
+                                        boolean recordAllDependencies, boolean allowPromotionOfNonStagedBuilds,
+                                        boolean blackDuckRunChecks, String blackDuckAppName,  String blackDuckAppVersion,
+                                        String blackDuckReportRecipients, String blackDuckScopes,
+                                        boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
+                                        boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -146,6 +148,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.deployBuildInfo = deployBuildInfo;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.aggregateBuildIssues = aggregateBuildIssues;
+        this.recordAllDependencies = recordAllDependencies;
         this.allowPromotionOfNonStagedBuilds = allowPromotionOfNonStagedBuilds;
         this.blackDuckRunChecks = blackDuckRunChecks;
         this.blackDuckAppName = blackDuckAppName;
@@ -279,6 +282,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isAllowPromotionOfNonStagedBuilds() {
         return allowPromotionOfNonStagedBuilds;
+    }
+
+    public boolean isRecordAllDependencies() {
+        return recordAllDependencies;
     }
 
     public boolean isBlackDuckRunChecks() {

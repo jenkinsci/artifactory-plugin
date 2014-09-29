@@ -82,6 +82,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private boolean disableLicenseAutoDiscovery;
     private boolean aggregateBuildIssues;
     private String aggregationBuildStatus;
+    private boolean recordAllDependencies;
     private boolean blackDuckRunChecks;
     private String blackDuckAppName;
     private String blackDuckAppVersion;
@@ -116,6 +117,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                                          String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
                                          boolean discardBuildArtifacts, String matrixParams,
                                          boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
+                                         boolean recordAllDependencies,
                                          boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
                                          String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
                                          boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
@@ -134,6 +136,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.aggregateBuildIssues = aggregateBuildIssues;
         this.aggregationBuildStatus = aggregationBuildStatus;
+        this.recordAllDependencies = recordAllDependencies;
         this.filterExcludedArtifactsFromBuild = filterExcludedArtifactsFromBuild;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.deployBuildInfo = deployBuildInfo;
@@ -183,6 +186,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public boolean isDeployBuildInfo() {
         return deployBuildInfo;
+    }
+
+    public boolean isRecordAllDependencies() {
+        return recordAllDependencies;
     }
 
     public ArtifactoryServer getArtifactoryServer() {
@@ -346,7 +353,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .violationRecipients(getViolationRecipients()).scopes(getScopes())
                 .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
-                .skipBuildInfoDeploy(skipBuildInfoDeploy)
+                .skipBuildInfoDeploy(skipBuildInfoDeploy).recordAllDependencies(isRecordAllDependencies())
                 .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
