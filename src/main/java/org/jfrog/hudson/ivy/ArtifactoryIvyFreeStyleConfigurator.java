@@ -17,6 +17,7 @@
 package org.jfrog.hudson.ivy;
 
 import com.google.common.collect.Iterables;
+import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -433,7 +434,9 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
+                MatrixProject.class.equals(item.getClass()) ||
+                MultiJobProject.class.equals(item.getClass());
         }
 
         /**
