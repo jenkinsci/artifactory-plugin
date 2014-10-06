@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.maven3;
 
+import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.matrix.MatrixProject;
@@ -397,7 +398,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
+                MatrixProject.class.equals(item.getClass()) ||
+                MultiJobProject.class.equals(item.getClass());
         }
 
         /**

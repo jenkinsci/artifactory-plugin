@@ -1,5 +1,6 @@
 package org.jfrog.hudson.generic;
 
+import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.matrix.MatrixProject;
@@ -315,7 +316,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
+                MatrixProject.class.equals(item.getClass()) ||
+                MultiJobProject.class.equals(item.getClass());
         }
 
         /**

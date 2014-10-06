@@ -18,6 +18,7 @@ package org.jfrog.hudson.gradle;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -596,7 +597,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
+                MatrixProject.class.equals(item.getClass()) ||
+                MultiJobProject.class.equals(item.getClass());
         }
 
         private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
