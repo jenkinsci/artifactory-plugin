@@ -66,7 +66,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         GitClient client = getGitClient();
 
         debuggingLogger.fine("Adding all files in the current directory");
-        client.add(".");
+        client.add("-u");
 
         debuggingLogger.fine(String.format("Committing working copy with message '%s'", commitMessage));
         client.commit(commitMessage);
