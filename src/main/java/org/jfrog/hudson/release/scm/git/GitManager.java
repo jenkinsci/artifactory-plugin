@@ -168,7 +168,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private boolean checkGitValidUri(String defaultRemoteNameOrUrl) {
-        String regex = "(\\w+://)(.+@)*([\\w\\d\\.]+)(:[\\d]+){0,1}/*(.*)|(.+@)*([\\w\\d\\.]+):(.*)";
+        String regex = "(\\w+://)(.+@)*([\\w\\d\\.]+)(:[\\d]+){0,1}/*(.*)|(.+@)*([\\w\\d\\.]+):(.*)|file://(.*)";
         return Pattern.compile(regex).matcher(defaultRemoteNameOrUrl).matches();
     }
 
