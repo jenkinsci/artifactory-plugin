@@ -20,8 +20,8 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.release.ReleaseRepository;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 
 import java.io.IOException;
@@ -42,14 +42,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
     private String checkoutBranch;
 
     private State state = new State();
-
-    private static class State {
-        String currentWorkingBranch;
-        boolean releaseBranchCreated;
-        boolean releaseBranchPushed;
-        boolean tagCreated;
-        boolean tagPushed;
-    }
 
     public GitCoordinator(AbstractBuild build, BuildListener listener, ReleaseAction releaseAction) {
         super(build, listener);
@@ -160,7 +152,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
         }
     }
 
-    private void safeDeleteRemoteBranch(RemoteConfig remoteRepository, String branch) {
+    private void safeDeleteRemoteBranch(ReleaseRepository remoteRepository, String branch) {
         try {
             scmManager.deleteRemoteBranch(remoteRepository, branch);
         } catch (Exception e) {
@@ -178,7 +170,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
         }
     }
 
-    private void safeDeleteRemoteTag(RemoteConfig remoteRepository, String tag) {
+    private void safeDeleteRemoteTag(ReleaseRepository remoteRepository, String tag) {
         try {
             scmManager.deleteRemoteTag(remoteRepository, tag);
         } catch (Exception e) {
@@ -198,5 +190,13 @@ public class GitCoordinator extends AbstractScmCoordinator {
 
     public String getRemoteUrlForPom() {
         return null;
+    }
+
+    private static class State {
+        String currentWorkingBranch;
+        boolean releaseBranchCreated;
+        boolean releaseBranchPushed;
+        boolean tagCreated;
+        boolean tagPushed;
     }
 }

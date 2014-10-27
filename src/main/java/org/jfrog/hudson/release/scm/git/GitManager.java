@@ -33,11 +33,13 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
+import org.jfrog.hudson.release.ReleaseRepository;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * Interacts with Git repository for the various release operations.
@@ -52,7 +54,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     public void checkoutBranch(final String branch, final boolean create) throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+        GitClient client = getGitClient(null);
 
         debuggingLogger.fine(String.format("Checkout Branch '%s' with create=%s", branch, create));
         if (create) {
@@ -63,7 +65,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     public void commitWorkingCopy(final String commitMessage) throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+        GitClient client = getGitClient(null);
 
         debuggingLogger.fine("Adding all files in the current directory");
         client.add("-u");
@@ -74,62 +76,62 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
     public void createTag(final String tagName, final String commitMessage)
             throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+        GitClient client = getGitClient(null);
 
         log(buildListener, String.format("Creating tag '%s' with message '%s'", tagName, commitMessage));
         client.tag(tagName, commitMessage);
     }
 
-    public void push(final RemoteConfig remoteRepository, final String branch) throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+    public void push(final ReleaseRepository releaseRepository, final String branch) throws IOException, InterruptedException {
+        GitClient client = getGitClient(releaseRepository);
 
-        log(buildListener, String.format("Pushing branch '%s' to '%s'", branch, getFirstGitURI(remoteRepository)));
-        client.push(remoteRepository.getName(), "refs/heads/" + branch);
+        log(buildListener, String.format("Pushing branch '%s' to '%s'", branch, releaseRepository.getGitUri()));
+        client.push(releaseRepository.getRepositoryName(), "refs/heads/" + branch);
     }
 
-    public void pushTag(final RemoteConfig remoteRepository, final String tagName) throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+    public void pushTag(final ReleaseRepository releaseRepository, final String tagName) throws IOException, InterruptedException {
+        GitClient client = getGitClient(releaseRepository);
 
         String escapedTagName = tagName.replace(' ', '_');
-        log(buildListener, String.format("Pushing tag '%s' to '%s'", escapedTagName, getFirstGitURI(remoteRepository)));
-        client.push(remoteRepository.getName(), "refs/tags/" + escapedTagName);
+        log(buildListener, String.format("Pushing tag '%s' to '%s'", escapedTagName, releaseRepository.getGitUri()));
+        client.push(releaseRepository.getRepositoryName(), "refs/tags/" + escapedTagName);
     }
 
     public void revertWorkingCopy() throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+        GitClient client = getGitClient(null);
 
         log(buildListener, "Reverting git working copy (reset --hard)");
         client.clean();
     }
 
     public void deleteLocalBranch(final String branch) throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+        GitClient client = getGitClient(null);
 
         log(buildListener, "Deleting local git branch: " + branch);
         client.deleteBranch(branch);
     }
 
-    public void deleteRemoteBranch(final RemoteConfig remoteRepository, final String branch)
+    public void deleteRemoteBranch(final ReleaseRepository releaseRepository, final String branch)
     throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+        GitClient client = getGitClient(releaseRepository);
 
-        log(buildListener, String.format("Deleting remote branch '%s' on '%s'", branch, getFirstGitURI(remoteRepository)));
-        client.push(remoteRepository.getName(), ":refs/heads/" + branch);
+        log(buildListener, String.format("Deleting remote branch '%s' on '%s'", branch, releaseRepository.getGitUri()));
+        client.push(releaseRepository.getRepositoryName(), ":refs/heads/" + branch);
     }
 
     public void deleteLocalTag(final String tag) throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+        GitClient client = getGitClient(null);
 
         log(buildListener, "Deleting local tag: " + tag);
         client.deleteTag(tag);
     }
 
-    public void deleteRemoteTag(final RemoteConfig remoteRepository, final String tag)
+    public void deleteRemoteTag(final ReleaseRepository releaseRepository, final String tag)
     throws IOException, InterruptedException {
-        GitClient client = getGitClient();
+        GitClient client = getGitClient(releaseRepository);
 
-        log(buildListener, String.format("Deleting remote tag '%s' from '%s'", tag, getFirstGitURI(remoteRepository)));
-        client.push(remoteRepository.getName(), ":refs/tags/" + tag);
+        log(buildListener, String.format("Deleting remote tag '%s' from '%s'", tag, releaseRepository.getGitUri()));
+        client.push(releaseRepository.getRepositoryName(), ":refs/tags/" + tag);
     }
 
     // This method is currently in use only by the SvnCoordinator
@@ -143,25 +145,34 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         return defaultRemoteUrl;
     }
 
-    public RemoteConfig getRemoteConfig(String defaultRemoteName) throws IOException {
+    public ReleaseRepository getRemoteConfig(String defaultRemoteNameOrUrl) throws IOException {
         List<RemoteConfig> repositories = getJenkinsScm().getRepositories();
-        if (StringUtils.isBlank(defaultRemoteName)) {
+        if (StringUtils.isBlank(defaultRemoteNameOrUrl)) {
             if (repositories == null || repositories.isEmpty()) {
                 throw new GitException("Git remote config repositories are null or empty.");
             }
-            return repositories.get(0);
+            return new ReleaseRepository(repositories.get(0).getURIs().get(0), repositories.get(0).getName());
         }
 
         for (RemoteConfig remoteConfig : repositories) {
-            if (remoteConfig.getName().equals(defaultRemoteName)) {
-                return remoteConfig;
+            if (remoteConfig.getName().equals(defaultRemoteNameOrUrl)) {
+                return new ReleaseRepository(remoteConfig.getURIs().get(0), remoteConfig.getName());
             }
         }
 
-        throw new IOException("Target Remote Name: " + defaultRemoteName + " ,doesn`t exist");
+        if (checkGitValidUri(defaultRemoteNameOrUrl)) {
+            return new ReleaseRepository(defaultRemoteNameOrUrl, repositories.get(0).getName());
+        }
+
+        throw new IOException("Target Remote Name: " + defaultRemoteNameOrUrl + " ,doesn`t exist");
     }
 
-    private GitClient getGitClient() throws IOException, InterruptedException {
+    private boolean checkGitValidUri(String defaultRemoteNameOrUrl) {
+        String regex = "(\\w+://)(.+@)*([\\w\\d\\.]+)(:[\\d]+){0,1}/*(.*)|(.+@)*([\\w\\d\\.]+):(.*)";
+        return Pattern.compile(regex).matcher(defaultRemoteNameOrUrl).matches();
+    }
+
+    private GitClient getGitClient(ReleaseRepository releaseRepository) throws IOException, InterruptedException {
         FilePath directory = getWorkingDirectory(getJenkinsScm(), build.getWorkspace());
         EnvVars env = build.getEnvironment(buildListener);
 
@@ -180,9 +191,14 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         client.setAuthor(StringUtils.defaultIfEmpty(env.get("GIT_AUTHOR_NAME"), ""),
                 StringUtils.defaultIfEmpty(env.get("GIT_AUTHOR_EMAIL"), ""));
 
-        addRemoteRepoToConfig(client);
 
-        addCredentialsToGitClient(client);
+        if (releaseRepository != null && releaseRepository.isTargetRepoUri()) {
+            if (client.getRemoteUrl(releaseRepository.getRepositoryName()) == null)
+                client.setRemoteUrl(releaseRepository.getRepositoryName(), releaseRepository.getTargetRepoPrivateUri());
+        } else {
+            addRemoteRepoToConfig(client);
+            addCredentialsToGitClient(client);
+        }
 
         return client;
     }
