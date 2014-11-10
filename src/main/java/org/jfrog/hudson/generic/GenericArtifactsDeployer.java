@@ -1,10 +1,6 @@
 package org.jfrog.hudson.generic;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Util;
@@ -52,7 +48,7 @@ public class GenericArtifactsDeployer {
     private List<Artifact> artifactsToDeploy = Lists.newArrayList();
 
     public GenericArtifactsDeployer(AbstractBuild build, ArtifactoryGenericConfigurator configurator,
-            BuildListener listener, Credentials credentials)
+                                    BuildListener listener, Credentials credentials)
             throws IOException, InterruptedException, NoSuchAlgorithmException {
         this.build = build;
         this.configurator = configurator;
@@ -67,7 +63,6 @@ public class GenericArtifactsDeployer {
 
     public void deploy()
             throws IOException, InterruptedException {
-        final Multimap<String, File> result = HashMultimap.create();
         String deployPattern = Util.replaceMacro(configurator.getDeployPattern(), env);
         deployPattern = StringUtils.replace(deployPattern, "\r\n", "\n");
         deployPattern = StringUtils.replace(deployPattern, ",", "\n");
@@ -77,15 +72,15 @@ public class GenericArtifactsDeployer {
         }
 
         FilePath workingDir = build.getWorkspace();
-        Map<String, String> propertiesToAdd = getbuildPropertiesMap();
+        ArrayListMultimap<String, String> propertiesToAdd = getbuildPropertiesMap();
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
         artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer, credentials,
                 configurator.getRepositoryKey(), propertiesToAdd,
                 artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
     }
 
-    private Map<String, String> getbuildPropertiesMap() {
-        Map<String, String> properties = Maps.newHashMap();
+    private ArrayListMultimap<String, String> getbuildPropertiesMap() {
+        ArrayListMultimap<String, String> properties = ArrayListMultimap.create();
 
         properties.put("build.name", ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()));
         properties.put("build.number", build.getNumber() + "");
@@ -105,7 +100,7 @@ public class GenericArtifactsDeployer {
         return properties;
     }
 
-    private void addMatrixParams(Map<String, String> properties) {
+    private void addMatrixParams(Multimap<String, String> properties) {
         String[] matrixParams = StringUtils.split(configurator.getMatrixParams(), "; ");
         if (matrixParams == null) {
             return;
@@ -121,17 +116,17 @@ public class GenericArtifactsDeployer {
 
     private static class FilesDeployerCallable implements FilePath.FileCallable<List<Artifact>> {
 
+        private final String repositoryKey;
         private BuildListener listener;
         private Multimap<String, String> patternPairs;
         private ArtifactoryServer server;
         private Credentials credentials;
-        private final String repositoryKey;
-        private Map<String, String> buildProperties;
+        private ArrayListMultimap<String, String> buildProperties;
         private ProxyConfiguration proxyConfiguration;
 
         public FilesDeployerCallable(BuildListener listener, Multimap<String, String> patternPairs,
-                ArtifactoryServer server, Credentials credentials, String repositoryKey,
-                Map<String, String> buildProperties, ProxyConfiguration proxyConfiguration) {
+                                     ArtifactoryServer server, Credentials credentials, String repositoryKey,
+                                     ArrayListMultimap<String, String> buildProperties, ProxyConfiguration proxyConfiguration) {
             this.listener = listener;
             this.patternPairs = patternPairs;
             this.server = server;
