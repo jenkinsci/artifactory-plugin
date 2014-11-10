@@ -50,7 +50,10 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * {@link Publisher} for {@link hudson.maven.MavenModuleSetBuild} to deploy artifacts to Artifactory only after a build
@@ -92,8 +95,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean enableIssueTrackerIntegration;
     private final boolean allowPromotionOfNonStagedBuilds;
     private final boolean filterExcludedArtifactsFromBuild;
-    private boolean deployBuildInfo;
     private final boolean recordAllDependencies;
+    private boolean deployBuildInfo;
     private String aggregationBuildStatus;
     private boolean aggregateBuildIssues;
     private boolean blackDuckRunChecks;
@@ -444,10 +447,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public ArtifactoryServer getArtifactoryServer() {
         List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        for (ArtifactoryServer server : servers) {
-            //support legacy code when artifactoryName was the url
-            if (server.getName().equals(getArtifactoryName()) || server.getUrl().equals(getArtifactoryName())) {
-                return server;
+        if (servers != null) {
+            for (ArtifactoryServer server : servers) {
+                //support legacy code when artifactoryName was the url
+                if (server.getName().equals(getArtifactoryName()) || server.getUrl().equals(getArtifactoryName())) {
+                    return server;
+                }
             }
         }
         return null;
@@ -591,9 +596,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
          * @return can be empty but never null.
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
-            ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
-                    Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
-            return descriptor.getArtifactoryServers();
+            return RepositoriesUtils.getArtifactoryServers();
         }
 
         public boolean isJiraPluginEnabled() {

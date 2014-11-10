@@ -17,14 +17,9 @@
 package org.jfrog.hudson;
 
 import hudson.Extension;
-import hudson.Launcher;
-import hudson.maven.MavenModuleSet;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.Builder;
+import hudson.model.Descriptor;
 import hudson.util.FormValidation;
+import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
@@ -43,28 +38,7 @@ import java.util.List;
 /**
  * @author Yossi Shaul
  */
-public class ArtifactoryBuilder extends Builder {
-
-    @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        // this is where you 'build' the project
-        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        if (servers.isEmpty()) {
-            listener.getLogger().println("No Artifactory server configured");
-        } else {
-            listener.getLogger().println(servers.size() + " Artifactory servers configured");
-        }
-        return true;
-    }
-
-    // override for better type safety.
-    // if your plugin doesn't really define any property on Descriptor,
-    // you don't have to do this.
-
-    @Override
-    public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) super.getDescriptor();
-    }
+public class ArtifactoryBuilder extends GlobalConfiguration {
 
     /**
      * Descriptor for {@link ArtifactoryBuilder}. Used as a singleton. The class is marked as public so that it can be
@@ -76,7 +50,7 @@ public class ArtifactoryBuilder extends Builder {
      */
     @Extension
     // this marker indicates Hudson that this is an implementation of an extension point.
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+    public static final class DescriptorImpl extends Descriptor<GlobalConfiguration> {
 
         private List<ArtifactoryServer> artifactoryServers;
 
@@ -145,12 +119,6 @@ public class ArtifactoryBuilder extends Builder {
                 return FormValidation.error(e.getMessage());
             }
             return FormValidation.ok("Found Artifactory " + version.toString());
-        }
-
-        @Override
-        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            // indicates that this builder can be used with all kinds of project types
-            return aClass == MavenModuleSet.class;
         }
 
         /**

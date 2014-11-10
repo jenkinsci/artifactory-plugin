@@ -594,6 +594,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             load();
         }
 
+        protected DescriptorImpl(Class<? extends BuildWrapper> clazz) {
+            super(clazz);
+        }
+
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
