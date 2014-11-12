@@ -35,6 +35,7 @@
         <buildinfo.version>2.3.1</buildinfo.version>
         <buildinfo.maven3.version>2.4.0</buildinfo.maven3.version>
         <buildinfo.gradle.version>3.0.1</buildinfo.gradle.version>
+        <buildinfo.ivy.version>2.3.0</buildinfo.ivy.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
     </properties>
 
@@ -187,7 +188,7 @@
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-ivy</artifactId>
-            <version>${buildinfo.version}</version>
+            <version>${buildinfo.ivy.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.ant</groupId>
