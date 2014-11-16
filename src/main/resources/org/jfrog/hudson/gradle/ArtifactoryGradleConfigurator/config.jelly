@@ -328,17 +328,26 @@
                                     <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
                                 </f:entry>
                             </f:section>
-                            <f:entry field="filterExcludedArtifactsFromBuild"
-                                     help="/plugin/artifactory/help/common/help-filterExcludedArtifactsFromBuild.html">
-                                <f:checkbox default="false" checked="${instance.filterExcludedArtifactsFromBuild}"/>
-                                <label class="attach-previous">${%Filter excluded artifacts from build Info}</label>
+                        </table>
+                    </f:block>
+                    <f:block>
+                        <table style="width:100%">
+                            <f:optionalBlock field="filterExcludedArtifactsFromBuild"
+                                             help="/plugin/artifactory/help/common/help-filterExcludedArtifactsFromBuild.html"
+                                             title="Filter excluded artifacts from build Info"
+                                             checked="${h.defaultToTrue(instance.filterExcludedArtifactsFromBuild)}"
+                                             inline="true">
+                            </f:optionalBlock>
+                        </table>
+                    </f:block>
+                    <f:block>
+                        <table style="width:100%">
+                            <f:entry title="Deployment properties" field="matrixParams"
+                                     help="/plugin/artifactory/help/common/help-matrixParams.html">
+                                <f:textbox value="${instance.matrixParams}"/>
                             </f:entry>
                         </table>
                     </f:block>
-                    <f:entry title="Deployment properties" field="matrixParams"
-                             help="/plugin/artifactory/help/common/help-matrixParams.html">
-                        <f:textbox value="${instance.matrixParams}"/>
-                    </f:entry>
                 </f:optionalBlock>
             </table>
         </f:block>
