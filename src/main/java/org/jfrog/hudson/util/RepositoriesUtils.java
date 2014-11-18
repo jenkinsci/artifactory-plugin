@@ -133,10 +133,11 @@ public abstract class RepositoriesUtils {
     }
 
     public static ArtifactoryServer getArtifactoryServer(String artifactoryIdentity, List<ArtifactoryServer> artifactoryServers) {
-        List<ArtifactoryServer> servers = artifactoryServers;
-        for (ArtifactoryServer server : servers) {
-            if (server.getUrl().equals(artifactoryIdentity) || server.getName().equals(artifactoryIdentity)) {
-                return server;
+        if (artifactoryServers != null) {
+            for (ArtifactoryServer server : artifactoryServers) {
+                if (server.getUrl().equals(artifactoryIdentity) || server.getName().equals(artifactoryIdentity)) {
+                    return server;
+                }
             }
         }
         return null;
