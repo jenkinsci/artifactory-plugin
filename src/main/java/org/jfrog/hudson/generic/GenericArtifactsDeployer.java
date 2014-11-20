@@ -101,7 +101,7 @@ public class GenericArtifactsDeployer {
     }
 
     private void addMatrixParams(Multimap<String, String> properties) {
-        String[] matrixParams = StringUtils.split(configurator.getMatrixParams(), "; ");
+        String[] matrixParams = StringUtils.split(configurator.getMatrixParams(), ";");
         if (matrixParams == null) {
             return;
         }
