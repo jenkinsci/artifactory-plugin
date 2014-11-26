@@ -32,7 +32,7 @@ function repos(button, jsFunction, artifactoryUrl, deployUsername, deployPasswor
     if (jsFunction == "artifactoryIvyConfigurator") {
         artifactoryIvyConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     }
-};
+}
 
 function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
     bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
@@ -108,6 +108,9 @@ function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUser
 
             setSelectValue(selectRelease, oldSelectRelease.value);
             setSelectValue(selectSnapshot, oldSelectSnapshot.value);
+
+            selectRelease.onchange();
+            selectSnapshot.onchange();
 
             var oldValueExistsInNewList = true;
             if (oldValueExistsInNewList) {
@@ -194,6 +197,8 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, 
             createStagingParamsInputs(response.userPlugins);
 
             setSelectValue(selectResolution, oldSelectResolution.value);
+            selectResolution.onchange();
+
             setSelectValue(selectPublish, oldSelectPublish.value);
             setSelectValue(selectPlugins, oldSelectPlugins.value);
             setStagingParamsSelectedValue(selectPlugins);
@@ -317,7 +322,6 @@ function fillVirtualReposSelect(select, list) {
         option.value = item.value;
         select.appendChild(option);
     }
-    select.onchange();
 }
 
 function fillStagingPluginsSelect(select, list) {
