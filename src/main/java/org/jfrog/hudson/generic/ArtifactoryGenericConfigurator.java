@@ -19,6 +19,7 @@ import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
@@ -34,7 +35,7 @@ import java.util.List;
  * @author Shay Yaakov
  */
 public class ArtifactoryGenericConfigurator extends BuildWrapper implements DeployerOverrider,
-        BuildInfoAwareConfigurator {
+        BuildInfoAwareConfigurator, MultiConfigurationAware {
 
     private final ServerDetails details;
     private final Credentials overridingDeployerCredentials;
@@ -52,6 +53,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final boolean discardBuildArtifacts;
     private transient List<Dependency> publishedDependencies;
     private transient List<BuildDependency> buildDependencies;
+    private String artifactoryCombinationFilter;
+    private boolean multiConfProject;
     /**
      * Don't need it anymore since now the slave uses it's own client to deploy the artifacts
      */
@@ -60,9 +63,13 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-                                          String deployPattern, String resolvePattern, String matrixParams, boolean deployBuildInfo,
-                                          boolean includeEnvVars, IncludesExcludes envVarsPatterns, boolean discardOldBuilds,
-                                          boolean discardBuildArtifacts) {
+                                          String deployPattern, String resolvePattern, String matrixParams,
+                                          boolean deployBuildInfo,
+                                          boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+                                          boolean discardOldBuilds,
+                                          boolean discardBuildArtifacts,
+                                          boolean multiConfProject,
+                                          String artifactoryCombinationFilter) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployPattern = deployPattern;
@@ -73,6 +80,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.envVarsPatterns = envVarsPatterns;
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.multiConfProject = multiConfProject;
+        this.artifactoryCombinationFilter = artifactoryCombinationFilter;
     }
 
     public String getArtifactoryName() {
@@ -192,6 +201,14 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return false;
     }
 
+    public String getArtifactoryCombinationFilter() {
+        return artifactoryCombinationFilter;
+    }
+
+    public boolean isMultiConfProject() {
+        return multiConfProject;
+    }
+
     public ArtifactoryServer getArtifactoryServer() {
         return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
@@ -213,6 +230,14 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
+        if (isMultiConfProject()) {
+            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+            if (isFiltered) {
+                return new Environment() {
+                };
+            }
+        }
+
         final String artifactoryServerName = getArtifactoryName();
         if (StringUtils.isBlank(artifactoryServerName)) {
             return super.setUp(build, launcher, listener);

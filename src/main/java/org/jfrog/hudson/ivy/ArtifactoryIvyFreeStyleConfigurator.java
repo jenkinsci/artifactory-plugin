@@ -36,6 +36,7 @@ import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -59,7 +60,7 @@ import java.util.Map;
  * @author Tomer Cohen
  */
 public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements DeployerOverrider,
-        BuildInfoAwareConfigurator {
+        BuildInfoAwareConfigurator, MultiConfigurationAware {
 
     public final String remotePluginLocation;
     public final boolean deployBuildInfo;
@@ -94,6 +95,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
+    private String artifactoryCombinationFilter;
+    private boolean multiConfProject;
     /**
      * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
      */
@@ -117,7 +120,9 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                                                String aggregationBuildStatus, boolean blackDuckRunChecks, String blackDuckAppName,
                                                String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
                                                boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
-                                               boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild) {
+                                               boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild,
+                                               boolean multiConfProject,
+                                               String artifactoryCombinationFilter) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
@@ -151,6 +156,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
         this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
         this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
+        this.multiConfProject = multiConfProject;
+        this.artifactoryCombinationFilter = artifactoryCombinationFilter;
     }
 
     /**
@@ -308,6 +315,14 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return filterExcludedArtifactsFromBuild;
     }
 
+    public String getArtifactoryCombinationFilter() {
+        return artifactoryCombinationFilter;
+    }
+
+    public boolean isMultiConfProject() {
+        return multiConfProject;
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
@@ -316,6 +331,14 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
+
+        if (isMultiConfProject()) {
+            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+            if (isFiltered) {
+                return new Environment() {
+                };
+            }
+        }
 
         final PublisherContext context = new PublisherContext.Builder().artifactoryServer(getArtifactoryServer())
                 .serverDetails(getDetails()).deployerOverrider(ArtifactoryIvyFreeStyleConfigurator.this)
@@ -433,7 +456,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
+                    item.getClass().isAssignableFrom(MatrixProject.class);
         }
 
         /**

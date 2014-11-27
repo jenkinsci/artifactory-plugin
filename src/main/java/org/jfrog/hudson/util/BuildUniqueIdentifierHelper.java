@@ -1,5 +1,7 @@
 package org.jfrog.hudson.util;
 
+import hudson.matrix.Combination;
+import hudson.matrix.MatrixRun;
 import hudson.model.*;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -109,5 +111,25 @@ public class BuildUniqueIdentifierHelper {
         }
 
         return null;
+    }
+
+    public static String getBuildName(AbstractBuild build) {
+        String buildName = build.getProject().getFullName();
+        if (build instanceof MatrixRun) {
+            buildName = buildName.substring(0, buildName.indexOf("/"));
+        }
+
+        return buildName;
+    }
+
+    public static String getBuildNumber(AbstractBuild build) {
+        String buildNumber = String.valueOf(build.getNumber());
+        if (build instanceof MatrixRun) {
+            buildNumber += "::";
+            Combination combination = ((MatrixRun) build).getProject().getCombination();
+            buildNumber += combination.toString();
+        }
+
+        return buildNumber;
     }
 }

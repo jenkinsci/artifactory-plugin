@@ -31,6 +31,7 @@ import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -49,7 +50,7 @@ import java.util.Map;
  * @author Noam Y. Tenne
  */
 public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider,
-        BuildInfoAwareConfigurator {
+        BuildInfoAwareConfigurator, MultiConfigurationAware {
 
     /**
      * Repository URL and repository to deploy artifacts to
@@ -91,6 +92,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
+    private String artifactoryCombinationFilter;
+    private boolean multiConfProject;
     /**
      * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
      */
@@ -121,7 +124,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                                          boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
                                          String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
                                          boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
-                                         boolean filterExcludedArtifactsFromBuild) {
+                                         boolean filterExcludedArtifactsFromBuild,
+                                         boolean multiConfProject,
+                                         String artifactoryCombinationFilter
+    ) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
@@ -150,6 +156,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
         this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
         this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
+        this.multiConfProject = multiConfProject;
+        this.artifactoryCombinationFilter = artifactoryCombinationFilter;
     }
 
     public ServerDetails getDetails() {
@@ -305,6 +313,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return filterExcludedArtifactsFromBuild;
     }
 
+    public String getArtifactoryCombinationFilter() {
+        return artifactoryCombinationFilter;
+    }
+
+    public boolean isMultiConfProject() {
+        return multiConfProject;
+    }
+
     public ArtifactoryServer getArtifactoryServer(String artifactoryServerName) {
         return RepositoriesUtils.getArtifactoryServer(artifactoryServerName, getDescriptor().getArtifactoryServers());
     }
@@ -347,6 +363,15 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             build.setResult(Result.FAILURE);
             throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
+
+        if (isMultiConfProject()) {
+            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+            if (isFiltered) {
+                return new Environment() {
+                };
+            }
+        }
+
         final PublisherContext context = new PublisherContext.Builder().artifactoryServer(artifactoryServer)
                 .serverDetails(getDetails()).deployerOverrider(ArtifactoryMaven3Configurator.this)
                 .runChecks(isRunChecks()).includePublishArtifacts(isIncludePublishArtifacts())
@@ -404,7 +429,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
+                    item.getClass().isAssignableFrom(MatrixProject.class);
         }
 
         /**

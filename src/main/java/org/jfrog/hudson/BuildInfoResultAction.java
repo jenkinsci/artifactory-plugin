@@ -19,7 +19,7 @@ package org.jfrog.hudson;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildBadgeAction;
-import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 
 /**
  * Result of the redeploy publisher. Currently only a link to Artifactory build info.
@@ -63,8 +63,7 @@ public class BuildInfoResultAction implements BuildBadgeAction {
     }
 
     private String generateUrl(String artifactoryRootUrl, AbstractBuild build) {
-        return artifactoryRootUrl + "/webapp/builds/"
-                + Util.rawEncode(ExtractorUtils.sanitizeBuildName(build.getParent().getFullName())) + "/"
-                + build.getNumber();
+        return artifactoryRootUrl + "/webapp/builds/" + Util.rawEncode(BuildUniqueIdentifierHelper.getBuildName(build)) + "/"
+                + Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
     }
 }

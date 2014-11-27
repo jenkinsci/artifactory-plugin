@@ -36,6 +36,7 @@ import org.jfrog.build.client.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
 import java.io.File;
@@ -187,10 +188,10 @@ public class ExtractorUtils {
                                          PublisherContext context, ArtifactoryClientConfiguration configuration) {
         configuration.setActivateRecorder(Boolean.TRUE);
 
-        String buildName = sanitizeBuildName(build.getProject().getFullName());
+        String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         configuration.info.setBuildName(buildName);
         configuration.publisher.addMatrixParam("build.name", buildName);
-        String buildNumber = build.getNumber() + "";
+        String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
         configuration.info.setBuildNumber(buildNumber);
         configuration.publisher.addMatrixParam("build.number", buildNumber);
 
@@ -441,5 +442,7 @@ public class ExtractorUtils {
                 configuration.publisher.addMatrixParam(entry.getKey(), entry.getValue());
             }
         }
+
+        MultiConfigurationUtils.addMatrixCombination(build, configuration);
     }
 }

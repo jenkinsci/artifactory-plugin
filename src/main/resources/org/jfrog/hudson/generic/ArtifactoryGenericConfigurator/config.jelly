@@ -124,6 +124,20 @@
                 </f:optionalBlock>
             </table>
         </f:block>
+        <f:block>
+            <table style="width:100%">
+                <f:optionalBlock name="multiConfProject"
+                                 checked="${instance.multiConfProject}"
+                                 title="${%Multi Configuration Filter} (only relevant for Multi-Configuration project)"
+                                 inline="true"
+                                 help="/plugin/artifactory/help/common/help-combinationFilter.html">
+                    <f:entry field="artifactoryCombinationFilter" title="${%Filter}"
+                             description="Groovy expression">
+                        <f:textbox value="${instance.artifactoryCombinationFilter}"/>
+                    </f:entry>
+                </f:optionalBlock>
+            </table>
+        </f:block>
     </f:section>
     <f:block>
         <hr/>
