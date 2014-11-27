@@ -373,8 +373,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         if (getReleaseWrapper() != null) {
             List<Action> actions = new ArrayList<Action>();
             actions.addAll(action);
-            actions.add(new GradleReleaseAction(project));
-            actions.add(new GradleReleaseApiAction(project));
+            actions.add(new GradleReleaseAction((FreeStyleProject) project));
+            actions.add(new GradleReleaseApiAction((FreeStyleProject) project));
             return actions;
         }
         return action;
