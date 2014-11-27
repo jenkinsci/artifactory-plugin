@@ -43,6 +43,7 @@ import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseApiAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -62,7 +63,7 @@ import java.util.*;
  * @author Tomer Cohen
  */
 public class ArtifactoryGradleConfigurator extends BuildWrapper implements DeployerOverrider, ResolverOverrider,
-        BuildInfoAwareConfigurator {
+        BuildInfoAwareConfigurator, MultiConfigurationAware {
     public final boolean deployMaven;
     public final boolean deployIvy;
     public final String remotePluginLocation;
@@ -101,6 +102,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
+    private String artifactoryCombinationFilter;
+    private boolean multiConfProject;
     /**
      * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
      */
@@ -125,7 +128,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                          boolean allowPromotionOfNonStagedBuilds, boolean blackDuckRunChecks, String blackDuckAppName,
                                          String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
                                          boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
-                                         boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild) {
+                                         boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild,
+                                         boolean multiConfProject,
+                                         String artifactoryCombinationFilter) {
         this.details = details;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployMaven = deployMaven;
@@ -164,6 +169,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
         this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
         this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
+        this.multiConfProject = multiConfProject;
+        this.artifactoryCombinationFilter = artifactoryCombinationFilter;
     }
 
     public GradleReleaseWrapper getReleaseWrapper() {
@@ -342,8 +349,21 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return filterExcludedArtifactsFromBuild;
     }
 
+    public String getArtifactoryCombinationFilter() {
+        return artifactoryCombinationFilter;
+    }
+
+    public boolean isMultiConfProject() {
+        return multiConfProject;
+    }
+
     private String cleanString(String artifactPattern) {
         return StringUtils.removeEnd(StringUtils.removeStart(artifactPattern, "\""), "\"");
+    }
+
+    @Override
+    public Action getProjectAction(AbstractProject job) {
+        return super.getProjectAction(job);
     }
 
     @Override
@@ -351,10 +371,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         List<ArtifactoryProjectAction> action =
                 ActionableHelper.getArtifactoryProjectAction(details.getArtifactoryUrl(), project);
         if (getReleaseWrapper() != null) {
-            List actions = new ArrayList();
+            List<Action> actions = new ArrayList<Action>();
             actions.addAll(action);
-            actions.add(new GradleReleaseAction((FreeStyleProject)project));
-            actions.add(new GradleReleaseApiAction((FreeStyleProject)project));
+            actions.add(new GradleReleaseAction(project));
+            actions.add(new GradleReleaseApiAction(project));
             return actions;
         }
         return action;
@@ -363,6 +383,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
+        if (isMultiConfProject()) {
+            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+            if (isFiltered) {
+                return new Environment() {
+                };
+            }
+        }
+
         if (isRelease(build)) {
             releaseWrapper.setUp(build, launcher, listener);
         }
