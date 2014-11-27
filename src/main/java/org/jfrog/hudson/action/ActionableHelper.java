@@ -17,6 +17,7 @@
 package org.jfrog.hudson.action;
 
 import com.google.common.collect.Lists;
+import hudson.matrix.MatrixConfiguration;
 import hudson.maven.MavenBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.*;
@@ -170,6 +171,9 @@ public abstract class ActionableHelper {
             // don't add if already exist (if multiple Artifactory builders are configured in free style)
             return Collections.emptyList();
         }
+        if (project instanceof MatrixConfiguration)
+            return Collections.emptyList();
+
         return Lists.newArrayList(new ArtifactoryProjectAction(artifactoryRootUrl, project));
     }
 }
