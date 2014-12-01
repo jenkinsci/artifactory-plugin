@@ -365,7 +365,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         String originalTargets = null;
         if (builder != null) {
             originalTargets = builder.getTargets();
-            setTargetsField(builder, originalTargets + " " + getAdditionalAntArgs(actualDependencyDir));
+            setTargetsField(builder, getAntArgs(originalTargets, actualDependencyDir));
         }
         build.setResult(Result.SUCCESS);
         final String finalOriginalTargets = originalTargets;
@@ -407,16 +407,27 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         }
     }
 
-    // this is blech.
-    private String getAdditionalAntArgs(FilePath actualDependencyDir) {
-        StringBuilder targets = new StringBuilder();
+    private String getAntArgs(String originalTargets, FilePath actualDependencyDir) {
         String actualDependencyDirPath = actualDependencyDir.getRemote();
         actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
         actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
-        targets.append("-lib ").append(actualDependencyDirPath).append(" ");
-        targets.append("-listener ").append("org.jfrog.build.extractor.listener.ArtifactoryBuildListener")
-                .append(" ");
-        return targets.toString();
+        String lib = "-lib " + actualDependencyDirPath;
+        String listener = "-listener org.jfrog.build.extractor.listener.ArtifactoryBuildListener";
+
+        String targets = originalTargets == null ? "" : originalTargets;
+        if (!targets.contains(lib)) {
+            if (!targets.endsWith(" ")) {
+                targets += " ";
+            }
+            targets += lib;
+        }
+        if (!targets.contains(listener)) {
+            if (!targets.endsWith(" ")) {
+                targets += " ";
+            }
+            targets += " " + listener;
+        }
+        return targets;
     }
 
     private Ant getLastAntBuild(AbstractProject project) {
