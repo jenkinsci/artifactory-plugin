@@ -315,7 +315,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+            return item.getClass().isAssignableFrom(Project.class) || MatrixProject.class.equals(item.getClass());
         }
 
         /**
