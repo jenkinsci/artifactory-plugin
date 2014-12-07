@@ -297,7 +297,7 @@
             <table style="width:100%">
                 <f:optionalBlock name="multiConfProject"
                                  checked="${instance.multiConfProject}"
-                                 title="${%Multi Configuration Filter} (only relevant for Multi-Configuration project)"
+                                 title="${%Multi Configuration Filter} (only relevant for Multi-Configuration projects)"
                                  inline="true"
                                  help="/plugin/artifactory/help/common/help-combinationFilter.html">
                     <f:entry field="artifactoryCombinationFilter" title="${%Filter}"

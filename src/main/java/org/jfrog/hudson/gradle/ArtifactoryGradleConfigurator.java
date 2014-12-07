@@ -21,6 +21,7 @@ import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
@@ -373,8 +374,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         if (getReleaseWrapper() != null) {
             List<Action> actions = new ArrayList<Action>();
             actions.addAll(action);
-            actions.add(new GradleReleaseAction((FreeStyleProject) project));
-            actions.add(new GradleReleaseApiAction((FreeStyleProject) project));
+            if (!(project instanceof MatrixProject) &&
+                    !(project instanceof MatrixConfiguration)) {
+                actions.add(new GradleReleaseAction(project));
+                actions.add(new GradleReleaseApiAction(project));
+            }
             return actions;
         }
         return action;
@@ -539,7 +543,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public boolean isRelease(AbstractBuild build) {
-        boolean actionExists = build.getAction(GradleReleaseAction.class) != null || build.getAction(GradleReleaseApiAction.class) != null;
+        boolean actionExists = build.getAction(GradleReleaseAction.class) != null ||
+                build.getAction(GradleReleaseApiAction.class) != null;
         return getReleaseWrapper() != null && actionExists;
     }
 
@@ -628,7 +633,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
+                    item.getClass().isAssignableFrom(MatrixProject.class);
         }
 
         private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
