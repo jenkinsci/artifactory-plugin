@@ -20,7 +20,7 @@ import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Util;
-import hudson.model.FreeStyleProject;
+import hudson.model.AbstractProject;
 import hudson.plugins.gradle.Gradle;
 import hudson.tasks.Builder;
 import org.apache.commons.lang.StringUtils;
@@ -44,7 +44,7 @@ import java.util.*;
  *
  * @author Tomer Cohen
  */
-public abstract class BaseGradleReleaseAction extends ReleaseAction<FreeStyleProject, ArtifactoryGradleConfigurator> {
+public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProject<?, ?>, ArtifactoryGradleConfigurator> {
 
     private transient Map<String, String> releaseProps;
     private transient Map<String, String> nextIntegProps;
@@ -57,7 +57,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<FreeStylePro
      */
     private Map<String, String> nextVersionPerModule;
 
-    public BaseGradleReleaseAction(FreeStyleProject project) {
+    public BaseGradleReleaseAction(AbstractProject<?, ?> project) {
         super(project, ArtifactoryGradleConfigurator.class);
     }
 
@@ -103,7 +103,8 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<FreeStylePro
             throw new IllegalStateException("Couldn't find workspace");
         }
         env.put("WORKSPACE", someWorkspace.getRemote());
-        for (Builder builder : project.getBuilders()) {
+
+        for (Builder builder : getBuilders()) {
             if (builder instanceof Gradle) {
                 Gradle gradleBuilder = (Gradle) builder;
                 String rootBuildScriptDir = gradleBuilder.getRootBuildScriptDir();

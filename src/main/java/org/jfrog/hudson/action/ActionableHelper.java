@@ -71,9 +71,10 @@ public abstract class ActionableHelper {
     /**
      * @return The wrapped item (eg, project) wrapper of the given type. Null if not found.
      */
-    public static <T extends BuildWrapper> T getBuildWrapper(BuildableItemWithBuildWrappers wrapped,
-            Class<T> type) {
-        DescribableList<BuildWrapper, Descriptor<BuildWrapper>> wrappers = wrapped.getBuildWrappersList();
+    public static <T extends BuildWrapper> T getBuildWrapper(BuildableItem wrapped,
+                                                             Class<T> type) {
+        DescribableList<BuildWrapper, Descriptor<BuildWrapper>> wrappers =
+                ((BuildableItemWithBuildWrappers) wrapped).getBuildWrappersList();
         for (BuildWrapper wrapper : wrappers) {
             if (type.isInstance(wrapper)) {
                 return type.cast(wrapper);

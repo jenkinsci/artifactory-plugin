@@ -1,6 +1,6 @@
 package org.jfrog.hudson.release.gradle;
 
-import hudson.model.FreeStyleProject;
+import hudson.model.AbstractProject;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -15,7 +15,7 @@ import java.io.IOException;
  */
 public class GradleReleaseApiAction extends BaseGradleReleaseAction {
 
-    public GradleReleaseApiAction(FreeStyleProject project) {
+    public GradleReleaseApiAction(AbstractProject<?, ?> project) {
         super(project);
     }
 

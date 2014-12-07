@@ -18,10 +18,9 @@ package org.jfrog.hudson.release;
 
 import com.google.common.collect.Maps;
 import hudson.Util;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildableItemWithBuildWrappers;
-import hudson.model.Cause;
+import hudson.matrix.MatrixConfiguration;
+import hudson.matrix.MatrixProject;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -39,7 +38,9 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,16 +50,13 @@ import java.util.logging.Logger;
  *
  * @author Yossi Shaul
  */
-public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWithBuildWrappers,
+public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
         W extends BuildWrapper> implements Action {
 
     private static final Logger log = Logger.getLogger(ReleaseAction.class.getName());
 
     protected final transient P project;
-    private Class<W> wrapperClass;
-
     protected VERSIONING versioning;
-
     /**
      * The next release version to change the model to if using one global version.
      */
@@ -67,19 +65,6 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
      * Next (development) version to change the model to if using one global version.
      */
     protected String nextVersion;
-
-    Boolean pro;
-
-    boolean createVcsTag;
-    String tagUrl;
-    String tagComment;
-    String nextDevelCommitComment;
-    String stagingRepositoryKey;
-    String stagingComment;
-
-    boolean createReleaseBranch;
-    String releaseBranch;
-
     protected transient boolean strategyRequestFailed = false;
     protected transient String strategyRequestErrorMessage = null;
     protected transient boolean strategyPluginExists;
@@ -89,22 +74,16 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     protected transient Map<String, VersionedModule> defaultModules;
     protected transient VcsConfig defaultVcsConfig;
     protected transient PromotionConfig defaultPromotionConfig;
-
-    public enum VERSIONING {
-        GLOBAL("One version for all modules"),
-        PER_MODULE("Version per module"),
-        NONE("Use existing module versions");
-        // The description to display in the UI
-        private final String displayMessage;
-
-        VERSIONING(String displayMessage) {
-            this.displayMessage = displayMessage;
-        }
-
-        public String getDisplayMessage() {
-            return displayMessage;
-        }
-    }
+    Boolean pro;
+    boolean createVcsTag;
+    String tagUrl;
+    String tagComment;
+    String nextDevelCommitComment;
+    String stagingRepositoryKey;
+    String stagingComment;
+    boolean createReleaseBranch;
+    String releaseBranch;
+    private Class<W> wrapperClass;
 
     public ReleaseAction(P project, Class<W> wrapperClass) {
         this.project = project;
@@ -338,7 +317,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
             tagComment = req.getParameter("tagComment");
         }
         if (req.getParameter("createReleaseBranch") != null) {
-             createReleaseBranch = Boolean.valueOf(req.getParameter("createReleaseBranch"));
+            createReleaseBranch = Boolean.valueOf(req.getParameter("createReleaseBranch"));
         }
         if (req.getParameter("releaseBranch") != null) {
             releaseBranch = req.getParameter("releaseBranch");
@@ -491,8 +470,8 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
     }
 
     /**
-        Read the values provided by the staging user plugin and assign them to data members in this class.
-        Those values can be overriden by URL arguments sent with the API:
+     * Read the values provided by the staging user plugin and assign them to data members in this class.
+     * Those values can be overriden by URL arguments sent with the API:
      */
     private void readStagingPluginValues() {
         versioning = VERSIONING.valueOf(defaultVersioning);
@@ -602,5 +581,30 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItemWit
             return configMap.get(key).toString();
         }
         return null;
+    }
+
+    protected List<hudson.tasks.Builder> getBuilders() {
+        if (project instanceof MatrixProject)
+            return ((MatrixProject) project).getBuilders();
+        if (project instanceof MatrixConfiguration)
+            return ((MatrixConfiguration) project).getBuilders();
+
+        return ((FreeStyleProject) project).getBuilders();
+    }
+
+    public enum VERSIONING {
+        GLOBAL("One version for all modules"),
+        PER_MODULE("Version per module"),
+        NONE("Use existing module versions");
+        // The description to display in the UI
+        private final String displayMessage;
+
+        VERSIONING(String displayMessage) {
+            this.displayMessage = displayMessage;
+        }
+
+        public String getDisplayMessage() {
+            return displayMessage;
+        }
     }
 }

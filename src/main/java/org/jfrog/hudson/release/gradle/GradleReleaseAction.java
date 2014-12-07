@@ -1,14 +1,13 @@
-
 package org.jfrog.hudson.release.gradle;
 
-import hudson.model.FreeStyleProject;
+import hudson.model.AbstractProject;
 import org.jfrog.hudson.ArtifactoryPlugin;
 
 /**
  * This class is used for managing the Artifactory Release Staging functionality for Gradle projects from Jenkins UI.
  */
 public class GradleReleaseAction extends BaseGradleReleaseAction {
-    public GradleReleaseAction(FreeStyleProject project) {
+    public GradleReleaseAction(AbstractProject<?, ?> project) {
         super(project);
     }
 
