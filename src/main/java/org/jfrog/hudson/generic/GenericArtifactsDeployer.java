@@ -109,7 +109,8 @@ public class GenericArtifactsDeployer {
             String[] split = StringUtils.split(matrixParam, '=');
             if (split.length == 2) {
                 String value = Util.replaceMacro(split[1], env);
-                properties.put(split[0], value);
+                //Space is not allowed in property key
+                properties.put(split[0].replace(" ", StringUtils.EMPTY), value);
             }
         }
     }
