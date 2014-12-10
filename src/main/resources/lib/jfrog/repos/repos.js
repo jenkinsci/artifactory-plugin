@@ -45,10 +45,11 @@ function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, deployUser
         }
         else {
             var select = document.getElementById("ivyFreeRepositoryKeys-" + artifactoryUrl);
+            var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
             removeElements(select);
             fillSelect(select, response.repositories);
-            setSelectValue(select, oldSelect.value);
+            setSelectValue(select, oldValue);
 
             var oldValueExistsInNewList = compareSelectTags(select, oldSelect);
             if (!oldValueExistsInNewList) {
@@ -70,10 +71,11 @@ function artifactoryGenericConfigurator(spinner, artifactoryUrl, deployUsername,
         }
         else {
             var select = document.getElementById("genericRepositoryKeys-" + artifactoryUrl);
+            var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
             removeElements(select);
             fillSelect(select, response.repositories);
-            setSelectValue(select, oldSelect.value);
+            setSelectValue(select, oldValue);
 
             var oldValueExistsInNewList = compareSelectTags(select, oldSelect);
             if (!oldValueExistsInNewList) {
@@ -97,6 +99,9 @@ function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUser
             var selectRelease = document.getElementById("maven3NativeReleaseRepositoryKeys-" + artifactoryUrl);
             var selectSnapshot = document.getElementById("maven3NativeSnapshotRepositoryKeys-" + artifactoryUrl);
 
+            var oldReleaseValue = selectRelease.value;
+            var oldSnapshotValue = selectSnapshot.value;
+
             var oldSelectRelease = selectRelease.cloneNode(true);
             var oldSelectSnapshot = selectSnapshot.cloneNode(true);
 
@@ -106,8 +111,8 @@ function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUser
             fillVirtualReposSelect(selectRelease, response.virtualRepositories);
             fillVirtualReposSelect(selectSnapshot, response.virtualRepositories);
 
-            setSelectValue(selectRelease, oldSelectRelease.value);
-            setSelectValue(selectSnapshot, oldSelectSnapshot.value);
+            setSelectValue(selectRelease, oldReleaseValue);
+            setSelectValue(selectSnapshot, oldSnapshotValue);
 
             selectRelease.onchange();
             selectSnapshot.onchange();
@@ -141,6 +146,9 @@ function artifactoryMaven3Configurator(spinner, artifactoryUrl, deployUsername, 
             var selectRelease = document.getElementById("maven3RepositoryKeys-" + artifactoryUrl);
             var selectSnapshot = document.getElementById("maven3SnapshotsRepositoryKeys-" + artifactoryUrl);
 
+            var oldReleaseValue = selectRelease.value;
+            var oldSnapshotValue = selectSnapshot.value;
+
             var oldSelectRelease = selectRelease.cloneNode(true);
             var oldSelectSnapshot = selectSnapshot.cloneNode(true);
 
@@ -150,8 +158,8 @@ function artifactoryMaven3Configurator(spinner, artifactoryUrl, deployUsername, 
             fillSelect(selectRelease, response.repositories);
             fillSelect(selectSnapshot, response.repositories);
 
-            setSelectValue(selectRelease, oldSelectRelease.value);
-            setSelectValue(selectSnapshot, oldSelectSnapshot.value);
+            setSelectValue(selectRelease, oldReleaseValue);
+            setSelectValue(selectSnapshot, oldSnapshotValue);
 
             var oldValueExistsInNewList = true;
             if (oldValueExistsInNewList) {
@@ -183,6 +191,10 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, 
             var selectPublish = document.getElementById("gradlePublishRepositoryKeys-" + artifactoryUrl);
             var selectPlugins = document.getElementById("gradleCustomStagingConfiguration-" + artifactoryUrl);
 
+            var oldResolutionValue = selectResolution.value;
+            var oldPublishValue = selectPublish.value;
+            var oldPluginsValue = selectPlugins.value;
+
             var oldSelectResolution = selectResolution.cloneNode(true);
             var oldSelectPublish = selectPublish.cloneNode(true);
             var oldSelectPlugins = selectPlugins.cloneNode(true);
@@ -196,11 +208,11 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, 
             fillStagingPluginsSelect(selectPlugins, response.userPlugins);
             createStagingParamsInputs(response.userPlugins);
 
-            setSelectValue(selectResolution, oldSelectResolution.value);
+            setSelectValue(selectResolution, oldResolutionValue);
             selectResolution.onchange();
 
-            setSelectValue(selectPublish, oldSelectPublish.value);
-            setSelectValue(selectPlugins, oldSelectPlugins.value);
+            setSelectValue(selectPublish, oldPublishValue);
+            setSelectValue(selectPlugins, oldPluginsValue);
             setStagingParamsSelectedValue(selectPlugins);
 
             var oldValueExistsInNewList = true;
@@ -236,6 +248,10 @@ function artifactoryRedeployPublisher(spinner, artifactoryUrl, deployUsername, d
             var selectSnapshot = document.getElementById("publishSnapshotsRepositoryKeys-" + artifactoryUrl);
             var selectPlugins = document.getElementById("customStagingConfiguration-" + artifactoryUrl);
 
+            var oldReleaseValue = selectRelease.value;
+            var oldSnapshotValue = selectSnapshot.value;
+            var oldPluginsValue = selectPlugins.value;
+
             var oldSelectRelease = selectRelease.cloneNode(true);
             var oldSelectSnapshot = selectSnapshot.cloneNode(true);
             var oldSelectPlugins = selectPlugins.cloneNode(true);
@@ -249,9 +265,9 @@ function artifactoryRedeployPublisher(spinner, artifactoryUrl, deployUsername, d
             fillStagingPluginsSelect(selectPlugins, response.userPlugins);
             createStagingParamsInputs(response.userPlugins);
 
-            setSelectValue(selectRelease, oldSelectRelease.value);
-            setSelectValue(selectSnapshot, oldSelectSnapshot.value);
-            setSelectValue(selectPlugins, oldSelectPlugins.value);
+            setSelectValue(selectRelease, oldReleaseValue);
+            setSelectValue(selectSnapshot, oldSnapshotValue);
+            setSelectValue(selectPlugins, oldPluginsValue);
             setStagingParamsSelectedValue(selectPlugins);
 
             var oldValueExistsInNewList = true;
@@ -284,10 +300,11 @@ function artifactoryIvyConfigurator(spinner, artifactoryUrl, deployUsername, dep
         }
         else {
             var select = document.getElementById("publishRepositoryKey-" + artifactoryUrl);
+            var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
             removeElements(select);
             fillSelect(select, response.repositories);
-            setSelectValue(select, oldSelect.value);
+            setSelectValue(select, oldValue);
 
             var oldValueExistsInNewList = true;
             if (oldValueExistsInNewList) {
