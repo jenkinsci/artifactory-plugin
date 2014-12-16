@@ -161,7 +161,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         }
 
         if (checkGitValidUri(defaultRemoteNameOrUrl)) {
-            return new ReleaseRepository(defaultRemoteNameOrUrl, repositories.get(0).getName());
+            return new ReleaseRepository(defaultRemoteNameOrUrl, "externalGitUrl");
         }
 
         throw new IOException("Target Remote Name: " + defaultRemoteNameOrUrl + " ,doesn`t exist");
@@ -193,8 +193,8 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
 
         if (releaseRepository != null && releaseRepository.isTargetRepoUri()) {
-            if (client.getRemoteUrl(releaseRepository.getRepositoryName()) == null)
-                client.setRemoteUrl(releaseRepository.getRepositoryName(), releaseRepository.getTargetRepoPrivateUri());
+            client.setRemoteUrl(releaseRepository.getRepositoryName(), releaseRepository.getTargetRepoPrivateUri());
+            addCredentialsToGitClient(client);
         } else {
             addRemoteRepoToConfig(client);
             addCredentialsToGitClient(client);
