@@ -34,6 +34,7 @@ import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.build.client.ClientProperties;
 import org.jfrog.build.client.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
@@ -142,7 +143,10 @@ public class ExtractorUtils {
         }
 
         if (resolverContext != null) {
-            setResolverInfo(configuration, resolverContext);
+            if (publisherContext != null)
+                setResolverInfo(configuration, resolverContext, publisherContext.getDeployerOverrider());
+            else
+                setResolverInfo(configuration, resolverContext, null);
             // setProxy(resolverContext.getServer(), configuration);
         }
 
@@ -172,13 +176,19 @@ public class ExtractorUtils {
         }
     }
 
-    private static void setResolverInfo(ArtifactoryClientConfiguration configuration, ResolverContext context) {
+    private static void setResolverInfo(ArtifactoryClientConfiguration configuration, ResolverContext context,
+                                        DeployerOverrider deployerOverrider) {
         configuration.setTimeout(context.getServer().getTimeout());
         configuration.resolver.setContextUrl(context.getServer().getUrl());
         configuration.resolver.setRepoKey(context.getServerDetails().downloadReleaseRepositoryKey);
         configuration.resolver.setDownloadSnapshotRepoKey(context.getServerDetails().downloadSnapshotRepositoryKey);
-        configuration.resolver.setUsername(context.getCredentials().getUsername());
-        configuration.resolver.setPassword(context.getCredentials().getPassword());
+
+        Credentials preferredResolver = CredentialResolver.getPreferredResolver(context.getResolverOverrider(),
+                deployerOverrider, context.getServer());
+        if (StringUtils.isNotBlank(preferredResolver.getUsername())) {
+            configuration.resolver.setUsername(preferredResolver.getUsername());
+            configuration.resolver.setPassword(preferredResolver.getPassword());
+        }
     }
 
     /**

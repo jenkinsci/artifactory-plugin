@@ -497,7 +497,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     } else {
                         resolverCredentials = getArtifactoryServer().getResolvingCredentials();
                     }
-                    resolverContext = new ResolverContext(getArtifactoryServer(), serverDetails, resolverCredentials);
+                    resolverContext = new ResolverContext(getArtifactoryServer(), serverDetails, resolverCredentials,
+                            ArtifactoryGradleConfigurator.this);
                 }
 
                 try {

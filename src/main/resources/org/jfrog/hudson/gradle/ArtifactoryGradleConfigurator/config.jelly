@@ -9,10 +9,11 @@
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrl${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <input type="hidden" name="downloadReleaseRepositoryDisplayName" id="downloadReleaseRepositoryDisplayName-${s.url}" value=""/>
+                        <input type="hidden" name="downloadReleaseRepositoryDisplayName"
+                               id="downloadReleaseRepositoryDisplayName-gradle-${s.url}" value=""/>
                         <f:entry title="${%Resolution repository}">
                             <select class="setting-input" name="downloadReleaseRepositoryKey" id="gradleResolutionRepositoryKeys-${s.url}"
-                                    onchange="document.getElementById('downloadReleaseRepositoryDisplayName-${s.url}').value=document.getElementById('gradleResolutionRepositoryKeys-${s.url}').options[this.selectedIndex].text">
+                                    onchange="onReleaseResolutionSelectChange('${s.url}', this, 'gradle')">
                                 <j:choose>
                                     <j:when test="${s.name==instance.artifactoryName}">
                                         <j:choose>

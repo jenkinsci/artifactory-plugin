@@ -60,7 +60,8 @@ public abstract class CredentialResolver {
      * @param server            Selected Artifactory server
      * @return Preferred resolver credentials
      */
-    public static Credentials getPreferredResolver(ResolverOverrider resolverOverrider, DeployerOverrider deployerOverrider, ArtifactoryServer server) {
+    public static Credentials getPreferredResolver(ResolverOverrider resolverOverrider,
+                                                   DeployerOverrider deployerOverrider, ArtifactoryServer server) {
         if (resolverOverrider != null && resolverOverrider.isOverridingDefaultResolver()) {
             return resolverOverrider.getOverridingResolverCredentials();
         }

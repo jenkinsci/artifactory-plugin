@@ -12,19 +12,19 @@ import hudson.model.BuildListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.*;
-import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.maven3.extractor.MavenExtractorHelper;
-import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.ResolverOverrider;
+import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.VirtualRepository;
 import org.jfrog.hudson.util.*;
-import org.jfrog.hudson.util.publisher.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A wrapper that takes over artifacts resolution and using the configured repository for resolution.<p/>
@@ -91,12 +91,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             };
         }
 
-        MavenExtractorHelper.PublisherResolverTuple tuple = MavenExtractorHelper.getPublisherResolverTuple(build);
-        if (tuple == null) {
-            return new Environment() {
-            };
-        }
-        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, tuple.publisher, tuple.resolver, listener);
+        /**
+         * {@link org.jfrog.hudson.maven3.Maven3ExtractorListener} will populate the resolver context
+         * */
+        return new Environment() {
+        };
     }
 
     public ArtifactoryServer getArtifactoryServer() {
@@ -157,7 +156,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
@@ -205,7 +204,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         }
     }
 
-    public class MavenExtractorEnvironment extends Environment {
+    /*public class MavenExtractorEnvironment extends Environment {
         private final ArtifactoryRedeployPublisher publisher;
         private final MavenModuleSetBuild build;
         private final ArtifactoryMaven3NativeConfigurator resolver;
@@ -281,5 +280,5 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
 
             return context;
         }
-    }
+    }*/
 }

@@ -358,6 +358,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
+    /** From here Maven 2 flow*/
         if (!(build instanceof MavenModuleSetBuild)) {
             listener.getLogger().format("Non maven build type: %s", build.getClass()).println();
             build.setResult(Result.FAILURE);

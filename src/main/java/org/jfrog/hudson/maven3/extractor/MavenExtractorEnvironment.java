@@ -131,7 +131,7 @@ public class MavenExtractorEnvironment extends Environment {
                     Credentials resolverCredentials = CredentialResolver.getPreferredResolver(
                             resolver, publisher, resolver.getArtifactoryServer());
                     resolverContext = new ResolverContext(resolver.getArtifactoryServer(), resolver.getDetails(),
-                            resolverCredentials);
+                            resolverCredentials, resolver);
                 }
 
                 ArtifactoryClientConfiguration configuration = ExtractorUtils.addBuilderInfoArguments(

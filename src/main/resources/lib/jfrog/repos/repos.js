@@ -87,7 +87,7 @@ function artifactoryGenericConfigurator(spinner, artifactoryUrl, deployUsername,
 }
 
 function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+    bind.refreshResolversFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -440,4 +440,28 @@ function compareSelectTags(newRepos, oldRepos) {
         }
     }
     return true;
+}
+
+
+function onReleaseResolutionSelectChange(url, select, postfix) {
+    var textFieldRelease = document.getElementById('downloadReleaseRepositoryDisplayName-' + postfix + '-' + url);
+    var selectFieldRelease = select;//document.getElementById(select + '-' + url);
+
+    var releaseDisplayName = selectFieldRelease.options[selectFieldRelease.selectedIndex].text;
+    if (releaseDisplayName == undefined || releaseDisplayName == null || releaseDisplayName == '') {
+        releaseDisplayName = selectFieldRelease.options[selectFieldRelease.selectedIndex].innerText;
+    }
+
+    textFieldRelease.value = releaseDisplayName;
+}
+
+function onSnapshotResolutionSelectChange(url, select, postfix) {
+    var textFieldSnapshot = document.getElementById('downloadSnapshotRepositoryDisplayName-' + postfix + '-' + url);
+    var selectFieldSnapshot = select;//document.getElementById(select + '-' + url);
+
+    var snapshotDisplayName = selectFieldSnapshot.options[selectFieldSnapshot.selectedIndex].text;
+    if (snapshotDisplayName == undefined || snapshotDisplayName == null || snapshotDisplayName == '') {
+        snapshotDisplayName = selectFieldSnapshot.options[selectFieldSnapshot.selectedIndex].innerText;
+    }
+    textFieldSnapshot.value = snapshotDisplayName;
 }

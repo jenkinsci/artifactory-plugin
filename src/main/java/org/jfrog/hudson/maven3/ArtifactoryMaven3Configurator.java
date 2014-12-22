@@ -49,14 +49,16 @@ import java.util.Map;
  *
  * @author Noam Y. Tenne
  */
-public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider,
+public class ArtifactoryMaven3Configurator extends BuildWrapper implements DeployerOverrider, ResolverOverrider,
         BuildInfoAwareConfigurator, MultiConfigurationAware {
 
     /**
      * Repository URL and repository to deploy artifacts to
      */
     private final ServerDetails details;
+    private final ServerDetails resolverDetails;
     private final Credentials overridingDeployerCredentials;
+    private final Credentials overridingResolverCredentials;
     /**
      * If checked (default) deploy maven artifacts
      */
@@ -78,6 +80,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private final String matrixParams;
     private final boolean enableIssueTrackerIntegration;
     private final boolean filterExcludedArtifactsFromBuild;
+    private final boolean enableResolveArtifacts;
     private IncludesExcludes envVarsPatterns;
     private boolean licenseAutoDiscovery;
     private boolean disableLicenseAutoDiscovery;
@@ -113,23 +116,30 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private transient boolean skipBuildInfoDeploy;
 
     @DataBoundConstructor
-    public ArtifactoryMaven3Configurator(ServerDetails details, Credentials overridingDeployerCredentials,
-                                         IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts, boolean deployBuildInfo,
-                                         boolean includeEnvVars, IncludesExcludes envVarsPatterns,
+    public ArtifactoryMaven3Configurator(ServerDetails details, ServerDetails resolverDetails,
+                                         Credentials overridingDeployerCredentials,
+                                         Credentials overridingResolverCredentials, boolean enableResolveArtifacts,
+                                         IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts,
+                                         boolean deployBuildInfo, boolean includeEnvVars,
+                                         IncludesExcludes envVarsPatterns,
                                          boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
                                          String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
                                          boolean discardBuildArtifacts, String matrixParams,
-                                         boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
-                                         boolean recordAllDependencies,
-                                         boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
-                                         String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
-                                         boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
-                                         boolean filterExcludedArtifactsFromBuild,
-                                         boolean multiConfProject,
+                                         boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
+                                         String aggregationBuildStatus, boolean recordAllDependencies,
+                                         boolean blackDuckRunChecks, String blackDuckAppName,
+                                         String blackDuckAppVersion,
+                                         String blackDuckReportRecipients, String blackDuckScopes,
+                                         boolean blackDuckIncludePublishedArtifacts,
+                                         boolean autoCreateMissingComponentRequests,
+                                         boolean autoDiscardStaleComponentRequests,
+                                         boolean filterExcludedArtifactsFromBuild, boolean multiConfProject,
                                          String artifactoryCombinationFilter
     ) {
         this.details = details;
+        this.resolverDetails = resolverDetails;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
+        this.overridingResolverCredentials = overridingResolverCredentials;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.envVarsPatterns = envVarsPatterns;
         this.runChecks = runChecks;
@@ -158,10 +168,23 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
         this.multiConfProject = multiConfProject;
         this.artifactoryCombinationFilter = artifactoryCombinationFilter;
+        this.enableResolveArtifacts = enableResolveArtifacts;
     }
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public ServerDetails getResolverDetails() {
+        return resolverDetails;
+    }
+
+    public String getDownloadReleaseRepositoryKey() {
+        return resolverDetails != null ? resolverDetails.downloadReleaseRepositoryKey : null;
+    }
+
+    public String getDownloadSnapshotRepositoryKey() {
+        return resolverDetails != null ? resolverDetails.downloadSnapshotRepositoryKey : null;
     }
 
     public boolean isDiscardOldBuilds() {
@@ -178,6 +201,18 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
+    }
+
+    public boolean isOverridingDefaultResolver() {
+        return (getOverridingResolverCredentials() != null);
+    }
+
+    public Credentials getOverridingResolverCredentials() {
+        return overridingResolverCredentials;
+    }
+
+    public boolean isOverridingResolverCredentials() {
+        return (getOverridingResolverCredentials() != null);
     }
 
     public boolean isDeployArtifacts() {
@@ -305,6 +340,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return aggregateBuildIssues;
     }
 
+    public boolean isEnableResolveArtifacts() {
+        return enableResolveArtifacts;
+    }
+
     public String getAggregationBuildStatus() {
         return aggregationBuildStatus;
     }
@@ -388,12 +427,23 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
                 .build();
+
+
+        ResolverContext resolver;
+        if (isEnableResolveArtifacts()) {
+            resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(),
+                    overridingResolverCredentials, ArtifactoryMaven3Configurator.this);
+        } else {
+            resolver = null;
+        }
+        final ResolverContext resolverContext = resolver;
+
         build.setResult(Result.SUCCESS);
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, context, null);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, context, resolverContext);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -421,6 +471,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<String> releaseRepositoryKeysFirst;
         private List<String> snapshotRepositoryKeysFirst;
+        private List<VirtualRepository> virtualRepositoryKeys;
 
         public DescriptorImpl() {
             super(ArtifactoryMaven3Configurator.class);
@@ -431,6 +482,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
                     item.getClass().isAssignableFrom(MatrixProject.class);
+        }
+
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
+            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+            Collections.sort(virtualRepositoryKeys);
         }
 
         /**
@@ -466,6 +522,38 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
             /*
             * In case of Exception, we write error in the Javascript scope!
+            * */
+            return response;
+        }
+
+        /**
+         * This method triggered from the client side by Ajax call.
+         * The Element that trig is the "Refresh Repositories" button.
+         *
+         * @param url                           the artifactory url
+         * @param credentialsUsername           override credentials user name
+         * @param credentialsPassword           override credentials password
+         * @param overridingDeployerCredentials user choose to override credentials
+         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
+         */
+        @JavaScriptMethod
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+            RefreshServerResponse response = new RefreshServerResponse();
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
+
+            try {
+                refreshVirtualRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                response.setVirtualRepositories(virtualRepositoryKeys);
+                response.setSuccess(true);
+                return response;
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.setResponseMessage(e.getMessage());
+                response.setSuccess(false);
+            }
+
+            /*
+            * In case of Exception, we write the error in the Javascript scope!
             * */
             return response;
         }
