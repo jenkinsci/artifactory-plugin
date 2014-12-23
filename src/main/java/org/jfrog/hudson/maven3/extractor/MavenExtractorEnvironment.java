@@ -17,21 +17,22 @@
 package org.jfrog.hudson.maven3.extractor;
 
 import com.google.common.collect.Lists;
+import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.maven.MavenModuleSet;
-import hudson.maven.MavenModuleSetBuild;
-import hudson.maven.PlexusModuleContributor;
-import hudson.maven.PlexusModuleContributorFactory;
+import hudson.maven.*;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.Computer;
 import hudson.model.Environment;
 import hudson.remoting.Which;
 import hudson.scm.NullChangeLogParser;
 import hudson.scm.NullSCM;
+import hudson.tasks.Maven;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
@@ -81,6 +82,43 @@ public class MavenExtractorEnvironment extends Environment {
         this.envVars = build.getEnvironment(buildListener);
     }
 
+    /////////////////////////
+
+    public static boolean isAtLeastMavenVersion(File mavenHome, String version, BuildListener listener)  throws MavenEmbedderException {
+        listener.getLogger().println("[***] Maven version retrieved: " + MavenEmbedderUtils.getMavenVersion( mavenHome ).getVersion());
+
+        ComparableVersion found = new ComparableVersion( MavenEmbedderUtils.getMavenVersion( mavenHome ).getVersion() );
+        ComparableVersion testedOne = new ComparableVersion( version );
+
+        listener.getLogger().println("[***] found: " + found);
+        listener.getLogger().println("[***] testedOne: " + testedOne);
+        listener.getLogger().println("[***] Comparison: " + found.compareTo( testedOne ));
+
+        return found.compareTo( testedOne ) >= 0;
+    }
+
+    private static Maven.MavenInstallation getMavenInstallation(MavenModuleSet project, EnvVars vars,
+                                                                BuildListener listener) throws IOException, InterruptedException {
+        Maven.MavenInstallation mavenInstallation = project.getMaven();
+        if (mavenInstallation == null) {
+            throw new AbortException("A Maven installation needs to be available for this project to be built.\n" +
+                    "Either your server has no Maven installations defined, or the requested Maven version does not exist.");
+        }
+        return mavenInstallation.forEnvironment(vars).forNode(Computer.currentComputer().getNode(), listener);
+    }
+
+    public static boolean isAtLeastVersion(MavenModuleSetBuild build, EnvVars vars, BuildListener listener,
+                                           String version) throws IOException, InterruptedException, MavenEmbedderException {
+        MavenModuleSet project = build.getProject();
+        Maven.MavenInstallation mavenInstallation = getMavenInstallation(project, vars, listener);
+
+        listener.getLogger().println("[***] mavenInstallation: " + mavenInstallation.getHome());
+
+        return isAtLeastMavenVersion(new File(mavenInstallation.getHome()), version, listener);
+    }
+
+    //////////////////
+
     @Override
     public void buildEnvVars(Map<String, String> env) {
 
@@ -108,10 +146,20 @@ public class MavenExtractorEnvironment extends Environment {
             }
         }
 
+        buildListener.getLogger().println("[***] Testing Maven version check");
+        try {
+            isAtLeastVersion(build, envVars, buildListener, "3.0.2");
+        } catch (Exception e) {
+            buildListener.getLogger().println("[***] Exception message: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         // if not valid Maven version don't modify the environment
         if (!isMavenVersionValid()) {
+            buildListener.getLogger().println("[***] Found Maven version as not valid");
             return;
         }
+        buildListener.getLogger().println("[***] Found Maven version as valid");
 
         if (isFlexibleEnable()) {
             return;
