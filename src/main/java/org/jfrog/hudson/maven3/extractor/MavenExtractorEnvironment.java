@@ -43,7 +43,6 @@ import org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.publisher.PublisherContext;
-import org.jfrog.hudson.util.publisher.PublisherFactory;
 import org.jfrog.hudson.util.publisher.PublisherFlexible;
 
 import java.io.File;
@@ -121,7 +120,6 @@ public class MavenExtractorEnvironment extends Environment {
 
     @Override
     public void buildEnvVars(Map<String, String> env) {
-
         if (build.getWorkspace() == null) {
             // HAP-274 - workspace might not be initialized yet (this method will be called later in the build lifecycle)
             return;
@@ -161,7 +159,11 @@ public class MavenExtractorEnvironment extends Environment {
         }
         buildListener.getLogger().println("[***] Found Maven version as valid");
 
-        if (isFlexibleEnable()) {
+        // Check if the Artifactory publisher is wrapped with the "Flexible Publish" publisher.
+        // If it is, we will stop here to have the Maven Extractor functionality disabled for this build.
+        // (and have the same behavior as a Maven 2 build):
+        if (isFlexibleWrapsPublisher(build.getProject())) {
+            buildListener.getLogger().println("Artifactory publisher is wrapped by the Flexible-Publish publisher. Build-Info-Maven3-Extractor is disabled.");
             return;
         }
 
@@ -203,18 +205,10 @@ public class MavenExtractorEnvironment extends Environment {
     }
 
     /**
-     * Check to see if the Artifactory plugin is wrapped under Flexible plugin.
-     * If true, we will disable Maven extractor, and override the environment from the plugin
-     * (like Maven 2 behavior)
+     * Determines whether the Artifactory publisher is wrapped by the "Flexible Publish" publisher.
      */
-    private boolean isFlexibleEnable() {
-        if (Jenkins.getInstance().getPlugin(PublisherFactory.FLEXIBLE_PLUGIN) != null) {
-            PublisherFlexible<ArtifactoryRedeployPublisher> flexible = new PublisherFlexible<ArtifactoryRedeployPublisher>();
-            if (flexible.isPublisherWrapped(build.getProject(), ArtifactoryRedeployPublisher.class))
-                return true;
-        }
-
-        return false;
+    private boolean isFlexibleWrapsPublisher(MavenModuleSet project) {
+        return (new PublisherFlexible<ArtifactoryRedeployPublisher>()).isPublisherWrapped(project, ArtifactoryRedeployPublisher.class);
     }
 
     private PublisherContext createPublisherContext(ArtifactoryRedeployPublisher publisher, AbstractBuild build) {

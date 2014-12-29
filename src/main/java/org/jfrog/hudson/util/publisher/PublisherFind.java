@@ -1,5 +1,6 @@
 package org.jfrog.hudson.util.publisher;
 
+import hudson.model.AbstractProject;
 import hudson.tasks.Publisher;
 
 /**
@@ -7,5 +8,5 @@ import hudson.tasks.Publisher;
  */
 public interface PublisherFind<T extends Publisher> {
 
-    T find(Publisher publisher, Class<T> type);
+    T find(AbstractProject<?, ?> project, Class<T> type);
 }

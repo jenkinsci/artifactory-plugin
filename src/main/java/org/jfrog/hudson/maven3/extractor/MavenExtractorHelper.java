@@ -25,8 +25,7 @@ public abstract class MavenExtractorHelper {
 
         MavenModuleSet project = (MavenModuleSet) build.getProject();
 
-        ArtifactoryRedeployPublisher publisher = ActionableHelper.getPublisher(project,
-                ArtifactoryRedeployPublisher.class);
+        ArtifactoryRedeployPublisher publisher = ActionableHelper.getPublisher(project, ArtifactoryRedeployPublisher.class);
         if (publisher != null && !publisher.isApplicable(build)) {
             publisher = null;
         }
