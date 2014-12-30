@@ -21,7 +21,6 @@ import com.google.common.collect.Maps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
@@ -374,11 +373,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         if (getReleaseWrapper() != null) {
             List<Action> actions = new ArrayList<Action>();
             actions.addAll(action);
-            if (!(project instanceof MatrixProject) &&
-                    !(project instanceof MatrixConfiguration)) {
                 actions.add(new GradleReleaseAction(project));
                 actions.add(new GradleReleaseApiAction(project));
-            }
             return actions;
         }
         return action;
@@ -387,14 +383,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
-        if (isMultiConfProject()) {
-            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
-            if (isFiltered) {
-                return new Environment() {
-                };
-            }
-        }
-
         if (isRelease(build)) {
             releaseWrapper.setUp(build, launcher, listener);
         }
@@ -406,52 +394,58 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             throw new IOException("No Artifactory server configured for " + getArtifactoryUrl() +
                     ". Please check your configuration.");
         }
-        String switches = null;
-        String originalTasks = null;
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
+        ThreadLocal<String> switches = new ThreadLocal<String>();
+        ThreadLocal<String> originalTasks = new ThreadLocal<String>();
         if (gradleBuild != null) {
-            switches = gradleBuild.getSwitches() + "";
+            switches.set(gradleBuild.getSwitches() + "");
             if (!skipInjectInitScript) {
+
+                if (!switches.get().contains("${ARTIFACTORY_INIT_SCRIPT}")) {
+                    setTargetsField(gradleBuild, "switches", switches.get() + " " + "${ARTIFACTORY_INIT_SCRIPT}");
+                }
+            }
+            originalTasks.set(gradleBuild.getTasks() + "");
+            if (!StringUtils.contains(originalTasks.get(), BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
+                setTargetsField(gradleBuild, "tasks", originalTasks.get() + " ${ARTIFACTORY_TASKS}");
+            }
+
+        } else {
+            listener.getLogger().println("[Warning] No Gradle build configured");
+        }
+
+        final String finalSwitches = switches.get();
+        final String finalOriginalTasks = originalTasks.get();
+
+        return new Environment() {
+            @Override
+            public void buildEnvVars(Map<String, String> env) {
                 GradleInitScriptWriter writer = new GradleInitScriptWriter(build);
                 FilePath workspace = build.getWorkspace();
                 FilePath initScript;
+                String initScriptPath;
                 try {
                     initScript =
                             workspace.createTextTempFile("init-artifactory", "gradle", writer.generateInitScript(),
                                     false);
+                    initScriptPath = initScript.getRemote();
+                    initScriptPath = initScriptPath.replace('\\', '/');
+                    env.put("ARTIFACTORY_INIT_SCRIPT", " --init-script " + initScriptPath);
+
                 } catch (Exception e) {
                     listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
                     build.setResult(Result.FAILURE);
-                    return new Environment() {
-                    };
                 }
-                String initScriptPath = initScript.getRemote();
-                initScriptPath = initScriptPath.replace('\\', '/');
-                setTargetsField(gradleBuild, "switches", switches + " " + "--init-script " + initScriptPath);
-            }
-            originalTasks = gradleBuild.getTasks() + "";
-            final String tasks;
-            if (isRelease(build)) {
-                String alternativeGoals = releaseWrapper.getAlternativeTasks();
-                if (StringUtils.isNotBlank(alternativeGoals)) {
-                    tasks = alternativeGoals;
-                } else {
-                    tasks = gradleBuild.getTasks() + "";
+
+                String tasks = StringUtils.EMPTY;
+                if (isRelease(build)) {
+                    String alternativeGoals = releaseWrapper.getAlternativeTasks();
+                    if (StringUtils.isNotBlank(alternativeGoals)) {
+                        tasks += alternativeGoals;
+                    }
                 }
-            } else {
-                tasks = gradleBuild.getTasks() + "";
-            }
-            if (!StringUtils.contains(tasks, BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
-                setTargetsField(gradleBuild, "tasks", tasks + " " + BuildInfoBaseTask.BUILD_INFO_TASK_NAME);
-            }
-        } else {
-            listener.getLogger().println("[Warning] No Gradle build configured");
-        }
-        final String finalSwitches = switches;
-        final String finalOriginalTasks = originalTasks;
-        return new Environment() {
-            @Override
-            public void buildEnvVars(Map<String, String> env) {
+                env.put("ARTIFACTORY_TASKS", tasks + " " + BuildInfoBaseTask.BUILD_INFO_TASK_NAME);
+
                 ServerDetails serverDetails = getDetails();
                 ReleaseAction releaseAction = ActionableHelper.getLatestAction(build, ReleaseAction.class);
                 if (releaseAction != null) {
@@ -464,7 +458,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             serverDetails.snapshotsRepositoryKey, serverDetails.downloadReleaseRepositoryKey, serverDetails.downloadSnapshotRepositoryKey,
                             serverDetails.getDownloadReleaseRepositoryDisplayName(), serverDetails.getDownloadSnapshotRepositoryDisplayName());
                 }
-                PublisherContext publisherContext = new PublisherContext.Builder()
+
+                PublisherContext.Builder publisherBuilder = new PublisherContext.Builder()
                         .artifactoryServer(getArtifactoryServer()).serverDetails(serverDetails)
                         .deployerOverrider(ArtifactoryGradleConfigurator.this).runChecks(isRunChecks())
                         .includePublishArtifacts(isIncludePublishArtifacts())
@@ -483,8 +478,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                 getBlackDuckReportRecipients(), getBlackDuckScopes(),
                                 isBlackDuckIncludePublishedArtifacts(), isAutoCreateMissingComponentRequests(),
                                 isAutoDiscardStaleComponentRequests())
-                        .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
-                        .build();
+                        .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
+
+                if (isMultiConfProject()) {
+                    boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+                    if (isFiltered) {
+                        publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
+                    }
+                }
 
                 ResolverContext resolverContext = null;
                 if (StringUtils.isNotBlank(serverDetails.downloadReleaseRepositoryKey)) {
@@ -502,7 +503,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 }
 
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, publisherContext, resolverContext);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, publisherBuilder.build(), resolverContext);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -517,9 +518,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     releaseSuccess = releaseWrapper.tearDown(build, listener);
                 }
                 if (gradleBuild != null) {
-                    // restore the original configuration
-                    setTargetsField(gradleBuild, "switches", finalSwitches);
-                    setTargetsField(gradleBuild, "tasks", finalOriginalTasks);
+                    synchronized (this) {
+                        // restore the original configuration
+                        setTargetsField(gradleBuild, "switches", finalSwitches);
+                        setTargetsField(gradleBuild, "tasks", finalOriginalTasks);
+                    }
                 }
                 Result result = build.getResult();
                 if (result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
@@ -559,9 +562,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     private void setTargetsField(Gradle builder, String fieldName, String value) {
         try {
-            Field targetsField = builder.getClass().getDeclaredField(fieldName);
-            targetsField.setAccessible(true);
-            targetsField.set(builder, value);
+            synchronized (this) {
+                Field targetsField = builder.getClass().getDeclaredField(fieldName);
+                targetsField.setAccessible(true);
+                targetsField.set(builder, value);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -622,7 +627,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         private List<String> releaseRepositoryKeysFirst = Collections.emptyList();
         private List<VirtualRepository> virtualRepositoryKeys = Collections.emptyList();
         private List<PluginSettings> userPluginKeys = Collections.emptyList();
-
+        private AbstractProject<?, ?> item;
         public DescriptorImpl() {
             super(ArtifactoryGradleConfigurator.class);
             load();
@@ -634,6 +639,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
+            this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
                     item.getClass().isAssignableFrom(MatrixProject.class);
         }
@@ -720,6 +726,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return true;
         }
 
+        public boolean isMultiConfProject() {
+            return (item.getClass().isAssignableFrom(MatrixProject.class));
+        }
+
         @Override
         public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             ArtifactoryGradleConfigurator wrapper = (ArtifactoryGradleConfigurator) super.newInstance(req, formData);
@@ -728,6 +738,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
         public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
             return FormValidations.validateEmails(value);
+        }
+
+        public FormValidation doCheckArtifactoryCombinationFilter(@QueryParameter String value)
+                throws IOException, InterruptedException {
+            return FormValidations.validateArtifactoryCombinationFilter(value);
         }
 
         /**
