@@ -1,9 +1,11 @@
 package org.jfrog.hudson.util;
 
 import com.google.common.base.Strings;
+import hudson.Util;
 import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,5 +55,17 @@ public abstract class FormValidations {
         } else {
             return FormValidation.error("Email address is invalid");
         }
+    }
+
+    /**
+     * Validate the Combination filter field in Multi configuration jobs
+     */
+    public static FormValidation validateArtifactoryCombinationFilter(String value)
+            throws IOException, InterruptedException {
+        String url = Util.fixEmptyAndTrim(value);
+        if (url == null)
+            return FormValidation.warning("You don`t have any deploy matches");
+
+        return FormValidation.ok();
     }
 }

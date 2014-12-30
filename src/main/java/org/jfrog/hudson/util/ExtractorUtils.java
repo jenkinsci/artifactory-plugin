@@ -207,8 +207,8 @@ public class ExtractorUtils {
 
         Date buildStartDate = build.getTimestamp().getTime();
         configuration.info.setBuildStarted(buildStartDate.getTime());
-        configuration.info.setBuildTimestamp(String.valueOf(buildStartDate.getTime()));
-        configuration.publisher.addMatrixParam("build.timestamp", String.valueOf(buildStartDate.getTime()));
+        configuration.info.setBuildTimestamp(String.valueOf(build.getStartTimeInMillis()));
+        configuration.publisher.addMatrixParam("build.timestamp", String.valueOf(build.getStartTimeInMillis()));
 
         String vcsRevision = getVcsRevision(env);
         if (StringUtils.isNotBlank(vcsRevision)) {

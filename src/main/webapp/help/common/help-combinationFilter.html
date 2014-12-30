@@ -1,11 +1,13 @@
 <div>
-    The same behavior like in <b>Combination Filter</b> under <b>Configuration Matrix</b>, Filtering out Artifactory
-    plugin functionality in combinations that you don`t want through a Groovy expression that returns true or false.
+    Plugin functionality of build combinations that you want to <b>deploy</b> through a Groovy expression that returns
+    true or false.
 
     <p>
-        When you specify a Groovy expression here, only the combinations that result in <b>true</b>
-        will be influence by the Artifactory plugin. In evaluating the expression, multi configuration axes are exposed
+        When you specify a Groovy expression here, only the build combinations that result in <b>true</b>
+        will be influence by the Artifactory plugin deploy functionality. In evaluating the expression, multi
+        configuration axes are exposed
         as variables
         (with their values set to the current combination evaluated).
-
+    </p>
+    The Groovy expression is in the same syntax like in <b>Combination Filter</b> under <b>Configuration Matrix</b>
 </div>

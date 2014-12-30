@@ -3,6 +3,7 @@ package org.jfrog.hudson.util.plugins;
 import hudson.matrix.Combination;
 import hudson.matrix.MatrixConfiguration;
 import hudson.model.AbstractBuild;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.client.ArtifactoryClientConfiguration;
 
 import java.util.Map;
@@ -12,6 +13,10 @@ import java.util.Map;
  */
 public class MultiConfigurationUtils {
     public static boolean isfiltered(final AbstractBuild build, String combinationFilter) {
+        //Empty combination consider as filter all
+        if (StringUtils.isEmpty(combinationFilter))
+            return true;
+
         if (build.getProject() instanceof MatrixConfiguration) {
             MatrixConfiguration matrixConf = ((MatrixConfiguration) build.getProject());
             return !matrixConf.getCombination().

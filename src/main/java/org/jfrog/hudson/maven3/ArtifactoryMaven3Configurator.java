@@ -403,15 +403,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
 
-        if (isMultiConfProject()) {
-            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
-            if (isFiltered) {
-                return new Environment() {
-                };
-            }
-        }
-
-        final PublisherContext context = new PublisherContext.Builder().artifactoryServer(artifactoryServer)
+        PublisherContext.Builder publisherBuilder = new PublisherContext.Builder().artifactoryServer(artifactoryServer)
                 .serverDetails(getDetails()).deployerOverrider(ArtifactoryMaven3Configurator.this)
                 .runChecks(isRunChecks()).includePublishArtifacts(isIncludePublishArtifacts())
                 .violationRecipients(getViolationRecipients()).scopes(getScopes())
@@ -425,11 +417,16 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
-                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
-                .build();
+                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
 
-
+        if (isMultiConfProject()) {
+            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+            if (isFiltered) {
+                publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
+            }
+        }
         ResolverContext resolver;
+
         if (isEnableResolveArtifacts()) {
             resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(),
                     overridingResolverCredentials, ArtifactoryMaven3Configurator.this);
@@ -437,13 +434,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             resolver = null;
         }
         final ResolverContext resolverContext = resolver;
-
+        final PublisherContext publisherContext = publisherBuilder.build();
         build.setResult(Result.SUCCESS);
+
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, context, resolverContext);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, publisherContext, resolverContext);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -472,6 +470,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         private List<String> releaseRepositoryKeysFirst;
         private List<String> snapshotRepositoryKeysFirst;
         private List<VirtualRepository> virtualRepositoryKeys;
+        private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
             super(ArtifactoryMaven3Configurator.class);
@@ -480,6 +479,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
+            this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
                     item.getClass().isAssignableFrom(MatrixProject.class);
         }
@@ -570,8 +570,17 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             return true;
         }
 
+        public boolean isMultiConfProject() {
+            return (item.getClass().isAssignableFrom(MatrixProject.class));
+        }
+
         public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
             return FormValidations.validateEmails(value);
+        }
+
+        public FormValidation doCheckArtifactoryCombinationFilter(@QueryParameter String value)
+                throws IOException, InterruptedException {
+            return FormValidations.validateArtifactoryCombinationFilter(value);
         }
 
         /**

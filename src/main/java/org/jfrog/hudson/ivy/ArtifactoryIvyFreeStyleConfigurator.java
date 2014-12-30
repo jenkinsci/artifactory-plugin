@@ -331,16 +331,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
-
-        if (isMultiConfProject()) {
-            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
-            if (isFiltered) {
-                return new Environment() {
-                };
-            }
-        }
-
-        final PublisherContext context = new PublisherContext.Builder().artifactoryServer(getArtifactoryServer())
+        PublisherContext.Builder publisherBuilder = new PublisherContext.Builder().artifactoryServer(getArtifactoryServer())
                 .serverDetails(getDetails()).deployerOverrider(ArtifactoryIvyFreeStyleConfigurator.this)
                 .runChecks(isRunChecks()).includePublishArtifacts(isIncludePublishArtifacts())
                 .violationRecipients(getViolationRecipients()).scopes(getScopes())
@@ -355,26 +346,34 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
-                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
-                .build();
+                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
+
+        if (isMultiConfProject()) {
+            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+            if (isFiltered) {
+                publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
+            }
+        }
 
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
-        final Ant builder = getLastAntBuild(build.getProject());
+        final Ant antBuild = getLastAntBuild(build.getProject());
         String originalTargets = null;
-        if (builder != null) {
-            originalTargets = builder.getTargets();
-            setTargetsField(builder, getAntArgs(originalTargets, actualDependencyDir));
+        if (antBuild != null) {
+            originalTargets = antBuild.getTargets();
+            setTargetsField(antBuild, getAntArgs(originalTargets, actualDependencyDir));
         }
         build.setResult(Result.SUCCESS);
         final String finalOriginalTargets = originalTargets;
+        final PublisherContext publisherContext = publisherBuilder.build();
+
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 super.buildEnvVars(env);
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, context, null);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, publisherContext, null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -383,11 +382,11 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
-                if (builder != null) {
-                    setTargetsField(builder, finalOriginalTargets);
+                if (antBuild != null) {
+                    setTargetsField(antBuild, finalOriginalTargets);
                 }
                 Result result = build.getResult();
-                if (!context.isSkipBuildInfoDeploy() && (result == null || result.isBetterOrEqualTo(Result.SUCCESS))) {
+                if (!publisherContext.isSkipBuildInfoDeploy() && (result == null || result.isBetterOrEqualTo(Result.SUCCESS))) {
                     build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
                             ArtifactoryIvyFreeStyleConfigurator.this));
@@ -399,35 +398,40 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     private void setTargetsField(Ant builder, String targets) {
         try {
-            Field targetsField = builder.getClass().getDeclaredField("targets");
-            targetsField.setAccessible(true);
-            targetsField.set(builder, targets);
+            synchronized (this) {
+                Field targetsField = builder.getClass().getDeclaredField("targets");
+                targetsField.setAccessible(true);
+                targetsField.set(builder, targets);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     private String getAntArgs(String originalTargets, FilePath actualDependencyDir) {
-        String actualDependencyDirPath = actualDependencyDir.getRemote();
-        actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
-        actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
-        String lib = "-lib " + actualDependencyDirPath;
-        String listener = "-listener org.jfrog.build.extractor.listener.ArtifactoryBuildListener";
+        synchronized (this) {
+            String actualDependencyDirPath = actualDependencyDir.getRemote();
+            actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
+            actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
+            String lib = "-lib " + actualDependencyDirPath;
+            String listener = "-listener org.jfrog.build.extractor.listener.ArtifactoryBuildListener";
 
-        String targets = originalTargets == null ? "" : originalTargets;
-        if (!targets.contains(lib)) {
-            if (!targets.endsWith(" ")) {
-                targets += " ";
+            String targets = originalTargets == null ? "" : originalTargets;
+            if (!targets.contains(lib)) {
+                if (!targets.endsWith(" ")) {
+                    targets += " ";
+                }
+                targets += lib;
             }
-            targets += lib;
-        }
-        if (!targets.contains(listener)) {
-            if (!targets.endsWith(" ")) {
-                targets += " ";
+            if (!targets.contains(listener)) {
+                if (!targets.endsWith(" ")) {
+                    targets += " ";
+                }
+                targets += " " + listener;
             }
-            targets += " " + listener;
+
+            return targets;
         }
-        return targets;
     }
 
     private Ant getLastAntBuild(AbstractProject project) {
@@ -459,6 +463,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<String> releaseRepositoryKeysFirst;
+        private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
             super(ArtifactoryIvyFreeStyleConfigurator.class);
@@ -467,6 +472,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
+            this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
                     item.getClass().isAssignableFrom(MatrixProject.class);
         }
@@ -518,8 +524,17 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             return true;
         }
 
+        public boolean isMultiConfProject() {
+            return (item.getClass().isAssignableFrom(MatrixProject.class));
+        }
+
         public FormValidation doCheckViolationRecipients(@QueryParameter String value) {
             return FormValidations.validateEmails(value);
+        }
+
+        public FormValidation doCheckArtifactoryCombinationFilter(@QueryParameter String value)
+                throws IOException, InterruptedException {
+            return FormValidations.validateArtifactoryCombinationFilter(value);
         }
 
         /**

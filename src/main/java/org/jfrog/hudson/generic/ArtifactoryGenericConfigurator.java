@@ -6,6 +6,7 @@ import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -21,6 +22,7 @@ import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
@@ -230,14 +232,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
-        if (isMultiConfProject()) {
-            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
-            if (isFiltered) {
-                return new Environment() {
-                };
-            }
-        }
-
         final String artifactoryServerName = getArtifactoryName();
         if (StringUtils.isBlank(artifactoryServerName)) {
             return super.setUp(build, launcher, listener);
@@ -296,18 +290,25 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
                         preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
                 try {
-                    GenericArtifactsDeployer artifactsDeployer = new GenericArtifactsDeployer(build,
-                            ArtifactoryGenericConfigurator.this, listener, preferredDeployer);
-                    artifactsDeployer.deploy();
+                    boolean isFiltered = false;
+                    if (isMultiConfProject()) {
+                        isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+                    }
 
-                    List<Artifact> deployedArtifacts = artifactsDeployer.getDeployedArtifacts();
-                    if (deployBuildInfo) {
-                        new GenericBuildInfoDeployer(ArtifactoryGenericConfigurator.this, client, build,
-                                listener, deployedArtifacts, buildDependencies, publishedDependencies).deploy();
-                        // add the result action (prefer always the same index)
-                        build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
-                        build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryGenericConfigurator>(build,
-                                ArtifactoryGenericConfigurator.this));
+                    if (!isFiltered) {
+                        GenericArtifactsDeployer artifactsDeployer = new GenericArtifactsDeployer(build,
+                                ArtifactoryGenericConfigurator.this, listener, preferredDeployer);
+                        artifactsDeployer.deploy();
+
+                        List<Artifact> deployedArtifacts = artifactsDeployer.getDeployedArtifacts();
+                        if (deployBuildInfo) {
+                            new GenericBuildInfoDeployer(ArtifactoryGenericConfigurator.this, client, build,
+                                    listener, deployedArtifacts, buildDependencies, publishedDependencies).deploy();
+                            // add the result action (prefer always the same index)
+                            build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
+                            build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryGenericConfigurator>(build,
+                                    ArtifactoryGenericConfigurator.this));
+                        }
                     }
 
                     return true;
@@ -332,6 +333,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<String> releaseRepositoryKeysFirst;
+        private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
             super(ArtifactoryGenericConfigurator.class);
@@ -340,7 +342,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            return item.getClass().isAssignableFrom(FreeStyleProject.class) || MatrixProject.class.equals(item.getClass());
+            this.item = item;
+            return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
+                    item.getClass().isAssignableFrom(MatrixProject.class);
         }
 
         /**
@@ -386,6 +390,15 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             req.bindParameters(this, "generic");
             save();
             return true;
+        }
+
+        public boolean isMultiConfProject() {
+            return (item.getClass().isAssignableFrom(MatrixProject.class));
+        }
+
+        public FormValidation doCheckArtifactoryCombinationFilter(@QueryParameter String value)
+                throws IOException, InterruptedException {
+            return FormValidations.validateArtifactoryCombinationFilter(value);
         }
 
         /**
