@@ -30,7 +30,7 @@
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
     <properties>
-        <buildinfo.version>2.3.2</buildinfo.version>
+        <buildinfo.version>2.3.x-SNAPSHOT</buildinfo.version>
         <buildinfo.maven3.version>2.4.x-SNAPSHOT</buildinfo.maven3.version>
         <buildinfo.gradle.version>3.0.3</buildinfo.gradle.version>
         <buildinfo.ivy.version>2.3.2</buildinfo.ivy.version>
