@@ -396,42 +396,38 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         };
     }
 
-    private void setTargetsField(Ant builder, String targets) {
+    private synchronized void setTargetsField(Ant builder, String targets) {
         try {
-            synchronized (this) {
-                Field targetsField = builder.getClass().getDeclaredField("targets");
-                targetsField.setAccessible(true);
-                targetsField.set(builder, targets);
-            }
+            Field targetsField = builder.getClass().getDeclaredField("targets");
+            targetsField.setAccessible(true);
+            targetsField.set(builder, targets);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private String getAntArgs(String originalTargets, FilePath actualDependencyDir) {
-        synchronized (this) {
-            String actualDependencyDirPath = actualDependencyDir.getRemote();
-            actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
-            actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
-            String lib = "-lib " + actualDependencyDirPath;
-            String listener = "-listener org.jfrog.build.extractor.listener.ArtifactoryBuildListener";
+    private synchronized String getAntArgs(String originalTargets, FilePath actualDependencyDir) {
+        String actualDependencyDirPath = actualDependencyDir.getRemote();
+        actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
+        actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
+        String lib = "-lib " + actualDependencyDirPath;
+        String listener = "-listener org.jfrog.build.extractor.listener.ArtifactoryBuildListener";
 
-            String targets = originalTargets == null ? "" : originalTargets;
-            if (!targets.contains(lib)) {
-                if (!targets.endsWith(" ")) {
-                    targets += " ";
-                }
-                targets += lib;
+        String targets = originalTargets == null ? "" : originalTargets;
+        if (!targets.contains(lib)) {
+            if (!targets.endsWith(" ")) {
+                targets += " ";
             }
-            if (!targets.contains(listener)) {
-                if (!targets.endsWith(" ")) {
-                    targets += " ";
-                }
-                targets += " " + listener;
-            }
-
-            return targets;
+            targets += lib;
         }
+        if (!targets.contains(listener)) {
+            if (!targets.endsWith(" ")) {
+                targets += " ";
+            }
+            targets += " " + listener;
+        }
+
+        return targets;
     }
 
     private Ant getLastAntBuild(AbstractProject project) {

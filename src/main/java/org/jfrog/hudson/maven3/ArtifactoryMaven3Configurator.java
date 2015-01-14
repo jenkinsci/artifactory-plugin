@@ -425,13 +425,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
             }
         }
-        ResolverContext resolver;
 
+        ResolverContext resolver = null;
         if (isEnableResolveArtifacts()) {
             resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(),
                     overridingResolverCredentials, ArtifactoryMaven3Configurator.this);
-        } else {
-            resolver = null;
         }
         final ResolverContext resolverContext = resolver;
         final PublisherContext publisherContext = publisherBuilder.build();
@@ -527,14 +525,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         }
 
         /**
-         * This method triggered from the client side by Ajax call.
-         * The Element that trig is the "Refresh Repositories" button.
+         * This method is triggered from the client side by ajax call.
+         * The method is triggered by the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
-         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
+         * @param url                           The artifactory url
+         * @param credentialsUsername           Override credentials user name
+         * @param credentialsPassword           Override credentials password
+         * @param overridingDeployerCredentials Indicates whether to override the credentials
+         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response
          */
         @JavaScriptMethod
         public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {

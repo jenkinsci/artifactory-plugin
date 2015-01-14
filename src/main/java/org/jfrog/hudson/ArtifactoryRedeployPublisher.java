@@ -347,6 +347,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
+        // The following if statement Checks if the build job uses Maven 3:
         if (isExtractorUsed(build.getEnvironment(listener))) {
             if (deployBuildInfo) {
                 //Add build info icon to Jenkins job
@@ -358,7 +359,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return true;
         }
 
-    /** From here Maven 2 flow*/
+        // The following code is executed only if we are not using Maven 3, but Maven 2:
         if (!(build instanceof MavenModuleSetBuild)) {
             listener.getLogger().format("Non maven build type: %s", build.getClass()).println();
             build.setResult(Result.FAILURE);
