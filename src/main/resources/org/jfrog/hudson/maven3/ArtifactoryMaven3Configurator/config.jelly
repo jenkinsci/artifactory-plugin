@@ -87,9 +87,29 @@
             </j:forEach>
         </f:dropdownList>
 
+
+        <f:block>
+            <table style="width:100%" id="overridingDeployerCredentials-maven3">
+                <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
+                <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
+                                 title="Override default deployer credentials"
+                                 help="/plugin/artifactory/help/common/help-overridingDeployerCredentials.html">
+                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
+                    <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
+                             field="username">
+                        <f:textbox value="${overridingDeployerCredentials.username}"/>
+                    </f:entry>
+                    <f:entry title="Password" field="password"
+                             help="/plugin/artifactory/help/common/help-deployerPassword.html">
+                        <f:password value="${overridingDeployerCredentials.password}"/>
+                    </f:entry>
+                </f:optionalBlock>
+            </table>
+        </f:block>
+
         <f:block>
             <table style="width:100%">
-                <f:optionalBlock name="enableResolveArtifacts"
+                <f:optionalBlock field="enableResolveArtifacts"
                                  help="/plugin/artifactory/help/ArtifactoryMaven3NativeConfigurator/help.html"
                                  title="Resolve artifacts from Artifactory"
                                  inline="true"
@@ -107,10 +127,10 @@
                                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                                     <input type="hidden" name="downloadReleaseRepositoryDisplayName"
                                            id="downloadReleaseRepositoryDisplayName-maven3-${s.url}"
-                                           value="${instance.details.downloadReleaseRepositoryDisplayName}"/>
+                                           value="${instance.resolverDetails.downloadReleaseRepositoryDisplayName}"/>
                                     <input type="hidden" name="downloadSnapshotRepositoryDisplayName"
                                            id="downloadSnapshotRepositoryDisplayName-maven3-${s.url}"
-                                           value="${instance.details.downloadSnapshotRepositoryDisplayName}"/>
+                                           value="${instance.resolverDetails.downloadSnapshotRepositoryDisplayName}"/>
                                     <f:entry title="${%Resolution releases repository}">
                                         <select class="setting-input" name="downloadReleaseRepositoryKey"
                                                 id="maven3NativeReleaseRepositoryKeys-${s.url}"
@@ -210,25 +230,6 @@
             </table>
         </f:block>
 
-
-        <f:block>
-            <table style="width:100%" id="overridingDeployerCredentials-maven3">
-                <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
-                <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
-                                 title="Override default deployer credentials"
-                                 help="/plugin/artifactory/help/common/help-overridingDeployerCredentials.html">
-                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-                    <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
-                             field="username">
-                        <f:textbox value="${overridingDeployerCredentials.username}"/>
-                    </f:entry>
-                    <f:entry title="Password" field="password"
-                             help="/plugin/artifactory/help/common/help-deployerPassword.html">
-                        <f:password value="${overridingDeployerCredentials.password}"/>
-                    </f:entry>
-                </f:optionalBlock>
-            </table>
-        </f:block>
         <f:block>
             <table style="width:100%">
                 <f:optionalBlock field="deployArtifacts"
