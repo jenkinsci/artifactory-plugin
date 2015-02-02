@@ -14,8 +14,8 @@ import org.jfrog.build.api.IssueTracker;
 import org.jfrog.build.api.Issues;
 import org.jfrog.build.api.IssuesTrackerFields;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
-import org.jfrog.build.client.ArtifactoryClientConfiguration;
-import org.jfrog.build.util.IssuesTrackerUtils;
+import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
+import org.jfrog.build.extractor.clientConfiguration.util.IssuesTrackerUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

@@ -25,7 +25,7 @@ import org.jfrog.build.api.BuildType;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.api.dependency.BuildDependency;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
 import org.jfrog.hudson.util.ExtractorUtils;
 
@@ -40,8 +40,8 @@ import java.util.List;
  */
 public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
 
-    private ArtifactoryGenericConfigurator configurator;
     private final AbstractBuild build;
+    private ArtifactoryGenericConfigurator configurator;
     private Build buildInfo;
 
     public GenericBuildInfoDeployer(ArtifactoryGenericConfigurator configurator, ArtifactoryBuildInfoClient client,

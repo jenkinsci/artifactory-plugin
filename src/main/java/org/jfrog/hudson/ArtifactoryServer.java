@@ -24,7 +24,11 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.*;
+import org.jfrog.build.client.ArtifactoryHttpClient;
+import org.jfrog.build.client.ArtifactoryVersion;
+import org.jfrog.build.client.ProxyConfiguration;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
@@ -49,11 +53,11 @@ public class ArtifactoryServer implements Serializable {
     private static final Logger log = Logger.getLogger(ArtifactoryServer.class.getName());
 
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;    // 5 Minutes
-    // Network timeout in seconds to use both for connection establishment and for unanswered requests
-    private int timeout = DEFAULT_CONNECTION_TIMEOUT;
     private final String url;
     private final String id;
     private final Credentials deployerCredentials;
+    // Network timeout in seconds to use both for connection establishment and for unanswered requests
+    private int timeout = DEFAULT_CONNECTION_TIMEOUT;
     private Credentials resolverCredentials;
     private boolean bypassProxy;
 

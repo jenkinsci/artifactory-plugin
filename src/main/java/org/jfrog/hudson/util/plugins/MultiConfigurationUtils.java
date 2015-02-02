@@ -4,7 +4,7 @@ import hudson.matrix.Combination;
 import hudson.matrix.MatrixConfiguration;
 import hudson.model.AbstractBuild;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.client.ArtifactoryClientConfiguration;
+import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 
 import java.util.Map;
 

@@ -29,10 +29,10 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.util.FileChecksumCalculator;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
-import org.jfrog.build.client.IncludeExcludePatterns;
-import org.jfrog.build.client.PatternMatcher;
+import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
+import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -55,10 +55,9 @@ import java.util.logging.Logger;
  * @author Yossi Shaul
  */
 public class ArtifactsDeployer {
-    private static Logger debuggingLogger = Logger.getLogger(ArtifactsDeployer.class.getName());
     private static final String HIGHEST_VERSION_BEFORE_ARCHIVE_FIX = "1.404";
     private static final String SHA1 = "SHA1";
-
+    private static Logger debuggingLogger = Logger.getLogger(ArtifactsDeployer.class.getName());
     private final ArtifactoryServer artifactoryServer;
     private final String targetReleasesRepository;
     private final String targetSnapshotsRepository;
