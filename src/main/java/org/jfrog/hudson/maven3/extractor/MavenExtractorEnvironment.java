@@ -89,18 +89,7 @@ public class MavenExtractorEnvironment extends Environment {
         //If an SCM is configured
         if (!initialized && !(build.getProject().getScm() instanceof NullSCM)) {
             //Handle all the extractor info only when a checkout was already done
-            boolean checkoutWasPerformed = true;
-            try {
-                Field scmField = AbstractBuild.class.getDeclaredField("scm");
-                scmField.setAccessible(true);
-                Object scmObject = scmField.get(build);
-                //Null changelog parser is set when a checkout wasn't performed yet
-                checkoutWasPerformed = !(scmObject instanceof NullChangeLogParser);
-            } catch (Exception e) {
-                buildListener.getLogger().println("[Warning] An error occurred while testing if the SCM checkout " +
-                        "has already been performed: " + e.getMessage());
-            }
-            if (!checkoutWasPerformed) {
+            if (!isCheckoutPerformed()) {
                 return;
             }
         }
@@ -145,6 +134,23 @@ public class MavenExtractorEnvironment extends Environment {
         }
 
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
+    }
+
+    private boolean isCheckoutPerformed() {
+        boolean checkoutWasPerformed = false;
+        try {
+            Field scmField = AbstractBuild.class.getDeclaredField("scm");
+            scmField.setAccessible(true);
+            Object scmObject = scmField.get(build);
+            if (scmObject != null) {
+                checkoutWasPerformed = !(scmObject instanceof NullChangeLogParser);
+            }
+        } catch (Exception e) {
+            buildListener.getLogger().println("[Warning] An error occurred while testing if the SCM checkout " +
+                    "has already been performed: " + e.getMessage());
+        } finally {
+            return checkoutWasPerformed;
+        }
     }
 
     private boolean isMavenVersionValid() {
