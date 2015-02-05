@@ -28,48 +28,21 @@
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Target releases repository}"
                                  help="/plugin/artifactory/help/common/help-deployReleases.html">
-                            <select class="setting-input" name="repositoryKey" id="maven3RepositoryKeys-${s.url}">
-                                <j:choose>
-                                    <j:when test="${s.name==instance.artifactoryName}">
-                                        <j:choose>
-                                            <j:when test="${instance.repositoryKey != null}">
-                                                <f:option selected="${instance.repositoryKey}"
-                                                          value="${instance.repositoryKey}">${instance.repositoryKey}
-                                                </f:option>
-                                            </j:when>
-                                            <j:otherwise>
-                                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                                    <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
-                                                    </f:option>
-                                                </j:forEach>
-                                            </j:otherwise>
-                                        </j:choose>
-                                    </j:when>
-                                </j:choose>
-                            </select>
+
+                            <r:dynamicRepos repositoryKey="${instance.repositoryKey}"
+                                            inputName="repositoryKey"
+                                            artifactoryName="${s.name}"
+                                            selectId="maven3RepositoryKeys-${s.url}"
+                                            repositories="${instance.releaseRepositoryKeysFirst}"/>
+
                         </f:entry>
                         <f:entry title="${%Target snapshots repository}"
                                  help="/plugin/artifactory/help/common/help-deploySnapshots.html">
-                            <select class="setting-input" name="snapshotsRepositoryKey" id="maven3SnapshotsRepositoryKeys-${s.url}">
-                                <j:choose>
-                                    <j:when test="${s.name==instance.artifactoryName}">
-                                        <j:choose>
-                                            <j:when test="${instance.snapshotsRepositoryKey != null}">
-                                                <f:option selected="${instance.snapshotsRepositoryKey}"
-                                                          value="${instance.snapshotsRepositoryKey}">
-                                                    ${instance.snapshotsRepositoryKey}
-                                                </f:option>
-                                            </j:when>
-                                            <j:otherwise>
-                                                <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
-                                                    <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
-                                                    </f:option>
-                                                </j:forEach>
-                                            </j:otherwise>
-                                        </j:choose>
-                                    </j:when>
-                                </j:choose>
-                            </select>
+                            <r:dynamicRepos repositoryKey="${instance.snapshotsRepositoryKey}"
+                                            inputName="snapshotsRepositoryKey"
+                                            artifactoryName="${s.name}"
+                                            selectId="maven3SnapshotsRepositoryKeys-${s.url}"
+                                            repositories="${instance.snapshotRepositoryKeysFirst}"/>
                         </f:entry>
                         <script>
                             var maven3DeployBind =
@@ -132,32 +105,12 @@
                                            id="downloadSnapshotRepositoryDisplayName-maven3-${s.url}"
                                            value="${instance.resolverDetails.downloadSnapshotRepositoryDisplayName}"/>
                                     <f:entry title="${%Resolution releases repository}">
-                                        <select class="setting-input" name="downloadReleaseRepositoryKey"
-                                                id="maven3NativeReleaseRepositoryKeys-${s.url}"
-                                                onchange="onReleaseResolutionSelectChange('${s.url}', this, 'maven3')">
-                                            <j:choose>
-                                                <j:when test="${s.name==instance.artifactoryName}">
-                                                    <j:choose>
-                                                        <j:when test="${instance.downloadReleaseRepositoryKey != null}">
-                                                            <f:option
-                                                                    selected="${instance.downloadReleaseRepositoryKey}"
-                                                                    value="${instance.downloadReleaseRepositoryKey}">
-                                                                ${instance.resolverDetails.downloadReleaseRepositoryDisplayName}
-                                                            </f:option>
-                                                        </j:when>
-                                                        <j:otherwise>
-                                                            <j:forEach var="r"
-                                                                       items="${instance.virtualRepositoryKeys}">
-                                                                <f:option
-                                                                        selected="${r.value==instance.downloadReleaseRepositoryKey}"
-                                                                        value="${r.value}">${r.displayName}
-                                                                </f:option>
-                                                            </j:forEach>
-                                                        </j:otherwise>
-                                                    </j:choose>
-                                                </j:when>
-                                            </j:choose>
-                                        </select>
+
+                                        <r:dynamicVirtualRepos inputName="downloadReleaseRepositoryKey"
+                                                               selectId="maven3NativeReleaseRepositoryKeys-${s.url}"
+                                                               repositories="${instance.virtualRepositoryKeys}"
+                                                               reposKey="${instance.downloadReleaseRepositoryKey}"
+                                                               artifactoryName="${s.name}"/>
                                     </f:entry>
                                     <f:entry title="${%Resolution snapshots repository}">
                                         <select class="setting-input" name="downloadSnapshotRepositoryKey"
@@ -443,7 +396,8 @@
         <j:if test="${descriptor.isMultiConfProject()}">
             <f:block>
                 <table style="width:100%">
-                    <f:optionalBlock name="multiConfProject"
+
+                <f:optionalBlock name="multiConfProject"
                                      checked="${h.defaultToTrue(instance.multiConfProject)}"
                                      title="${%Multi Configuration Deploy Matcher}"
                                      inline="true"

@@ -11,26 +11,12 @@
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                         <f:entry title="${%Publishing repository}">
-                            <select class="setting-input" name="repositoryKey" id="ivyFreeRepositoryKeys-${s.url}">
-                                <j:choose>
-                                    <j:when test="${s.name==instance.artifactoryName}">
-                                        <j:choose>
-                                            <j:when test="${instance.repositoryKey != null}">
-                                                <f:option selected="${instance.repositoryKey}"
-                                                          value="${instance.repositoryKey}">${instance.repositoryKey}
-                                                </f:option>
-                                            </j:when>
-                                            <j:otherwise>
-                                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                                    <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
-                                                    </f:option>
-                                                </j:forEach>
-                                            </j:otherwise>
-                                        </j:choose>
 
-                                    </j:when>
-                                </j:choose>
-                            </select>
+                            <r:dynamicRepos repositoryKey="${instance.repositoryKey}"
+                                            inputName="repositoryKey"
+                                            artifactoryName="${s.name}"
+                                            selectId="ivyFreeRepositoryKeys-${s.url}"
+                                            repositories="${instance.releaseRepositoryKeysFirst}"/>
                         </f:entry>
                         <script>
                             var ivyFreeDeployBind =

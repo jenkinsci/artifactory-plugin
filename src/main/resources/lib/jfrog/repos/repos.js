@@ -13,23 +13,17 @@ function repos(button, jsFunction, artifactoryUrl, deployUsername, deployPasswor
 
     if (jsFunction == "artifactoryIvyFreeStyleConfigurator") {
         artifactoryIvyFreeStyleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryGenericConfigurator") {
+    } else if (jsFunction == "artifactoryGenericConfigurator") {
         artifactoryGenericConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryMaven3NativeConfigurator") {
+    } else if (jsFunction == "artifactoryMaven3NativeConfigurator") {
         artifactoryMaven3NativeConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryMaven3Configurator") {
+    } else if (jsFunction == "artifactoryMaven3Configurator") {
         artifactoryMaven3Configurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryGradleConfigurator") {
+    } else if (jsFunction == "artifactoryGradleConfigurator") {
         artifactoryGradleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryRedeployPublisher") {
+    } else if (jsFunction == "artifactoryRedeployPublisher") {
         artifactoryRedeployPublisher(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryIvyConfigurator") {
+    } else if (jsFunction == "artifactoryIvyConfigurator") {
         artifactoryIvyConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     }
 }
@@ -113,9 +107,6 @@ function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUser
 
             setSelectValue(selectRelease, oldReleaseValue);
             setSelectValue(selectSnapshot, oldSnapshotValue);
-
-            selectRelease.onchange();
-            selectSnapshot.onchange();
 
             var oldValueExistsInNewList = true;
             if (oldValueExistsInNewList) {
@@ -209,7 +200,6 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, 
             createStagingParamsInputs(response.userPlugins);
 
             setSelectValue(selectResolution, oldResolutionValue);
-            selectResolution.onchange();
 
             setSelectValue(selectPublish, oldPublishValue);
             setSelectValue(selectPlugins, oldPluginsValue);
@@ -320,7 +310,12 @@ function artifactoryIvyConfigurator(spinner, artifactoryUrl, deployUsername, dep
 }
 
 function fillSelect(select, list) {
-    for(var i=0; i < list.length; i++) {
+    var txtId = "txt_" + select.id;
+    var txtElement = document.getElementById(txtId);
+    if (list.length > 0 && txtElement != undefined && txtElement.value == "") {
+        txtElement.value = list[0];
+    }
+    for (var i = 0; i < list.length; i++) {
         var item = list[i];
         var option = document.createElement("option");
         option.text = item;
@@ -331,7 +326,12 @@ function fillSelect(select, list) {
 }
 
 function fillVirtualReposSelect(select, list) {
-    for(var i=0; i < list.length; i++) {
+    var txtId = "txt_" + select.id;
+    var txtElement = document.getElementById(txtId);
+    if (list.length > 0 && txtElement != undefined && txtElement.value == "") {
+        txtElement.value = list[0].value;
+    }
+    for (var i = 0; i < list.length; i++) {
         var item = list[i];
         var option = document.createElement("option");
         option.text = item.displayName;
@@ -342,7 +342,7 @@ function fillVirtualReposSelect(select, list) {
 }
 
 function fillStagingPluginsSelect(select, list) {
-    for(var i=0; i < list.length; i++) {
+    for (var i = 0; i < list.length; i++) {
         var item = list[i];
         var option = document.createElement("option");
         option.text = item.pluginName;
@@ -363,7 +363,7 @@ function createStagingParamsInputs(list) {
 }
 
 function setStagingParamsSelectedValue(select) {
-    for(var i=0; i < select.options.length; i++) {
+    for (var i = 0; i < select.options.length; i++) {
         var display = (i == select.selectedIndex) ? "" : "none";
         var inputName = "stagingParams-" + select.options[i].value;
         var input = document.getElementById(inputName);
@@ -411,8 +411,8 @@ function removeElements(e) {
 }
 
 function setSelectValue(select, value) {
-    for(var i=0; i < select.options.length; i++) {
-        if(select.options[i].value == value) {
+    for (var i = 0; i < select.options.length; i++) {
+        if (select.options[i].value == value) {
             select.selectedIndex = i;
             return;
         }
@@ -424,11 +424,11 @@ function compareSelectTags(newRepos, oldRepos) {
         return true;
     }
 
-    for(var i=0; i < oldRepos.length; i++) {
+    for (var i = 0; i < oldRepos.length; i++) {
         var itemOld = oldRepos[i].value;
 
         var flag = false;
-        for(var j=0; j < newRepos.length; j++) {
+        for (var j = 0; j < newRepos.length; j++) {
             itemNew = newRepos[j].value;
             if (itemNew.value === itemOld.value) {
                 flag = true;
@@ -464,4 +464,36 @@ function onSnapshotResolutionSelectChange(url, select, postfix) {
         snapshotDisplayName = selectFieldSnapshot.options[selectFieldSnapshot.selectedIndex].innerText;
     }
     textFieldSnapshot.value = snapshotDisplayName;
+}
+
+function afterRefreshTxtUpdate(selectId, value) {
+    var txtElement = document.getElementById("txt_" + selectId);
+    if (txtElement != undefined && txtElement.value == "") {
+        txtElement.value = value;
+    }
+
+}
+
+function txtAndValueUpdate(label) {
+    var optionContent;
+    var selectElement = document.getElementById(label);
+    var txtElement = document.getElementById("txt_" + label);
+    if (selectElement != undefined && txtElement != undefined) {
+        optionContent = selectElement.options[selectElement.selectedIndex].innerHTML;
+        txtElement.value = optionContent;
+    }
+}
+
+function updateTxtValue(txtName, txtValue) {
+    var txtElement = document.getElementById(txtName);
+    if (txtElement != undefined) {
+        txtElement.value = txtValue;
+    }
+}
+
+function virtualRepositoryNameKeyUpdate(select) {
+    var selectId = select.id;
+    var selectValue = select.options[select.selectedIndex].value;
+    var txtElement = document.getElementById("txt_" + selectId);
+    txtElement.value = selectValue;
 }

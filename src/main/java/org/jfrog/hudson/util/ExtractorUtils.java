@@ -144,9 +144,9 @@ public class ExtractorUtils {
 
         if (resolverContext != null) {
             if (publisherContext != null)
-                setResolverInfo(configuration, resolverContext, publisherContext.getDeployerOverrider());
+                setResolverInfo(configuration, resolverContext, publisherContext.getDeployerOverrider(), env);
             else
-                setResolverInfo(configuration, resolverContext, null);
+                setResolverInfo(configuration, resolverContext, null, env);
             // setProxy(resolverContext.getServer(), configuration);
         }
 
@@ -177,11 +177,15 @@ public class ExtractorUtils {
     }
 
     private static void setResolverInfo(ArtifactoryClientConfiguration configuration, ResolverContext context,
-                                        DeployerOverrider deployerOverrider) {
+                                        DeployerOverrider deployerOverrider, Map<String, String> env) {
         configuration.setTimeout(context.getServer().getTimeout());
         configuration.resolver.setContextUrl(context.getServer().getUrl());
-        configuration.resolver.setRepoKey(context.getServerDetails().downloadReleaseRepositoryKey);
-        configuration.resolver.setDownloadSnapshotRepoKey(context.getServerDetails().downloadSnapshotRepositoryKey);
+        String inputDownloadReleaseKey = context.getServerDetails().downloadReleaseRepositoryKey;
+        String downloadReleaseKey = Util.replaceMacro(inputDownloadReleaseKey, env);
+        configuration.resolver.setRepoKey(downloadReleaseKey);
+        String inputDownloadSnapshotKey = context.getServerDetails().downloadSnapshotRepositoryKey;
+        String downloadSnapshotKey = Util.replaceMacro(inputDownloadSnapshotKey, env);
+        configuration.resolver.setDownloadSnapshotRepoKey(downloadSnapshotKey);
 
         Credentials preferredResolver = CredentialResolver.getPreferredResolver(context.getResolverOverrider(),
                 deployerOverrider, context.getServer());
@@ -259,8 +263,13 @@ public class ExtractorUtils {
         }
         configuration.setTimeout(artifactoryServer.getTimeout());
         configuration.publisher.setContextUrl(artifactoryServer.getUrl());
-        configuration.publisher.setRepoKey(context.getServerDetails().repositoryKey);
-        configuration.publisher.setSnapshotRepoKey(context.getServerDetails().snapshotsRepositoryKey);
+
+        String inputRepKey = context.getServerDetails().repositoryKey;
+        String repoKEy = Util.replaceMacro(inputRepKey, env);
+        configuration.publisher.setRepoKey(repoKEy);
+        String inputSnapshotRepKey = context.getServerDetails().snapshotsRepositoryKey;
+        String snapshotRepoKey = Util.replaceMacro(inputSnapshotRepKey, env);
+        configuration.publisher.setSnapshotRepoKey(snapshotRepoKey);
 
         configuration.info.licenseControl.setRunChecks(context.isRunChecks());
         configuration.info.licenseControl.setIncludePublishedArtifacts(context.isIncludePublishArtifacts());

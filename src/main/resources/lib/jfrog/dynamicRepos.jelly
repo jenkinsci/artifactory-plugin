@@ -1,0 +1,39 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler"
+         xmlns:f="/lib/form">
+
+    <st:documentation>
+        <st:attribute name="repositoryKey" use="required">
+            Current repository Key set
+        </st:attribute>
+        <st:attribute name="inputName" use="required">
+            ServerDetails field name to update
+        </st:attribute>
+        <st:attribute name="artifactoryName" use="">
+            To remove
+        </st:attribute>
+        <st:attribute name="selectId" use="required">
+            Repositories select element Id
+        </st:attribute>
+        <st:attribute name="repositories" use="required">
+            List of current repositories
+        </st:attribute>
+    </st:documentation>
+
+    <st:adjunct includes="lib.jfrog.repos.repos"/>
+
+    <input style="float: right; width: 49%;" class="setting-input" name="${inputName}" id="txt_${selectId}"/>
+    <select style="float: left; width: 49%;" class="setting-input" id="${selectId}"
+            onchange="txtAndValueUpdate(this.id)">
+        <j:choose>
+            <j:when test="${s.name==instance.artifactoryName}">
+                <script>updateTxtValue("txt_${selectId}", "${repositoryKey}")</script>
+                <j:forEach var="r" items="${repositories}">
+                    <f:option selected="${r==repositoryKey}" value="${r}">
+                        ${r}
+                    </f:option>
+                </j:forEach>
+            </j:when>
+        </j:choose>
+    </select>
+</j:jelly>
