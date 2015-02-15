@@ -45,6 +45,7 @@ import org.jfrog.hudson.release.gradle.GradleReleaseApiAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -643,7 +644,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
                 item.getClass().isAssignableFrom(MatrixProject.class) ||
-                item.getClass().isAssignableFrom(MultiJobProject.class);
+                    (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
+                        item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
         private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {

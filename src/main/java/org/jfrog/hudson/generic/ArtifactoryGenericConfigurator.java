@@ -22,6 +22,7 @@ import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -346,7 +347,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
                 item.getClass().isAssignableFrom(MatrixProject.class) ||
-                item.getClass().isAssignableFrom(MultiJobProject.class);
+                    (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
+                        item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
         /**
