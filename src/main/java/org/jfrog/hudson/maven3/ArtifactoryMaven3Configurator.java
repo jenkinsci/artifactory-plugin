@@ -98,7 +98,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
     private String artifactoryCombinationFilter;
-    private boolean multiConfProject;
     /**
      * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
      */
@@ -135,7 +134,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                                          boolean blackDuckIncludePublishedArtifacts,
                                          boolean autoCreateMissingComponentRequests,
                                          boolean autoDiscardStaleComponentRequests,
-                                         boolean filterExcludedArtifactsFromBuild, boolean multiConfProject,
+                                         boolean filterExcludedArtifactsFromBuild,
                                          String artifactoryCombinationFilter
     ) {
         this.details = details;
@@ -168,7 +167,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
         this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
         this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
-        this.multiConfProject = multiConfProject;
         this.artifactoryCombinationFilter = artifactoryCombinationFilter;
         this.enableResolveArtifacts = enableResolveArtifacts;
     }
@@ -359,7 +357,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public boolean isMultiConfProject() {
-        return multiConfProject;
+        return getDescriptor().isMultiConfProject();
     }
 
     public ArtifactoryServer getArtifactoryServer(String artifactoryServerName) {
@@ -421,7 +419,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
 
-        if (isMultiConfProject()) {
+        if (getDescriptor().isMultiConfProject() && isDeployArtifacts()) {
+            if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
+                listener.getLogger().println("The field \"Combination Matches\" is empty, " +
+                        "but define as mandatory!");
+                build.setResult(Result.FAILURE);
+                throw new IllegalArgumentException("The field \"Combination Matches\" is empty, " +
+                        "but define as mandatory!");
+            }
             boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
             if (isFiltered) {
                 publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);

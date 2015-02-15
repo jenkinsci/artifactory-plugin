@@ -298,7 +298,7 @@
     <build>
         <plugins>
             <!--Some other plugins, such as Git Client,
-                collapse with the httpClient-4.3.5 in the Jenkins classloader
+                collapse with the httpClient-4.4 in the Jenkins classloader
             -->
             <plugin>
                 <groupId>org.jenkins-ci.tools</groupId>

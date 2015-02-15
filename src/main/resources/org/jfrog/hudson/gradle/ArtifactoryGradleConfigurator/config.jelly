@@ -260,16 +260,41 @@
                                  inline="true"
                                  checked="${h.defaultToTrue(instance.deployArtifacts)}"
                                  title="Publish artifacts to Artifactory">
-                    <f:entry field="deployMaven"
-                             help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployMaven.html">
-                        <f:checkbox default="false" checked="${instance.deployMaven}"/>
-                        <label class="attach-previous">${%Publish Maven descriptors (POMs)}</label>
-                    </f:entry>
-                    <f:entry field="deployIvy"
-                             help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployIvy.html">
-                        <f:checkbox default="false" checked="${instance.deployIvy}"/>
-                        <label class="attach-previous">${%Publish Ivy descriptors (ivy.xml)}</label>
-                    </f:entry>
+
+                    <f:block>
+                        <j:if test="${descriptor.isMultiConfProject()}">
+                            <f:block>
+                                <table style="width:100%">
+                                    <f:entry field="artifactoryCombinationFilter" title="${%Combination Matches}"
+                                             description="Groovy expression"
+                                             help="/plugin/artifactory/help/common/help-combinationFilter.html">
+                                        <f:textbox value="${instance.artifactoryCombinationFilter}"
+                                                   field="artifactoryCombinationFilter"/>
+                                    </f:entry>
+                                </table>
+                            </f:block>
+                        </j:if>
+                    </f:block>
+                    <f:block>
+                        <table style="width:100%">
+                            <f:entry field="deployMaven"
+                                     help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployMaven.html">
+                                <f:checkbox default="false" checked="${instance.deployMaven}"/>
+                                <label class="attach-previous">${%Publish Maven descriptors (POMs)}</label>
+                            </f:entry>
+                        </table>
+                    </f:block>
+
+                    <f:block>
+                        <table style="width:100%">
+                            <f:entry field="deployIvy"
+                                     help="/plugin/artifactory/help/ArtifactoryGradleConfigurator/help-deployIvy.html">
+                                <f:checkbox default="false" checked="${instance.deployIvy}"/>
+                                <label class="attach-previous">${%Publish Ivy descriptors (ivy.xml)}</label>
+                            </f:entry>
+                        </table>
+                    </f:block>
+
                     <f:block>
                         <table style="width:100%">
                             <f:optionalBlock field="notM2Compatible" negative="true"
@@ -395,23 +420,6 @@
                 </j:if>
             </table>
         </f:block>
-        <j:if test="${descriptor.isMultiConfProject()}">
-            <f:block>
-                <table style="width:100%">
-                    <f:optionalBlock name="multiConfProject"
-                                     checked="${h.defaultToTrue(instance.multiConfProject)}"
-                                     title="${%Multi Configuration Deploy Matcher}"
-                                     inline="true"
-                                     help="/plugin/artifactory/help/common/help-combinationFilter.html">
-                        <f:entry field="artifactoryCombinationFilter" title="${%Combination Matches}"
-                                 description="Groovy expression">
-                            <f:textbox value="${instance.artifactoryCombinationFilter}"
-                                       field="artifactoryCombinationFilter"/>
-                        </f:entry>
-                    </f:optionalBlock>
-                </table>
-            </f:block>
-        </j:if>
     </f:section>
     <f:block>
         <hr/>
