@@ -436,11 +436,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         if (getDescriptor().isMultiConfProject() && isDeployArtifacts()) {
             if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
-                listener.getLogger().println("The field \"Combination Matches\" is empty, " +
-                        "but define as mandatory!");
+                String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
+                listener.getLogger().println(error);
                 build.setResult(Result.FAILURE);
-                throw new IllegalArgumentException("The field \"Combination Matches\" is empty, " +
-                        "but define as mandatory!");
+                throw new IllegalArgumentException(error);
             }
             boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
             if (isFiltered) {
