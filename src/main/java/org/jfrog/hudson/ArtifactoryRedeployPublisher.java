@@ -39,6 +39,7 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
@@ -94,6 +95,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final String matrixParams;
     private final boolean enableIssueTrackerIntegration;
     private final boolean allowPromotionOfNonStagedBuilds;
+    private final boolean allowBintrayPushOfNonStageBuilds;
     private final boolean filterExcludedArtifactsFromBuild;
     private final boolean recordAllDependencies;
     private boolean deployBuildInfo;
@@ -125,6 +127,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                                         boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
                                         boolean aggregateBuildIssues, String aggregationBuildStatus,
                                         boolean recordAllDependencies, boolean allowPromotionOfNonStagedBuilds,
+                                        boolean allowBintrayPushOfNonStageBuilds,
                                         boolean blackDuckRunChecks, String blackDuckAppName,  String blackDuckAppVersion,
                                         String blackDuckReportRecipients, String blackDuckScopes,
                                         boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
@@ -161,6 +164,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.blackDuckIncludePublishedArtifacts = blackDuckIncludePublishedArtifacts;
         this.autoCreateMissingComponentRequests = autoCreateMissingComponentRequests;
         this.autoDiscardStaleComponentRequests = autoDiscardStaleComponentRequests;
+        this.allowBintrayPushOfNonStageBuilds = allowBintrayPushOfNonStageBuilds;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -255,7 +259,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      * @return The release versions deployment repository.
      */
     public String getRepositoryKey() {
-        return details != null ? details.repositoryKey : null;
+        return details != null ?
+                (details.deployReleaseRepository != null ? details.getDeployReleaseRepository().getRepoKey() : null)
+                : null;
+        //return details != null ? details.getDeployReleaseRepository().getRepoKey() : null;
     }
 
     /**
@@ -263,8 +270,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      */
     public String getSnapshotsRepositoryKey() {
         return details != null ?
-                (details.snapshotsRepositoryKey != null ? details.snapshotsRepositoryKey : details.repositoryKey) :
-                null;
+                (details.deploySnapshotRepository != null ?
+                        details.deploySnapshotRepository.getRepoKey() :
+                            details.getDeployReleaseRepository().getRepoKey()) :  null;
     }
 
     public String getUserPluginKey() {
@@ -286,6 +294,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     public boolean isAllowPromotionOfNonStagedBuilds() {
         return allowPromotionOfNonStagedBuilds;
     }
+
+    public boolean isAllowBintrayPushOfNonStageBuilds() { return allowBintrayPushOfNonStageBuilds; }
 
     public boolean isRecordAllDependencies() {
         return recordAllDependencies;
@@ -354,6 +364,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
+                }
+                if (isAllowBintrayPushOfNonStageBuilds()) {
+                    build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
                 }
             }
             return true;
@@ -472,34 +485,40 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return getDescriptor().userPluginKeys;
     }
 
-    public List<String> getReleaseRepositoryKeysFirst() {
-        if (getRepositoryKey() == null) {
-            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-            return getDescriptor().releaseRepositoryKeysFirst;
+    public List<Repository> getReleaseRepositoryList(){
+        List<Repository> repositories = getDescriptor().releaseRepositories;
+        if (repositories == null){
+            String rName = details.getDeployReleaseRepository().getKeyFromSelect();
+            if (rName != null && StringUtils.isNotBlank(rName)) {
+                Repository r = new Repository(rName);
+                repositories = Lists.newArrayList(r);
+            }
         }
-
-        return getDescriptor().releaseRepositoryKeysFirst;
+        return repositories;
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    public List<String> getSnapshotRepositoryKeysFirst() {
-        if (getSnapshotsRepositoryKey() == null) {
-            getDescriptor().snapshotRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-            return getDescriptor().snapshotRepositoryKeysFirst;
+    public List<Repository> getSnapshotRepositoryList(){
+        List<Repository> repositories = getDescriptor().deploySnapshotRepositories;
+        if (repositories == null){
+            String rName = details.getDeploySnapshotRepository().getKeyFromSelect();
+            if (rName != null && StringUtils.isNotBlank(rName)) {
+                Repository r = new Repository(rName);
+                repositories = Lists.newArrayList(r);
+            }
         }
-
-        return getDescriptor().snapshotRepositoryKeysFirst;
+        return repositories;
     }
 
     public PluginSettings getSelectedStagingPlugin() throws Exception {
         return details.getStagingPlugin();
     }
 
+
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-        private List<String> releaseRepositoryKeysFirst = Collections.emptyList();;
-        private List<String> snapshotRepositoryKeysFirst = Collections.emptyList();;
+        private List<Repository> releaseRepositories;
+        private List<Repository> deploySnapshotRepositories;
         private List<PluginSettings> userPluginKeys = Collections.emptyList();
 
         public DescriptorImpl() {
@@ -508,9 +527,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
 
         private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
-            Collections.sort(releaseRepositoryKeysFirst);
-            snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
+            List<String> repositoriesKeys = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+            releaseRepositories = RepositoriesUtils.createRepositoriesList(repositoriesKeys);
+            Collections.sort(releaseRepositories);
+            deploySnapshotRepositories = releaseRepositories;
         }
 
         private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final String credentialsUsername, final String credentialsPassword, final boolean overridingDeployerCredentials) {
@@ -559,7 +579,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 refreshRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
                 refreshUserPlugins(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
 
-                response.setRepositories(releaseRepositoryKeysFirst);
+                response.setRepositories(releaseRepositories);
                 response.setUserPlugins(userPluginKeys);
                 response.setSuccess(true);
             } catch (Exception e) {

@@ -180,10 +180,10 @@ public class ExtractorUtils {
                                         DeployerOverrider deployerOverrider, Map<String, String> env) {
         configuration.setTimeout(context.getServer().getTimeout());
         configuration.resolver.setContextUrl(context.getServer().getUrl());
-        String inputDownloadReleaseKey = context.getServerDetails().downloadReleaseRepositoryKey;
+        String inputDownloadReleaseKey = context.getServerDetails().getResolveReleaseRepository().getRepoKey();
         String downloadReleaseKey = Util.replaceMacro(inputDownloadReleaseKey, env);
         configuration.resolver.setRepoKey(downloadReleaseKey);
-        String inputDownloadSnapshotKey = context.getServerDetails().downloadSnapshotRepositoryKey;
+        String inputDownloadSnapshotKey = context.getServerDetails().getResolveSnapshotRepository().getRepoKey();
         String downloadSnapshotKey = Util.replaceMacro(inputDownloadSnapshotKey, env);
         configuration.resolver.setDownloadSnapshotRepoKey(downloadSnapshotKey);
 
@@ -264,10 +264,10 @@ public class ExtractorUtils {
         configuration.setTimeout(artifactoryServer.getTimeout());
         configuration.publisher.setContextUrl(artifactoryServer.getUrl());
 
-        String inputRepKey = context.getServerDetails().repositoryKey;
+        String inputRepKey = context.getServerDetails().getDeployReleaseRepository().getRepoKey();
         String repoKEy = Util.replaceMacro(inputRepKey, env);
         configuration.publisher.setRepoKey(repoKEy);
-        String inputSnapshotRepKey = context.getServerDetails().snapshotsRepositoryKey;
+        String inputSnapshotRepKey = context.getServerDetails().getDeploySnapshotRepository().getRepoKey();
         String snapshotRepoKey = Util.replaceMacro(inputSnapshotRepKey, env);
         configuration.publisher.setSnapshotRepoKey(snapshotRepoKey);
 

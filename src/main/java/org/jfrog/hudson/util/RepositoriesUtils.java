@@ -153,4 +153,13 @@ public abstract class RepositoriesUtils {
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
         return descriptor.getArtifactoryServers();
     }
+
+    public static List<Repository> createRepositoriesList(List<String> repositoriesValueList) {
+        List<Repository> repositories = Lists.newArrayList();
+        for (String repositoryKey : repositoriesValueList) {
+            Repository repository = new Repository(repositoryKey);
+            repositories.add(repository);
+        }
+        return repositories;
+    }
 }

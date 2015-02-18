@@ -3,6 +3,7 @@
          xmlns:r="/lib/jfrog"
          xmlns:st="jelly:stapler"
         >
+
     <f:dropdownList name="details" title="${%Artifactory server}">
         <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
             <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
@@ -10,23 +11,21 @@
                     <input type="hidden" name="artifactoryName" value="${s.name}"/>
                     <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                    <f:entry title="${%Target releases repository}"
-                             help="/plugin/artifactory/help/common/help-deployReleases.html">
-                        <r:dynamicRepos repositoryKey="${instance.repositoryKey}"
-                                        inputName="repositoryKey"
-                                        artifactoryName="${s.name}"
-                                        selectId="publishRepositoryKey-${s.url}"
-                                        repositories="${instance.releaseRepositoryKeysFirst}"/>
-                    </f:entry>
 
-                    <f:entry title="${%Target snapshots repository}"
-                             help="/plugin/artifactory/help/common/help-deploySnapshots.html">
-                        <r:dynamicRepos repositoryKey="${instance.snapshotsRepositoryKey}"
-                                        artifactoryName="${s.name}"
-                                        selectId="publishSnapshotsRepositoryKeys-${s.url}"
-                                        repositories="${instance.snapshotRepositoryKeysFirst}"
-                                        inputName="snapshotsRepositoryKey"/>
-                    </f:entry>
+                    <r:dynamicRepos id="publishRepositoryKey-${s.url}"
+                                    field="deployReleaseRepository"
+                                    title="Target releases repository"
+                                    repositoryConf="${instance.details.deployReleaseRepository}"
+                                    repositories="${instance.releaseRepositoryList}"
+                                    helpUrl="/plugin/artifactory/help/common/help-deployReleases.html"/>
+
+                    <r:dynamicRepos id="publishSnapshotsRepositoryKeys-${s.url}"
+                                    title="Target snapshot repository"
+                                    field="deploySnapshotRepository"
+                                    repositoryConf="${instance.details.deploySnapshotRepository}"
+                                    repositories="${instance.snapshotRepositoryList}"
+                                    helpUrl="/plugin/artifactory/help/common/help-deployReleases.html"/>
+
                     <f:entry title="${%Custom staging configuration}"
                              help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
                         <select class="setting-input" name="userPluginKey" id="customStagingConfiguration-${s.url}"
@@ -207,6 +206,12 @@
                                          inline="true">
                         </f:optionalBlock>
                     </table>
+                    <table style="width: 100%">
+                        <f:optionalBlock field="allowBintrayPushOfNonStageBuilds"
+                                         title="Allow push to bintray for non-staged builds"
+                                         inline="true">
+                        </f:optionalBlock>
+                    </table>
                 </f:block>
                 <f:block>
                     <table style="width:100%">
@@ -280,7 +285,7 @@
                             <f:entry field="autoCreateMissingComponentRequests"
                                      help="/plugin/artifactory/help/common/help-autoCreateMissingComponentRequests.html">
                                 <f:checkbox default="true" checked="${instance.autoCreateMissingComponentRequests}"/>
-                                <label>${%Auto-create missing component requests}</label>
+                                <label>${%Auto-createcreate missing component requests}</label>
                             </f:entry>
                             <f:entry field="autoDiscardStaleComponentRequests"
                                      help="/plugin/artifactory/help/common/help-autoDiscardStaleComponentRequests.html">

@@ -23,6 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -31,40 +32,48 @@ import java.util.Map;
 public class ServerDetails {
     public final String artifactoryName;
     /**
-     * Key of the repository to deploy release artifacts to
+     * Configuration of the repository to deploy release artifacts to
      */
-    public final String repositoryKey;
+    public final RepositoryConf deployReleaseRepository;
     /**
-     * Key of the repository to deploy snapshot artifacts to. If not specified will use the repositoryKey
+     * Configuration of the repository to deploy snapshot artifacts to. If not specified will use the deployReleaseRepository
      */
-    public final String snapshotsRepositoryKey;
+    public final RepositoryConf deploySnapshotRepository;
     /**
-     * Key of repository to use to download snapshots artifacts
+     * Configuration of repository to use to download snapshots artifacts
      */
-    public final String downloadSnapshotRepositoryKey;
+    public final RepositoryConf resolveSnapshotRepository;
     /**
-     * Key of repository to use to download artifacts
+     * Configuration of repository to use to download artifacts
      */
-    public final String downloadReleaseRepositoryKey;
-    /**
-     * Display name of repository to use to download snapshots artifacts
-     */
-    private String downloadSnapshotRepositoryDisplayName;
-    /**
-     * Display name of repository to use to download artifacts
-     */
-    private String downloadReleaseRepositoryDisplayName;
+    public final RepositoryConf resolveReleaseRepository;
     /**
      * Artifactory server URL
      */
     private final String artifactoryUrl;
-
+    /**
+     * @deprecated: Use org.jfrog.hudson.ServerDetails#deployReleaseRepository
+     */
+    @Deprecated
+    public String repositoryKey;
+    /**
+     * @deprecated: Use org.jfrog.hudson.ServerDetails#deploySnapshotRepository
+     */
+    @Deprecated
+    public String snapshotsRepositoryKey;
+    /**
+     * @deprecated: Use org.jfrog.hudson.ServerDetails#resolveSnapshotRepository
+     */
+    @Deprecated
+    public String downloadSnapshotRepositoryKey;
+    /**
+     * @deprecated: Use org.jfrog.hudson.ServerDetails#resolveReleaseRepository
+     */
+    @Deprecated
+    public String downloadReleaseRepositoryKey;
     private PluginSettings stagingPlugin;
-
     private String userPluginKey;
-
     private String userPluginParams;
-
     /**
      * @deprecated: Use org.jfrog.hudson.ServerDetails#downloadReleaseRepositoryKey
      */
@@ -72,29 +81,47 @@ public class ServerDetails {
     private String downloadRepositoryKey;
 
     @DataBoundConstructor
-    public ServerDetails(String artifactoryName, String artifactoryUrl, String repositoryKey, String snapshotsRepositoryKey,
-                         String downloadReleaseRepositoryKey, String downloadSnapshotRepositoryKey,
-                         String downloadReleaseRepositoryDisplayName, String downloadSnapshotRepositoryDisplayName,
+    public ServerDetails(String artifactoryName, String artifactoryUrl, RepositoryConf deployReleaseRepository,
+                         RepositoryConf deploySnapshotRepository, RepositoryConf resolveReleaseRepository,
+                         RepositoryConf resolveSnapshotRepository,
                          String userPluginKey, String userPluginParams) {
         this.artifactoryName = artifactoryName;
         this.artifactoryUrl = artifactoryUrl;
-        this.repositoryKey = repositoryKey;
-        this.snapshotsRepositoryKey = snapshotsRepositoryKey != null ? snapshotsRepositoryKey : repositoryKey;
-        this.downloadReleaseRepositoryKey = downloadReleaseRepositoryKey;
-        this.downloadSnapshotRepositoryKey = downloadSnapshotRepositoryKey;
-        this.downloadReleaseRepositoryDisplayName = downloadReleaseRepositoryDisplayName;
-        this.downloadSnapshotRepositoryDisplayName = downloadSnapshotRepositoryDisplayName;
+        this.deployReleaseRepository = deployReleaseRepository;
+        this.deploySnapshotRepository = deploySnapshotRepository;
+        this.resolveReleaseRepository = resolveReleaseRepository;
+        this.resolveSnapshotRepository = resolveSnapshotRepository;
         this.userPluginKey = userPluginKey;
         this.userPluginParams = userPluginParams;
-
         createStagingPlugin();
     }
 
-    public ServerDetails(String artifactoryName, String artifactoryUrl, String repositoryKey, String snapshotsRepositoryKey,
-                         String downloadReleaseRepositoryKey, String downloadSnapshotRepositoryKey,
-                         String downloadReleaseRepositoryDisplayName, String downloadSnapshotRepositoryDisplayName) {
-        this(artifactoryName, artifactoryUrl, repositoryKey, snapshotsRepositoryKey, downloadReleaseRepositoryKey,
-                downloadSnapshotRepositoryKey, downloadReleaseRepositoryDisplayName, downloadSnapshotRepositoryDisplayName, null, null);
+    public ServerDetails(String artifactoryName, String artifactoryUrl, RepositoryConf deployReleaseRepository, RepositoryConf deploySnapshotRepository,
+                         RepositoryConf resolveReleaseRepository, RepositoryConf resolveSnapshotRepository) {
+        this(artifactoryName, artifactoryUrl, deployReleaseRepository, deploySnapshotRepository, resolveReleaseRepository,
+                resolveSnapshotRepository, null, null);
+    }
+
+    public RepositoryConf getDeployReleaseRepository() {
+        return deployReleaseRepository;
+    }
+
+    public RepositoryConf getDeploySnapshotRepository() {
+        if (deploySnapshotRepository == null) {
+            return deployReleaseRepository;
+        }
+        return deploySnapshotRepository;
+    }
+
+    public RepositoryConf getResolveSnapshotRepository() {
+        if (resolveSnapshotRepository == null) {
+            return resolveReleaseRepository;
+        }
+        return resolveSnapshotRepository;
+    }
+
+    public RepositoryConf getResolveReleaseRepository() {
+        return resolveReleaseRepository;
     }
 
     public String getUserPluginKey() {
@@ -111,7 +138,7 @@ public class ServerDetails {
         if (userPluginParams != null) {
             Map<String, String> paramsMap = Maps.newHashMap();
             String[] params = userPluginParams.split(" ");
-            for(String param : params) {
+            for (String param : params) {
                 String[] keyValue = param.split("=");
                 if (keyValue.length == 2) {
                     paramsMap.put(keyValue[0], keyValue[1]);
@@ -125,26 +152,22 @@ public class ServerDetails {
         // The following if statement is for backward compatibility with version 2.2.3 and below of the plugin.
         // Without the below code, upgrade from 2.2.3 or below to 2.2.4 and above will cause the configuration to be lost.
         // This should be eventually removed.
-        if (downloadReleaseRepositoryDisplayName == null && downloadReleaseRepositoryKey != null) {
-            return downloadReleaseRepositoryKey;
-        }
-
-        return downloadReleaseRepositoryDisplayName;
+        return resolveReleaseRepository.getRepoName();
     }
 
     public String getDownloadSnapshotRepositoryDisplayName() {
         // The following if statement is for backward compatibility with version 2.2.3 and below of the plugin.
         // Without the below code, upgrade from 2.2.3 or below to 2.2.4 and above will cause the configuration to be lost.
         // This should be eventually removed.
-        if (downloadSnapshotRepositoryDisplayName == null && downloadSnapshotRepositoryKey != null) {
-            return downloadSnapshotRepositoryKey;
-        }
-
-        return downloadSnapshotRepositoryDisplayName;
+        return resolveSnapshotRepository.getRepoName();
     }
 
     public PluginSettings getStagingPlugin() {
         return stagingPlugin;
+    }
+
+    public void setStagingPlugin(PluginSettings stagingPlugin) {
+        this.stagingPlugin = stagingPlugin;
     }
 
     public String getArtifactoryUrl() {
@@ -152,30 +175,72 @@ public class ServerDetails {
         return artifactoryUrl != null ? artifactoryUrl : artifactoryName;
     }
 
+    public String getStagingPluginName() {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
+    }
+
+    public String getPluginParamValue(String pluginName, String paramKey) {
+        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(pluginName, paramKey) : null;
+    }
+
     public static final class ConverterImpl extends XStream2.PassthruConverter<ServerDetails> {
+        // mapping of the old ServerDetails field to the corresponding new field
+        private static final Map<String, String> newToOldFields;
+
+        static {
+            newToOldFields = new HashMap<String, String>();
+            newToOldFields.put("repositoryKey", "deployReleaseRepository");
+            newToOldFields.put("snapshotsRepositoryKey", "deploySnapshotRepository");
+            newToOldFields.put("downloadSnapshotRepositoryKey", "resolveSnapshotRepository");
+            newToOldFields.put("downloadReleaseRepositoryKey", "resolveReleaseRepository");
+        }
         public ConverterImpl(XStream2 xstream) {
             super(xstream);
         }
 
-        @Override
-        protected void callback(ServerDetails server, UnmarshallingContext context) {
+        public void convertToReleaseAndSnapshotRepository(ServerDetails server) throws NoSuchFieldException, IllegalAccessException {
             Class<? extends ServerDetails> overrideClass = server.getClass();
 
+            Field oldReleaseRepositoryField = overrideClass.getDeclaredField("downloadRepositoryKey");
+            oldReleaseRepositoryField.setAccessible(true);
+            Object oldReleaseRepositoryValue = oldReleaseRepositoryField.get(server);
+
+            if (oldReleaseRepositoryValue != null && StringUtils.isNotBlank((String) oldReleaseRepositoryValue)) {
+                Field newReleaseRepositoryField = overrideClass.getDeclaredField("downloadReleaseRepositoryKey");
+                newReleaseRepositoryField.setAccessible(true);
+                newReleaseRepositoryField.set(server, oldReleaseRepositoryValue);
+
+                Field newSnapshotRepositoryField = overrideClass.getDeclaredField("downloadSnapshotRepositoryKey");
+                newSnapshotRepositoryField.setAccessible(true);
+                newSnapshotRepositoryField.set(server, oldReleaseRepositoryValue);
+            }
+        }
+
+        public void convertToDynamicReposSelection(ServerDetails server) throws NoSuchFieldException, IllegalAccessException {
+            Class<? extends ServerDetails> overrideClass = server.getClass();
+            for (Map.Entry<String, String> e : newToOldFields.entrySet()) {
+                setNewReposFieldFromOld(server, overrideClass, e.getKey(), e.getValue());
+            }
+        }
+
+        private void setNewReposFieldFromOld(Object reflectedObject, Class classToChange, String oldFieldName,
+                                             String newFieldName) throws NoSuchFieldException, IllegalAccessException {
+            Field oldField = classToChange.getDeclaredField(oldFieldName);
+            oldField.setAccessible(true);
+            String oldValue = (String) oldField.get(reflectedObject);
+            if (oldField != null && StringUtils.isNotBlank(oldValue)) {
+                Field newField = classToChange.getField(newFieldName);
+                RepositoryConf newValue = new RepositoryConf(oldValue, oldValue, false);
+                newField.setAccessible(true);
+                newField.set(reflectedObject, newValue);
+            }
+        }
+
+        @Override
+        protected void callback(ServerDetails server, UnmarshallingContext context) {
             try {
-                Field oldReleaseRepositoryField = overrideClass.getDeclaredField("downloadRepositoryKey");
-                oldReleaseRepositoryField.setAccessible(true);
-                Object oldReleaseRepositoryValue = oldReleaseRepositoryField.get(server);
-
-                if (oldReleaseRepositoryValue != null && StringUtils.isNotBlank((String) oldReleaseRepositoryValue)) {
-                    Field newReleaseRepositoryField = overrideClass.getDeclaredField("downloadReleaseRepositoryKey");
-                    newReleaseRepositoryField.setAccessible(true);
-                    newReleaseRepositoryField.set(server, oldReleaseRepositoryValue);
-
-                    Field newSnapshotRepositoryField = overrideClass.getDeclaredField("downloadSnapshotRepositoryKey");
-                    newSnapshotRepositoryField.setAccessible(true);
-                    newSnapshotRepositoryField.set(server, oldReleaseRepositoryValue);
-                }
-
+                convertToReleaseAndSnapshotRepository(server);
+                convertToDynamicReposSelection(server);
             } catch (NoSuchFieldException e) {
                 throw new RuntimeException(getConversionErrorMessage(server), e);
             } catch (IllegalAccessException e) {
@@ -187,17 +252,5 @@ public class ServerDetails {
             return String.format("Could not convert the class '%s' to use the new overriding Resolve repositories."
                     , serverDetails.getClass().getName());
         }
-    }
-
-    public void setStagingPlugin(PluginSettings stagingPlugin) {
-        this.stagingPlugin = stagingPlugin;
-    }
-
-    public String getStagingPluginName() {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginName() : null;
-    }
-
-    public String getPluginParamValue(String pluginName, String paramKey) {
-        return (stagingPlugin != null) ? stagingPlugin.getPluginParamValue(pluginName, paramKey) : null;
     }
 }

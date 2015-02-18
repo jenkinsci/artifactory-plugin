@@ -10,14 +10,12 @@
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <f:entry title="${%Publishing repository}">
+                        <r:dynamicRepos id="ivyFreeRepositoryKeys-${s.url}"
+                                        title="Publishing repository"
+                                        field="deployReleaseRepository"
+                                        repositoryConf="${instance.details.deployReleaseRepository}"
+                                        repositories="${instance.releaseRepositoryList}"/>
 
-                            <r:dynamicRepos repositoryKey="${instance.repositoryKey}"
-                                            inputName="repositoryKey"
-                                            artifactoryName="${s.name}"
-                                            selectId="ivyFreeRepositoryKeys-${s.url}"
-                                            repositories="${instance.releaseRepositoryKeysFirst}"/>
-                        </f:entry>
                         <script>
                             var ivyFreeDeployBind =
                             <st:bind value="${descriptor}"/>

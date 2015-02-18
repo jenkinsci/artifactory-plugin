@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.ivy;
 
+import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -29,10 +30,7 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoAwareConfigurator;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.publisher.PublisherContext;
@@ -262,7 +260,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     }
 
     public String getRepositoryKey() {
-        return details != null ? details.repositoryKey : null;
+        return details != null ? details.getDeployReleaseRepository().getRepoKey() : null;
     }
 
     public String getArtifactoryUrl() {
@@ -405,13 +403,16 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
-    public List<String> getReleaseRepositoryKeysFirst() {
-        if (getRepositoryKey() == null) {
-            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-            return getDescriptor().releaseRepositoryKeysFirst;
+    public List<Repository> getReleaseRepositoryList() {
+        List<Repository> releaseRepositoryList = getDescriptor().releaseRepositoryList;
+        if (releaseRepositoryList == null) {
+            String rKey = details.getDeployReleaseRepository().getKeyFromSelect();
+            if (rKey != null && StringUtils.isNotBlank(rKey)) {
+                Repository r = new Repository(rKey);
+                releaseRepositoryList = Lists.newArrayList(r);
+            }
         }
-
-        return getDescriptor().releaseRepositoryKeysFirst;
+        return releaseRepositoryList;
     }
 
     @Override
@@ -421,7 +422,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private List<String> releaseRepositoryKeysFirst;
+
+        private List<Repository> releaseRepositoryList;
 
         public DescriptorImpl() {
             super(ArtifactoryIvyConfigurator.class);
@@ -449,11 +451,12 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
 
             try {
-                releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
                         overridingDeployerCredentials, artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
-                response.setRepositories(releaseRepositoryKeysFirst);
+                releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
+                response.setRepositories(releaseRepositoryList);
                 response.setSuccess(true);
 
                 return response;

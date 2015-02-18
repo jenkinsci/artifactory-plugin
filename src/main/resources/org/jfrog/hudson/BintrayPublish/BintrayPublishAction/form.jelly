@@ -1,0 +1,50 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <l:layout title="Push to Bintray">
+        <l:main-panel>
+            <f:form method="post" action="submit" name="form">
+                <f:section title="Push to Bintray">
+                    <f:entry title="Subject"
+                             help="/plugin/artifactory/help/BintrayPublishAction/help-subject.html">
+                        <f:textbox name="subject" value="${it.subject}"/>
+                    </f:entry>
+                    <f:entry title="Bintray Repository"
+                             help="/plugin/artifactory/help/BintrayPublishAction/help-repository.html">
+                        <f:textbox name="repoName" value="${it.repoName}"/>
+                    </f:entry>
+                    <f:entry title="Bintray Package Name"
+                             help="/plugin/artifactory/help/BintrayPublishAction/help-package.html">
+                        <f:textbox name="packageName" value="${it.packageName}"/>
+                    </f:entry>
+                    <f:entry title="Bintray Version Name"
+                             help="/plugin/artifactory/help/BintrayPublishAction/help-version.html">
+                        <f:textbox name="versionName" value="${it.versionName}"/>
+                    </f:entry>
+                    <f:entry title="Licenses"
+                             help="/plugin/artifactory/help/BintrayPublishAction/help-licenses.html">
+                        <f:textbox name="licenses" value="${it.licenses}"/>
+                    </f:entry>
+                    <f:entry title="Sign files"
+                             help="/plugin/artifactory/help/BintrayPublishAction/help-sign.html">
+                        <select name="signMethod" class="setting-input">
+                            <j:forEach var="signMethod" items="${it.signMethods}">
+                                <f:option selected="${signMethod==it.signMethod}" value="${signMethod}">
+                                    ${signMethod}
+                                </f:option>
+                            </j:forEach>
+                        </select>
+                    </f:entry>
+                    <f:entry title="Passphrase"
+                             help="/plugin/artifactory/help/BintrayPublishAction/help-passphrase.html">
+                        <f:textbox name="passphrase" value="${it.passphrase}"/>
+                    </f:entry>
+                    <tr>
+                        <td colspan="3">
+                            <f:submit value="${%Update}"/>
+                        </td>
+                    </tr>
+                </f:section>
+            </f:form>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

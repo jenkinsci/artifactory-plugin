@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.maven3;
 
+import com.google.common.collect.Lists;
 import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
 import hudson.Launcher;
@@ -29,8 +30,8 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.*;
+import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
@@ -180,11 +181,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public String getDownloadReleaseRepositoryKey() {
-        return resolverDetails != null ? resolverDetails.downloadReleaseRepositoryKey : null;
+        return resolverDetails != null ? resolverDetails.resolveReleaseRepository.getRepoKey(): null;
     }
 
     public String getDownloadSnapshotRepositoryKey() {
-        return resolverDetails != null ? resolverDetails.downloadSnapshotRepositoryKey : null;
+        return resolverDetails != null ? resolverDetails.resolveSnapshotRepository.getRepoKey(): null;
     }
 
     public boolean isDiscardOldBuilds() {
@@ -247,7 +248,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     @SuppressWarnings({"UnusedDeclaration"})
     public String getRepositoryKey() {
-        return details != null ? details.repositoryKey : null;
+        return details != null ? details.deployReleaseRepository.getRepoKey(): null;
     }
 
     public boolean isIncludePublishArtifacts() {
@@ -260,7 +261,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     @SuppressWarnings({"UnusedDeclaration"})
     public String getSnapshotsRepositoryKey() {
         return details != null ?
-                (details.snapshotsRepositoryKey != null ? details.snapshotsRepositoryKey : details.repositoryKey) :
+                (details.getDeploySnapshotRepository()!= null ? details.getDeploySnapshotRepository().getRepoKey() :
+                        details.getDeployReleaseRepository().getRepoKey()) :
                 null;
     }
 
@@ -364,22 +366,35 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return RepositoriesUtils.getArtifactoryServer(artifactoryServerName, getDescriptor().getArtifactoryServers());
     }
 
-    public List<String> getReleaseRepositoryKeysFirst() {
-        if (getRepositoryKey() == null) {
-            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-            return getDescriptor().releaseRepositoryKeysFirst;
+    public List<Repository> getReleaseRepositoryList(){
+        List<Repository> repositories = getDescriptor().releaseRepositoryList;
+        if (repositories == null){
+            String rKey = details.getDeployReleaseRepository().getRepoKey();
+            Repository r = new Repository(rKey);
+            repositories = Lists.newArrayList(r);
         }
-
-        return getDescriptor().releaseRepositoryKeysFirst;
+        return repositories;
     }
 
-    public List<String> getSnapshotRepositoryKeysFirst() {
-        if (getSnapshotsRepositoryKey() == null) {
-            getDescriptor().snapshotRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-            return getDescriptor().snapshotRepositoryKeysFirst;
+    public List<Repository> getSnapshotRepositoryList(){
+        List<Repository> snapshotRepositoryList = getDescriptor().snapshotRepositoryList;
+        if (snapshotRepositoryList == null){
+            String rKey = details.getDeploySnapshotRepository().getRepoKey();
+            Repository r = new Repository(rKey);
+            snapshotRepositoryList = Lists.newArrayList(r);
         }
+        return snapshotRepositoryList;
+    }
 
-        return getDescriptor().snapshotRepositoryKeysFirst;
+    public List<VirtualRepository> getVirtualRepositoryList(){
+        List<VirtualRepository> repositories = getDescriptor().virtualRepositoryList;
+        if (repositories == null){
+            String rKey = details.getResolveReleaseRepository().getRepoKey();
+            String rName = details.getResolveReleaseRepository().getRepoName();
+            VirtualRepository vr = new VirtualRepository(rName, rKey);
+            repositories = Lists.newArrayList(vr);
+        }
+        return repositories;
     }
 
     @Override
@@ -455,10 +470,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener) {
                 Result result = build.getResult();
+                BintrayPublishAction<ArtifactoryMaven3Configurator> bintrayPublishAction;
                 if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryUrl(), build));
-                    build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryMaven3Configurator>(build,
-                            ArtifactoryMaven3Configurator.this));
+                   build.getActions().add(new BintrayPublishAction<ArtifactoryMaven3Configurator>(build, ArtifactoryMaven3Configurator.this));
                 }
                 return true;
             }
@@ -472,9 +487,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private List<String> releaseRepositoryKeysFirst;
-        private List<String> snapshotRepositoryKeysFirst;
-        private List<VirtualRepository> virtualRepositoryKeys;
+        private List<Repository> releaseRepositoryList;
+        private List<Repository> snapshotRepositoryList;
+        private List<VirtualRepository> virtualRepositoryList;
         private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
@@ -492,8 +507,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         }
 
         private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
-            Collections.sort(virtualRepositoryKeys);
+            virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+            Collections.sort(virtualRepositoryList);
         }
 
         /**
@@ -512,12 +527,13 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
                         overridingDeployerCredentials, artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
-                snapshotRepositoryKeysFirst = releaseRepositoryKeysFirst;
-                response.setRepositories(releaseRepositoryKeysFirst);
+                releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
+                snapshotRepositoryList = releaseRepositoryList;
+                response.setRepositories(snapshotRepositoryList);
                 response.setSuccess(true);
 
                 return response;
@@ -550,7 +566,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
             try {
                 refreshVirtualRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
-                response.setVirtualRepositories(virtualRepositoryKeys);
+                response.setVirtualRepositories(virtualRepositoryList);
                 response.setSuccess(true);
                 return response;
             } catch (Exception e) {

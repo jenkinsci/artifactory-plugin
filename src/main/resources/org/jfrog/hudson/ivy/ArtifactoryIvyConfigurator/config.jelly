@@ -25,14 +25,14 @@
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <f:entry title="${%Target Repository}"
-                                 help="/plugin/artifactory/help/common/help-deployRepository.html">
-                            <r:dynamicRepos repositoryKey="${instance.artifactoryName}"
-                                            inputName="repositoryKey"
-                                            artifactoryName="${s.name}"
-                                            selectId="publishRepositoryKey-${s.url}"
-                                            repositories="${instance.releaseRepositoryKeysFirst}"/>
-                        </f:entry>
+
+                        <r:dynamicRepos id="publishRepositoryKey-${s.url}"
+                                        title="Target Repository"
+                                        field="deployReleaseRepository"
+                                        repositoryConf="${instance.details.deployReleaseRepository}"
+                                        repositories="${instance.releaseRepositoryList}"
+                                        helpUrl="/plugin/artifactory/help/common/help-deployRepository.html"/>
+
                         <script>
                             var ivyDeployBind =
                             <st:bind value="${descriptor}"/>

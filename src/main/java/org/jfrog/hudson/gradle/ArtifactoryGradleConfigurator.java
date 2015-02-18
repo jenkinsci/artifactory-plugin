@@ -17,6 +17,7 @@
 package org.jfrog.hudson.gradle;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
@@ -35,6 +36,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask;
 import org.jfrog.hudson.*;
+import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -91,6 +93,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final String matrixParams;
     private final boolean skipInjectInitScript;
     private final boolean allowPromotionOfNonStagedBuilds;
+    private final boolean allowBintrayPushOfNonStageBuilds;
     private final boolean blackDuckRunChecks;
     private final String blackDuckAppName;
     private final String blackDuckAppVersion;
@@ -126,7 +129,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                          boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
                                          boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
                                          boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
-                                         boolean allowPromotionOfNonStagedBuilds, boolean blackDuckRunChecks, String blackDuckAppName,
+                                         boolean allowPromotionOfNonStagedBuilds, boolean allowBintrayPushOfNonStageBuilds,
+                                         boolean blackDuckRunChecks, String blackDuckAppName,
                                          String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
                                          boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
                                          boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild,
@@ -162,6 +166,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.allowPromotionOfNonStagedBuilds = allowPromotionOfNonStagedBuilds;
         this.blackDuckRunChecks = blackDuckRunChecks;
+        this.allowBintrayPushOfNonStageBuilds = allowBintrayPushOfNonStageBuilds;
         this.blackDuckAppName = blackDuckAppName;
         this.blackDuckAppVersion = blackDuckAppVersion;
         this.blackDuckReportRecipients = blackDuckReportRecipients;
@@ -257,7 +262,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public String getRepositoryKey() {
-        return details != null ? details.repositoryKey : null;
+        return details != null ? details.getDeployReleaseRepository().getRepoKey() : null;
     }
 
     public String getUserPluginKey() {
@@ -265,7 +270,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public String getDownloadReleaseRepositoryKey() {
-        return details != null ? details.downloadReleaseRepositoryKey : null;
+        return details != null ? details.getResolveReleaseRepository().getRepoKey() : null;
     }
 
     public String getArtifactoryName() {
@@ -310,6 +315,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public boolean isAllowPromotionOfNonStagedBuilds() {
         return allowPromotionOfNonStagedBuilds;
+    }
+
+    public boolean isAllowBintrayPushOfNonStageBuilds() {
+        return allowBintrayPushOfNonStageBuilds;
     }
 
     public boolean isBlackDuckRunChecks() {
@@ -453,8 +462,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         stagingRepository = getRepositoryKey();
                     }
                     serverDetails = new ServerDetails(
-                            serverDetails.artifactoryName, serverDetails.getArtifactoryUrl(), stagingRepository,
-                            serverDetails.snapshotsRepositoryKey, serverDetails.downloadReleaseRepositoryKey, serverDetails.downloadSnapshotRepositoryKey,
+                            serverDetails.artifactoryName, serverDetails.getArtifactoryUrl(), new RepositoryConf(stagingRepository, stagingRepository, false),
+                            serverDetails.getDeploySnapshotRepository(), serverDetails.getDeployReleaseRepository(), serverDetails.getResolveSnapshotRepository(),
                             serverDetails.getDownloadReleaseRepositoryDisplayName(), serverDetails.getDownloadSnapshotRepositoryDisplayName());
                 }
 
@@ -494,7 +503,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 }
 
                 ResolverContext resolverContext = null;
-                if (StringUtils.isNotBlank(serverDetails.downloadReleaseRepositoryKey)) {
+                if (StringUtils.isNotBlank(serverDetails.getResolveReleaseRepository().getRepoKey())) {
                     // Resolution server and overriding credentials are currently shared by the deployer and resolver in
                     // the UI. So here we use the same server details and for credentials we try deployer override and
                     // then default resolver
@@ -586,13 +595,28 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return getDescriptor().userPluginKeys;
     }
 
-    public List<String> getReleaseRepositoryKeysFirst() {
-        if (getRepositoryKey() == null) {
-            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-            return getDescriptor().releaseRepositoryKeysFirst;
+    public List<Repository> getReleaseRepositories() {
+        List<Repository> releaseRepositories = getDescriptor().releaseRepositories;
+        if (releaseRepositories == null) {
+            String rKey = details.getDeployReleaseRepository().getKeyFromSelect();
+            if (rKey != null && StringUtils.isNotBlank(rKey)) {
+                Repository r = new Repository(rKey);
+                releaseRepositories = Lists.newArrayList(r);
+            }
         }
+        return releaseRepositories;
+    }
 
-        return getDescriptor().releaseRepositoryKeysFirst;
+    public List<VirtualRepository> getVirtualRepositories() {
+        List<VirtualRepository> virtualRepositories = getDescriptor().virtualRepositories;
+        if (virtualRepositories == null) {
+            String rKey = details.getResolveReleaseRepository().getKeyFromSelect();
+            if (rKey != null && StringUtils.isNotBlank(rKey)) {
+                VirtualRepository vr = new VirtualRepository(rKey, rKey);
+                virtualRepositories = Lists.newArrayList(vr);
+            }
+        }
+        return virtualRepositories;
     }
 
     public boolean isOverridingDefaultResolver() {
@@ -601,17 +625,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public Credentials getOverridingResolverCredentials() {
         return overridingDeployerCredentials;
-    }
-
-
-    @SuppressWarnings("UnusedDeclaration")
-    public List<VirtualRepository> getVirtualRepositoryKeys() {
-        if (getDownloadReleaseRepositoryKey() == null) {
-            getDescriptor().virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(this, null, getArtifactoryServer());
-            return getDescriptor().virtualRepositoryKeys;
-        }
-
-        return getDescriptor().virtualRepositoryKeys;
     }
 
     public List<UserPluginInfo> getStagingUserPluginInfo() {
@@ -630,8 +643,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private List<String> releaseRepositoryKeysFirst = Collections.emptyList();
-        private List<VirtualRepository> virtualRepositoryKeys = Collections.emptyList();
+        private List<Repository> releaseRepositories;
+        private List<VirtualRepository> virtualRepositories;
         private List<PluginSettings> userPluginKeys = Collections.emptyList();
         private AbstractProject<?, ?> item;
         public DescriptorImpl() {
@@ -653,13 +666,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         }
 
         private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+            List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
             Collections.sort(releaseRepositoryKeysFirst);
+            releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
         }
 
         private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
-            Collections.sort(virtualRepositoryKeys);
+            virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+            Collections.sort(virtualRepositories);
         }
 
         private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final String credentialsUsername, final String credentialsPassword, final boolean overridingDeployerCredentials) {
@@ -710,8 +724,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 refreshVirtualRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
                 refreshUserPlugins(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
 
-                response.setRepositories(releaseRepositoryKeysFirst);
-                response.setVirtualRepositories(virtualRepositoryKeys);
+                response.setRepositories(releaseRepositories);
+                response.setVirtualRepositories(virtualRepositories);
                 response.setUserPlugins(userPluginKeys);
                 response.setSuccess(true);
             } catch (Exception e) {
@@ -803,11 +817,20 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             ArtifactoryGradleConfigurator wrapper = ActionableHelper.getBuildWrapper(
                     (BuildableItemWithBuildWrappers) run.getProject(), ArtifactoryGradleConfigurator.class);
 
+            Result result = run.getResult();
+            boolean successRun = result.isBetterOrEqualTo(Result.SUCCESS);
+
             if (!wrapper.isAllowPromotionOfNonStagedBuilds()) {
-                Result result = run.getResult();
-                if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+                if (successRun) {
                     // add a stage action
                     run.addAction(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(run, wrapper));
+                }
+            }
+
+            if (!wrapper.isAllowBintrayPushOfNonStageBuilds()) {
+                if (successRun) {
+                    // add push to bintray action
+                    run.addAction(new BintrayPublishAction<ArtifactoryGradleConfigurator>(run, wrapper));
                 }
             }
 

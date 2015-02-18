@@ -26,24 +26,20 @@
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <f:entry title="${%Target releases repository}"
-                                 help="/plugin/artifactory/help/common/help-deployReleases.html">
+                        <r:dynamicRepos id="maven3RepositoryKeys-${s.url}"
+                                        title="Target releases repository"
+                                        field="deployReleaseRepository"
+                                        repositoryConf="${instance.details.deployReleaseRepository}"
+                                        repositories="${instance.releaseRepositoryList}"
+                                        helpUrl="/plugin/artifactory/help/common/help-deployReleases.html"/>
 
-                            <r:dynamicRepos repositoryKey="${instance.repositoryKey}"
-                                            inputName="repositoryKey"
-                                            artifactoryName="${s.name}"
-                                            selectId="maven3RepositoryKeys-${s.url}"
-                                            repositories="${instance.releaseRepositoryKeysFirst}"/>
+                        <r:dynamicRepos id="maven3SnapshotsRepositoryKeys-${s.url}"
+                                        title="Target snapshots repository"
+                                        field="deploySnapshotRepository"
+                                        repositoryConf="${instance.details.deploySnapshotRepository}"
+                                        repositories="${instance.snapshotRepositoryList}"
+                                        helpUrl="/plugin/artifactory/help/common/help-deploySnapshots.html"/>
 
-                        </f:entry>
-                        <f:entry title="${%Target snapshots repository}"
-                                 help="/plugin/artifactory/help/common/help-deploySnapshots.html">
-                            <r:dynamicRepos repositoryKey="${instance.snapshotsRepositoryKey}"
-                                            inputName="snapshotsRepositoryKey"
-                                            artifactoryName="${s.name}"
-                                            selectId="maven3SnapshotsRepositoryKeys-${s.url}"
-                                            repositories="${instance.snapshotRepositoryKeysFirst}"/>
-                        </f:entry>
                         <script>
                             var maven3DeployBind =
                             <st:bind value="${descriptor}"/>
@@ -104,43 +100,18 @@
                                     <input type="hidden" name="downloadSnapshotRepositoryDisplayName"
                                            id="downloadSnapshotRepositoryDisplayName-maven3-${s.url}"
                                            value="${instance.resolverDetails.downloadSnapshotRepositoryDisplayName}"/>
-                                    <f:entry title="${%Resolution releases repository}">
 
-                                        <r:dynamicVirtualRepos inputName="downloadReleaseRepositoryKey"
-                                                               selectId="maven3NativeReleaseRepositoryKeys-${s.url}"
-                                                               repositories="${instance.virtualRepositoryKeys}"
-                                                               reposKey="${instance.downloadReleaseRepositoryKey}"
-                                                               artifactoryName="${s.name}"/>
-                                    </f:entry>
-                                    <f:entry title="${%Resolution snapshots repository}">
-                                        <select class="setting-input" name="downloadSnapshotRepositoryKey"
-                                                id="maven3NativeSnapshotRepositoryKeys-${s.url}"
-                                                onchange="onSnapshotResolutionSelectChange('${s.url}', this, 'maven3')">
-                                            <j:choose>
-                                                <j:when test="${s.name==instance.artifactoryName}">
-                                                    <j:choose>
-                                                        <j:when test="${instance.downloadSnapshotRepositoryKey != null}">
-                                                            <f:option
-                                                                    selected="${instance.downloadSnapshotRepositoryKey}"
-                                                                    value="${instance.downloadSnapshotRepositoryKey}">
-                                                                ${instance.resolverDetails.downloadSnapshotRepositoryDisplayName}
-                                                            </f:option>
-                                                        </j:when>
-                                                        <j:otherwise>
-                                                            <j:forEach var="r"
-                                                                       items="${instance.virtualRepositoryKeys}">
-                                                                <f:option
-                                                                        selected="${r.value==instance.downloadSnapshotRepositoryKey}"
-                                                                        value="${r.value}">${r.displayName}
-                                                                </f:option>
-                                                            </j:forEach>
-                                                        </j:otherwise>
-                                                    </j:choose>
-                                                </j:when>
-                                            </j:choose>
-                                        </select>
-                                    </f:entry>
+                                    <r:dynamicRepos id="maven3NativeReleaseRepositoryKeys-${s.url}"
+                                                    title="Resolution releases repository"
+                                                    field="resolveReleaseRepository"
+                                                    repositoryConf="${instance.resolverDetails.resolveReleaseRepository}"
+                                                    repositories="${instance.virtualRepositoryList}"/>
 
+                                    <r:dynamicRepos id="maven3NativeSnapshotRepositoryKeys-${s.url}"
+                                                    title="Resolution snapshots repository"
+                                                    field="resolveSnapshotRepository"
+                                                    repositoryConf="${instance.resolverDetails.resolveReleaseRepository}"
+                                                    repositories="${instance.virtualRepositoryList}"/>
                                     <script>
                                         var maven3ResolveBind =
                                         <st:bind value="${descriptor}"/>

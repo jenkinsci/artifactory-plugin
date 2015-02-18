@@ -1,6 +1,7 @@
 package org.jfrog.hudson.generic;
 
 import com.tikal.jenkins.plugins.multijob.MultiJobProject;
+import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.matrix.MatrixProject;
@@ -18,6 +19,7 @@ import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
 import org.jfrog.hudson.*;
+import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
@@ -101,7 +103,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public String getRepositoryKey() {
-        return details.repositoryKey;
+        return details.deployReleaseRepository.getRepoKey();
+    }
+
+    public ServerDetails getDetails() {
+        return details;
     }
 
     public Credentials getOverridingDeployerCredentials() {
@@ -217,13 +223,16 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
-    public List<String> getReleaseRepositoryKeysFirst() {
-        if (getRepositoryKey() == null) {
-            getDescriptor().releaseRepositoryKeysFirst = RepositoriesUtils.getSnapshotRepositoryKeysFirst(this, getArtifactoryServer());
-            return getDescriptor().releaseRepositoryKeysFirst;
+    public List<Repository> getReleaseRepositoryList() {
+        List<Repository> repositories = getDescriptor().releaseRepositories;
+        if (repositories == null) {
+            String rKey = details.getDeploySnapshotRepository().getKeyFromSelect();
+            if (rKey != null && StringUtils.isNotBlank(rKey)) {
+                Repository r = new Repository(rKey);
+                repositories = Lists.newArrayList(r);
+            }
         }
-
-        return getDescriptor().releaseRepositoryKeysFirst;
+        return repositories;
     }
 
     @Override
@@ -317,6 +326,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                             build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                             build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryGenericConfigurator>(build,
                                     ArtifactoryGenericConfigurator.this));
+                            build.getActions().add(new BintrayPublishAction<ArtifactoryGenericConfigurator>(build,
+                                    ArtifactoryGenericConfigurator.this));
                         }
                     }
 
@@ -341,7 +352,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private List<String> releaseRepositoryKeysFirst;
+
+        private List<Repository> releaseRepositories;
         private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
@@ -374,11 +386,12 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
 
             try {
-                releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
                         overridingDeployerCredentials, artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
-                response.setRepositories(releaseRepositoryKeysFirst);
+                releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
+                response.setRepositories(releaseRepositories);
                 response.setSuccess(true);
 
                 return response;

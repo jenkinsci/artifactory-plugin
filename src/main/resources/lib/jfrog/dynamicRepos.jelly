@@ -3,37 +3,63 @@
          xmlns:f="/lib/form">
 
     <st:documentation>
-        <st:attribute name="repositoryKey" use="required">
-            Current repository Key set
+        <st:attribute name="id" use="required">
+            Elements Id
         </st:attribute>
-        <st:attribute name="inputName" use="required">
-            ServerDetails field name to update
+        <st:attribute name="title" use="required">
+            Title
         </st:attribute>
-        <st:attribute name="artifactoryName" use="">
-            To remove
-        </st:attribute>
-        <st:attribute name="selectId" use="required">
-            Repositories select element Id
+        <st:attribute name="field" use="required">
+            Corresponding RepositoryConf field in ServerDetails
         </st:attribute>
         <st:attribute name="repositories" use="required">
-            List of current repositories
+            List of current repositories for the Select box
+        </st:attribute>
+        <st:attribute name="helpUrl">
+            Help url if exists
+        </st:attribute>
+        <st:attribute name="repositoryConf" use="required">
+            RepositoryConf object
         </st:attribute>
     </st:documentation>
 
     <st:adjunct includes="lib.jfrog.repos.repos"/>
-
-    <input style="float: right; width: 49%;" class="setting-input" name="${inputName}" id="txt_${selectId}"/>
-    <select style="float: left; width: 49%;" class="setting-input" id="${selectId}"
-            onchange="txtAndValueUpdate(this.id)">
+    <f:section name="${field}">
+        <input type="hidden" name="stapler-class" value="org.jfrog.hudson.RepositoryConf"/>
+        <input type="hidden" id="mode_${id}" name="dynamicMode"
+               value="${repositoryConf.dynamicMode}"/>
+        <f:entry title="${title}"
+                 help="${helpUrl}">
+            <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;" class="setting-input"
+                   id="${id}"
+                   value="${repositoryConf.keyFromText}"/>
+            <select style="float: left; width: 80%" class="setting-input"
+                    id="select_${id}" name="keyFromSelect">
+                <j:choose>
+                    <j:when test="${s.name==instance.artifactoryName}">
+                        <j:forEach var="r" items="${repositories}">
+                            <f:option selected="${r==repositoryConf.keyFromSelect}" value="${r.value}">
+                                ${r}
+                            </f:option>
+                        </j:forEach>
+                    </j:when>
+                </j:choose>
+            </select>
+            <input style="float: right; width: 15%;"
+                   class="yui-button validate-button" type="button" id="btn_${id}" value="Switch to Textbox"
+                   onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
+        </f:entry>
         <j:choose>
-            <j:when test="${s.name==instance.artifactoryName}">
-                <script>updateTxtValue("txt_${selectId}", "${repositoryKey}")</script>
-                <j:forEach var="r" items="${repositories}">
-                    <f:option selected="${r==repositoryKey}" value="${r}">
-                        ${r}
-                    </f:option>
-                </j:forEach>
+            <j:when test="${repositoryConf.dynamicMode}">
+                <script>
+                    initTextAndSelectOnLoad('${id}', '', 'none');
+                </script>
             </j:when>
+            <j:otherwise>
+                <script>
+                    initTextAndSelectOnLoad('${id}', 'none', '');
+                </script>
+            </j:otherwise>
         </j:choose>
-    </select>
+    </f:section>
 </j:jelly>

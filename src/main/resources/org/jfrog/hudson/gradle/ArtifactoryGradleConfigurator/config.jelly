@@ -7,25 +7,20 @@
                 <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                     <f:nested>
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
-                        <input type="hidden" name="artifactoryUrl" id="artifactoryUrl${s.url}" value="${s.url}"/>
+                        <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <input type="hidden" name="downloadReleaseRepositoryDisplayName"
-                               id="downloadReleaseRepositoryDisplayName-gradle-${s.url}" value=""/>
-                        <f:entry title="${%Resolution repository}">
+                        <r:dynamicRepos id="gradleResolutionRepositoryKeys-${s.url}"
+                                        title="Resolution repository"
+                                        field="resolveReleaseRepository"
+                                        repositories="${instance.virtualRepositories}"
+                                        repositoryConf="${instance.details.resolveReleaseRepository}"/>
 
-                            <r:dynamicVirtualRepos inputName="downloadReleaseRepositoryKey"
-                                                   selectId="gradleResolutionRepositoryKeys-${s.url}"
-                                                   repositories="${instance.virtualRepositoryKeys}"
-                                                   reposKey="${instance.details.downloadReleaseRepositoryKey}"
-                                                   artifactoryName="${s.name}"/>
-                        </f:entry>
-                        <f:entry title="${%Publishing repository}">
-                            <r:dynamicRepos repositoryKey="${instance.details.repositoryKey}"
-                                            inputName="repositoryKey"
-                                            artifactoryName="${s.name}"
-                                            selectId="gradlePublishRepositoryKeys-${s.url}"
-                                            repositories="${instance.releaseRepositoryKeysFirst}"/>
-                        </f:entry>
+                        <r:dynamicRepos id="gradlePublishRepositoryKeys-${s.url}"
+                                        title="Publishing repository"
+                                        field="deployReleaseRepository"
+                                        repositories="${instance.releaseRepositories}"
+                                        repositoryConf="${instance.details.deployReleaseRepository}"/>
+
                         <f:entry title="${%Custom staging configuration}"
                                  help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
                             <select class="setting-input" name="userPluginKey"
@@ -150,6 +145,12 @@
                             <f:optionalBlock field="allowPromotionOfNonStagedBuilds"
                                              help="/plugin/artifactory/help/common/help-allowPromotionOfNonStagedBuilds.html"
                                              title="Allow promotion of non-staged builds"
+                                             inline="true">
+                            </f:optionalBlock>
+                        </table>
+                        <table style="width: 100%">
+                            <f:optionalBlock field="allowBintrayPushOfNonStageBuilds"
+                                             title="Allow push to bintray for non-staged builds"
                                              inline="true">
                             </f:optionalBlock>
                         </table>

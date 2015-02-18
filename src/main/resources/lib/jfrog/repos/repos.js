@@ -38,7 +38,7 @@ function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, deployUser
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var select = document.getElementById("ivyFreeRepositoryKeys-" + artifactoryUrl);
+            var select = document.getElementById("select_ivyFreeRepositoryKeys-" + artifactoryUrl);
             var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
             removeElements(select);
@@ -64,7 +64,7 @@ function artifactoryGenericConfigurator(spinner, artifactoryUrl, deployUsername,
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var select = document.getElementById("genericRepositoryKeys-" + artifactoryUrl);
+            var select = document.getElementById("select_genericRepositoryKeys-" + artifactoryUrl);
             var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
             removeElements(select);
@@ -90,8 +90,8 @@ function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUser
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectRelease = document.getElementById("maven3NativeReleaseRepositoryKeys-" + artifactoryUrl);
-            var selectSnapshot = document.getElementById("maven3NativeSnapshotRepositoryKeys-" + artifactoryUrl);
+            var selectRelease = document.getElementById("select_maven3NativeReleaseRepositoryKeys-" + artifactoryUrl);
+            var selectSnapshot = document.getElementById("select_maven3NativeSnapshotRepositoryKeys-" + artifactoryUrl);
 
             var oldReleaseValue = selectRelease.value;
             var oldSnapshotValue = selectSnapshot.value;
@@ -134,8 +134,8 @@ function artifactoryMaven3Configurator(spinner, artifactoryUrl, deployUsername, 
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectRelease = document.getElementById("maven3RepositoryKeys-" + artifactoryUrl);
-            var selectSnapshot = document.getElementById("maven3SnapshotsRepositoryKeys-" + artifactoryUrl);
+            var selectRelease = document.getElementById("select_maven3RepositoryKeys-" + artifactoryUrl);
+            var selectSnapshot = document.getElementById("select_maven3SnapshotsRepositoryKeys-" + artifactoryUrl);
 
             var oldReleaseValue = selectRelease.value;
             var oldSnapshotValue = selectSnapshot.value;
@@ -178,8 +178,8 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, 
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectResolution = document.getElementById("gradleResolutionRepositoryKeys-" + artifactoryUrl);
-            var selectPublish = document.getElementById("gradlePublishRepositoryKeys-" + artifactoryUrl);
+            var selectResolution = document.getElementById("select_gradleResolutionRepositoryKeys-" + artifactoryUrl);
+            var selectPublish = document.getElementById("select_gradlePublishRepositoryKeys-" + artifactoryUrl);
             var selectPlugins = document.getElementById("gradleCustomStagingConfiguration-" + artifactoryUrl);
 
             var oldResolutionValue = selectResolution.value;
@@ -234,8 +234,8 @@ function artifactoryRedeployPublisher(spinner, artifactoryUrl, deployUsername, d
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectRelease = document.getElementById("publishRepositoryKey-" + artifactoryUrl);
-            var selectSnapshot = document.getElementById("publishSnapshotsRepositoryKeys-" + artifactoryUrl);
+            var selectRelease = document.getElementById("select_publishRepositoryKey-" + artifactoryUrl);
+            var selectSnapshot = document.getElementById("select_publishSnapshotsRepositoryKeys-" + artifactoryUrl);
             var selectPlugins = document.getElementById("customStagingConfiguration-" + artifactoryUrl);
 
             var oldReleaseValue = selectRelease.value;
@@ -289,7 +289,7 @@ function artifactoryIvyConfigurator(spinner, artifactoryUrl, deployUsername, dep
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var select = document.getElementById("publishRepositoryKey-" + artifactoryUrl);
+            var select = document.getElementById("select_publishRepositoryKey-" + artifactoryUrl);
             var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
             removeElements(select);
@@ -318,9 +318,9 @@ function fillSelect(select, list) {
     for (var i = 0; i < list.length; i++) {
         var item = list[i];
         var option = document.createElement("option");
-        option.text = item;
-        option.innerText = item;
-        option.value = item;
+        option.text = item.value;
+        option.innerText = item.value;
+        option.value = item.value;
         select.appendChild(option);
     }
 }
@@ -442,7 +442,6 @@ function compareSelectTags(newRepos, oldRepos) {
     return true;
 }
 
-
 function onReleaseResolutionSelectChange(url, select, postfix) {
     var textFieldRelease = document.getElementById('downloadReleaseRepositoryDisplayName-' + postfix + '-' + url);
     var selectFieldRelease = select;//document.getElementById(select + '-' + url);
@@ -474,13 +473,37 @@ function afterRefreshTxtUpdate(selectId, value) {
 
 }
 
-function txtAndValueUpdate(label) {
-    var optionContent;
-    var selectElement = document.getElementById(label);
-    var txtElement = document.getElementById("txt_" + label);
-    if (selectElement != undefined && txtElement != undefined) {
-        optionContent = selectElement.options[selectElement.selectedIndex].innerHTML;
-        txtElement.value = optionContent;
+// toggle button onClick callback
+function toggleTxtAndSelect(txtId, txtModeId, urlRoot) {
+
+    var select = document.getElementById('select_' + txtId);
+    var txt = document.getElementById(txtId);
+    var shouldUseText = document.getElementById(txtModeId);
+    var button = document.getElementById('btn_' + txtId);
+
+    var currentValue = shouldUseText.value;
+
+    if (currentValue == undefined || currentValue == "") {
+        currentValue = false;
+    }
+
+    if (JSON.parse(currentValue)) {
+        shouldUseText.value = false;
+    } else {
+        shouldUseText.value = true;
+    }
+    swapHiddenValue(txt, select, button);
+}
+
+function swapHiddenValue(txt, select, button) {
+    if (txt.style.display == '') {
+        txt.style.display = 'none';
+        select.style.display = '';
+        button.firstChild.firstChild.innerHTML = "Switch to Textbox";
+    } else {
+        select.style.display = 'none';
+        txt.style.display = '';
+        button.firstChild.firstChild.innerHTML = "Switch to Select";
     }
 }
 
@@ -491,9 +514,11 @@ function updateTxtValue(txtName, txtValue) {
     }
 }
 
-function virtualRepositoryNameKeyUpdate(select) {
-    var selectId = select.id;
-    var selectValue = select.options[select.selectedIndex].value;
-    var txtElement = document.getElementById("txt_" + selectId);
-    txtElement.value = selectValue;
+function initTextAndSelectOnLoad(label, txtValue, selectValue) {
+    var select = document.getElementById('select_' + label);
+    var txt = document.getElementById(label);
+    if (select != undefined && txt != undefined) {
+        txt.style.display = txtValue;
+        select.style.display = selectValue;
+    }
 }

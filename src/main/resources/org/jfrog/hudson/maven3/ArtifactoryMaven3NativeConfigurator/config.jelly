@@ -7,31 +7,20 @@
         <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
             <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                 <f:nested>
-                    <input type="hidden" name="artifactoryName" value="${s.name}" field="artifactoryName"/>
-                    <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"
-                           field="artifactoryUrl"/>
+                    <input type="hidden" name="artifactoryName" value="${s.name}"/>
+                    <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                    <input type="hidden" name="downloadReleaseRepositoryDisplayName"
-                           id="downloadReleaseRepositoryDisplayName-native-${s.url}"
-                           value="${instance.details.downloadReleaseRepositoryDisplayName}"/>
-                    <input type="hidden" name="downloadSnapshotRepositoryDisplayName"
-                           id="downloadSnapshotRepositoryDisplayName-native-${s.url}"
-                           value="${instance.details.downloadSnapshotRepositoryDisplayName}"/>
-                    <f:entry title="${%Resolution releases repository}">
+                    <r:dynamicRepos id="maven3NativeReleaseRepositoryKeys-${s.url}"
+                                    title="Resolution releases repository"
+                                    field="resolveReleaseRepository"
+                                    repositories="${instance.virtualRepositoryList}"
+                                    repositoryConf="${instance.details.resolveReleaseRepository}"/>
 
-                        <r:dynamicVirtualRepos inputName="downloadReleaseRepositoryKey"
-                                               selectId="maven3NativeReleaseRepositoryKeys-${s.url}"
-                                               repositories="${instance.virtualRepositoryKeys}"
-                                               reposKey="${instance.downloadReleaseRepositoryKey}"
-                                               artifactoryName="${s.name}"/>
-                    </f:entry>
-                    <f:entry title="${%Resolution snapshots repository}">
-                        <r:dynamicVirtualRepos inputName="downloadSnapshotRepositoryKey"
-                                               selectId="maven3NativeSnapshotRepositoryKeys-${s.url}"
-                                               repositories="${instance.virtualRepositoryKeys}"
-                                               reposKey="${instance.downloadSnapshotRepositoryKey}"
-                                               artifactoryName="${s.name}"/>
-                    </f:entry>
+                    <r:dynamicRepos id="maven3NativeSnapshotRepositoryKeys-${s.url}"
+                                    title="Resolution snapshots repository"
+                                    field="resolveSnapshotRepository"
+                                    repositories="${instance.virtualRepositoryList}"
+                                    repositoryConf="${instance.details.resolveSnapshotRepository}"/>
                     <script>
                         var maven3NativeResolveBind =
                         <st:bind value="${descriptor}"/>

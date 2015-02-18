@@ -35,6 +35,7 @@ import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator;
@@ -148,9 +149,8 @@ public class MavenExtractorEnvironment extends Environment {
         } catch (Exception e) {
             buildListener.getLogger().println("[Warning] An error occurred while testing if the SCM checkout " +
                     "has already been performed: " + e.getMessage());
-        } finally {
-            return checkoutWasPerformed;
         }
+        return checkoutWasPerformed;
     }
 
     private boolean isMavenVersionValid() {
@@ -174,9 +174,9 @@ public class MavenExtractorEnvironment extends Environment {
         if (release != null) {
             // staging build might change the target deployment repository
             String stagingRepoKey = release.getStagingRepositoryKey();
-            if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
-                server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), stagingRepoKey,
-                        server.snapshotsRepositoryKey, server.downloadReleaseRepositoryKey, server.downloadSnapshotRepositoryKey,
+            if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.getDeployReleaseRepository().getRepoKey())) {
+                server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), new RepositoryConf(stagingRepoKey, stagingRepoKey, false),
+                        server.deploySnapshotRepository, server.resolveReleaseRepository, server.resolveSnapshotRepository,
                         server.getDownloadReleaseRepositoryDisplayName(), server.getDownloadSnapshotRepositoryDisplayName());
             }
         }
