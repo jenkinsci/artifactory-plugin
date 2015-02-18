@@ -130,30 +130,28 @@
             <scope>provided</scope>
         </dependency>
 
-        <!--
-                <dependency>
-                    <groupId>org.jfrog.buildinfo</groupId>
-                    <artifactId>build-info-api</artifactId>
-                    <version>${buildinfo.version}</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>com.thoughtworks.xstream</groupId>
-                            <artifactId>xstream</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-        -->
-        <!--        <dependency>
-                    <groupId>org.jfrog.buildinfo</groupId>
-                    <artifactId>build-info-client</artifactId>
-                    <version>${buildinfo.version}</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>com.thoughtworks.xstream</groupId>
-                            <artifactId>xstream</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>-->
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-api</artifactId>
+            <version>${buildinfo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.thoughtworks.xstream</groupId>
+                    <artifactId>xstream</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-client</artifactId>
+            <version>${buildinfo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.thoughtworks.xstream</groupId>
+                    <artifactId>xstream</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor</artifactId>
