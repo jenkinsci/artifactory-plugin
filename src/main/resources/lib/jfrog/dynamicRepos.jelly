@@ -30,24 +30,36 @@
                value="${repositoryConf.dynamicMode}"/>
         <f:entry title="${title}"
                  help="${helpUrl}">
-            <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;" class="setting-input"
-                   id="${id}"
-                   value="${repositoryConf.keyFromText}"/>
-            <select style="float: left; width: 80%" class="setting-input"
-                    id="select_${id}" name="keyFromSelect">
-                <j:choose>
-                    <j:when test="${s.name==instance.artifactoryName}">
+            <j:choose>
+                <j:when test="${s.name==instance.artifactoryName}">
+                    <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;"
+                           class="setting-input"
+                           id="${id}"
+                           value="${repositoryConf.keyFromText}"/>
+                    <select style="float: left; width: 80%" class="setting-input"
+                            id="select_${id}" name="keyFromSelect">
                         <j:forEach var="r" items="${repositories}">
                             <f:option selected="${r==repositoryConf.keyFromSelect}" value="${r.value}">
                                 ${r}
                             </f:option>
                         </j:forEach>
-                    </j:when>
-                </j:choose>
-            </select>
-            <input style="float: right; width: 15%;"
-                   class="yui-button validate-button" type="button" id="btn_${id}" value="Switch to Textbox"
-                   onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
+                    </select>
+                    <input style="float: right; width: 15%;"
+                           class="yui-button validate-button" type="button" id="btn_${id}"
+                           onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
+                </j:when>
+                <j:otherwise>
+                    <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;"
+                           class="setting-input"
+                           id="${id}"/>
+                    <select style="float: left; width: 80%" class="setting-input"
+                            id="select_${id}" name="keyFromSelect">
+                    </select>
+                    <input style="float: right; width: 15%;"
+                           class="yui-button validate-button" type="button" id="btn_${id}" value="Switch to text"
+                           onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
+                </j:otherwise>
+            </j:choose>
         </f:entry>
         <j:choose>
             <j:when test="${repositoryConf.dynamicMode}">

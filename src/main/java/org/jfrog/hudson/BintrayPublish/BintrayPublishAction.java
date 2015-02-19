@@ -7,10 +7,10 @@ import hudson.security.Permission;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
-import org.jfrog.build.api.builder.BintrayUploadInfoBuilder;
 import org.jfrog.build.api.release.BintrayUploadInfoOverride;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.DeployerOverrider;
@@ -58,15 +58,25 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws ServletException, IOException {
-        ArtifactoryServer artifactory = configurator.getArtifactoryServer();
+        if (hasPushToBintrayPermission()) {
+            ArtifactoryServer artifactory = configurator.getArtifactoryServer();
+            resetFields();
+            req.bindParameters(this);
+            Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
 
-        User user = User.current();
-        String ciUser = (user == null) ? "anonymous" : user.getId();
-        req.bindParameters(this);
-        Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
+            new PushToBintrayWorker(artifactory, credentials).start();
+            resp.sendRedirect(".");
+        }
+    }
 
-        new PushToBintrayWorker(artifactory, credentials, ciUser).start();
-        resp.sendRedirect("."); // where does that redirect to ?
+    private void resetFields() {
+        this.subject = null;
+        this.repoName = null;
+        this.packageName = null;
+        this.versionName = null;
+        this.signMethod = null;
+        this.licenses = null;
+        this.passphrase = null;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -75,8 +85,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public boolean hasPushToBintrayPermission() {
-        // TODO: should implement
-        return true;
+        return getACL().hasPermission(getPermission());
     }
 
     public synchronized String getCurrentAction() {
@@ -149,7 +158,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
 
     @Override
     protected Permission getPermission() {
-        return null;
+        return ArtifactoryPlugin.PUSH_TO_BINTRAY;
     }
 
     @Override
@@ -180,18 +189,15 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
 
         private final ArtifactoryServer artifactoryServer;
         private final Credentials deployer;
-        //private final String user;
 
-        public PushToBintrayWorker(ArtifactoryServer artifactoryServer, Credentials deployer, String user) {
+        public PushToBintrayWorker(ArtifactoryServer artifactoryServer, Credentials deployer) {
             super(BintrayPublishAction.this, ListenerAndText.forMemory(null));
             this.artifactoryServer = artifactoryServer;
             this.deployer = deployer;
-            //this.user = user;
         }
 
         @Override
         protected void perform(TaskListener listener) throws IOException {
-
             PrintStream logger = listener.getLogger();
             logger.println("Publishing to Bintray...");
 
@@ -204,11 +210,10 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                 return;
             }
 
-            BintrayUploadInfoBuilder builder = new BintrayUploadInfoBuilder();
-            BintrayUploadInfoOverride uploadInfo =
-                    builder.setSubject(subject).setVersionName(versionName).setLicenses(licenses)
-                            .setPackageName(packageName).setRepoName(repoName).build();
-            if (!uploadInfo.isValid()) {
+            BintrayUploadInfoOverride uploadInfoOverride =
+                    new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses);
+
+            if (!uploadInfoOverride.isValid()) {
                 logger.println("Upload info is invalid.");
                 return;
             }
@@ -217,7 +222,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             String buildNumber = Integer.toString(build.getNumber());
 
             HttpResponse response = client.publishToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
-                    passphrase, uploadInfo);
+                    passphrase, uploadInfoOverride);
 
             logger.println(response);
             workerThread = null;

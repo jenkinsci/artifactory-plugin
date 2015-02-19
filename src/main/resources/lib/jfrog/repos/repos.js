@@ -517,8 +517,16 @@ function updateTxtValue(txtName, txtValue) {
 function initTextAndSelectOnLoad(label, txtValue, selectValue) {
     var select = document.getElementById('select_' + label);
     var txt = document.getElementById(label);
+    var button = document.getElementById('btn_' + label);
     if (select != undefined && txt != undefined) {
         txt.style.display = txtValue;
         select.style.display = selectValue;
+        if (button != undefined) {
+            if (txtValue == '') {
+                button.value = "Switch to select";
+            } else {
+                button.value = "Switch to text";
+            }
+        }
     }
 }

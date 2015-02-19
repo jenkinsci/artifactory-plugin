@@ -10,7 +10,6 @@ public class RepositoryConf {
     private final String keyFromText;
     private final String keyFromSelect;
     private final boolean dynamicMode;
-    private String repoName;
 
     @DataBoundConstructor
     public RepositoryConf(String keyFromText, String keyFromSelect, boolean dynamicMode) {
@@ -30,10 +29,7 @@ public class RepositoryConf {
     }
 
     public String getRepoName() {
-        if (repoName == null) {
-            return getRepoKey();
-        }
-        return repoName;
+        return getRepoKey();
     }
 
     public String getKeyFromText() {
