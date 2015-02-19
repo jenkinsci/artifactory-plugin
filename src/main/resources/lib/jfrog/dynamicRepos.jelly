@@ -23,6 +23,20 @@
         </st:attribute>
     </st:documentation>
 
+    <style type="text/css">
+        .inline-float-button {
+        width: 186px;
+        text-align: right;
+        }
+        .inline-float-button .first-child {
+        display: inline-block;
+        }
+
+        .inline-float-button .first-child button {
+        width: 180px;
+        }
+    </style>
+
     <st:adjunct includes="lib.jfrog.repos.repos"/>
     <f:section name="${field}">
         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.RepositoryConf"/>
@@ -32,11 +46,11 @@
                  help="${helpUrl}">
             <j:choose>
                 <j:when test="${s.name==instance.artifactoryName}">
-                    <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;"
+                    <input type="text" name="keyFromText" style="float: left; width: 77%; display: none;"
                            class="setting-input"
                            id="${id}"
                            value="${repositoryConf.keyFromText}"/>
-                    <select style="float: left; width: 80%" class="setting-input"
+                    <select style="float: left; width: 77%" class="setting-input"
                             id="select_${id}" name="keyFromSelect">
                         <j:forEach var="r" items="${repositories}">
                             <f:option selected="${r==repositoryConf.keyFromSelect}" value="${r.value}">
@@ -44,19 +58,20 @@
                             </f:option>
                         </j:forEach>
                     </select>
-                    <input style="float: right; width: 15%;"
-                           class="yui-button validate-button" type="button" id="btn_${id}"
+                    <input
+                            class="yui-button validate-button inline-float-button" type="button" id="btn_${id}"
                            onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
                 </j:when>
                 <j:otherwise>
-                    <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;"
+                    <input type="text" name="keyFromText" style="float: left; width: 77%; display: none;"
                            class="setting-input"
                            id="${id}"/>
-                    <select style="float: left; width: 80%" class="setting-input"
+                    <select style="float: left; width: 77%" class="setting-input"
                             id="select_${id}" name="keyFromSelect">
                     </select>
-                    <input style="float: right; width: 15%;"
-                           class="yui-button validate-button" type="button" id="btn_${id}" value="Switch to text"
+                    <input
+                            class="yui-button validate-button inline-float-button" type="button" id="btn_${id}"
+                            value="Switch to Textbox"
                            onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
                 </j:otherwise>
             </j:choose>
