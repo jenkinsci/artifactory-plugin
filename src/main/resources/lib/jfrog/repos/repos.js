@@ -444,7 +444,7 @@ function compareSelectTags(newRepos, oldRepos) {
 
 function onReleaseResolutionSelectChange(url, select, postfix) {
     var textFieldRelease = document.getElementById('downloadReleaseRepositoryDisplayName-' + postfix + '-' + url);
-    var selectFieldRelease = select;//document.getElementById(select + '-' + url);
+    var selectFieldRelease = select;
 
     var releaseDisplayName = selectFieldRelease.options[selectFieldRelease.selectedIndex].text;
     if (releaseDisplayName == undefined || releaseDisplayName == null || releaseDisplayName == '') {
@@ -456,7 +456,7 @@ function onReleaseResolutionSelectChange(url, select, postfix) {
 
 function onSnapshotResolutionSelectChange(url, select, postfix) {
     var textFieldSnapshot = document.getElementById('downloadSnapshotRepositoryDisplayName-' + postfix + '-' + url);
-    var selectFieldSnapshot = select;//document.getElementById(select + '-' + url);
+    var selectFieldSnapshot = select;
 
     var snapshotDisplayName = selectFieldSnapshot.options[selectFieldSnapshot.selectedIndex].text;
     if (snapshotDisplayName == undefined || snapshotDisplayName == null || snapshotDisplayName == '') {
@@ -517,8 +517,16 @@ function updateTxtValue(txtName, txtValue) {
 function initTextAndSelectOnLoad(label, txtValue, selectValue) {
     var select = document.getElementById('select_' + label);
     var txt = document.getElementById(label);
+    var button = document.getElementById('btn_' + label);
     if (select != undefined && txt != undefined) {
         txt.style.display = txtValue;
         select.style.display = selectValue;
+        if (button != undefined) {
+            if (txtValue == '') {
+                button.value = "Switch to Select";
+            } else {
+                button.value = "Switch to Textbox";
+            }
+        }
     }
 }
