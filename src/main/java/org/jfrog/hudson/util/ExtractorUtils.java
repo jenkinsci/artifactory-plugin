@@ -181,28 +181,33 @@ public class ExtractorUtils {
                                         DeployerOverrider deployerOverrider, Map<String, String> env) {
         configuration.setTimeout(context.getServer().getTimeout());
         configuration.resolver.setContextUrl(context.getServer().getUrl());
-        ServerDetails serverDetails = context.getServerDetails();
-        if (serverDetails != null) {
-            String inputDownloadReleaseKey = serverDetails.getResolveReleaseRepositoryKey();
-            String downloadReleaseKey = Util.replaceMacro(inputDownloadReleaseKey, env);
-            if (StringUtils.isBlank(downloadReleaseKey)) {
-                throw new IllegalStateException("Resolve Release repository was not configured properly.");
-            }
-            configuration.resolver.setRepoKey(downloadReleaseKey);
-            String inputDownloadSnapshotKey = serverDetails.getResolveSnapshotRepositoryKey();
-            String downloadSnapshotKey = Util.replaceMacro(inputDownloadSnapshotKey, env);
-            if (StringUtils.isBlank(downloadSnapshotKey)) {
-                throw new IllegalStateException("Resolve Snapshot repository was not configured properly.");
-            }
-            configuration.resolver.setDownloadSnapshotRepoKey(downloadSnapshotKey);
-
-        }
+        String inputDownloadReleaseKey = context.getServerDetails().getResolveReleaseRepository().getRepoKey();
+        String inputDownloadSnapshotKey = context.getServerDetails().getResolveSnapshotRepository().getRepoKey();
+        // These input variables might be a variable that should be replaced with it's value
+        replaceRepositoryInputForValues(configuration, inputDownloadReleaseKey, inputDownloadSnapshotKey, env);
         Credentials preferredResolver = CredentialResolver.getPreferredResolver(context.getResolverOverrider(),
                 deployerOverrider, context.getServer());
         if (StringUtils.isNotBlank(preferredResolver.getUsername())) {
             configuration.resolver.setUsername(preferredResolver.getUsername());
             configuration.resolver.setPassword(preferredResolver.getPassword());
         }
+    }
+
+    /*
+    If necessary, replace the input for the configured repositories to their values
+    under the current environment. We are not allowing for the input or the value to be empty.
+     */
+    private static void replaceRepositoryInputForValues(ArtifactoryClientConfiguration configuration, String resolverReleaseInput, String resolverSnapshotInput, Map<String, String> env) {
+        if (StringUtils.isBlank(resolverReleaseInput) || StringUtils.isBlank(resolverSnapshotInput)) {
+            throw new IllegalStateException("Input for resolve repositories cannot be empty.");
+        }
+        String resolveReleaseRepo = Util.replaceMacro(resolverReleaseInput, env);
+        String resolveSnapshotRepo = Util.replaceMacro(resolverSnapshotInput, env);
+        if (StringUtils.isBlank(resolveReleaseRepo) || StringUtils.isBlank(resolveSnapshotRepo)) {
+            throw new IllegalStateException("Resolver repository variable cannot be replaces with empty value.");
+        }
+        configuration.resolver.setDownloadSnapshotRepoKey(resolveSnapshotRepo);
+        configuration.resolver.setRepoKey(resolveReleaseRepo);
     }
 
     /**
