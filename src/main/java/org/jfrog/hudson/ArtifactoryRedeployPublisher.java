@@ -482,27 +482,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public List<Repository> getReleaseRepositoryList(){
-        List<Repository> repositories = getDescriptor().releaseRepositories;
-        if (repositories == null){
-            String rName = details.getDeployReleaseRepository().getKeyFromSelect();
-            if (rName != null && StringUtils.isNotBlank(rName)) {
-                Repository r = new Repository(rName);
-                repositories = Lists.newArrayList(r);
-            }
-        }
-        return repositories;
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeployReleaseRepositoryKey());
     }
 
     public List<Repository> getSnapshotRepositoryList(){
-        List<Repository> repositories = getDescriptor().deploySnapshotRepositories;
-        if (repositories == null){
-            String rName = details.getDeploySnapshotRepository().getKeyFromSelect();
-            if (rName != null && StringUtils.isNotBlank(rName)) {
-                Repository r = new Repository(rName);
-                repositories = Lists.newArrayList(r);
-            }
-        }
-        return repositories;
+        return RepositoriesUtils.collectRepositories(getDescriptor().deploySnapshotRepositories, details.getDeploySnapshotRepositoryKey());
     }
 
     public PluginSettings getSelectedStagingPlugin() throws Exception {

@@ -162,4 +162,24 @@ public abstract class RepositoriesUtils {
         }
         return repositories;
     }
+
+    public static List<VirtualRepository> collectVirtualRepositories(List<VirtualRepository> repositories, String repoKey) {
+        if (repositories == null) {
+            if (StringUtils.isNotBlank(repoKey)) {
+                VirtualRepository vr = new VirtualRepository(repoKey, repoKey);
+                repositories = Lists.newArrayList(vr);
+            }
+        }
+        return repositories;
+    }
+
+    public static List<Repository> collectRepositories(List<Repository> repositories, String repoKey) {
+        if (repositories == null) {
+            if (StringUtils.isNotBlank(repoKey)) {
+                Repository r = new Repository(repoKey);
+                repositories = Lists.newArrayList(r);
+            }
+        }
+        return repositories;
+    }
 }

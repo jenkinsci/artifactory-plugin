@@ -105,13 +105,13 @@
                                                     title="Resolution releases repository"
                                                     field="resolveReleaseRepository"
                                                     repositoryConf="${instance.resolverDetails.resolveReleaseRepository}"
-                                                    repositories="${instance.virtualRepositoryList}"/>
+                                                    repositories="${instance.resolveReleaseRepositoryList}"/>
 
                                     <r:dynamicRepos id="maven3NativeSnapshotRepositoryKeys-${s.url}"
                                                     title="Resolution snapshots repository"
                                                     field="resolveSnapshotRepository"
-                                                    repositoryConf="${instance.resolverDetails.resolveReleaseRepository}"
-                                                    repositories="${instance.virtualRepositoryList}"/>
+                                                    repositoryConf="${instance.resolverDetails.resolveSnapshotRepository}"
+                                                    repositories="${instance.resolveSnapshotRepositoryList}"/>
                                     <script>
                                         var maven3ResolveBind =
                                         <st:bind value="${descriptor}"/>

@@ -74,8 +74,9 @@ public class GenericArtifactsDeployer {
         FilePath workingDir = build.getWorkspace();
         ArrayListMultimap<String, String> propertiesToAdd = getbuildPropertiesMap();
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
+        String repositoryKey = Util.replaceMacro(configurator.getRepositoryKey(), env);
         artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer, credentials,
-                configurator.getRepositoryKey(), propertiesToAdd,
+                repositoryKey, propertiesToAdd,
                 artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
     }
 

@@ -245,8 +245,8 @@ public class ServerDetails {
             Field oldField = classToChange.getDeclaredField(oldFieldName);
             oldField.setAccessible(true);
             String oldValue = (String) oldField.get(reflectedObject);
-            if (oldField != null && StringUtils.isNotBlank(oldValue)) {
-                Field newField = classToChange.getField(newFieldName);
+            if (StringUtils.isNotBlank(oldValue)) {
+                Field newField = classToChange.getDeclaredField(newFieldName);
                 RepositoryConf newValue = new RepositoryConf(oldValue, oldValue, false);
                 newField.setAccessible(true);
                 newField.set(reflectedObject, newValue);

@@ -224,15 +224,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public List<Repository> getReleaseRepositoryList() {
-        List<Repository> repositories = getDescriptor().releaseRepositories;
-        if (repositories == null) {
-            String rKey = details.getDeploySnapshotRepository().getKeyFromSelect();
-            if (StringUtils.isNotBlank(rKey)) {
-                Repository r = new Repository(rKey);
-                repositories = Lists.newArrayList(r);
-            }
-        }
-        return repositories;
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeploySnapshotRepositoryKey());
     }
 
     @Override

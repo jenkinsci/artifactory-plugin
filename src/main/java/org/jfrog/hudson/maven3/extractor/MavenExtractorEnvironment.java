@@ -176,7 +176,7 @@ public class MavenExtractorEnvironment extends Environment {
             String stagingRepoKey = release.getStagingRepositoryKey();
             if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.getDeployReleaseRepository().getRepoKey())) {
                 server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), new RepositoryConf(stagingRepoKey, stagingRepoKey, false),
-                        server.deploySnapshotRepository, server.resolveReleaseRepository, server.resolveSnapshotRepository,
+                        server.getDeploySnapshotRepository(), server.getResolveReleaseRepository(), server.getResolveSnapshotRepository(),
                         server.getDownloadReleaseRepositoryDisplayName(), server.getDownloadSnapshotRepositoryDisplayName());
             }
         }
