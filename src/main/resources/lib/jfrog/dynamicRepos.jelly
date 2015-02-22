@@ -60,7 +60,7 @@
                     </select>
                     <input
                             class="yui-button validate-button inline-float-button" type="button" id="btn_${id}"
-                           onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
+                            onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
                 </j:when>
                 <j:otherwise>
                     <input type="text" name="keyFromText" style="float: left; width: 77%; display: none;"
@@ -72,7 +72,7 @@
                     <input
                             class="yui-button validate-button inline-float-button" type="button" id="btn_${id}"
                             value="Switch to Textbox"
-                           onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
+                            onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
                 </j:otherwise>
             </j:choose>
         </f:entry>

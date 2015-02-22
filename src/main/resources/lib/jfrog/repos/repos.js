@@ -444,7 +444,7 @@ function compareSelectTags(newRepos, oldRepos) {
 
 function onReleaseResolutionSelectChange(url, select, postfix) {
     var textFieldRelease = document.getElementById('downloadReleaseRepositoryDisplayName-' + postfix + '-' + url);
-    var selectFieldRelease = select;//document.getElementById(select + '-' + url);
+    var selectFieldRelease = select;
 
     var releaseDisplayName = selectFieldRelease.options[selectFieldRelease.selectedIndex].text;
     if (releaseDisplayName == undefined || releaseDisplayName == null || releaseDisplayName == '') {
@@ -456,7 +456,7 @@ function onReleaseResolutionSelectChange(url, select, postfix) {
 
 function onSnapshotResolutionSelectChange(url, select, postfix) {
     var textFieldSnapshot = document.getElementById('downloadSnapshotRepositoryDisplayName-' + postfix + '-' + url);
-    var selectFieldSnapshot = select;//document.getElementById(select + '-' + url);
+    var selectFieldSnapshot = select;
 
     var snapshotDisplayName = selectFieldSnapshot.options[selectFieldSnapshot.selectedIndex].text;
     if (snapshotDisplayName == undefined || snapshotDisplayName == null || snapshotDisplayName == '') {
@@ -470,7 +470,6 @@ function afterRefreshTxtUpdate(selectId, value) {
     if (txtElement != undefined && txtElement.value == "") {
         txtElement.value = value;
     }
-
 }
 
 // toggle button onClick callback
@@ -499,7 +498,7 @@ function swapHiddenValue(txt, select, button) {
     if (txt.style.display == '') {
         txt.style.display = 'none';
         select.style.display = '';
-        button.firstChild.firstChild.innerHTML = "Switch to Textbox";
+        button.firstChild.firstChild.innerHTML = "Switch to Texbox";
     } else {
         select.style.display = 'none';
         txt.style.display = '';
@@ -523,9 +522,9 @@ function initTextAndSelectOnLoad(label, txtValue, selectValue) {
         select.style.display = selectValue;
         if (button != undefined) {
             if (txtValue == '') {
-                button.value = "Switch to select";
+                button.value = "Switch to Select";
             } else {
-                button.value = "Switch to text";
+                button.value = "Switch to Textbox";
             }
         }
     }

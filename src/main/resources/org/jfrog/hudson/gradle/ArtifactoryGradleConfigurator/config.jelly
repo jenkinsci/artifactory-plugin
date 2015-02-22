@@ -150,7 +150,7 @@
                         </table>
                         <table style="width: 100%">
                             <f:optionalBlock field="allowBintrayPushOfNonStageBuilds"
-                                             title="Allow push to bintray for non-staged builds"
+                                             title="Allow push to Bintray for non-staged builds"
                                              inline="true">
                             </f:optionalBlock>
                         </table>

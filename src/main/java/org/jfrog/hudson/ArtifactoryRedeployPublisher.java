@@ -260,9 +260,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      */
     public String getRepositoryKey() {
         return details != null ?
-                (details.deployReleaseRepository != null ? details.getDeployReleaseRepository().getRepoKey() : null)
-                : null;
-        //return details != null ? details.getDeployReleaseRepository().getRepoKey() : null;
+                details.getDeployReleaseRepositoryKey() : null;
     }
 
     /**
@@ -270,9 +268,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      */
     public String getSnapshotsRepositoryKey() {
         return details != null ?
-                (details.deploySnapshotRepository != null ?
-                        details.deploySnapshotRepository.getRepoKey() :
-                            details.getDeployReleaseRepository().getRepoKey()) :  null;
+                details.getDeploySnapshotRepositoryKey() : null;
     }
 
     public String getUserPluginKey() {
@@ -604,7 +600,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         @Override
         public String getDisplayName() {
             return "Deploy artifacts to Artifactory";
-            //return Messages.RedeployPublisher_getDisplayName();
         }
 
         @SuppressWarnings({"UnusedDeclaration"})

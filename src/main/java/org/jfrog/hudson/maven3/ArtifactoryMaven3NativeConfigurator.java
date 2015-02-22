@@ -55,7 +55,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public String getDownloadSnapshotRepositoryKey() {
-        return details != null ? details.resolveSnapshotRepository.getRepoKey(): null;
+        return details != null ? details.getResolveSnapshotRepositoryKey() : null;
     }
 
     public String getArtifactoryName() {
@@ -114,7 +114,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         List<VirtualRepository> virtualRepositories = getDescriptor().virtualRepositoryKeys;
         if (virtualRepositories == null){
             String rKey = details.getResolveReleaseRepository().getKeyFromSelect();
-            if (rKey != null && StringUtils.isNotBlank(rKey)) {
+            if (StringUtils.isNotBlank(rKey)) {
                 VirtualRepository r = new VirtualRepository(rKey, rKey);
                 virtualRepositories = Lists.newArrayList(r);
             }

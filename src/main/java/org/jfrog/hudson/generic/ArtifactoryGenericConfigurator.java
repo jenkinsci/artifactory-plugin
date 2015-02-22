@@ -103,7 +103,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public String getRepositoryKey() {
-        return details.deployReleaseRepository.getRepoKey();
+        return details.getDeployReleaseRepository().getRepoKey();
     }
 
     public ServerDetails getDetails() {
@@ -227,7 +227,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         List<Repository> repositories = getDescriptor().releaseRepositories;
         if (repositories == null) {
             String rKey = details.getDeploySnapshotRepository().getKeyFromSelect();
-            if (rKey != null && StringUtils.isNotBlank(rKey)) {
+            if (StringUtils.isNotBlank(rKey)) {
                 Repository r = new Repository(rKey);
                 repositories = Lists.newArrayList(r);
             }

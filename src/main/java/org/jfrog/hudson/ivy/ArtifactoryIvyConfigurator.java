@@ -407,7 +407,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         List<Repository> releaseRepositoryList = getDescriptor().releaseRepositoryList;
         if (releaseRepositoryList == null) {
             String rKey = details.getDeployReleaseRepository().getKeyFromSelect();
-            if (rKey != null && StringUtils.isNotBlank(rKey)) {
+            if (StringUtils.isNotBlank(rKey)) {
                 Repository r = new Repository(rKey);
                 releaseRepositoryList = Lists.newArrayList(r);
             }
