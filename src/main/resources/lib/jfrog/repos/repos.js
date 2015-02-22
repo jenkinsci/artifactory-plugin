@@ -470,7 +470,6 @@ function afterRefreshTxtUpdate(selectId, value) {
     if (txtElement != undefined && txtElement.value == "") {
         txtElement.value = value;
     }
-
 }
 
 // toggle button onClick callback

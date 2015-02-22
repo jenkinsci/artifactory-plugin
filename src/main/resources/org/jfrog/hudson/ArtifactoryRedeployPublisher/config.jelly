@@ -208,7 +208,7 @@
                     </table>
                     <table style="width: 100%">
                         <f:optionalBlock field="allowBintrayPushOfNonStageBuilds"
-                                         title="Allow push to bintray for non-staged builds"
+                                         title="Allow push to Bintray for non-staged builds"
                                          inline="true">
                         </f:optionalBlock>
                     </table>
@@ -285,7 +285,7 @@
                             <f:entry field="autoCreateMissingComponentRequests"
                                      help="/plugin/artifactory/help/common/help-autoCreateMissingComponentRequests.html">
                                 <f:checkbox default="true" checked="${instance.autoCreateMissingComponentRequests}"/>
-                                <label>${%Auto-createcreate missing component requests}</label>
+                                <label>${%Auto-create missing component requests}</label>
                             </f:entry>
                             <f:entry field="autoDiscardStaleComponentRequests"
                                      help="/plugin/artifactory/help/common/help-autoDiscardStaleComponentRequests.html">

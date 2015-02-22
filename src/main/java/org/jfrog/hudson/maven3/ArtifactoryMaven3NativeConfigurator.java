@@ -1,6 +1,5 @@
 package org.jfrog.hudson.maven3;
 
-import com.google.common.collect.Lists;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
@@ -13,7 +12,6 @@ import hudson.model.BuildListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
@@ -55,7 +53,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public String getDownloadSnapshotRepositoryKey() {
-        return details != null ? details.resolveSnapshotRepository.getRepoKey(): null;
+        return details != null ? details.getResolveSnapshotRepositoryKey() : null;
     }
 
     public String getArtifactoryName() {
@@ -111,15 +109,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public List<VirtualRepository> getVirtualRepositoryList(){
-        List<VirtualRepository> virtualRepositories = getDescriptor().virtualRepositoryKeys;
-        if (virtualRepositories == null){
-            String rKey = details.getResolveReleaseRepository().getKeyFromSelect();
-            if (rKey != null && StringUtils.isNotBlank(rKey)) {
-                VirtualRepository r = new VirtualRepository(rKey, rKey);
-                virtualRepositories = Lists.newArrayList(r);
-            }
-        }
-        return virtualRepositories;
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys, details.getResolveReleaseRepositoryKey());
     }
 
     @Override

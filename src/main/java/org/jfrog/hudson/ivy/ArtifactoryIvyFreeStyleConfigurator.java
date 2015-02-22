@@ -450,15 +450,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public List<Repository> getReleaseRepositoryList() {
-        List<Repository> releaseRepositoryList = getDescriptor().releaseRepositoryList;
-        if (releaseRepositoryList == null){
-            String rKey = details.getDeploySnapshotRepository().getKeyFromSelect();
-            if (rKey != null & StringUtils.isNotBlank(rKey)) {
-                Repository r = new Repository(rKey);
-                releaseRepositoryList = Lists.newArrayList(r);
-            }
-        }
-        return releaseRepositoryList;
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositoryList, details.getDeploySnapshotRepositoryKey());
     }
 
     @Override

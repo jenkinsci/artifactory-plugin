@@ -18,13 +18,4 @@ public class VirtualRepository extends Repository {
         return displayName;
     }
 
-    @Override
-    public String toString() {
-        return displayName;
-    }
-
-    public int compareTo(VirtualRepository virtualRepository) {
-        return displayName.compareTo(virtualRepository.getDisplayName()); // TODO: not getting called!!!!
-    }
-
 }

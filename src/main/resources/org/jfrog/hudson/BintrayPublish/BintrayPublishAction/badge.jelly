@@ -1,3 +1,10 @@
-<a href="${link}bintray">
-    <img width="16" height="16" title="${it.displayName}" alt="[Artifactory]" src="${rootURL}${it.badgeFileName}"/>
-</a>
+<j:jelly xmlns:j="jelly:core">
+    <j:choose>
+        <j:when test="${it.hasPushToBintrayPermission()}">
+            <a href="${link}bintray">
+                <img width="16" height="16" title="${it.displayName}" alt="[Artifactory]"
+                     src="${rootURL}${it.badgeFileName}"/>
+            </a>
+        </j:when>
+    </j:choose>
+</j:jelly>

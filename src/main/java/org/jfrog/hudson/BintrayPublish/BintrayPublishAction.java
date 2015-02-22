@@ -6,11 +6,14 @@ import hudson.security.ACL;
 import hudson.security.Permission;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.jfrog.build.api.builder.BintrayUploadInfoBuilder;
+import org.apache.http.StatusLine;
+import org.apache.commons.io.IOUtils;
 import org.jfrog.build.api.release.BintrayUploadInfoOverride;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.DeployerOverrider;
@@ -22,12 +25,15 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
+ * This action is added to a successful build in order to push built artifacts to Bintray
+ *
  * @author Aviad Shikloshi
  */
 public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & DeployerOverrider> extends TaskAction implements BuildBadgeAction {
@@ -55,18 +61,33 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     public BintrayPublishAction(AbstractBuild build, C configurator) {
         this.build = build;
         this.configurator = configurator;
+        initSignMethods();
     }
 
+    private void initSignMethods() {
+    }
+
+
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws ServletException, IOException {
-        ArtifactoryServer artifactory = configurator.getArtifactoryServer();
+        if (hasPushToBintrayPermission()) {
+            ArtifactoryServer artifactory = configurator.getArtifactoryServer();
+            resetFields();
+            req.bindParameters(this);
+            Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
 
-        User user = User.current();
-        String ciUser = (user == null) ? "anonymous" : user.getId();
-        req.bindParameters(this);
-        Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
+            new PushToBintrayWorker(artifactory, credentials).start();
+            resp.sendRedirect(".");
+        }
+    }
 
-        new PushToBintrayWorker(artifactory, credentials, ciUser).start();
-        resp.sendRedirect("."); // where does that redirect to ?
+    private void resetFields() {
+        this.subject = null;
+        this.repoName = null;
+        this.packageName = null;
+        this.versionName = null;
+        this.signMethod = null;
+        this.licenses = null;
+        this.passphrase = null;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -75,8 +96,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public boolean hasPushToBintrayPermission() {
-        // TODO: should implement
-        return true;
+        return getACL().hasPermission(getPermission());
     }
 
     public synchronized String getCurrentAction() {
@@ -149,7 +169,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
 
     @Override
     protected Permission getPermission() {
-        return null;
+        return ArtifactoryPlugin.PUSH_TO_BINTRAY;
     }
 
     @Override
@@ -180,18 +200,15 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
 
         private final ArtifactoryServer artifactoryServer;
         private final Credentials deployer;
-        //private final String user;
 
-        public PushToBintrayWorker(ArtifactoryServer artifactoryServer, Credentials deployer, String user) {
+        public PushToBintrayWorker(ArtifactoryServer artifactoryServer, Credentials deployer) {
             super(BintrayPublishAction.this, ListenerAndText.forMemory(null));
             this.artifactoryServer = artifactoryServer;
             this.deployer = deployer;
-            //this.user = user;
         }
 
         @Override
         protected void perform(TaskListener listener) throws IOException {
-
             PrintStream logger = listener.getLogger();
             logger.println("Publishing to Bintray...");
 
@@ -204,11 +221,10 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                 return;
             }
 
-            BintrayUploadInfoBuilder builder = new BintrayUploadInfoBuilder();
-            BintrayUploadInfoOverride uploadInfo =
-                    builder.setSubject(subject).setVersionName(versionName).setLicenses(licenses)
-                            .setPackageName(packageName).setRepoName(repoName).build();
-            if (!uploadInfo.isValid()) {
+            BintrayUploadInfoOverride uploadInfoOverride =
+                    new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses);
+
+            if (!uploadInfoOverride.isValid()) {
                 logger.println("Upload info is invalid.");
                 return;
             }
@@ -216,14 +232,16 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getName());
             String buildNumber = Integer.toString(build.getNumber());
 
-            HttpResponse response = client.publishToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
-                    passphrase, uploadInfo);
+            HttpResponse response = client.pushToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
+                    passphrase, uploadInfoOverride);
 
-            logger.println(response);
+            String parsedResponse = parseResponse(response);
+            logger.println(parsedResponse);
             workerThread = null;
             client.shutdown();
         }
 
+        // Check of the current Artifactory version supports "Push to Bintray" API (since version 3.5)
         private boolean isValidArtifactoryVersion(ArtifactoryBuildInfoClient client, PrintStream logger) {
             boolean validVersion = false;
             try {
@@ -234,6 +252,41 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                 logger.println("Error while checking current Artifactory version");
             }
             return validVersion;
+        }
+
+        /*
+        Parse HttpResponse returned by the BuildInfo client and return String
+        represent a readable text to show in Jenkins log
+        */
+        private String parseResponse(HttpResponse response) throws IOException {
+            int code = getResponseCode(response);
+            String successSummary;
+            String extraInfo = "";
+            if (isSuccessfulBintrayPush(code)) {
+                successSummary = "Push to Bintray completed Successfully\n";
+            } else {
+                successSummary = "Push to Bintray Failed with errors\n";
+                extraInfo = "check Artifactory logs for errors.\n";
+            }
+            String codeString = Integer.toString(code);
+            String message = getResponseMessage(response);
+            return successSummary + codeString + code + "\n" + message + "\n" + extraInfo;
+        }
+
+        private String getResponseMessage(HttpResponse response) throws IOException {
+            HttpEntity responseEntity = response.getEntity();
+            InputStream bodyInputStream = responseEntity.getContent();
+            String bodyString = IOUtils.toString(bodyInputStream, "UTF-8");
+            return bodyString;
+        }
+
+        private int getResponseCode(HttpResponse response) {
+            StatusLine statusLine = response.getStatusLine();
+            return statusLine.getStatusCode();
+        }
+
+        private boolean isSuccessfulBintrayPush(int statusCode) {
+            return (statusCode == 200 || statusCode == 201);
         }
     }
 

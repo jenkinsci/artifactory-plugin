@@ -40,7 +40,7 @@
                     </f:entry>
                     <tr>
                         <td colspan="3">
-                            <f:submit value="${%Update}"/>
+                            <f:submit value="${%Push to Bintray}"/>
                         </td>
                     </tr>
                 </f:section>

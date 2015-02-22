@@ -260,9 +260,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      */
     public String getRepositoryKey() {
         return details != null ?
-                (details.deployReleaseRepository != null ? details.getDeployReleaseRepository().getRepoKey() : null)
-                : null;
-        //return details != null ? details.getDeployReleaseRepository().getRepoKey() : null;
+                details.getDeployReleaseRepositoryKey() : null;
     }
 
     /**
@@ -270,9 +268,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      */
     public String getSnapshotsRepositoryKey() {
         return details != null ?
-                (details.deploySnapshotRepository != null ?
-                        details.deploySnapshotRepository.getRepoKey() :
-                            details.getDeployReleaseRepository().getRepoKey()) :  null;
+                details.getDeploySnapshotRepositoryKey() : null;
     }
 
     public String getUserPluginKey() {
@@ -486,27 +482,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public List<Repository> getReleaseRepositoryList(){
-        List<Repository> repositories = getDescriptor().releaseRepositories;
-        if (repositories == null){
-            String rName = details.getDeployReleaseRepository().getKeyFromSelect();
-            if (rName != null && StringUtils.isNotBlank(rName)) {
-                Repository r = new Repository(rName);
-                repositories = Lists.newArrayList(r);
-            }
-        }
-        return repositories;
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeployReleaseRepositoryKey());
     }
 
     public List<Repository> getSnapshotRepositoryList(){
-        List<Repository> repositories = getDescriptor().deploySnapshotRepositories;
-        if (repositories == null){
-            String rName = details.getDeploySnapshotRepository().getKeyFromSelect();
-            if (rName != null && StringUtils.isNotBlank(rName)) {
-                Repository r = new Repository(rName);
-                repositories = Lists.newArrayList(r);
-            }
-        }
-        return repositories;
+        return RepositoriesUtils.collectRepositories(getDescriptor().deploySnapshotRepositories, details.getDeploySnapshotRepositoryKey());
     }
 
     public PluginSettings getSelectedStagingPlugin() throws Exception {
@@ -604,7 +584,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         @Override
         public String getDisplayName() {
             return "Deploy artifacts to Artifactory";
-            //return Messages.RedeployPublisher_getDisplayName();
         }
 
         @SuppressWarnings({"UnusedDeclaration"})

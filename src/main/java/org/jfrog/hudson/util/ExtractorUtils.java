@@ -35,6 +35,7 @@ import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
@@ -180,13 +181,22 @@ public class ExtractorUtils {
                                         DeployerOverrider deployerOverrider, Map<String, String> env) {
         configuration.setTimeout(context.getServer().getTimeout());
         configuration.resolver.setContextUrl(context.getServer().getUrl());
-        String inputDownloadReleaseKey = context.getServerDetails().getResolveReleaseRepository().getRepoKey();
-        String downloadReleaseKey = Util.replaceMacro(inputDownloadReleaseKey, env);
-        configuration.resolver.setRepoKey(downloadReleaseKey);
-        String inputDownloadSnapshotKey = context.getServerDetails().getResolveSnapshotRepository().getRepoKey();
-        String downloadSnapshotKey = Util.replaceMacro(inputDownloadSnapshotKey, env);
-        configuration.resolver.setDownloadSnapshotRepoKey(downloadSnapshotKey);
+        ServerDetails serverDetails = context.getServerDetails();
+        if (serverDetails != null) {
+            String inputDownloadReleaseKey = serverDetails.getResolveReleaseRepositoryKey();
+            String downloadReleaseKey = Util.replaceMacro(inputDownloadReleaseKey, env);
+            if (StringUtils.isBlank(downloadReleaseKey)) {
+                throw new IllegalStateException("Resolve Release repository was not configured properly.");
+            }
+            configuration.resolver.setRepoKey(downloadReleaseKey);
+            String inputDownloadSnapshotKey = serverDetails.getResolveSnapshotRepositoryKey();
+            String downloadSnapshotKey = Util.replaceMacro(inputDownloadSnapshotKey, env);
+            if (StringUtils.isBlank(downloadSnapshotKey)) {
+                throw new IllegalStateException("Resolve Snapshot repository was not configured properly.");
+            }
+            configuration.resolver.setDownloadSnapshotRepoKey(downloadSnapshotKey);
 
+        }
         Credentials preferredResolver = CredentialResolver.getPreferredResolver(context.getResolverOverrider(),
                 deployerOverrider, context.getServer());
         if (StringUtils.isNotBlank(preferredResolver.getUsername())) {
@@ -264,12 +274,15 @@ public class ExtractorUtils {
         configuration.setTimeout(artifactoryServer.getTimeout());
         configuration.publisher.setContextUrl(artifactoryServer.getUrl());
 
-        String inputRepKey = context.getServerDetails().getDeployReleaseRepository().getRepoKey();
-        String repoKEy = Util.replaceMacro(inputRepKey, env);
-        configuration.publisher.setRepoKey(repoKEy);
-        String inputSnapshotRepKey = context.getServerDetails().getDeploySnapshotRepository().getRepoKey();
-        String snapshotRepoKey = Util.replaceMacro(inputSnapshotRepKey, env);
-        configuration.publisher.setSnapshotRepoKey(snapshotRepoKey);
+        ServerDetails serverDetails = context.getServerDetails();
+        if (serverDetails != null) {
+            String inputRepKey = serverDetails.getDeployReleaseRepositoryKey();
+            String repoKEy = Util.replaceMacro(inputRepKey, env);
+            configuration.publisher.setRepoKey(repoKEy);
+            String inputSnapshotRepKey = serverDetails.getDeploySnapshotRepositoryKey();
+            String snapshotRepoKey = Util.replaceMacro(inputSnapshotRepKey, env);
+            configuration.publisher.setSnapshotRepoKey(snapshotRepoKey);
+        }
 
         configuration.info.licenseControl.setRunChecks(context.isRunChecks());
         configuration.info.licenseControl.setIncludePublishedArtifacts(context.isIncludePublishArtifacts());

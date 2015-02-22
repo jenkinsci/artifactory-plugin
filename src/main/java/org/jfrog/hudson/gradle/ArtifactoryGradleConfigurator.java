@@ -595,27 +595,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public List<Repository> getReleaseRepositories() {
-        List<Repository> releaseRepositories = getDescriptor().releaseRepositories;
-        if (releaseRepositories == null) {
-            String rKey = details.getDeployReleaseRepository().getKeyFromSelect();
-            if (rKey != null && StringUtils.isNotBlank(rKey)) {
-                Repository r = new Repository(rKey);
-                releaseRepositories = Lists.newArrayList(r);
-            }
-        }
-        return releaseRepositories;
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeployReleaseRepositoryKey());
     }
 
     public List<VirtualRepository> getVirtualRepositories() {
-        List<VirtualRepository> virtualRepositories = getDescriptor().virtualRepositories;
-        if (virtualRepositories == null) {
-            String rKey = details.getResolveReleaseRepository().getKeyFromSelect();
-            if (rKey != null && StringUtils.isNotBlank(rKey)) {
-                VirtualRepository vr = new VirtualRepository(rKey, rKey);
-                virtualRepositories = Lists.newArrayList(vr);
-            }
-        }
-        return virtualRepositories;
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositories, details.getResolveSnapshotRepositoryKey());
     }
 
     public boolean isOverridingDefaultResolver() {

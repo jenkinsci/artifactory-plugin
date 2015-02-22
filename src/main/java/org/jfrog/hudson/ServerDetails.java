@@ -32,25 +32,25 @@ import java.util.Map;
 public class ServerDetails {
     public final String artifactoryName;
     /**
-     * Configuration of the repository to deploy release artifacts to
-     */
-    public final RepositoryConf deployReleaseRepository;
-    /**
-     * Configuration of the repository to deploy snapshot artifacts to. If not specified will use the deployReleaseRepository
-     */
-    public final RepositoryConf deploySnapshotRepository;
-    /**
-     * Configuration of repository to use to download snapshots artifacts
-     */
-    public final RepositoryConf resolveSnapshotRepository;
-    /**
-     * Configuration of repository to use to download artifacts
-     */
-    public final RepositoryConf resolveReleaseRepository;
-    /**
      * Artifactory server URL
      */
     private final String artifactoryUrl;
+    /**
+     * Configuration of the repository to deploy release artifacts to
+     */
+    private final RepositoryConf deployReleaseRepository;
+    /**
+     * Configuration of the repository to deploy snapshot artifacts to. If not specified will use the deployReleaseRepository
+     */
+    private final RepositoryConf deploySnapshotRepository;
+    /**
+     * Configuration of repository to use to download snapshots artifacts
+     */
+    private final RepositoryConf resolveSnapshotRepository;
+    /**
+     * Configuration of repository to use to download artifacts
+     */
+    private final RepositoryConf resolveReleaseRepository;
     /**
      * @deprecated: Use org.jfrog.hudson.ServerDetails#deployReleaseRepository
      */
@@ -113,6 +113,10 @@ public class ServerDetails {
         return deploySnapshotRepository;
     }
 
+    public RepositoryConf getResolveReleaseRepository() {
+        return resolveReleaseRepository;
+    }
+
     public RepositoryConf getResolveSnapshotRepository() {
         if (resolveSnapshotRepository == null) {
             return resolveReleaseRepository;
@@ -120,13 +124,26 @@ public class ServerDetails {
         return resolveSnapshotRepository;
     }
 
-    public RepositoryConf getResolveReleaseRepository() {
-        return resolveReleaseRepository;
-    }
-
     public String getUserPluginKey() {
         return stagingPlugin != null ? stagingPlugin.getPluginName() : null;
     }
+
+    public String getDeployReleaseRepositoryKey() {
+        return getDeployReleaseRepository().getRepoKey();
+    }
+
+    public String getDeploySnapshotRepositoryKey() {
+        return getDeploySnapshotRepository().getRepoKey();
+    }
+
+    public String getResolveReleaseRepositoryKey() {
+        return getResolveReleaseRepository().getRepoKey();
+    }
+
+    public String getResolveSnapshotRepositoryKey() {
+        return getResolveSnapshotRepository().getRepoKey();
+    }
+
 
     public void createStagingPlugin() {
         if (stagingPlugin == null) {
@@ -228,8 +245,8 @@ public class ServerDetails {
             Field oldField = classToChange.getDeclaredField(oldFieldName);
             oldField.setAccessible(true);
             String oldValue = (String) oldField.get(reflectedObject);
-            if (oldField != null && StringUtils.isNotBlank(oldValue)) {
-                Field newField = classToChange.getField(newFieldName);
+            if (StringUtils.isNotBlank(oldValue)) {
+                Field newField = classToChange.getDeclaredField(newFieldName);
                 RepositoryConf newValue = new RepositoryConf(oldValue, oldValue, false);
                 newField.setAccessible(true);
                 newField.set(reflectedObject, newValue);
