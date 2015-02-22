@@ -498,7 +498,7 @@ function swapHiddenValue(txt, select, button) {
     if (txt.style.display == '') {
         txt.style.display = 'none';
         select.style.display = '';
-        button.firstChild.firstChild.innerHTML = "Switch to Texbox";
+        button.firstChild.firstChild.innerHTML = "Switch to Textbox";
     } else {
         select.style.display = 'none';
         txt.style.display = '';
