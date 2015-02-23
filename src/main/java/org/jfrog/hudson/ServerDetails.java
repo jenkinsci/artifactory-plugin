@@ -52,6 +52,7 @@ public class ServerDetails {
      */
     private final RepositoryConf resolveReleaseRepository;
     /**
+     /**
      * @deprecated: Use org.jfrog.hudson.ServerDetails#deployReleaseRepository
      */
     @Deprecated
@@ -71,6 +72,14 @@ public class ServerDetails {
      */
     @Deprecated
     public String downloadReleaseRepositoryKey;
+    /**
+     * Display name of repository to use to download snapshots artifacts
+     */
+    private String downloadSnapshotRepositoryDisplayName;
+    /**
+     * Display name of repository to use to download artifacts
+     */
+    private String downloadReleaseRepositoryDisplayName;
     private PluginSettings stagingPlugin;
     private String userPluginKey;
     private String userPluginParams;
@@ -169,15 +178,22 @@ public class ServerDetails {
         // The following if statement is for backward compatibility with version 2.2.3 and below of the plugin.
         // Without the below code, upgrade from 2.2.3 or below to 2.2.4 and above will cause the configuration to be lost.
         // This should be eventually removed.
-        return resolveReleaseRepository.getRepoName();
+        if (downloadReleaseRepositoryDisplayName == null && resolveReleaseRepository != null) {
+            return resolveReleaseRepository.getRepoKey();
+        }
+        return downloadReleaseRepositoryDisplayName;
     }
 
     public String getDownloadSnapshotRepositoryDisplayName() {
         // The following if statement is for backward compatibility with version 2.2.3 and below of the plugin.
         // Without the below code, upgrade from 2.2.3 or below to 2.2.4 and above will cause the configuration to be lost.
         // This should be eventually removed.
-        return resolveSnapshotRepository.getRepoName();
+        if (downloadSnapshotRepositoryDisplayName == null && resolveSnapshotRepository != null) {
+            return resolveSnapshotRepository.getRepoKey();
+        }
+        return downloadSnapshotRepositoryDisplayName;
     }
+
 
     public PluginSettings getStagingPlugin() {
         return stagingPlugin;

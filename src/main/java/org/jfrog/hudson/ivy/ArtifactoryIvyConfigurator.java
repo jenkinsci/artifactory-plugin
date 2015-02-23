@@ -404,7 +404,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     }
 
     public List<Repository> getReleaseRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositoryList, details.getDeployReleaseRepositoryKey());
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositoryList, details.getDeployReleaseRepository().getKeyFromSelect());
     }
 
     @Override

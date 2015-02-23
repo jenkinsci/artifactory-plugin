@@ -61,23 +61,17 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     public BintrayPublishAction(AbstractBuild build, C configurator) {
         this.build = build;
         this.configurator = configurator;
-        initSignMethods();
     }
-
-    private void initSignMethods() {
-    }
-
 
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws ServletException, IOException {
-        if (hasPushToBintrayPermission()) {
-            ArtifactoryServer artifactory = configurator.getArtifactoryServer();
-            resetFields();
-            req.bindParameters(this);
-            Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
+        getACL().checkPermission(getPermission());
+        ArtifactoryServer artifactory = configurator.getArtifactoryServer();
+        resetFields();
+        req.bindParameters(this);
+        Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
 
-            new PushToBintrayWorker(artifactory, credentials).start();
-            resp.sendRedirect(".");
-        }
+        new PushToBintrayWorker(artifactory, credentials).start();
+        resp.sendRedirect(".");
     }
 
     private void resetFields() {
@@ -86,7 +80,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         this.packageName = null;
         this.versionName = null;
         this.signMethod = null;
-        this.licenses = null;
+        this.licenses = Lists.newArrayList();
         this.passphrase = null;
     }
 
@@ -224,10 +218,15 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             BintrayUploadInfoOverride uploadInfoOverride =
                     new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses);
 
-            if (!uploadInfoOverride.isValid()) {
-                logger.println("Upload info is invalid.");
-                return;
-            }
+
+/*            if (!uploadInfoOverride.isValid()) {
+                logger.println("Override properties are empty - Trying to use descriptor."); // should do this only if all of the fields are empty
+                //return;
+            }*/
+/*
+            if (!uploadInfoOverride.isEmpty()){
+                logger.println("Should try and use Descriptor file."); // TODO: remove log
+            }*/
 
             String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getName());
             String buildNumber = Integer.toString(build.getNumber());
@@ -254,6 +253,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             return validVersion;
         }
 
+        // TODO: remove to BuildInfo client
         /*
         Parse HttpResponse returned by the BuildInfo client and return String
         represent a readable text to show in Jenkins log
@@ -289,5 +289,4 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             return (statusCode == 200 || statusCode == 201);
         }
     }
-
 }

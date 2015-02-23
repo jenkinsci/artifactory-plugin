@@ -595,11 +595,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public List<Repository> getReleaseRepositories() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeployReleaseRepositoryKey());
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeployReleaseRepository().getKeyFromSelect());
     }
 
     public List<VirtualRepository> getVirtualRepositories() {
-        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositories, details.getResolveSnapshotRepositoryKey());
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositories, details.getResolveSnapshotRepository().getKeyFromSelect());
     }
 
     public boolean isOverridingDefaultResolver() {

@@ -22,7 +22,6 @@
             RepositoryConf object
         </st:attribute>
     </st:documentation>
-
     <style type="text/css">
         .inline-float-button {
         width: 186px;
@@ -31,12 +30,10 @@
         .inline-float-button .first-child {
         display: inline-block;
         }
-
         .inline-float-button .first-child button {
         width: 180px;
         }
     </style>
-
     <st:adjunct includes="lib.jfrog.repos.repos"/>
     <f:section name="${field}">
         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.RepositoryConf"/>
