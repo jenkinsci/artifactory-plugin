@@ -1,9 +1,9 @@
 package org.jfrog.hudson.generic;
 
 import com.tikal.jenkins.plugins.multijob.MultiJobProject;
-import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
@@ -294,7 +294,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                         preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
                 try {
                     boolean isFiltered = false;
-                    if (isMultiConfProject()) {
+                    if (isMultiConfProject(build)) {
                         if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
                             String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
                             listener.getLogger().println(error);
@@ -334,6 +334,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 return true;
             }
         };
+    }
+
+    private boolean isMultiConfProject(AbstractBuild build) {
+        return (build.getProject().getClass().equals(MatrixConfiguration.class));
     }
 
     @Override

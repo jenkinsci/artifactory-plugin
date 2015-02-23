@@ -17,12 +17,12 @@
 package org.jfrog.hudson.gradle;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
@@ -488,7 +488,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                 isAutoDiscardStaleComponentRequests())
                         .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
 
-                if (isMultiConfProject() && isDeployArtifacts()) {
+                if (isMultiConfProject(build) && isDeployArtifacts()) {
                     if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
                         String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
                         listener.getLogger().println(error);
@@ -617,6 +617,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public PluginSettings getSelectedStagingPlugin() throws Exception {
         return details.getStagingPlugin();
+    }
+
+    private boolean isMultiConfProject(AbstractBuild build) {
+        return (build.getProject().getClass().equals(MatrixConfiguration.class));
     }
 
     @Override

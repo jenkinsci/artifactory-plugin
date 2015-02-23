@@ -19,6 +19,7 @@ package org.jfrog.hudson.maven3;
 import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
@@ -424,7 +425,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
 
-        if (getDescriptor().isMultiConfProject() && isDeployArtifacts()) {
+        if (isMultiConfProject(build) && isDeployArtifacts()) {
             if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
                 String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
                 listener.getLogger().println(error);
@@ -467,6 +468,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 return true;
             }
         };
+    }
+
+    private boolean isMultiConfProject(AbstractBuild build) {
+        return (build.getProject().getClass().equals(MatrixConfiguration.class));
     }
 
     @Override

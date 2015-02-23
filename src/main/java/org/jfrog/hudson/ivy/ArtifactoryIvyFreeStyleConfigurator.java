@@ -17,11 +17,11 @@
 package org.jfrog.hudson.ivy;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.remoting.Which;
@@ -33,7 +33,6 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.apache.maven.RepositoryUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -349,7 +348,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
 
-        if (isMultiConfProject() && isDeployArtifacts()) {
+        if (isMultiConfProject(build) && isDeployArtifacts()) {
             if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
                 String error = "The field \"Combination Matches\" is empty, but id defined as mandatory!";
                 listener.getLogger().println(error);
@@ -451,6 +450,10 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     public List<Repository> getReleaseRepositoryList() {
         return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositoryList, details.getDeploySnapshotRepository().getKeyFromSelect());
+    }
+
+    private boolean isMultiConfProject(AbstractBuild build) {
+        return (build.getProject().getClass().equals(MatrixConfiguration.class));
     }
 
     @Override
