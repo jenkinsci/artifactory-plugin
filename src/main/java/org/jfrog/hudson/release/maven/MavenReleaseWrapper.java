@@ -308,11 +308,11 @@ public class MavenReleaseWrapper extends BuildWrapper {
             Result result = run.getResult();
             boolean successRun = result.isBetterOrEqualTo(Result.SUCCESS);
             if (successRun) {
-                if (redeployPublisher.isAllowPromotionOfNonStagedBuilds()) {
+                if (!redeployPublisher.isAllowPromotionOfNonStagedBuilds()) {
                     // add a stage action
                     run.addAction(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
                 }
-                if (redeployPublisher.isAllowBintrayPushOfNonStageBuilds()) {
+                if (!redeployPublisher.isAllowBintrayPushOfNonStageBuilds()) {
                     run.addAction(new BintrayPublishAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
                 }
             }

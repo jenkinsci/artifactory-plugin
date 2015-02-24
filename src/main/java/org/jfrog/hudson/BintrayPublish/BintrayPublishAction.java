@@ -6,12 +6,9 @@ import hudson.security.ACL;
 import hudson.security.Permission;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.commons.io.IOUtils;
 import org.jfrog.build.api.release.BintrayUploadInfoOverride;
 import org.jfrog.build.client.ArtifactoryVersion;
+import org.jfrog.build.client.bintrayResponse.BintrayResponse;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -25,7 +22,6 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +65,6 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         resetFields();
         req.bindParameters(this);
         Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
-
         new PushToBintrayWorker(artifactory, credentials).start();
         resp.sendRedirect(".");
     }
@@ -218,24 +213,13 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             BintrayUploadInfoOverride uploadInfoOverride =
                     new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses);
 
-
-/*            if (!uploadInfoOverride.isValid()) {
-                logger.println("Override properties are empty - Trying to use descriptor."); // should do this only if all of the fields are empty
-                //return;
-            }*/
-/*
-            if (!uploadInfoOverride.isEmpty()){
-                logger.println("Should try and use Descriptor file."); // TODO: remove log
-            }*/
-
             String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getName());
             String buildNumber = Integer.toString(build.getNumber());
 
-            HttpResponse response = client.pushToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
+            BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
                     passphrase, uploadInfoOverride);
 
-            String parsedResponse = parseResponse(response);
-            logger.println(parsedResponse);
+            logger.println(response);
             workerThread = null;
             client.shutdown();
         }
@@ -251,42 +235,6 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                 logger.println("Error while checking current Artifactory version");
             }
             return validVersion;
-        }
-
-        // TODO: remove to BuildInfo client
-        /*
-        Parse HttpResponse returned by the BuildInfo client and return String
-        represent a readable text to show in Jenkins log
-        */
-        private String parseResponse(HttpResponse response) throws IOException {
-            int code = getResponseCode(response);
-            String successSummary;
-            String extraInfo = "";
-            if (isSuccessfulBintrayPush(code)) {
-                successSummary = "Push to Bintray completed Successfully\n";
-            } else {
-                successSummary = "Push to Bintray Failed with errors\n";
-                extraInfo = "check Artifactory logs for errors.\n";
-            }
-            String codeString = Integer.toString(code);
-            String message = getResponseMessage(response);
-            return successSummary + codeString + code + "\n" + message + "\n" + extraInfo;
-        }
-
-        private String getResponseMessage(HttpResponse response) throws IOException {
-            HttpEntity responseEntity = response.getEntity();
-            InputStream bodyInputStream = responseEntity.getContent();
-            String bodyString = IOUtils.toString(bodyInputStream, "UTF-8");
-            return bodyString;
-        }
-
-        private int getResponseCode(HttpResponse response) {
-            StatusLine statusLine = response.getStatusLine();
-            return statusLine.getStatusCode();
-        }
-
-        private boolean isSuccessfulBintrayPush(int statusCode) {
-            return (statusCode == 200 || statusCode == 201);
         }
     }
 }
