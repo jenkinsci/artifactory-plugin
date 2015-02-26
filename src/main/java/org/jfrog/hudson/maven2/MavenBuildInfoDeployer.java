@@ -17,6 +17,7 @@
 package org.jfrog.hudson.maven2;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
@@ -40,7 +41,6 @@ import org.jfrog.hudson.MavenDependency;
 import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -107,7 +107,7 @@ public class MavenBuildInfoDeployer extends AbstractBuildInfoDeployer {
             for (MavenDependency dependency : dependencies) {
                 DependencyBuilder dependencyBuilder = new DependencyBuilder()
                         .id(dependency.id)
-                        .scopes(Arrays.asList(dependency.scope))
+                        .scopes(Sets.newHashSet(dependency.scope))
                         .type(dependency.type)
                         .md5(getMd5(dependency.groupId, dependency.fileName, mavenBuild));
                 moduleBuilder.addDependency(dependencyBuilder.build());
