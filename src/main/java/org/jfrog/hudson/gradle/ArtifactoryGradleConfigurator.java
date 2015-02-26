@@ -462,9 +462,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         stagingRepository = getRepositoryKey();
                     }
                     serverDetails = new ServerDetails(
-                            serverDetails.artifactoryName, serverDetails.getArtifactoryUrl(), new RepositoryConf(stagingRepository, stagingRepository, false),
-                            serverDetails.getDeploySnapshotRepository(), serverDetails.getDeployReleaseRepository(), serverDetails.getResolveSnapshotRepository(),
-                            serverDetails.getDownloadReleaseRepositoryDisplayName(), serverDetails.getDownloadSnapshotRepositoryDisplayName());
+                            serverDetails.artifactoryName,
+                            serverDetails.getArtifactoryUrl(),
+                            new RepositoryConf(stagingRepository, stagingRepository, false),
+                            serverDetails.getDeploySnapshotRepository(),
+                            serverDetails.getResolveReleaseRepository(),
+                            serverDetails.getResolveSnapshotRepository());
                 }
 
                 PublisherContext.Builder publisherBuilder = new PublisherContext.Builder()

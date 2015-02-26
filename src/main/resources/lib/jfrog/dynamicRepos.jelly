@@ -68,7 +68,7 @@
                     </select>
                     <input
                             class="yui-button validate-button inline-float-button" type="button" id="btn_${id}"
-                            value="Switch to Textbox"
+                            value="Click to set a different value"
                             onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
                 </j:otherwise>
             </j:choose>

@@ -53,6 +53,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     private String signMethod;
     private List<String> licenses;
     private String passphrase;
+    private String vcsUrl;
 
     public BintrayPublishAction(AbstractBuild build, C configurator) {
         this.build = build;
@@ -77,6 +78,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         this.signMethod = null;
         this.licenses = Lists.newArrayList();
         this.passphrase = null;
+        this.vcsUrl = null;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -150,6 +152,14 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
 
     public void setPassphrase(String passphrase) {
         this.passphrase = passphrase;
+    }
+
+    public String getVcsUrl() {
+        return vcsUrl;
+    }
+
+    public void setVcsUrl(String vcsUrl) {
+        this.vcsUrl = vcsUrl;
     }
 
     public AbstractBuild getBuild() {

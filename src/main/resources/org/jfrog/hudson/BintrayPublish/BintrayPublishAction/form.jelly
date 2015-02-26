@@ -3,7 +3,16 @@
     <l:layout title="Push to Bintray">
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
-                <f:section title="Push to Bintray">
+                <f:section>
+                    <h1>Push to Bintray</h1>
+                    <h4>If descriptor file was uploaded as part of the build you can<a
+                            href="https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin">push your
+                        artifacts</a>,
+                        to Bintray as is. These parameters, in case you fill them, will override the descriptor file
+                        completely.
+                        If no such file was provided - these fields must be filled so you can push the build to
+                        Bintray. If no such file was provided these fields must be filled
+                    </h4>
                     <f:entry title="Subject"
                              help="/plugin/artifactory/help/BintrayPublishAction/help-subject.html">
                         <f:textbox name="subject" value="${it.subject}"/>
@@ -37,6 +46,10 @@
                     <f:entry title="Passphrase"
                              help="/plugin/artifactory/help/BintrayPublishAction/help-passphrase.html">
                         <f:textbox name="passphrase" value="${it.passphrase}"/>
+                    </f:entry>
+                    <f:entry title="VCS URL"
+                             help="/plugin/artifactory/help/BintrayPublishAction/help-vcsUtl.html">
+                        <f:textbox name="VCS url" value="${it.vcsUrl}"/>
                     </f:entry>
                     <tr>
                         <td colspan="3">

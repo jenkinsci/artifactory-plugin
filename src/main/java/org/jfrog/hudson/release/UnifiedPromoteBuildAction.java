@@ -72,7 +72,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
     }
 
     public String getIconFileName() {
-        return "/plugin/artifactory/images/artifactory-release.png";
+        return "/plugin/artifactory/images/artifactory-promote.png";
     }
 
     public String getDisplayName() {
