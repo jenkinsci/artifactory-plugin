@@ -221,7 +221,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             }
 
             BintrayUploadInfoOverride uploadInfoOverride =
-                    new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses);
+                    new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses, vcsUrl);
 
             String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getName());
             String buildNumber = Integer.toString(build.getNumber());
