@@ -415,7 +415,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             }
             originalTasks.set(gradleBuild.getTasks() + "");
             if (!StringUtils.contains(originalTasks.get(), BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
-                setTargetsField(gradleBuild, "tasks", originalTasks.get() + " ${ARTIFACTORY_TASKS}");
+                // In case we specified "alternative goals" in the release view we should override the build goals
+                if (isRelease(build) && StringUtils.isNotBlank(originalTasks.get())) {
+                    setTargetsField(gradleBuild, "tasks", "${ARTIFACTORY_TASKS}");
+                } else {
+                    setTargetsField(gradleBuild, "tasks", originalTasks.get() + " ${ARTIFACTORY_TASKS}");
+                }
             }
 
         } else {
@@ -522,6 +527,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 try {
                     ExtractorUtils.addBuilderInfoArguments(env, build, listener, publisherBuilder.build(), resolverContext);
                 } catch (Exception e) {
+                    listener.getLogger().println(e.getMessage());
                     throw new RuntimeException(e);
                 }
             }
