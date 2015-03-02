@@ -215,21 +215,22 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                     artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword(),
                             artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
-            if (!isValidArtifactoryVersion(client, logger)) {
+            if (isValidArtifactoryVersion(client, logger)) {
+
+                BintrayUploadInfoOverride uploadInfoOverride =
+                        new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses, vcsUrl);
+
+                String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getName());
+                String buildNumber = Integer.toString(build.getNumber());
+
+                BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
+                        passphrase, uploadInfoOverride);
+
+                logger.println(response);
+            } else {
                 logger.println("Bintray push is not supported in your Artifactory version.");
-                return;
             }
 
-            BintrayUploadInfoOverride uploadInfoOverride =
-                    new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses, vcsUrl);
-
-            String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getName());
-            String buildNumber = Integer.toString(build.getNumber());
-
-            BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
-                    passphrase, uploadInfoOverride);
-
-            logger.println(response);
             workerThread = null;
             client.shutdown();
         }
