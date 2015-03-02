@@ -73,6 +73,7 @@
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
             <version>${project.parent.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -294,6 +295,16 @@
             <version>4.8.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.4</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -305,6 +316,7 @@
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
                 <configuration>
+                    <globalMaskClasses>org.apache.http.</globalMaskClasses>
                     <maskClasses>org.apache.http.</maskClasses>
                 </configuration>
             </plugin>
