@@ -3,6 +3,7 @@ package org.jfrog.hudson.util;
 import hudson.matrix.Combination;
 import hudson.matrix.MatrixRun;
 import hudson.model.*;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
@@ -114,12 +115,20 @@ public class BuildUniqueIdentifierHelper {
     }
 
     public static String getBuildName(AbstractBuild build) {
-        String buildName = build.getProject().getFullName();
-        if (build instanceof MatrixRun) {
-            buildName = buildName.substring(0, buildName.indexOf("/"));
+        String fullBuildName = build.getProject().getFullName();
+        String lastItemInBuildName = build.getProject().getName();
+        String buildName = fullBuildName;
+        if (!fullBuildName.equals(lastItemInBuildName)) {
+            if (build instanceof MatrixRun) {
+                // If we are using Multi-configuration plugin we want to omit the parameters in the end of the build name
+                int stringToBeOmittedIndex = fullBuildName.indexOf(lastItemInBuildName);
+                if (stringToBeOmittedIndex > 0) {
+                    buildName = fullBuildName.substring(0, stringToBeOmittedIndex - 1);
+                }
+            }
         }
-
-        return buildName;
+        // In case we are using folders Artifactory will expect {folder}::{job} format
+        return StringUtils.replace(buildName, "/", "::");
     }
 
     public static String getBuildNumber(AbstractBuild build) {
