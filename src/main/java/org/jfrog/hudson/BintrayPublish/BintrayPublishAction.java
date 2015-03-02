@@ -216,7 +216,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                             artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
             if (!isValidArtifactoryVersion(client, logger)) {
-                logger.println("Bintray push is supported from Artifactory 3.5 version.");
+                logger.println("Bintray push is not supported in your Artifactory version.");
                 return;
             }
 
@@ -234,12 +234,12 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             client.shutdown();
         }
 
-        // Check of the current Artifactory version supports "Push to Bintray" API (since version 3.5)
+        // Check of the current Artifactory version supports "Push to Bintray" API
         private boolean isValidArtifactoryVersion(ArtifactoryBuildInfoClient client, PrintStream logger) {
             boolean validVersion = false;
             try {
                 ArtifactoryVersion version = client.verifyCompatibleArtifactoryVersion();
-                validVersion = version.isAtLeast(new ArtifactoryVersion("3.5"));
+                validVersion = version.isAtLeast(new ArtifactoryVersion("3.5.2"));
             } catch (Exception e) {
                 e.printStackTrace();
                 logger.println("Error while checking current Artifactory version");

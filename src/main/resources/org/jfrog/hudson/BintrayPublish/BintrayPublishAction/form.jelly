@@ -5,8 +5,8 @@
             <f:form method="post" action="submit" name="form">
                 <f:section>
                     <h1>Push to Bintray</h1>
-                    <h4>If descriptor file was uploaded as part of the build you can<a
-                            href="https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin">push your
+                    <h4>If descriptor file was uploaded as part of the build you can
+                        <a href="https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin">push your
                         artifacts</a>,
                         to Bintray as is. These parameters, in case you fill them, will override the descriptor file
                         completely.
@@ -49,7 +49,7 @@
                     </f:entry>
                     <f:entry title="VCS URL"
                              help="/plugin/artifactory/help/BintrayPublishAction/help-vcsUtl.html">
-                        <f:textbox name="VCS url" value="${it.vcsUrl}"/>
+                        <f:textbox name="vcsUrl" value="${it.vcsUrl}"/>
                     </f:entry>
                     <tr>
                         <td colspan="3">
