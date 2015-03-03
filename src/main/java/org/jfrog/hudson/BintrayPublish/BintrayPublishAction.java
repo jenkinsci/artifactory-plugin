@@ -35,7 +35,6 @@ import java.util.Map;
 public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & DeployerOverrider> extends TaskAction implements BuildBadgeAction {
 
     private static Map<String, String> signMethodMap;
-
     static {
         signMethodMap = new HashMap<String, String>();
         signMethodMap.put("Sign", "true");
@@ -43,6 +42,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         signMethodMap.put("Use descriptor", "");
     }
 
+    private final String MINIMAL_SUPPORTED_VERSION = "3.5.2";
     private final AbstractBuild build;
     private final C configurator;
 
@@ -208,6 +208,8 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
 
         @Override
         protected void perform(TaskListener listener) throws IOException {
+            long started = System.currentTimeMillis();
+
             PrintStream logger = listener.getLogger();
             logger.println("Publishing to Bintray...");
 
@@ -231,6 +233,16 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                 logger.println("Bintray push is not supported in your Artifactory version.");
             }
 
+            // if the client gets back to the progress (after the redirect) page when this thread already done,
+            // she will get an error message because the log dies with the thread. So lets delay up to 3 seconds
+            long timeToWait = 2000 - (System.currentTimeMillis() - started);
+            if (timeToWait > 0) {
+                try {
+                    Thread.sleep(timeToWait);
+                } catch (InterruptedException e) {
+                    e.printStackTrace(listener.error(e.getMessage()));
+                }
+            }
             workerThread = null;
             client.shutdown();
         }
@@ -240,7 +252,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             boolean validVersion = false;
             try {
                 ArtifactoryVersion version = client.verifyCompatibleArtifactoryVersion();
-                validVersion = version.isAtLeast(new ArtifactoryVersion("3.5.2"));
+                validVersion = version.isAtLeast(new ArtifactoryVersion(MINIMAL_SUPPORTED_VERSION));
             } catch (Exception e) {
                 e.printStackTrace();
                 logger.println("Error while checking current Artifactory version");
