@@ -15,10 +15,7 @@ import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.util.BuildRetentionFactory;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.IncludesExcludes;
-import org.jfrog.hudson.util.IssuesTrackerHelper;
+import org.jfrog.hudson.util.*;
 
 import java.io.IOException;
 import java.util.Calendar;
@@ -49,8 +46,8 @@ public class AbstractBuildInfoDeployer {
 
     protected Build createBuildInfo(String buildAgentName, String buildAgentVersion, BuildType buildType) {
         BuildInfoBuilder builder = new BuildInfoBuilder(
-                ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()))
-                .number(build.getNumber() + "").type(buildType)
+                BuildUniqueIdentifierHelper.getBuildName(build))
+                .number(BuildUniqueIdentifierHelper.getBuildNumber(build)).type(buildType)
                 .buildAgent(new BuildAgent(buildAgentName, buildAgentVersion))
                 .agent(new Agent("hudson", build.getHudsonVersion()));
         String buildUrl = ActionableHelper.getBuildUrl(build);

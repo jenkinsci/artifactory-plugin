@@ -115,15 +115,14 @@ public class BuildUniqueIdentifierHelper {
     }
 
     public static String getBuildName(AbstractBuild build) {
-        String fullBuildName = build.getProject().getFullName();
         String lastItemInBuildName = build.getProject().getName();
-        String buildName = fullBuildName;
-        if (!fullBuildName.equals(lastItemInBuildName)) {
+        String buildName = build.getProject().getFullName();
+        if (!buildName.equals(lastItemInBuildName)) {
             if (build instanceof MatrixRun) {
                 // If we are using Multi-configuration plugin we want to omit the parameters in the end of the build name
-                int stringToBeOmittedIndex = fullBuildName.indexOf(lastItemInBuildName);
-                if (stringToBeOmittedIndex != 0) {
-                    buildName = fullBuildName.substring(0, stringToBeOmittedIndex - 1);
+                int stringToBeOmittedIndex = buildName.indexOf(lastItemInBuildName);
+                if (stringToBeOmittedIndex > 0) {
+                    buildName = buildName.substring(0, stringToBeOmittedIndex - 1);
                 }
             }
         }

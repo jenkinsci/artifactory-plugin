@@ -295,7 +295,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 try {
                     boolean isFiltered = false;
                     if (isMultiConfProject(build)) {
-                        if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
+                        if (multiConfProject && StringUtils.isBlank(getArtifactoryCombinationFilter())) {
                             String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
                             listener.getLogger().println(error);
                             build.setResult(Result.FAILURE);
