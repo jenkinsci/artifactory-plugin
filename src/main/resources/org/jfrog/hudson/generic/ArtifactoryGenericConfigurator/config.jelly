@@ -115,7 +115,7 @@
                 <f:block>
                     <table style="width:100%">
                         <f:optionalBlock name="multiConfProject"
-                                         checked="${h.defaultToFalse(instance.multiConfProject)}"
+                                         checked="${instance.multiConfProject}"
                                          title="${%Multi Configuration Deploy Matcher}"
                                          inline="true">
                             <f:entry field="artifactoryCombinationFilter" title="${%Combination Matches}"

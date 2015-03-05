@@ -45,7 +45,8 @@
                     </f:entry>
                     <f:entry title="Passphrase"
                              help="/plugin/artifactory/help/BintrayPublishAction/help-passphrase.html">
-                        <f:textbox name="passphrase" value="${it.passphrase}"/>
+                        <input type="textbox" name="passphrase" value="${it.passphrase}" autocomplete="off"
+                               class="setting-input"/>
                     </f:entry>
                     <f:entry title="VCS URL"
                              help="/plugin/artifactory/help/BintrayPublishAction/help-vcsUtl.html">
