@@ -404,7 +404,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         }
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
         ThreadLocal<String> switches = new ThreadLocal<String>();
-        ThreadLocal<String> originalTasks = new ThreadLocal<String>();
+        final ThreadLocal<String> originalTasks = new ThreadLocal<String>();
         if (gradleBuild != null) {
             switches.set(gradleBuild.getSwitches() + "");
             if (!skipInjectInitScript) {
@@ -454,7 +454,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 if (isRelease(build)) {
                     String alternativeGoals = releaseWrapper.getAlternativeTasks();
                     if (StringUtils.isNotBlank(alternativeGoals)) {
-                        tasks += alternativeGoals;
+                        tasks = alternativeGoals;
+                    } else {
+                        tasks = originalTasks.get();
                     }
                 }
                 env.put("ARTIFACTORY_TASKS", tasks + " " + BuildInfoBaseTask.BUILD_INFO_TASK_NAME);
