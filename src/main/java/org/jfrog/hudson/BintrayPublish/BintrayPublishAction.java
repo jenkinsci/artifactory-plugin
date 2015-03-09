@@ -1,6 +1,7 @@
 package org.jfrog.hudson.BintrayPublish;
 
 import com.google.common.collect.Lists;
+import hudson.Util;
 import hudson.model.*;
 import hudson.security.ACL;
 import hudson.security.Permission;
@@ -10,13 +11,14 @@ import org.jfrog.build.api.release.BintrayUploadInfoOverride;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.client.bintrayResponse.BintrayResponse;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.util.VersionException;
 import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -35,6 +37,7 @@ import java.util.Map;
 public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & DeployerOverrider> extends TaskAction implements BuildBadgeAction {
 
     private static Map<String, String> signMethodMap;
+
     static {
         signMethodMap = new HashMap<String, String>();
         signMethodMap.put("Sign", "true");
@@ -195,6 +198,12 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             return null;
     }
 
+    // Check of the current Artifactory version supports "Push to Bintray" API
+    private boolean isValidArtifactoryVersion(ArtifactoryBuildInfoClient client, PrintStream logger) throws VersionException {
+        ArtifactoryVersion version = client.verifyCompatibleArtifactoryVersion();
+        return version.isAtLeast(new ArtifactoryVersion(MINIMAL_SUPPORTED_VERSION));
+    }
+
     public final class PushToBintrayWorker extends TaskThread {
 
         private final ArtifactoryServer artifactoryServer;
@@ -217,20 +226,24 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                     artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword(),
                             artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
-            if (isValidArtifactoryVersion(client, logger)) {
+            try {
+                if (isValidArtifactoryVersion(client, logger)) {
 
-                BintrayUploadInfoOverride uploadInfoOverride =
-                        new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses, vcsUrl);
+                    BintrayUploadInfoOverride uploadInfoOverride =
+                            new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses, vcsUrl);
 
-                String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getName());
-                String buildNumber = Integer.toString(build.getNumber());
+                    String buildName = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildName(build));
+                    String buildNumber = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
 
-                BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
-                        passphrase, uploadInfoOverride);
+                    BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
+                            passphrase, uploadInfoOverride);
 
-                logger.println(response);
-            } else {
-                logger.println("Bintray push is not supported in your Artifactory version.");
+                    logger.println(response);
+                } else {
+                    logger.println("Bintray push is not supported in your Artifactory version.");
+                }
+            } catch (VersionException e) {
+                logger.println(e.getMessage());
             }
 
             // if the client gets back to the progress (after the redirect) page when this thread already done,
@@ -239,25 +252,13 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             if (timeToWait > 0) {
                 try {
                     Thread.sleep(timeToWait);
-                } catch (InterruptedException e) {
-                    e.printStackTrace(listener.error(e.getMessage()));
+                } catch (InterruptedException ie) {
+                    ie.printStackTrace(listener.error(ie.getMessage()));
                 }
             }
             workerThread = null;
             client.shutdown();
         }
-
-        // Check of the current Artifactory version supports "Push to Bintray" API
-        private boolean isValidArtifactoryVersion(ArtifactoryBuildInfoClient client, PrintStream logger) {
-            boolean validVersion = false;
-            try {
-                ArtifactoryVersion version = client.verifyCompatibleArtifactoryVersion();
-                validVersion = version.isAtLeast(new ArtifactoryVersion(MINIMAL_SUPPORTED_VERSION));
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.println("Error while checking current Artifactory version");
-            }
-            return validVersion;
-        }
     }
+
 }
