@@ -381,8 +381,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         if (getReleaseWrapper() != null) {
             List<Action> actions = new ArrayList<Action>();
             actions.addAll(action);
-                actions.add(new GradleReleaseAction(project));
-                actions.add(new GradleReleaseApiAction(project));
+            actions.add(new GradleReleaseAction(project));
+            actions.add(new GradleReleaseApiAction(project));
             return actions;
         }
         return action;
@@ -404,7 +404,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         }
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
         ThreadLocal<String> switches = new ThreadLocal<String>();
-        final ThreadLocal<String> originalTasks = new ThreadLocal<String>();
+        ThreadLocal<String> originalTasks = new ThreadLocal<String>();
         if (gradleBuild != null) {
             switches.set(gradleBuild.getSwitches() + "");
             if (!skipInjectInitScript) {
@@ -416,7 +416,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             originalTasks.set(gradleBuild.getTasks() + "");
             if (!StringUtils.contains(originalTasks.get(), BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
                 // In case we specified "alternative goals" in the release view we should override the build goals
-                if (isRelease(build) && StringUtils.isNotBlank(originalTasks.get())) {
+                if (isRelease(build) && StringUtils.isNotBlank(releaseWrapper.getAlternativeTasks())) {
                     setTargetsField(gradleBuild, "tasks", "${ARTIFACTORY_TASKS}");
                 } else {
                     setTargetsField(gradleBuild, "tasks", originalTasks.get() + " ${ARTIFACTORY_TASKS}");
@@ -455,8 +455,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     String alternativeGoals = releaseWrapper.getAlternativeTasks();
                     if (StringUtils.isNotBlank(alternativeGoals)) {
                         tasks = alternativeGoals;
-                    } else {
-                        tasks = originalTasks.get();
                     }
                 }
                 env.put("ARTIFACTORY_TASKS", tasks + " " + BuildInfoBaseTask.BUILD_INFO_TASK_NAME);
