@@ -194,11 +194,10 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
         if (releaseRepository != null && releaseRepository.isTargetRepoUri()) {
             client.setRemoteUrl(releaseRepository.getRepositoryName(), releaseRepository.getTargetRepoPrivateUri());
-            addCredentialsToGitClient(client);
         } else {
             addRemoteRepoToConfig(client);
-            addCredentialsToGitClient(client);
         }
+        addCredentialsToGitClient(client);
 
         return client;
     }

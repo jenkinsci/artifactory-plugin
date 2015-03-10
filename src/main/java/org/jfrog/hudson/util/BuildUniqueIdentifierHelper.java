@@ -126,14 +126,13 @@ public class BuildUniqueIdentifierHelper {
                 }
             }
         }
-        // In case we are using folders Artifactory will expect {folder}::{job} format
-        return StringUtils.replace(buildName, "/", "::");
+        return ExtractorUtils.sanitizeBuildName(buildName);
     }
 
     public static String getBuildNumber(AbstractBuild build) {
         String buildNumber = String.valueOf(build.getNumber());
         if (build instanceof MatrixRun) {
-            buildNumber += "::";
+            buildNumber += " :: ";
             Combination combination = ((MatrixRun) build).getProject().getCombination();
             buildNumber += combination.toString();
         }
