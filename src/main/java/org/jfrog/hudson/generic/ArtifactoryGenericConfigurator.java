@@ -235,16 +235,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
+        RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
+
         final String artifactoryServerName = getArtifactoryName();
         if (StringUtils.isBlank(artifactoryServerName)) {
             return super.setUp(build, launcher, listener);
-        }
-        final ArtifactoryServer artifactoryServer = getArtifactoryServer();
-        if (artifactoryServer == null) {
-            listener.getLogger().format("No Artifactory server configured for %s. " +
-                    "Please check your configuration.", artifactoryServerName).println();
-            build.setResult(Result.FAILURE);
-            throw new IllegalArgumentException("No Artifactory server configured for " + artifactoryServerName);
         }
 
         hudson.ProxyConfiguration proxy = Jenkins.getInstance().proxy;
@@ -301,7 +296,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                             build.setResult(Result.FAILURE);
                             throw new IllegalArgumentException(error);
                         }
-                        isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+                        isFiltered = MultiConfigurationUtils.isfiltrated(build, getArtifactoryCombinationFilter());
                     }
 
                     if (!isFiltered) {

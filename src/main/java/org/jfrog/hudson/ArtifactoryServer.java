@@ -90,11 +90,11 @@ public class ArtifactoryServer implements Serializable {
     }
 
     public String getName() {
-        return id != null ? id : url;
+        return id;
     }
 
     public String getUrl() {
-        return url;
+        return url != null ? url : getName();
     }
 
     public Credentials getDeployerCredentials() {

@@ -57,6 +57,10 @@ import org.kohsuke.stapler.bind.JavaScriptMethod;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.jfrog.hudson.util.ConcurrentJobsHelper.concurrentBuildHandler;
+import static org.jfrog.hudson.util.ConcurrentJobsHelper.createMultiConfBuild;
 
 
 /**
@@ -391,35 +395,65 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
+        PublisherContext.Builder publisherBuilder = getBuilder();
+        RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
+
+        final String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
+        int activeConfNum = 1;
+
+        if (isMultiConfProject(build) && isDeployArtifacts()) {
+            if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
+                String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
+                listener.getLogger().println(error);
+                build.setResult(Result.FAILURE);
+                throw new IllegalArgumentException(error);
+            }
+            boolean isFiltered = MultiConfigurationUtils.isfiltrated(build, getArtifactoryCombinationFilter());
+            if (isFiltered) {
+                publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
+            }
+            activeConfNum = ((MatrixProject) build.getParent().getParent()).getActiveConfigurations().size();
+        }
+
+        // Register the build to the concurrent map
+        if (!concurrentBuildHandler.containsKey(buildName)) {
+            ConcurrentJobsHelper.ConcurrentBuild concurrentBuild;
+            concurrentBuild = createMultiConfBuild(new AtomicInteger(activeConfNum));
+            concurrentBuildHandler.putIfAbsent(buildName, concurrentBuild);
+        }
+
         if (isRelease(build)) {
             releaseWrapper.setUp(build, launcher, listener);
         }
-        ArtifactoryServer artifactoryServer = getArtifactoryServer();
-        if (artifactoryServer == null) {
-            listener.getLogger().format("No Artifactory server configured for %s. " +
-                    "Please check your configuration.", getArtifactoryUrl()).println();
-            build.setResult(Result.FAILURE);
-            throw new IOException("No Artifactory server configured for " + getArtifactoryUrl() +
-                    ". Please check your configuration.");
-        }
-        final Gradle gradleBuild = getLastGradleBuild(build.getProject());
-        ThreadLocal<String> switches = new ThreadLocal<String>();
-        ThreadLocal<String> originalTasks = new ThreadLocal<String>();
-        if (gradleBuild != null) {
-            switches.set(gradleBuild.getSwitches() + "");
-            if (!skipInjectInitScript) {
 
-                if (!switches.get().contains("${ARTIFACTORY_INIT_SCRIPT}")) {
-                    setTargetsField(gradleBuild, "switches", switches.get() + " " + "${ARTIFACTORY_INIT_SCRIPT}");
-                }
-            }
-            originalTasks.set(gradleBuild.getTasks() + "");
-            if (!StringUtils.contains(originalTasks.get(), BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
-                // In case we specified "alternative goals" in the release view we should override the build goals
-                if (isRelease(build) && StringUtils.isNotBlank(releaseWrapper.getAlternativeTasks())) {
-                    setTargetsField(gradleBuild, "tasks", "${ARTIFACTORY_TASKS}");
-                } else {
-                    setTargetsField(gradleBuild, "tasks", originalTasks.get() + " ${ARTIFACTORY_TASKS}");
+        String switches = null;
+        String originalTasks = null;
+        final Gradle gradleBuild = getLastGradleBuild(build.getProject());
+        if (gradleBuild != null) {
+            switches = gradleBuild.getSwitches();
+            originalTasks = gradleBuild.getTasks();
+
+            // Only one of the threads suppose to initialized the build
+            if (!concurrentBuildHandler.get(buildName).getInitialized().get()) {
+                synchronized (concurrentBuildHandler.get(buildName)) {
+                    if (!concurrentBuildHandler.get(buildName).getInitialized().get()) {
+                        if (!skipInjectInitScript) {
+
+                            if (!switches.contains("${ARTIFACTORY_INIT_SCRIPT}")) {
+                                setTargetsField(gradleBuild, "switches", switches + " " + "${ARTIFACTORY_INIT_SCRIPT}");
+                            }
+                        }
+                        if (!StringUtils.contains(originalTasks, BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
+                            // In case we specified "alternative goals" in the release view we should override the build goals
+                            if (isRelease(build) && StringUtils.isNotBlank(releaseWrapper.getAlternativeTasks())) {
+                                setTargetsField(gradleBuild, "tasks", "${ARTIFACTORY_TASKS}");
+                            } else {
+                                setTargetsField(gradleBuild, "tasks", originalTasks + " ${ARTIFACTORY_TASKS}");
+                            }
+                        }
+
+                        concurrentBuildHandler.get(buildName).getInitialized().getAndSet(true);
+                    }
                 }
             }
 
@@ -427,8 +461,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             listener.getLogger().println("[Warning] No Gradle build configured");
         }
 
-        final String finalSwitches = switches.get();
-        final String finalOriginalTasks = originalTasks.get();
+        final String finalSwitches = switches;
+        final String finalOriginalTasks = originalTasks;
+        final PublisherContext.Builder finalPublisherBuilder = publisherBuilder;
 
         return new Environment() {
             @Override
@@ -474,40 +509,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             serverDetails.getResolveReleaseRepository(),
                             serverDetails.getResolveSnapshotRepository());
                 }
-
-                PublisherContext.Builder publisherBuilder = new PublisherContext.Builder()
-                        .artifactoryServer(getArtifactoryServer()).serverDetails(serverDetails)
-                        .deployerOverrider(ArtifactoryGradleConfigurator.this).runChecks(isRunChecks())
-                        .includePublishArtifacts(isIncludePublishArtifacts())
-                        .violationRecipients(getViolationRecipients()).scopes(getScopes())
-                        .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
-                        .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
-                        .skipBuildInfoDeploy(!isDeployBuildInfo())
-                        .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
-                        .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
-                        .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
-                        .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
-                        .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
-                        .aggregateBuildIssues(isAggregateBuildIssues())
-                        .aggregationBuildStatus(getAggregationBuildStatus())
-                        .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
-                                getBlackDuckReportRecipients(), getBlackDuckScopes(),
-                                isBlackDuckIncludePublishedArtifacts(), isAutoCreateMissingComponentRequests(),
-                                isAutoDiscardStaleComponentRequests())
-                        .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
-
-                if (isMultiConfProject(build) && isDeployArtifacts()) {
-                    if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
-                        String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
-                        listener.getLogger().println(error);
-                        build.setResult(Result.FAILURE);
-                        throw new IllegalArgumentException(error);
-                    }
-                    boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
-                    if (isFiltered) {
-                        publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
-                    }
-                }
+                finalPublisherBuilder.serverDetails(serverDetails);
 
                 ResolverContext resolverContext = null;
                 if (StringUtils.isNotBlank(serverDetails.getResolveReleaseRepository().getRepoKey())) {
@@ -525,7 +527,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 }
 
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, publisherBuilder.build(), resolverContext);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, finalPublisherBuilder.build(), resolverContext);
                 } catch (Exception e) {
                     listener.getLogger().println(e.getMessage());
                     throw new RuntimeException(e);
@@ -537,24 +539,30 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     throws IOException, InterruptedException {
                 boolean success = false;
                 boolean releaseSuccess = true;
+                Result result = build.getResult();
+
                 if (isRelease(build)) {
                     releaseSuccess = releaseWrapper.tearDown(build, listener);
                 }
                 if (gradleBuild != null) {
-                    synchronized (this) {
+                    /**
+                     * In case the last thread finished he`s build; restore back the original values, remove the build
+                     *  from the concurrent builds map. Same thing for Aborted action from the user.
+                     */
+                    if (concurrentBuildHandler.get(buildName).getThreadsCounter().decrementAndGet() == 0 ||
+                            result != null && result.equals(Result.ABORTED)) {
                         // restore the original configuration
                         setTargetsField(gradleBuild, "switches", finalSwitches);
                         setTargetsField(gradleBuild, "tasks", finalOriginalTasks);
+                        concurrentBuildHandler.remove(buildName);
                     }
                 }
-                Result result = build.getResult();
                 if (result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     if (isDeployBuildInfo()) {
                         build.getActions().add(new BuildInfoResultAction(getArtifactoryUrl(), build));
                         if (isAllowPromotionOfNonStagedBuilds()) {
                             ArtifactoryGradleConfigurator configurator = ActionableHelper.getBuildWrapper(
-                                    (BuildableItemWithBuildWrappers) build.getProject(),
-                                    ArtifactoryGradleConfigurator.class);
+                                    build.getProject(), ArtifactoryGradleConfigurator.class);
                             if (configurator != null) {
                                 build.getActions()
                                         .add(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(build,
@@ -564,9 +572,38 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     }
                     success = true;
                 }
+                // Aborted action from the user.
+                if (result != null && result.equals(Result.ABORTED)) {
+                    concurrentBuildHandler.remove(buildName);
+                }
+
                 return success && releaseSuccess;
             }
         };
+    }
+
+
+    private PublisherContext.Builder getBuilder() {
+        return new PublisherContext.Builder()
+                .artifactoryServer(getArtifactoryServer())
+                .deployerOverrider(ArtifactoryGradleConfigurator.this).runChecks(isRunChecks())
+                .includePublishArtifacts(isIncludePublishArtifacts())
+                .violationRecipients(getViolationRecipients()).scopes(getScopes())
+                .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
+                .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+                .skipBuildInfoDeploy(!isDeployBuildInfo())
+                .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
+                .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
+                .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
+                .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
+                .aggregateBuildIssues(isAggregateBuildIssues())
+                .aggregationBuildStatus(getAggregationBuildStatus())
+                .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
+                        getBlackDuckReportRecipients(), getBlackDuckScopes(),
+                        isBlackDuckIncludePublishedArtifacts(), isAutoCreateMissingComponentRequests(),
+                        isAutoDiscardStaleComponentRequests())
+                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
     }
 
     public boolean isRelease(AbstractBuild build) {
@@ -585,11 +622,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     private void setTargetsField(Gradle builder, String fieldName, String value) {
         try {
-            synchronized (this) {
-                Field targetsField = builder.getClass().getDeclaredField(fieldName);
-                targetsField.setAccessible(true);
-                targetsField.set(builder, value);
-            }
+            Field targetsField = builder.getClass().getDeclaredField(fieldName);
+            targetsField.setAccessible(true);
+            targetsField.set(builder, value);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -643,6 +678,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         private List<VirtualRepository> virtualRepositories;
         private List<PluginSettings> userPluginKeys = Collections.emptyList();
         private AbstractProject<?, ?> item;
+
         public DescriptorImpl() {
             super(ArtifactoryGradleConfigurator.class);
             load();
@@ -656,9 +692,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         public boolean isApplicable(AbstractProject<?, ?> item) {
             this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
-                item.getClass().isAssignableFrom(MatrixProject.class) ||
+                    item.getClass().isAssignableFrom(MatrixProject.class) ||
                     (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
-                        item.getClass().isAssignableFrom(MultiJobProject.class));
+                            item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
         private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
@@ -677,6 +713,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 public boolean isOverridingDefaultDeployer() {
                     return overridingDeployerCredentials;
                 }
+
                 public Credentials getOverridingDeployerCredentials() {
                     if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
                         return new Credentials(credentialsUsername, credentialsPassword);
@@ -689,8 +726,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             for (UserPluginInfo p : pluginInfoList) {
                 Map<String, String> paramsMap = Maps.newHashMap();
                 List<UserPluginInfoParam> params = p.getPluginParams();
-                for(UserPluginInfoParam param : params) {
-                    paramsMap.put(((String)param.getKey()), ((String)param.getDefaultValue()));
+                for (UserPluginInfoParam param : params) {
+                    paramsMap.put(((String) param.getKey()), ((String) param.getDefaultValue()));
                 }
 
                 PluginSettings plugin = new PluginSettings(p.getPluginName(), paramsMap);

@@ -432,7 +432,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 build.setResult(Result.FAILURE);
                 throw new IllegalArgumentException(error);
             }
-            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
+            boolean isFiltered = MultiConfigurationUtils.isfiltrated(build, getArtifactoryCombinationFilter());
             if (isFiltered) {
                 publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
             }

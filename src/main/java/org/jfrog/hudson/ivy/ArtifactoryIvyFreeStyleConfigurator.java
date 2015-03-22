@@ -38,7 +38,6 @@ import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
-import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -53,6 +52,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.jfrog.hudson.util.ConcurrentJobsHelper.concurrentBuildHandler;
+import static org.jfrog.hudson.util.ConcurrentJobsHelper.createMultiConfBuild;
+import static org.jfrog.hudson.util.plugins.MultiConfigurationUtils.isfiltrated;
+import static org.jfrog.hudson.util.plugins.MultiConfigurationUtils.validateCombinationFilter;
 
 
 /**
@@ -331,7 +336,135 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
-        PublisherContext.Builder publisherBuilder = new PublisherContext.Builder().artifactoryServer(getArtifactoryServer())
+        PublisherContext.Builder publisherBuilder = getBuilder();
+        RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
+        final String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
+        int activeConfNum = 1;
+
+        if (isMultiConfProject(build) && isDeployArtifacts()) {
+            validateCombinationFilter(build, listener, getArtifactoryCombinationFilter());
+            boolean isFiltered = isfiltrated(build, getArtifactoryCombinationFilter());
+            if (isFiltered) {
+                publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
+            }
+            activeConfNum = ((MatrixProject) build.getParent().getParent()).getActiveConfigurations().size();
+        }
+
+        // Register the build to the concurrent map
+        if (!concurrentBuildHandler.containsKey(buildName)) {
+            ConcurrentJobsHelper.ConcurrentBuild concurrentBuild;
+            concurrentBuild = createMultiConfBuild(new AtomicInteger(activeConfNum));
+            concurrentBuildHandler.putIfAbsent(buildName, concurrentBuild);
+        }
+
+        final Ant antBuild = getLastAntBuild(build.getProject());
+
+        String originalTargets = null;
+        if (antBuild != null) {
+            originalTargets = antBuild.getTargets();
+
+            // Only one of the threads suppose to initialized the build
+            if (!concurrentBuildHandler.get(buildName).getInitialized().get()) {
+                synchronized (concurrentBuildHandler.get(buildName)) {
+                    if (!concurrentBuildHandler.get(buildName).getInitialized().get()) {
+                        setTargetsField(antBuild, originalTargets + getAntArgs());
+                        concurrentBuildHandler.get(buildName).getInitialized().getAndSet(true);
+                    }
+                }
+            }
+        }
+
+        build.setResult(Result.SUCCESS);
+        final String finalOriginalTargets = originalTargets;
+        final PublisherContext finalPublisherContext = publisherBuilder.build();
+
+        return new Environment() {
+            @Override
+            public void buildEnvVars(Map<String, String> env) {
+                super.buildEnvVars(env);
+                try {
+                    String actualDependencyDirPath = actualDependencyDirPath(build);
+                    env.put("ARTIFACTORY_CACHE_LIBS", actualDependencyDirPath);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, finalPublisherContext, null);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public boolean tearDown(AbstractBuild build, BuildListener listener)
+                    throws IOException, InterruptedException {
+                Result result = build.getResult();
+
+                if (antBuild != null) {
+                    /**
+                     * In case the last thread finished he`s build; restore back the original values, remove the build
+                     * from the concurrent builds map. Same thing for Aborted action from the user.
+                     */
+                    if (concurrentBuildHandler.get(buildName).getThreadsCounter().decrementAndGet() == 0 ||
+                            result != null && result.equals(Result.ABORTED)) {
+                        String originalTargets = finalOriginalTargets;
+                        originalTargets = originalTargets.replace(getAntArgs(), StringUtils.EMPTY);
+                        setTargetsField(antBuild, originalTargets);
+                        concurrentBuildHandler.remove(buildName);
+                    }
+                }
+
+                if (!finalPublisherContext.isSkipBuildInfoDeploy() && (result == null ||
+                        result.isBetterOrEqualTo(Result.SUCCESS))) {
+                    build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
+                    build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
+                            ArtifactoryIvyFreeStyleConfigurator.this));
+                }
+
+                // Aborted action from the user.
+                if (result != null && result.equals(Result.ABORTED)) {
+                    concurrentBuildHandler.remove(buildName);
+                }
+
+                return true;
+            }
+        };
+    }
+
+    private String actualDependencyDirPath(AbstractBuild build) throws IOException, InterruptedException {
+        File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
+        FilePath actualDependencyDir =
+                PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
+        String actualDependencyDirPath = actualDependencyDir.getRemote();
+        actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
+        actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
+        return actualDependencyDirPath;
+    }
+
+    private void setTargetsField(Ant builder, String targets) {
+        try {
+            Field targetsField = builder.getClass().getDeclaredField("targets");
+            targetsField.setAccessible(true);
+            targetsField.set(builder, targets);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String getAntArgs() {
+        String lib = " -lib ${ARTIFACTORY_CACHE_LIBS} ";
+        String listener = "-listener org.jfrog.build.extractor.listener.ArtifactoryBuildListener";
+
+        return lib + listener;
+    }
+
+    private Ant getLastAntBuild(AbstractProject project) {
+        if (project instanceof Project) {
+            List<Ant> ants = ActionableHelper.getBuilder((Project) project, Ant.class);
+            return Iterables.getLast(ants, null);
+        }
+        return null;
+    }
+
+    private PublisherContext.Builder getBuilder() {
+        return new PublisherContext.Builder().
+                artifactoryServer(getArtifactoryServer())
                 .serverDetails(getDetails()).deployerOverrider(ArtifactoryIvyFreeStyleConfigurator.this)
                 .runChecks(isRunChecks()).includePublishArtifacts(isIncludePublishArtifacts())
                 .violationRecipients(getViolationRecipients()).scopes(getScopes())
@@ -347,101 +480,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
-
-        if (isMultiConfProject(build) && isDeployArtifacts()) {
-            if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
-                String error = "The field \"Combination Matches\" is empty, but id defined as mandatory!";
-                listener.getLogger().println(error);
-                build.setResult(Result.FAILURE);
-                throw new IllegalArgumentException(error);
-            }
-            boolean isFiltered = MultiConfigurationUtils.isfiltered(build, getArtifactoryCombinationFilter());
-            if (isFiltered) {
-                publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
-            }
-        }
-
-        File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
-        final FilePath actualDependencyDir =
-                PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
-        final Ant antBuild = getLastAntBuild(build.getProject());
-        String originalTargets = null;
-        if (antBuild != null) {
-            originalTargets = antBuild.getTargets();
-            setTargetsField(antBuild, getAntArgs(originalTargets, actualDependencyDir));
-        }
-        build.setResult(Result.SUCCESS);
-        final String finalOriginalTargets = originalTargets;
-        final PublisherContext publisherContext = publisherBuilder.build();
-
-        return new Environment() {
-            @Override
-            public void buildEnvVars(Map<String, String> env) {
-                super.buildEnvVars(env);
-                try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, publisherContext, null);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @Override
-            public boolean tearDown(AbstractBuild build, BuildListener listener)
-                    throws IOException, InterruptedException {
-                if (antBuild != null) {
-                    setTargetsField(antBuild, finalOriginalTargets);
-                }
-                Result result = build.getResult();
-                if (!publisherContext.isSkipBuildInfoDeploy() && (result == null || result.isBetterOrEqualTo(Result.SUCCESS))) {
-                    build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
-                    build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
-                            ArtifactoryIvyFreeStyleConfigurator.this));
-                }
-                return true;
-            }
-        };
-    }
-
-    private synchronized void setTargetsField(Ant builder, String targets) {
-        try {
-            Field targetsField = builder.getClass().getDeclaredField("targets");
-            targetsField.setAccessible(true);
-            targetsField.set(builder, targets);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private synchronized String getAntArgs(String originalTargets, FilePath actualDependencyDir) {
-        String actualDependencyDirPath = actualDependencyDir.getRemote();
-        actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
-        actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";
-        String lib = "-lib " + actualDependencyDirPath;
-        String listener = "-listener org.jfrog.build.extractor.listener.ArtifactoryBuildListener";
-
-        String targets = originalTargets == null ? "" : originalTargets;
-        if (!targets.contains(lib)) {
-            if (!targets.endsWith(" ")) {
-                targets += " ";
-            }
-            targets += lib;
-        }
-        if (!targets.contains(listener)) {
-            if (!targets.endsWith(" ")) {
-                targets += " ";
-            }
-            targets += " " + listener;
-        }
-
-        return targets;
-    }
-
-    private Ant getLastAntBuild(AbstractProject project) {
-        if (project instanceof Project) {
-            List<Ant> ants = ActionableHelper.getBuilder((Project) project, Ant.class);
-            return Iterables.getLast(ants, null);
-        }
-        return null;
     }
 
     public ArtifactoryServer getArtifactoryServer() {
@@ -449,7 +487,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public List<Repository> getReleaseRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositoryList, details.getDeploySnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositoryList,
+                details.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
     private boolean isMultiConfProject(AbstractBuild build) {
@@ -476,9 +515,9 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         public boolean isApplicable(AbstractProject<?, ?> item) {
             this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
-                item.getClass().isAssignableFrom(MatrixProject.class) ||
-                (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
-                    item.getClass().isAssignableFrom(MultiJobProject.class));
+                    item.getClass().isAssignableFrom(MatrixProject.class) ||
+                    (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
+                            item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
         /**
@@ -492,12 +531,16 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername,
+                                                            String credentialsPassword,
+                                                            boolean overridingDeployerCredentials) {
             RefreshServerResponse response = new RefreshServerResponse();
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url,
+                    RepositoriesUtils.getArtifactoryServers());
 
             try {
-                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url,
+                        credentialsUsername, credentialsPassword,
                         overridingDeployerCredentials, artifactoryServer);
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);

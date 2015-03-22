@@ -2,7 +2,10 @@ package org.jfrog.hudson.util;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.model.Hudson;
+import hudson.model.Result;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
@@ -181,5 +184,17 @@ public abstract class RepositoriesUtils {
             }
         }
         return repositories;
+    }
+
+    public static void validateServerConfig(AbstractBuild build, BuildListener listener, ArtifactoryServer artifactoryServer,
+                                            String artifactoryUrl)
+            throws IOException {
+        if (artifactoryServer == null) {
+            listener.getLogger().format("No Artifactory server configured for %s. " +
+                    "Please check your configuration.", artifactoryUrl).println();
+            build.setResult(Result.FAILURE);
+            throw new IOException("No Artifactory server ;configured for " + artifactoryUrl +
+                    ". Please check your configuration.");
+        }
     }
 }
