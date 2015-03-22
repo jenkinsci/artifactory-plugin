@@ -295,31 +295,10 @@
             <version>4.8.2</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-            <version>4.4</version>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!--Some other plugins, such as Git Client,
-                collapse with the httpClient-4.4 in the Jenkins classloader
-            -->
-            <plugin>
-                <groupId>org.jenkins-ci.tools</groupId>
-                <artifactId>maven-hpi-plugin</artifactId>
-                <configuration>
-                    <globalMaskClasses>org.apache.http.</globalMaskClasses>
-                    <maskClasses>org.apache.http.</maskClasses>
-                </configuration>
-            </plugin>
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
