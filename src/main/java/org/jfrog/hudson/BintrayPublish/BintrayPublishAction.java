@@ -45,7 +45,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         signMethodMap.put("Use descriptor", "");
     }
 
-    private final String MINIMAL_SUPPORTED_VERSION = "3.5.2";
+    private final String MINIMAL_SUPPORTED_VERSION = "3.5.3";
     private final AbstractBuild build;
     private final C configurator;
 
