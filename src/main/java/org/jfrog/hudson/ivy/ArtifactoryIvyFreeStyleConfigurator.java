@@ -52,10 +52,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.jfrog.hudson.util.ConcurrentJobsHelper.concurrentBuildHandler;
-import static org.jfrog.hudson.util.ConcurrentJobsHelper.createMultiConfBuild;
 import static org.jfrog.hudson.util.plugins.MultiConfigurationUtils.isfiltrated;
 import static org.jfrog.hudson.util.plugins.MultiConfigurationUtils.validateCombinationFilter;
 
@@ -339,7 +336,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         PublisherContext.Builder publisherBuilder = getBuilder();
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
         final String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
-        int activeConfNum = 1;
+        int totalBuilds = 1;
 
         if (isMultiConfProject(build) && isDeployArtifacts()) {
             validateCombinationFilter(build, listener, getArtifactoryCombinationFilter());
@@ -347,35 +344,31 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             if (isFiltered) {
                 publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
             }
-            activeConfNum = ((MatrixProject) build.getParent().getParent()).getActiveConfigurations().size();
-        }
-
-        // Register the build to the concurrent map
-        if (!concurrentBuildHandler.containsKey(buildName)) {
-            ConcurrentJobsHelper.ConcurrentBuild concurrentBuild;
-            concurrentBuild = createMultiConfBuild(new AtomicInteger(activeConfNum));
-            concurrentBuildHandler.putIfAbsent(buildName, concurrentBuild);
+            totalBuilds = ((MatrixProject) build.getParent().getParent()).getActiveConfigurations().size();
         }
 
         final Ant antBuild = getLastAntBuild(build.getProject());
 
-        String originalTargets = null;
         if (antBuild != null) {
-            originalTargets = antBuild.getTargets();
-
-            // Only one of the threads suppose to initialized the build
-            if (!concurrentBuildHandler.get(buildName).getInitialized().get()) {
-                synchronized (concurrentBuildHandler.get(buildName)) {
-                    if (!concurrentBuildHandler.get(buildName).getInitialized().get()) {
-                        setTargetsField(antBuild, originalTargets + getAntArgs());
-                        concurrentBuildHandler.get(buildName).getInitialized().getAndSet(true);
-                    }
+            // The ConcurrentBuildSetupSync helper class is used to make sure that the code
+            // inside its setUp() method is invoked by only one job in this build
+            // (matrix project builds include more that one job) and that all other jobs
+            // wait till the seUup() method finishes.
+            new ConcurrentJobsHelper.ConcurrentBuildSetupSync(buildName, totalBuilds) {
+                @Override
+                public void setUp() {
+                    // Obtain the current build and use it to store the configured targets.
+                    // We store them because we override them during the build and we'll need
+                    // their original values at the tear down stage so that they can be restored.
+                    ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
+                    concurrentBuild.putParam("targets", antBuild.getTargets());
+                    // Override the targets after we stored them:
+                    setTargetsField(antBuild, antBuild.getTargets() + getAntArgs());
                 }
-            }
+            };
         }
 
         build.setResult(Result.SUCCESS);
-        final String finalOriginalTargets = originalTargets;
         final PublisherContext finalPublisherContext = publisherBuilder.build();
 
         return new Environment() {
@@ -397,17 +390,20 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 Result result = build.getResult();
 
                 if (antBuild != null) {
-                    /**
-                     * In case the last thread finished he`s build; restore back the original values, remove the build
-                     * from the concurrent builds map. Same thing for Aborted action from the user.
-                     */
-                    if (concurrentBuildHandler.get(buildName).getThreadsCounter().decrementAndGet() == 0 ||
-                            result != null && result.equals(Result.ABORTED)) {
-                        String originalTargets = finalOriginalTargets;
-                        originalTargets = originalTargets.replace(getAntArgs(), StringUtils.EMPTY);
-                        setTargetsField(antBuild, originalTargets);
-                        concurrentBuildHandler.remove(buildName);
-                    }
+                    // The ConcurrentBuildTearDownSync helper class is used to make sure that the code
+                    // inside its tearDown() method is invoked by only one job in this build
+                    // (matrix project builds include more that one job) and that this
+                    // job is the last one running.
+                    new ConcurrentJobsHelper.ConcurrentBuildTearDownSync(buildName, result) {
+                        @Override
+                        public void tearDown() {
+                            // Restore the original targets of this build (we overrided their
+                            // values in the setUp stage):
+                            ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
+                            String targets = concurrentBuild.getParam("targets");
+                            setTargetsField(antBuild, targets);
+                        }
+                    };
                 }
 
                 if (!finalPublisherContext.isSkipBuildInfoDeploy() && (result == null ||
@@ -417,11 +413,11 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                             ArtifactoryIvyFreeStyleConfigurator.this));
                 }
 
-                // Aborted action from the user.
-                if (result != null && result.equals(Result.ABORTED)) {
-                    concurrentBuildHandler.remove(buildName);
+                // Aborted action by the user:
+                if (Result.ABORTED.equals(result)) {
+                    ConcurrentJobsHelper.concurrentBuildHandler.remove(buildName);
                 }
-
+listener.getLogger().println("********** " + ConcurrentJobsHelper.concurrentBuildHandler.size());
                 return true;
             }
         };

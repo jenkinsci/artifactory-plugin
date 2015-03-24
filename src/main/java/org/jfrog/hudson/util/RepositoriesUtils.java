@@ -186,15 +186,14 @@ public abstract class RepositoriesUtils {
         return repositories;
     }
 
-    public static void validateServerConfig(AbstractBuild build, BuildListener listener, ArtifactoryServer artifactoryServer,
-                                            String artifactoryUrl)
-            throws IOException {
+    public static void validateServerConfig(AbstractBuild build, BuildListener listener,
+            ArtifactoryServer artifactoryServer, String artifactoryUrl) throws IOException {
         if (artifactoryServer == null) {
-            listener.getLogger().format("No Artifactory server configured for %s. " +
-                    "Please check your configuration.", artifactoryUrl).println();
+            String error = "No Artifactory server configured for " + artifactoryUrl +
+                    ". Please check your configuration.";
+            listener.getLogger().println(error);
             build.setResult(Result.FAILURE);
-            throw new IOException("No Artifactory server ;configured for " + artifactoryUrl +
-                    ". Please check your configuration.");
+            throw new IOException(error);
         }
     }
 }

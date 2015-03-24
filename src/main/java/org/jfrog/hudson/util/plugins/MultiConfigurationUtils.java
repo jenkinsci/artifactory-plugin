@@ -16,7 +16,7 @@ import java.util.Map;
 public class MultiConfigurationUtils {
     public static void validateCombinationFilter(AbstractBuild build, BuildListener listener, String combFilter) {
         if (StringUtils.isBlank(combFilter)) {
-            String error = "The field \"Combination Matches\" is empty, but id defined as mandatory!";
+            String error = "The \"Combination Matches\" field is mandatory. It cannot be empty.";
             listener.getLogger().println(error);
             build.setResult(Result.FAILURE);
             throw new IllegalArgumentException(error);

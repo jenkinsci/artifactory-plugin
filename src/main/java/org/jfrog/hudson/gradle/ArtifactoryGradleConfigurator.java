@@ -57,11 +57,6 @@ import org.kohsuke.stapler.bind.JavaScriptMethod;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.jfrog.hudson.util.ConcurrentJobsHelper.concurrentBuildHandler;
-import static org.jfrog.hudson.util.ConcurrentJobsHelper.createMultiConfBuild;
-
 
 /**
  * Gradle-Artifactory plugin configuration, allows to add the server details, deployment username/password, as well as
@@ -399,7 +394,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
 
         final String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
-        int activeConfNum = 1;
+        int totalBuilds = 1;
 
         if (isMultiConfProject(build) && isDeployArtifacts()) {
             if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
@@ -412,57 +407,50 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             if (isFiltered) {
                 publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
             }
-            activeConfNum = ((MatrixProject) build.getParent().getParent()).getActiveConfigurations().size();
-        }
-
-        // Register the build to the concurrent map
-        if (!concurrentBuildHandler.containsKey(buildName)) {
-            ConcurrentJobsHelper.ConcurrentBuild concurrentBuild;
-            concurrentBuild = createMultiConfBuild(new AtomicInteger(activeConfNum));
-            concurrentBuildHandler.putIfAbsent(buildName, concurrentBuild);
+            totalBuilds = ((MatrixProject) build.getParent().getParent()).getActiveConfigurations().size();
         }
 
         if (isRelease(build)) {
             releaseWrapper.setUp(build, launcher, listener);
         }
 
-        String switches = null;
-        String originalTasks = null;
         final Gradle gradleBuild = getLastGradleBuild(build.getProject());
         if (gradleBuild != null) {
-            switches = gradleBuild.getSwitches();
-            originalTasks = gradleBuild.getTasks();
+            // The ConcurrentBuildSetupSync helper class is used to make sure that the code
+            // inside its setUp() method is invoked by only one job in this build
+            // (matrix project builds include more that one job) and that all other jobs
+            // wait till the seUup() method finishes.
+            new ConcurrentJobsHelper.ConcurrentBuildSetupSync(buildName, totalBuilds) {
+                @Override
+                public void setUp() {
+                    // Obtain the current build and use it to store the configured switches and tasks.
+                    // We store them because we override them during the build and we'll need
+                    // their original values at the tear down stage so that they can be restored.
+                    ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
+                    concurrentBuild.putParam("switches", gradleBuild.getSwitches());
+                    concurrentBuild.putParam("tasks", gradleBuild.getTasks());
 
-            // Only one of the threads suppose to initialized the build
-            if (!concurrentBuildHandler.get(buildName).getInitialized().get()) {
-                synchronized (concurrentBuildHandler.get(buildName)) {
-                    if (!concurrentBuildHandler.get(buildName).getInitialized().get()) {
-                        if (!skipInjectInitScript) {
-
-                            if (!switches.contains("${ARTIFACTORY_INIT_SCRIPT}")) {
-                                setTargetsField(gradleBuild, "switches", switches + " " + "${ARTIFACTORY_INIT_SCRIPT}");
-                            }
+                    // Override the build switches:
+                    if (!skipInjectInitScript) {
+                        if (!gradleBuild.getSwitches().contains("${ARTIFACTORY_INIT_SCRIPT}")) {
+                            setTargetsField(gradleBuild, "switches", gradleBuild.getSwitches() + " " + "${ARTIFACTORY_INIT_SCRIPT}");
                         }
-                        if (!StringUtils.contains(originalTasks, BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
-                            // In case we specified "alternative goals" in the release view we should override the build goals
-                            if (isRelease(build) && StringUtils.isNotBlank(releaseWrapper.getAlternativeTasks())) {
-                                setTargetsField(gradleBuild, "tasks", "${ARTIFACTORY_TASKS}");
-                            } else {
-                                setTargetsField(gradleBuild, "tasks", originalTasks + " ${ARTIFACTORY_TASKS}");
-                            }
+                    }
+                    // Override the build tasks:
+                    if (!StringUtils.contains(gradleBuild.getTasks(), BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
+                        // In case we specified "alternative goals" in the release view we should override the build goals
+                        if (isRelease(build) && StringUtils.isNotBlank(releaseWrapper.getAlternativeTasks())) {
+                            setTargetsField(gradleBuild, "tasks", "${ARTIFACTORY_TASKS}");
+                        } else {
+                            setTargetsField(gradleBuild, "tasks", gradleBuild.getTasks() + " ${ARTIFACTORY_TASKS}");
                         }
-
-                        concurrentBuildHandler.get(buildName).getInitialized().getAndSet(true);
                     }
                 }
-            }
-
+            };
         } else {
             listener.getLogger().println("[Warning] No Gradle build configured");
         }
 
-        final String finalSwitches = switches;
-        final String finalOriginalTasks = originalTasks;
         final PublisherContext.Builder finalPublisherBuilder = publisherBuilder;
 
         return new Environment() {
@@ -545,17 +533,20 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     releaseSuccess = releaseWrapper.tearDown(build, listener);
                 }
                 if (gradleBuild != null) {
-                    /**
-                     * In case the last thread finished he`s build; restore back the original values, remove the build
-                     *  from the concurrent builds map. Same thing for Aborted action from the user.
-                     */
-                    if (concurrentBuildHandler.get(buildName).getThreadsCounter().decrementAndGet() == 0 ||
-                            result != null && result.equals(Result.ABORTED)) {
-                        // restore the original configuration
-                        setTargetsField(gradleBuild, "switches", finalSwitches);
-                        setTargetsField(gradleBuild, "tasks", finalOriginalTasks);
-                        concurrentBuildHandler.remove(buildName);
-                    }
+                    // The ConcurrentBuildTearDownSync helper class is used to make sure that the code
+                    // inside its tearDown() method is invoked by only one job in this build
+                    // (matrix project builds include more that one job) and that this
+                    // job is the last one running.
+                    new ConcurrentJobsHelper.ConcurrentBuildTearDownSync(buildName, result) {
+                        @Override
+                        public void tearDown() {
+                            // Restore the original switches and tasks of this build (we overrided their
+                            // values in the setUp stage):
+                            ConcurrentJobsHelper.ConcurrentBuild build = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
+                            setTargetsField(gradleBuild, "switches", build.getParam("switches"));
+                            setTargetsField(gradleBuild, "tasks", build.getParam("tasks"));
+                        }
+                    };
                 }
                 if (result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     if (isDeployBuildInfo()) {
@@ -572,10 +563,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     }
                     success = true;
                 }
-                // Aborted action from the user.
-                if (result != null && result.equals(Result.ABORTED)) {
-                    concurrentBuildHandler.remove(buildName);
+                // Aborted action by the user:
+                if (Result.ABORTED.equals(result)) {
+                    ConcurrentJobsHelper.concurrentBuildHandler.remove(buildName);
                 }
+
+listener.getLogger().println("********** " + ConcurrentJobsHelper.concurrentBuildHandler.size());
 
                 return success && releaseSuccess;
             }
