@@ -146,7 +146,11 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setLicenses(String licenses) {
-        this.licenses = Lists.newArrayList(licenses.split(","));
+        this.licenses = Lists.newArrayList();
+        String[] licenseList = licenses.split(",");
+        for (String s : licenseList) {
+            this.licenses.add(s.trim());
+        }
     }
 
     public String getPassphrase() {
@@ -247,7 +251,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             }
 
             // if the client gets back to the progress (after the redirect) page when this thread already done,
-            // she will get an error message because the log dies with the thread. So lets delay up to 3 seconds
+            // she will get an error message because the log dies with the thread. So lets delay up to 2 seconds
             long timeToWait = 2000 - (System.currentTimeMillis() - started);
             if (timeToWait > 0) {
                 try {
@@ -260,5 +264,4 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             client.shutdown();
         }
     }
-
 }

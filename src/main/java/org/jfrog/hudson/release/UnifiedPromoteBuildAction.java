@@ -263,7 +263,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
                 build.save();
                 // if the client gets back to the progress (after the redirect) page when this thread already done,
-                // she will get an error message because the log dies with the thread. So lets delay up to 3 seconds
+                // she will get an error message because the log dies with the thread. So lets delay up to 2 seconds
                 long timeToWait = 2000 - (System.currentTimeMillis() - started);
                 if (timeToWait > 0) {
                     Thread.sleep(timeToWait);
