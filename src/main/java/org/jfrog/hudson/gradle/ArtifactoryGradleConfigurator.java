@@ -396,18 +396,20 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         final String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         int totalBuilds = 1;
 
-        if (isMultiConfProject(build) && isDeployArtifacts()) {
-            if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
-                String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
-                listener.getLogger().println(error);
-                build.setResult(Result.FAILURE);
-                throw new IllegalArgumentException(error);
-            }
-            boolean isFiltered = MultiConfigurationUtils.isfiltrated(build, getArtifactoryCombinationFilter());
-            if (isFiltered) {
-                publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
-            }
+        if (isMultiConfProject(build)) {
             totalBuilds = ((MatrixProject) build.getParent().getParent()).getActiveConfigurations().size();
+            if (isDeployArtifacts()) {
+                if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
+                    String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
+                    listener.getLogger().println(error);
+                    build.setResult(Result.FAILURE);
+                    throw new IllegalArgumentException(error);
+                }
+                boolean isFiltered = MultiConfigurationUtils.isfiltrated(build, getArtifactoryCombinationFilter());
+                if (isFiltered) {
+                    publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
+                }
+            }
         }
 
         if (isRelease(build)) {

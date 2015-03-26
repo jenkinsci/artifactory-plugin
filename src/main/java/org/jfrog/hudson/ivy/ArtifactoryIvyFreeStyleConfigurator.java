@@ -338,13 +338,15 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         final String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         int totalBuilds = 1;
 
-        if (isMultiConfProject(build) && isDeployArtifacts()) {
-            validateCombinationFilter(build, listener, getArtifactoryCombinationFilter());
-            boolean isFiltered = isfiltrated(build, getArtifactoryCombinationFilter());
-            if (isFiltered) {
-                publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
-            }
+        if (isMultiConfProject(build)) {
             totalBuilds = ((MatrixProject) build.getParent().getParent()).getActiveConfigurations().size();
+            if (isDeployArtifacts()) {
+                validateCombinationFilter(build, listener, getArtifactoryCombinationFilter());
+                boolean isFiltered = isfiltrated(build, getArtifactoryCombinationFilter());
+                if (isFiltered) {
+                    publisherBuilder.skipBuildInfoDeploy(true).deployArtifacts(false);
+                }
+            }
         }
 
         final Ant antBuild = getLastAntBuild(build.getProject());
