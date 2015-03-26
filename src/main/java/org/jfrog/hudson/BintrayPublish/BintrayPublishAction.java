@@ -59,9 +59,19 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         ArtifactoryServer artifactory = configurator.getArtifactoryServer();
         resetFields();
         req.bindParameters(this);
+        validateNotMandatoryFields();
         Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
         new PushToBintrayWorker(artifactory, credentials).start();
         resp.sendRedirect(".");
+    }
+
+    private void validateNotMandatoryFields() {
+        if (vcsUrl.isEmpty()) {
+            vcsUrl = null;
+        }
+        if (licenses.size() == 0){
+            licenses = null;
+        }
     }
 
     private void resetFields() {
@@ -102,7 +112,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setSubject(String subject) {
-        this.subject = subject;
+        this.subject = subject.trim();
     }
 
     public String getRepoName() {
@@ -110,11 +120,11 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setRepoName(String repoName) {
-        this.repoName = repoName;
+        this.repoName = repoName.trim();
     }
 
     public String getPackageName() {
-        return packageName;
+        return packageName.trim();
     }
 
     public void setPackageName(String packageName) {
@@ -122,7 +132,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public String getVersionName() {
-        return versionName;
+        return versionName.trim();
     }
 
     public void setVersionName(String versionName) {
@@ -145,7 +155,10 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         this.licenses = Lists.newArrayList();
         String[] licenseList = licenses.split(",");
         for (String s : licenseList) {
-            this.licenses.add(s.trim());
+            s = s.trim();
+            if (!s.isEmpty()) {
+                this.licenses.add(s);
+            }
         }
     }
 
@@ -154,7 +167,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setPassphrase(String passphrase) {
-        this.passphrase = passphrase;
+        this.passphrase = passphrase.trim();
     }
 
     public String getVcsUrl() {
@@ -162,7 +175,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setVcsUrl(String vcsUrl) {
-        this.vcsUrl = vcsUrl;
+        this.vcsUrl = vcsUrl.trim();
     }
 
     public AbstractBuild getBuild() {
@@ -258,6 +271,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                     ie.printStackTrace(listener.error(ie.getMessage()));
                 }
             }
+            passphrase = null;
             workerThread = null;
             client.shutdown();
         }
