@@ -25,9 +25,7 @@ import org.kohsuke.stapler.StaplerResponse;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This action is added to a successful build in order to push built artifacts to Bintray
@@ -36,27 +34,20 @@ import java.util.Map;
  */
 public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & DeployerOverrider> extends TaskAction implements BuildBadgeAction {
 
-    private static Map<String, String> signMethodMap;
+    private final static String MINIMAL_SUPPORTED_VERSION = "3.5.3";
 
-    static {
-        signMethodMap = new HashMap<String, String>();
-        signMethodMap.put("Sign", "true");
-        signMethodMap.put("Don't sign", "false");
-        signMethodMap.put("Use descriptor", "");
-    }
-
-    private final String MINIMAL_SUPPORTED_VERSION = "3.5.3";
     private final AbstractBuild build;
     private final C configurator;
 
-    private String subject;
-    private String repoName;
-    private String packageName;
-    private String versionName;
-    private String signMethod;
+    private boolean override;
+    private String  subject;
+    private String  repoName;
+    private String  packageName;
+    private String  versionName;
+    private String  signMethod;
     private List<String> licenses;
-    private String passphrase;
-    private String vcsUrl;
+    private String  passphrase;
+    private String  vcsUrl;
 
     public BintrayPublishAction(AbstractBuild build, C configurator) {
         this.build = build;
@@ -82,11 +73,20 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         this.licenses = Lists.newArrayList();
         this.passphrase = null;
         this.vcsUrl = null;
+        this.override = false;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
     public void doIndex(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         req.getView(this, getCurrentAction()).forward(req, resp);
+    }
+
+    public boolean isOverride() {
+        return override;
+    }
+
+    public void setOverride(boolean override) {
+        this.override = override;
     }
 
     public boolean hasPushToBintrayPermission() {
@@ -135,10 +135,6 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
 
     public void setSignMethod(String signMethod) {
         this.signMethod = signMethod;
-    }
-
-    public List<String> getSignMethods() {
-        return Lists.newArrayList("Use descriptor", "Sign", "Don't sign");
     }
 
     public String getLicenses() {
@@ -203,7 +199,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     // Check of the current Artifactory version supports "Push to Bintray" API
-    private boolean isValidArtifactoryVersion(ArtifactoryBuildInfoClient client, PrintStream logger) throws VersionException {
+    private boolean isValidArtifactoryVersion(ArtifactoryBuildInfoClient client) throws VersionException {
         ArtifactoryVersion version = client.verifyCompatibleArtifactoryVersion();
         return version.isAtLeast(new ArtifactoryVersion(MINIMAL_SUPPORTED_VERSION));
     }
@@ -223,33 +219,35 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         protected void perform(TaskListener listener) throws IOException {
             long started = System.currentTimeMillis();
 
+            BintrayUploadInfoOverride uploadInfoOverride =
+                    new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses, vcsUrl);
+
             PrintStream logger = listener.getLogger();
-            logger.println("Publishing to Bintray...");
 
             ArtifactoryBuildInfoClient client =
                     artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword(),
                             artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
-            try {
-                if (isValidArtifactoryVersion(client, logger)) {
+            if (override && !uploadInfoOverride.isValid()) {
+                logger.print("Please fill in all mandatory fields when pushing to Bintray without descriptor file\n");
+            } else {
+                try {
+                    logger.println("Publishing to Bintray...");
+                    if (isValidArtifactoryVersion(client)) {
+                        String buildName = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildName(build));
+                        String buildNumber = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
 
-                    BintrayUploadInfoOverride uploadInfoOverride =
-                            new BintrayUploadInfoOverride(subject, repoName, packageName, versionName, licenses, vcsUrl);
+                        BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethod.toString(),
+                                passphrase, uploadInfoOverride);
 
-                    String buildName = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildName(build));
-                    String buildNumber = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
-
-                    BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethodMap.get(signMethod),
-                            passphrase, uploadInfoOverride);
-
-                    logger.println(response);
-                } else {
-                    logger.println("Bintray push is not supported in your Artifactory version.");
+                        logger.println(response);
+                    } else {
+                        logger.println("Bintray push is not supported in your Artifactory version.");
+                    }
+                } catch (VersionException e) {
+                    logger.println(e.getMessage());
                 }
-            } catch (VersionException e) {
-                logger.println(e.getMessage());
             }
-
             // if the client gets back to the progress (after the redirect) page when this thread already done,
             // she will get an error message because the log dies with the thread. So lets delay up to 2 seconds
             long timeToWait = 2000 - (System.currentTimeMillis() - started);

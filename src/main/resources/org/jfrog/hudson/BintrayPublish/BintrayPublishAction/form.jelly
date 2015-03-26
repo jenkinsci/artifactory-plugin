@@ -1,63 +1,110 @@
 <j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout"
          xmlns:f="/lib/form">
+
+    <script>
+        function readOnlyMode() {
+            var gpgPassphrase = document.getElementById('gpgPassphrase');
+            var signMethodSelect = document.getElementById('gpgSign');
+            var option = signMethodSelect.options[signMethodSelect.selectedIndex];
+            if (option.value == "false") {
+                gpgPassphrase.readOnly = true;
+                gpgPassphrase.style.background = '#F0F0F0';
+            } else {
+                gpgPassphrase.readOnly = false;
+                gpgPassphrase.style.background = '#FFFFFF';
+            }
+        }
+
+        function overrideCheckBoxChange() {
+            var checkbox = document.getElementById('overrideCheckBox');
+            var overrideDiv = document.getElementById('overrideDiv');
+            var select = document.getElementById('gpgSign');
+            var descriptorOption = select.options[2];
+            var styleDisplay = checkbox.checked ? 'block' : 'none';
+            overrideDiv.style.display = styleDisplay;
+            /*
+             if (checkbox.checked) {
+             overrideDiv.style.display = 'blocked';
+             } else {
+             overrideDiv.style.display = 'none';
+             select.remove(descriptorOption);
+             }*/
+        }
+
+    </script>
+
     <l:layout title="Push to Bintray">
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
                 <f:section>
                     <h1>Push to Bintray</h1>
                     <h4>If descriptor file was uploaded as part of the build you can
-                        <a href="https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin">push your
-                        artifacts</a>,
+                        <a href="https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin#ArtifactoryPlugin-PushToBintray">
+                            push your
+                            artifacts</a>,
                         to Bintray as is. These parameters, in case you fill them, will override the descriptor file
                         completely.
                         If no such file was provided - these fields must be filled so you can push the build to
                         Bintray. If no such file was provided these fields must be filled
                     </h4>
-                    <f:entry title="Subject"
-                             help="/plugin/artifactory/help/BintrayPublishAction/help-subject.html">
-                        <f:textbox name="subject" value="${it.subject}"/>
-                    </f:entry>
-                    <f:entry title="Bintray Repository"
-                             help="/plugin/artifactory/help/BintrayPublishAction/help-repository.html">
-                        <f:textbox name="repoName" value="${it.repoName}"/>
-                    </f:entry>
-                    <f:entry title="Bintray Package Name"
-                             help="/plugin/artifactory/help/BintrayPublishAction/help-package.html">
-                        <f:textbox name="packageName" value="${it.packageName}"/>
-                    </f:entry>
-                    <f:entry title="Bintray Version Name"
-                             help="/plugin/artifactory/help/BintrayPublishAction/help-version.html">
-                        <f:textbox name="versionName" value="${it.versionName}"/>
-                    </f:entry>
-                    <f:entry title="Licenses"
-                             help="/plugin/artifactory/help/BintrayPublishAction/help-licenses.html">
-                        <f:textbox name="licenses" value="${it.licenses}"/>
-                    </f:entry>
+<!--
+                    <input type="checkbox" onchange="overrideCheckBoxChange()" id="overrideCheckBox" name="override">
+                        Override descriptor file
+                    </input>
+-->
+                    <f:optionalBlock title="Override descriptor file" name="override" checked="false"
+                                     help="/plugin/artifactory/help/BintrayPublishAction/help-override.html">
+                            <f:entry title="Subject"
+                                     help="/plugin/artifactory/help/BintrayPublishAction/help-subject.html">
+                                <f:textbox name="subject" value="${it.subject}"/>
+                            </f:entry>
+                            <f:entry title="Bintray Repository"
+                                     help="/plugin/artifactory/help/BintrayPublishAction/help-repository.html">
+                                <f:textbox name="repoName" value="${it.repoName}"/>
+                            </f:entry>
+                            <f:entry title="Bintray Package Name"
+                                     help="/plugin/artifactory/help/BintrayPublishAction/help-package.html">
+                                <f:textbox name="packageName" value="${it.packageName}"/>
+                            </f:entry>
+                            <f:entry title="Bintray Version Name"
+                                     help="/plugin/artifactory/help/BintrayPublishAction/help-version.html">
+                                <f:textbox name="versionName" value="${it.versionName}"/>
+                            </f:entry>
+                            <f:entry title="Licenses"
+                                     help="/plugin/artifactory/help/BintrayPublishAction/help-licenses.html">
+                                <f:textbox name="licenses" value="${it.licenses}"/>
+                            </f:entry>
+                            <f:entry title="VCS URL"
+                                     help="/plugin/artifactory/help/BintrayPublishAction/help-vcsUrl.html">
+                                <f:textbox name="vcsUrl" value="${it.vcsUrl}"/>
+                            </f:entry>
+                    </f:optionalBlock>
                     <f:entry title="Sign files"
                              help="/plugin/artifactory/help/BintrayPublishAction/help-sign.html">
-                        <select name="signMethod" class="setting-input">
-                            <j:forEach var="signMethod" items="${it.signMethods}">
-                                <f:option selected="${signMethod==it.signMethod}" value="${signMethod}">
-                                    ${signMethod}
-                                </f:option>
-                            </j:forEach>
+                        <select id="gpgSign" onchange="readOnlyMode()" name="signMethod" class="setting-input">
+                            <option value="true">
+                                Sign
+                            </option>
+                            <option value="descriptor">
+                                According to descriptor file
+                            </option>
+                            <option value="false">
+                                Don't sign
+                            </option>
                         </select>
                     </f:entry>
-                    <f:entry title="Passphrase"
+                    <f:entry title="GPG Passphrase"
                              help="/plugin/artifactory/help/BintrayPublishAction/help-passphrase.html">
-                        <input type="textbox" name="passphrase" value="${it.passphrase}" autocomplete="off"
+                        <input id="gpgPassphrase" type="textbox" name="passphrase" value="${it.passphrase}"
+                               autocomplete="off"
                                class="setting-input"/>
                     </f:entry>
-                    <f:entry title="VCS URL"
-                             help="/plugin/artifactory/help/BintrayPublishAction/help-vcsUtl.html">
-                        <f:textbox name="vcsUrl" value="${it.vcsUrl}"/>
-                    </f:entry>
-                    <tr>
-                        <td colspan="3">
-                            <f:submit value="${%Push to Bintray}"/>
-                        </td>
-                    </tr>
                 </f:section>
+                <tr>
+                    <td colspan="3">
+                        <f:submit value="${%Push to Bintray}"/>
+                    </td>
+                </tr>
             </f:form>
         </l:main-panel>
     </l:layout>

@@ -208,6 +208,7 @@
                     </table>
                     <table style="width: 100%">
                         <f:optionalBlock field="allowBintrayPushOfNonStageBuilds"
+                                         help="/plugin/artifactory/help/common/help-allowPushToBintrayOfNonStagedBuilds.html"
                                          title="Allow push to Bintray for non-staged builds"
                                          inline="true">
                         </f:optionalBlock>
