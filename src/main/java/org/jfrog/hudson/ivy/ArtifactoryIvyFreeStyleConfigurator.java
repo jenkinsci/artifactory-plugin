@@ -365,7 +365,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                     ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
                     concurrentBuild.putParam("targets", antBuild.getTargets());
                     // Override the targets after we stored them:
-                    setTargetsField(antBuild, antBuild.getTargets() + getAntArgs());
+                    setTargetsField(antBuild, antBuild.getTargets() + " " + getAntArgs());
                 }
             };
         }
@@ -403,6 +403,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                             // values in the setUp stage):
                             ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
                             String targets = concurrentBuild.getParam("targets");
+                            targets = targets.replace(getAntArgs(), "");
                             setTargetsField(antBuild, targets);
                         }
                     };
@@ -446,7 +447,7 @@ listener.getLogger().println("********** " + ConcurrentJobsHelper.concurrentBuil
     }
 
     private String getAntArgs() {
-        String lib = " -lib ${ARTIFACTORY_CACHE_LIBS} ";
+        String lib = "-lib ${ARTIFACTORY_CACHE_LIBS} ";
         String listener = "-listener org.jfrog.build.extractor.listener.ArtifactoryBuildListener";
 
         return lib + listener;
