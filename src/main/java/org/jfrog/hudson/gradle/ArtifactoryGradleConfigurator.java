@@ -553,12 +553,17 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 if (result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     if (isDeployBuildInfo()) {
                         build.getActions().add(new BuildInfoResultAction(getArtifactoryUrl(), build));
-                        if (isAllowPromotionOfNonStagedBuilds()) {
-                            ArtifactoryGradleConfigurator configurator = ActionableHelper.getBuildWrapper(
-                                    build.getProject(), ArtifactoryGradleConfigurator.class);
-                            if (configurator != null) {
+                        ArtifactoryGradleConfigurator configurator = ActionableHelper.getBuildWrapper(
+                                build.getProject(), ArtifactoryGradleConfigurator.class);
+                        if (configurator != null) {
+                            if (isAllowPromotionOfNonStagedBuilds()) {
                                 build.getActions()
                                         .add(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(build,
+                                                ArtifactoryGradleConfigurator.this));
+                            }
+                            if (isAllowBintrayPushOfNonStageBuilds()) {
+                                build.getActions()
+                                        .add(new BintrayPublishAction<ArtifactoryGradleConfigurator>(build,
                                                 ArtifactoryGradleConfigurator.this));
                             }
                         }
@@ -570,7 +575,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     ConcurrentJobsHelper.concurrentBuildHandler.remove(buildName);
                 }
 
-listener.getLogger().println("********** " + ConcurrentJobsHelper.concurrentBuildHandler.size());
+                listener.getLogger().println("********** " + ConcurrentJobsHelper.concurrentBuildHandler.size());
 
                 return success && releaseSuccess;
             }
