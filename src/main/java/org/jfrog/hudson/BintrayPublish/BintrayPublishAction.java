@@ -59,21 +59,32 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         ArtifactoryServer artifactory = configurator.getArtifactoryServer();
         resetFields();
         req.bindParameters(this);
+        if (!override){
+            resetOverrideFields();
+        }
         Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
         new PushToBintrayWorker(artifactory, credentials).start();
         resp.sendRedirect(".");
     }
 
-    private void resetFields() {
+    private void resetFields(){
+        resetOverrideFields();
+        resetQueryFields();
+        this.override = false;
+    }
+
+    private void resetOverrideFields(){
         this.subject = null;
         this.repoName = null;
         this.packageName = null;
         this.versionName = null;
-        this.signMethod = null;
         this.licenses = Lists.newArrayList();
-        this.passphrase = null;
         this.vcsUrl = null;
-        this.override = false;
+
+    }
+    private void resetQueryFields() {
+        this.signMethod = null;
+        this.passphrase = null;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -118,7 +129,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public String getPackageName() {
-        return packageName.trim();
+        return packageName;
     }
 
     public void setPackageName(String packageName) {
@@ -128,7 +139,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public String getVersionName() {
-        return versionName.trim();
+        return versionName;
     }
 
     public void setVersionName(String versionName) {
@@ -177,7 +188,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public String getVcsUrl() {
-        return vcsUrl.trim();
+        return vcsUrl;
     }
 
     public void setVcsUrl(String vcsUrl) {
