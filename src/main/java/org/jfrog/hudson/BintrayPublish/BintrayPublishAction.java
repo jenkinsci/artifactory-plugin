@@ -40,14 +40,14 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     private final C configurator;
 
     private boolean override;
-    private String  subject;
-    private String  repoName;
-    private String  packageName;
-    private String  versionName;
-    private String  signMethod;
+    private String subject;
+    private String repoName;
+    private String packageName;
+    private String versionName;
+    private String signMethod;
     private List<String> licenses;
-    private String  passphrase;
-    private String  vcsUrl;
+    private String passphrase;
+    private String vcsUrl;
 
     public BintrayPublishAction(AbstractBuild build, C configurator) {
         this.build = build;
@@ -59,19 +59,9 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         ArtifactoryServer artifactory = configurator.getArtifactoryServer();
         resetFields();
         req.bindParameters(this);
-        validateNotMandatoryFields();
         Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
         new PushToBintrayWorker(artifactory, credentials).start();
         resp.sendRedirect(".");
-    }
-
-    private void validateNotMandatoryFields() {
-        if (vcsUrl.isEmpty()) {
-            vcsUrl = null;
-        }
-        if (licenses.size() == 0){
-            licenses = null;
-        }
     }
 
     private void resetFields() {
@@ -112,7 +102,9 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setSubject(String subject) {
-        this.subject = subject.trim();
+        if (StringUtils.isNotBlank(subject)) {
+            this.subject = subject.trim();
+        }
     }
 
     public String getRepoName() {
@@ -120,7 +112,9 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setRepoName(String repoName) {
-        this.repoName = repoName.trim();
+        if (StringUtils.isNotEmpty(repoName)) {
+            this.repoName = repoName.trim();
+        }
     }
 
     public String getPackageName() {
@@ -128,7 +122,9 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setPackageName(String packageName) {
-        this.packageName = packageName;
+        if (StringUtils.isNotEmpty(packageName)) {
+            this.packageName = packageName;
+        }
     }
 
     public String getVersionName() {
@@ -136,7 +132,9 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setVersionName(String versionName) {
-        this.versionName = versionName;
+        if (StringUtils.isNotEmpty(versionName)) {
+            this.versionName = versionName;
+        }
     }
 
     public String getSignMethod() {
@@ -144,7 +142,9 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setSignMethod(String signMethod) {
-        this.signMethod = signMethod;
+        if (StringUtils.isNotEmpty(signMethod)) {
+            this.signMethod = signMethod;
+        }
     }
 
     public String getLicenses() {
@@ -152,13 +152,17 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setLicenses(String licenses) {
-        this.licenses = Lists.newArrayList();
-        String[] licenseList = licenses.split(",");
-        for (String s : licenseList) {
-            s = s.trim();
-            if (!s.isEmpty()) {
-                this.licenses.add(s);
+        if (StringUtils.isNotBlank(licenses)) {
+            this.licenses = Lists.newArrayList();
+            String[] licenseList = licenses.split(",");
+            for (String s : licenseList) {
+                s = s.trim();
+                if (!s.isEmpty()) {
+                    this.licenses.add(s);
+                }
             }
+        } else {
+            this.licenses = null;
         }
     }
 
@@ -167,15 +171,19 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public void setPassphrase(String passphrase) {
-        this.passphrase = passphrase.trim();
+        if (StringUtils.isNotEmpty(passphrase)) {
+            this.passphrase = passphrase.trim();
+        }
     }
 
     public String getVcsUrl() {
-        return vcsUrl;
+        return vcsUrl.trim();
     }
 
     public void setVcsUrl(String vcsUrl) {
-        this.vcsUrl = vcsUrl.trim();
+        if (StringUtils.isNotEmpty(vcsUrl)) {
+            this.vcsUrl = vcsUrl.trim();
+        }
     }
 
     public AbstractBuild getBuild() {
@@ -249,15 +257,13 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                     if (isValidArtifactoryVersion(client)) {
                         String buildName = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildName(build));
                         String buildNumber = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
-
-                        BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethod.toString(),
+                        BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethod,
                                 passphrase, uploadInfoOverride);
-
                         logger.println(response);
                     } else {
                         logger.println("Bintray push is not supported in your Artifactory version.");
                     }
-                } catch (VersionException e) {
+                } catch (Exception e) {
                     logger.println(e.getMessage());
                 }
             }
