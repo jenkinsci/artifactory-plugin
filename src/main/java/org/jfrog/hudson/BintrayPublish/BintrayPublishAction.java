@@ -266,8 +266,8 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
                 try {
                     logger.println("Publishing to Bintray...");
                     if (isValidArtifactoryVersion(client)) {
-                        String buildName = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildName(build));
-                        String buildNumber = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
+                        String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
+                        String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
                         BintrayResponse response = client.pushToBintray(buildName, buildNumber, signMethod,
                                 passphrase, uploadInfoOverride);
                         logger.println(response);
