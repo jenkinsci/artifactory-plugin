@@ -420,7 +420,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 if (Result.ABORTED.equals(result)) {
                     ConcurrentJobsHelper.concurrentBuildHandler.remove(buildName);
                 }
-listener.getLogger().println("********** " + ConcurrentJobsHelper.concurrentBuildHandler.size());
                 return true;
             }
         };

@@ -545,8 +545,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             // Restore the original switches and tasks of this build (we overrided their
                             // values in the setUp stage):
                             ConcurrentJobsHelper.ConcurrentBuild build = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
-                            setTargetsField(gradleBuild, "switches", build.getParam("switches"));
-                            setTargetsField(gradleBuild, "tasks", build.getParam("tasks"));
+                            String switches = build.getParam("switches");
+                            String tasks = build.getParam("tasks");
+                            switches = switches.replace("${ARTIFACTORY_INIT_SCRIPT}", "");
+                            tasks = tasks.replace("${ARTIFACTORY_TASKS}", "");
+                            setTargetsField(gradleBuild, "switches", switches);
+                            setTargetsField(gradleBuild, "tasks", tasks);
                         }
                     };
                 }
@@ -574,8 +578,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 if (Result.ABORTED.equals(result)) {
                     ConcurrentJobsHelper.concurrentBuildHandler.remove(buildName);
                 }
-
-                listener.getLogger().println("********** " + ConcurrentJobsHelper.concurrentBuildHandler.size());
 
                 return success && releaseSuccess;
             }
