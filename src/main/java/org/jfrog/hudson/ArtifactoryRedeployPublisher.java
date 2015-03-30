@@ -405,6 +405,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
+                if (isAllowBintrayPushOfNonStageBuilds()){
+                    build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
+                }
             }
             return true;
         } catch (Exception e) {

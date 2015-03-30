@@ -1,5 +1,5 @@
 <j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout"
-         xmlns:f="/lib/form">
+         xmlns:f="/lib/form" xmlns:st="jelly:stapler">
     <l:layout title="Push to Bintray">
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
@@ -44,11 +44,11 @@
                             <option value="true">
                                 Sign
                             </option>
-                            <option value="descriptor">
-                                According to descriptor file
-                            </option>
                             <option value="false">
                                 Don't sign
+                            </option>
+                            <option value="descriptor">
+                                According to descriptor file
                             </option>
                         </select>
                     </f:entry>
@@ -68,50 +68,5 @@
             </f:form>
         </l:main-panel>
     </l:layout>
-
-    <script>
-        function readOnlyMode() {
-            var option = signMethodSelect.options[signMethodSelect.selectedIndex];
-            if (option.value == 'false') {
-                gpgPassphrase.readOnly = true;
-                gpgPassphrase.style.background = '#F0F0F0';
-                gpgPassphrase.value = '';
-            } else {
-                gpgPassphrase.readOnly = false;
-                gpgPassphrase.style.background = '#FFFFFF';
-            }
-        }
-
-        function createOptionAndAppend(value, text) {
-            var option = document.createElement('option');
-            option.value = value;
-            option.innerHTML = text
-            signMethodSelect.appendChild(option);
-        }
-
-        function removeOptionByVal(value) {
-            var option, i;
-            for (i = 0; i &lt; signMethodSelect.length; i++) {
-                option = signMethodSelect[i];
-                if (option.value == value) {
-                    signMethodSelect.removeChild(option)
-                }
-            }
-        }
-
-        function updateSelect() {
-            if (this.checked) {
-                removeOptionByVal('descriptor');
-            } else {
-                createOptionAndAppend('descriptor', 'According to descriptor file');
-            }
-        }
-
-        var signMethodSelect = document.getElementById('gpgSign'),
-            gpgPassphrase = document.getElementById('gpgPassphrase'),
-            checkbox = document.getElementsByName('override')[0];
-        checkbox.addEventListener('change', updateSelect, false);
-
-    </script>
-
+    <st:adjunct includes="org.jfrog.hudson.BintrayPublish.BintrayPublishAction.pushToBintray"/>
 </j:jelly>
