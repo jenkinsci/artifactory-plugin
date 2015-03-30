@@ -1,55 +1,15 @@
 <j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout"
          xmlns:f="/lib/form">
-
-    <script>
-        function readOnlyMode() {
-            var gpgPassphrase = document.getElementById('gpgPassphrase');
-            var signMethodSelect = document.getElementById('gpgSign');
-            var option = signMethodSelect.options[signMethodSelect.selectedIndex];
-            if (option.value == "false") {
-                gpgPassphrase.readOnly = true;
-                gpgPassphrase.style.background = '#F0F0F0';
-                gpgPassphrase.value = '';
-            } else {
-                gpgPassphrase.readOnly = false;
-                gpgPassphrase.style.background = '#FFFFFF';
-            }
-        }
-
-        /*
-         function overrideCheckBoxChange() {
-         var checkbox = document.getElementById('overrideCheckBox');
-         var overrideDiv = document.getElementById('overrideDiv');
-         var select = document.getElementById('gpgSign');
-         var descriptorOption = select.options[2];
-         var styleDisplay = checkbox.checked ? 'block' : 'none';
-         overrideDiv.style.display = styleDisplay;
-
-         if (checkbox.checked) {
-         overrideDiv.style.display = 'blocked';
-         } else {
-         overrideDiv.style.display = 'none';
-         select.remove(descriptorOption);
-         }
-         }
-         */
-    </script>
-
     <l:layout title="Push to Bintray">
         <l:main-panel>
             <f:form method="post" action="submit" name="form">
                 <f:section>
                     <h1>Push to Bintray</h1>
-                    <h3>If descriptor file was uploaded as part of the build you can
+                    <p>If descriptor file was uploaded as part of the build you can
                         <a href="https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin#ArtifactoryPlugin-PushToBintray">
-                            push your artifacts</a>,
-                        to Bintray as is. These parameters, in case you fill them, will override the descriptor file
-                        completely.
-                        If no such file was provided - these fields must be filled so you can push the build to
-                        Bintray. If no such file was provided these fields must be filled
-                    </h3>
-                    <!--<input type="checkbox" id="override">Override descriptor file</input>-->
-                    <!--<div id="overrideDiv">-->
+                        push your artifacts</a> to Bintray as is.
+                        If not - you should check the "Override descriptor file" and fill in all mandatory fields.
+                    </p>
                     <f:optionalBlock title="Override descriptor file" name="override" checked="false"
                                      help="/plugin/artifactory/help/BintrayPublishAction/help-override.html">
                         <f:entry title="Subject"
@@ -96,6 +56,7 @@
                              help="/plugin/artifactory/help/BintrayPublishAction/help-passphrase.html">
                         <input id="gpgPassphrase" type="textbox" name="passphrase" value="${it.passphrase}"
                                autocomplete="off"
+                               onload="readOnlyMode()"
                                class="setting-input"/>
                     </f:entry>
                 </f:section>
@@ -107,4 +68,50 @@
             </f:form>
         </l:main-panel>
     </l:layout>
+
+    <script>
+        function readOnlyMode() {
+            var option = signMethodSelect.options[signMethodSelect.selectedIndex];
+            if (option.value == 'false') {
+                gpgPassphrase.readOnly = true;
+                gpgPassphrase.style.background = '#F0F0F0';
+                gpgPassphrase.value = '';
+            } else {
+                gpgPassphrase.readOnly = false;
+                gpgPassphrase.style.background = '#FFFFFF';
+            }
+        }
+
+        function createOptionAndAppend(value, text) {
+            var option = document.createElement('option');
+            option.value = value;
+            option.innerHTML = text
+            signMethodSelect.appendChild(option);
+        }
+
+        function removeOptionByVal(value) {
+            var option, i;
+            for (i = 0; i &lt; signMethodSelect.length; i++) {
+                option = signMethodSelect[i];
+                if (option.value == value) {
+                    signMethodSelect.removeChild(option)
+                }
+            }
+        }
+
+        function updateSelect() {
+            if (this.checked) {
+                removeOptionByVal('descriptor');
+            } else {
+                createOptionAndAppend('descriptor', 'According to descriptor file');
+            }
+        }
+
+        var signMethodSelect = document.getElementById('gpgSign'),
+            gpgPassphrase = document.getElementById('gpgPassphrase'),
+            checkbox = document.getElementsByName('override')[0];
+        checkbox.addEventListener('change', updateSelect, false);
+
+    </script>
+
 </j:jelly>
