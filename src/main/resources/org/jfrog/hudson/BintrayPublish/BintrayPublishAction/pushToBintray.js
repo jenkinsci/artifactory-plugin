@@ -17,7 +17,11 @@ function readOnlyMode() {
 }
 
 function updateSelect() {
-    if (this.checked) {
+    updateSelectWithFlag(this.checked);
+}
+
+function updateSelectWithFlag(shouldRemove) {
+    if (shouldRemove) {
         removeOptionByVal('descriptor');
     } else {
         createOptionAndAppend('descriptor', 'According to descriptor file');
@@ -46,5 +50,11 @@ var signMethodSelect = document.getElementById('gpgSign'),
     gpgPassphrase = document.getElementById('gpgPassphrase'),
     checkbox = document.getElementsByName('override')[0];
 
-signMethodSelect.selectedIndex = 2;
-checkbox.addEventListener('change', updateSelect, false);
+// on document load
+if (checkbox.onchange != updateSelect) {
+    checkbox.addEventListener('change', updateSelect, false);
+}
+updateSelectWithFlag(checkbox.checked);
+if (!checkbox.checked) {
+    signMethodSelect.selectedIndex = 2;
+}

@@ -36,7 +36,6 @@
                                  help="/plugin/artifactory/help/BintrayPublishAction/help-vcsUrl.html">
                             <f:textbox name="vcsUrl" value="${it.vcsUrl}"/>
                         </f:entry>
-                        <!--</div>-->
                     </f:optionalBlock>
                     <f:entry title="Sign files"
                              help="/plugin/artifactory/help/BintrayPublishAction/help-sign.html">
@@ -47,9 +46,7 @@
                             <option value="false">
                                 Don't sign
                             </option>
-                            <option value="descriptor">
-                                According to descriptor file
-                            </option>
+                            <!--Notice: The "According to descriptor file" option will be added dynamically when the HTML document will loaded-->
                         </select>
                     </f:entry>
                     <f:entry title="GPG Passphrase"

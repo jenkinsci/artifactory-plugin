@@ -18,14 +18,14 @@
                 <td>Deploy "if both linux and jdk7, it's invalid "<b>=> </b></td>
                 <td></td>
                 <td>
-                    <pre>!(label=="linux" && JDK=="jdk7")</pre>
+                    <pre>!(label=="linux" && jdk=="jdk7")</pre>
                 </td>
             </tr>
             <tr>
                 <td>Deploy "if on master, just do jdk7 "<b>=> </b></td>
                 <td></td>
                 <td>
-                    <pre>(label=="master").implies(JDK=="jdk7")</pre>
+                    <pre>(label=="master").implies(jdk=="jdk7")</pre>
                 </td>
             </tr>
         </table>
