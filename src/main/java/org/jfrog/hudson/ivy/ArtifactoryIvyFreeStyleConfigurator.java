@@ -35,6 +35,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.*;
+import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
@@ -413,6 +414,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                         result.isBetterOrEqualTo(Result.SUCCESS))) {
                     build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
+                            ArtifactoryIvyFreeStyleConfigurator.this));
+                    build.getActions().add(new BintrayPublishAction<ArtifactoryIvyFreeStyleConfigurator>(build,
                             ArtifactoryIvyFreeStyleConfigurator.this));
                 }
 
