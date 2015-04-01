@@ -364,9 +364,9 @@
                 </f:optionalBlock>
             </table>
         </f:block>
-        <j:if test="${instance.multiConfProject==false}">
-            <f:block>
-                <table style="width:100%">
+        <f:block>
+            <table style="width:100%">
+                <j:if test="${descriptor.multiConfProject==false}">
                     <j:set var="releaseWrapper" value="${instance.releaseWrapper}"/>
                     <f:optionalBlock name="releaseWrapper" checked="${releaseWrapper != null}"
                                      title="Enabled Release Management">
@@ -398,9 +398,10 @@
                             <f:textbox name="alternativeTasks" value="${releaseWrapper.alternativeTasks}"/>
                         </f:entry>
                     </f:optionalBlock>
-                </table>
-            </f:block>
-        </j:if>
+                </j:if>
+            </table>
+        </f:block>
+
         <f:block>
             <table style="width:100%">
                 <j:if test="${descriptor.jiraPluginEnabled}">
