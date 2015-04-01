@@ -429,23 +429,28 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     // We store them because we override them during the build and we'll need
                     // their original values at the tear down stage so that they can be restored.
                     ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
-                    concurrentBuild.putParam("switches", gradleBuild.getSwitches());
-                    concurrentBuild.putParam("tasks", gradleBuild.getTasks());
+
+                    // Remove the Artifactory Plugin additional switches and tasks,
+                    // in case they are included in the targets string:
+                    String switches = gradleBuild.getSwitches() != null ? gradleBuild.getSwitches().replace("${ARTIFACTORY_INIT_SCRIPT}", "") : "";
+                    String tasks = gradleBuild.getTasks() != null ? gradleBuild.getTasks().replace("${ARTIFACTORY_TASKS}", "") : "";
+
+                    concurrentBuild.putParam("switches", switches);
+                    concurrentBuild.putParam("tasks", tasks);
 
                     // Override the build switches:
                     if (!skipInjectInitScript) {
-                        if (!gradleBuild.getSwitches().contains("${ARTIFACTORY_INIT_SCRIPT}")) {
-                            setTargetsField(gradleBuild, "switches", gradleBuild.getSwitches() + " " + "${ARTIFACTORY_INIT_SCRIPT}");
-                        }
+                        setTargetsField(gradleBuild, "switches", switches + " " + "${ARTIFACTORY_INIT_SCRIPT}");
                     }
                     // Override the build tasks:
                     if (!StringUtils.contains(gradleBuild.getTasks(), BuildInfoBaseTask.BUILD_INFO_TASK_NAME)) {
                         // In case we specified "alternative goals" in the release view we should override the build goals
                         if (isRelease(build) && StringUtils.isNotBlank(releaseWrapper.getAlternativeTasks())) {
-                            setTargetsField(gradleBuild, "tasks", "${ARTIFACTORY_TASKS}");
+                            tasks = "${ARTIFACTORY_TASKS}";
                         } else {
-                            setTargetsField(gradleBuild, "tasks", gradleBuild.getTasks() + " ${ARTIFACTORY_TASKS}");
+                            tasks += " ${ARTIFACTORY_TASKS}";
                         }
+                        setTargetsField(gradleBuild, "tasks", tasks);
                     }
                 }
             };
