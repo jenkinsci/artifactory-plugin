@@ -364,9 +364,11 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                     // We store them because we override them during the build and we'll need
                     // their original values at the tear down stage so that they can be restored.
                     ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
-                    concurrentBuild.putParam("targets", antBuild.getTargets());
+                    // Remove the Artifactory Plugin additional arguments, in case they are included in the targets string:
+                    String targets = antBuild.getTargets() != null ? antBuild.getTargets().replace(getAntArgs(), "") : "";
+                    concurrentBuild.putParam("targets", targets);
                     // Override the targets after we stored them:
-                    setTargetsField(antBuild, antBuild.getTargets() + " " + getAntArgs());
+                    setTargetsField(antBuild, targets + " " + getAntArgs());
                 }
             };
         }
@@ -404,6 +406,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                             // values in the setUp stage):
                             ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
                             String targets = concurrentBuild.getParam("targets");
+                            // Remove the Artifactory Plugin additional arguments, in case they are included in the targets string:
                             targets = targets.replace(getAntArgs(), "");
                             setTargetsField(antBuild, targets);
                         }
