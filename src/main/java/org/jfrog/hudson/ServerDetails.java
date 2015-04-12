@@ -138,7 +138,10 @@ public class ServerDetails {
     }
 
     public String getDeployReleaseRepositoryKey() {
-        return getDeployReleaseRepository().getRepoKey();
+        if (deployReleaseRepository != null){
+            return deployReleaseRepository.getRepoKey();
+        }
+        return StringUtils.EMPTY;
     }
 
     public String getDeploySnapshotRepositoryKey() {
