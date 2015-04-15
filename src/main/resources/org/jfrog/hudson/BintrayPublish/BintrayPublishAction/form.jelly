@@ -6,7 +6,7 @@
                 <f:section>
                     <h1>Push to Bintray</h1>
                     <p>If descriptor file was uploaded as part of the build you can
-                        <a href="https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin#ArtifactoryPlugin-PushToBintray">
+                        <a href="https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin#ArtifactoryPlugin-PushtoBintray">
                         push your artifacts</a> to Bintray as is.
                         If not - you should check the "Override descriptor file" and fill in all mandatory fields.
                     </p>
