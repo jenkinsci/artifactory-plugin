@@ -46,7 +46,7 @@ public interface ScmCoordinator {
     /**
      * Called after a successful release build.
      */
-    void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException;
+    void afterSuccessfulReleaseVersionBuild() throws Exception;
 
     /**
      * Called before changing to next development version.
@@ -63,7 +63,7 @@ public interface ScmCoordinator {
     /**
      * Called after the build has completed and the result was finalized.
      */
-    void buildCompleted() throws IOException, InterruptedException;
+    void buildCompleted() throws Exception;
 
     /**
      * Called before a file is modified.

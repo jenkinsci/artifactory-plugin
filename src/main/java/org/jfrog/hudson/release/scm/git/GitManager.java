@@ -82,19 +82,12 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         client.tag(tagName, commitMessage);
     }
 
-    public void push(final ReleaseRepository releaseRepository, final String branch) throws IOException, InterruptedException {
+    public void push(final ReleaseRepository releaseRepository, final String branch) throws Exception {
         GitClient client = getGitClient(releaseRepository);
 
         log(buildListener, String.format("Pushing branch '%s' to '%s'", branch, releaseRepository.getGitUri()));
-        client.push(releaseRepository.getRepositoryName(), "refs/heads/" + branch);
-    }
-
-    public void pushTag(final ReleaseRepository releaseRepository, final String tagName) throws IOException, InterruptedException {
-        GitClient client = getGitClient(releaseRepository);
-
-        String escapedTagName = tagName.replace(' ', '_');
-        log(buildListener, String.format("Pushing tag '%s' to '%s'", escapedTagName, releaseRepository.getGitUri()));
-        client.push(releaseRepository.getRepositoryName(), "refs/tags/" + escapedTagName);
+        client.push().tags(true).to(new URIish(releaseRepository.getTargetRepoPrivateUri()))
+            .ref("refs/heads/" + branch).timeout(10).execute();
     }
 
     public void revertWorkingCopy() throws IOException, InterruptedException {
