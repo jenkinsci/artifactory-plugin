@@ -31,7 +31,6 @@ public class MavenDependency implements Serializable {
     private String artifactId;
     private String version;
     private String type;
-    private String classifier;
     private String scope;
     private String fileName;
 
@@ -40,7 +39,6 @@ public class MavenDependency implements Serializable {
         groupId = artifact.getGroupId() != null ? artifact.getGroupId().intern() : null;
         artifactId = artifact.getArtifactId() != null ? artifact.getArtifactId().intern() : null;
         version = artifact.getVersion() != null ? artifact.getVersion().intern() : null;
-        classifier = artifact.getClassifier() != null ? artifact.getClassifier().intern() : null;
         scope = artifact.getScope() != null ? artifact.getScope().intern() : null;
         fileName = artifact.getFile() != null ? artifact.getFile().getName().intern() : null;
         type = artifact.getType() != null ? artifact.getType().intern() : null;
@@ -109,27 +107,11 @@ public class MavenDependency implements Serializable {
         this.type = type;
     }
 
-    public String getClassifier() {
-        return classifier;
-    }
-
-    public void setClassifier(String classifier) {
-        this.classifier = classifier;
-    }
-
     public String getScope() {
         return scope;
     }
 
-    public void setScope(String scope) {
-        this.scope = scope;
-    }
-
     public String getFileName() {
         return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
     }
 }
