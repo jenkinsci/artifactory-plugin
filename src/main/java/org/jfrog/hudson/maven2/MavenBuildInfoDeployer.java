@@ -106,10 +106,10 @@ public class MavenBuildInfoDeployer extends AbstractBuildInfoDeployer {
             Set<MavenDependency> dependencies = dependenciesRecord.getDependencies();
             for (MavenDependency dependency : dependencies) {
                 DependencyBuilder dependencyBuilder = new DependencyBuilder()
-                        .id(dependency.id)
-                        .scopes(Sets.newHashSet(dependency.scope))
-                        .type(dependency.type)
-                        .md5(getMd5(dependency.groupId, dependency.fileName, mavenBuild));
+                        .id(dependency.getId())
+                        .scopes(Sets.newHashSet(dependency.getScope()))
+                        .type(dependency.getType())
+                        .md5(getMd5(dependency.getGroupId(), dependency.getFileName(), mavenBuild));
                 moduleBuilder.addDependency(dependencyBuilder.build());
             }
             // delete them once used
