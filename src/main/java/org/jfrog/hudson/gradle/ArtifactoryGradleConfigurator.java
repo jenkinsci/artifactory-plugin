@@ -492,12 +492,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 ServerDetails serverDetails = getDetails();
                 ReleaseAction releaseAction = ActionableHelper.getLatestAction(build, ReleaseAction.class);
                 if (releaseAction != null) {
-                    if (releaseAction.getTagUrl() != null) {
-                        env.put("RELEASE_SCM_TAG", releaseAction.getTagUrl());
-                    }
-                    if (releaseAction.getReleaseBranch() != null) {
-                        env.put("RELEASE_SCM_BRANCH", releaseAction.getReleaseBranch());
-                    }
+                    releaseAction.addVars(env);
                     String stagingRepository = releaseAction.getStagingRepositoryKey();
                     if (StringUtils.isBlank(stagingRepository)) {
                         stagingRepository = getRepositoryKey();
