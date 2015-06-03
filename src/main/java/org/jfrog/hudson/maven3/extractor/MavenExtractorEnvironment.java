@@ -109,13 +109,12 @@ public class MavenExtractorEnvironment extends Environment {
         }
 
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
+        ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
+        if (release != null) {
+            release.addVars(env);
+        }
 
         if (!initialized) {
-            ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
-            if (release != null) {
-                release.addVars(env);
-            }
-
             try {
                 PublisherContext publisherContext = null;
                 if (publisher != null) {
