@@ -64,7 +64,7 @@ public abstract class FormValidations {
             throws IOException, InterruptedException {
         String url = Util.fixEmptyAndTrim(value);
         if (url == null)
-            return FormValidation.warning("You don`t have any deploy matches");
+            return FormValidation.error("Mandatory field - You don`t have any deploy matches");
 
         return FormValidation.ok();
     }

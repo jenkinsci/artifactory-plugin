@@ -6,27 +6,16 @@ import hudson.model.BuildListener;
 import hudson.model.Cause;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.Agent;
-import org.jfrog.build.api.BlackDuckProperties;
-import org.jfrog.build.api.Build;
-import org.jfrog.build.api.BuildAgent;
-import org.jfrog.build.api.BuildInfoProperties;
-import org.jfrog.build.api.BuildRetention;
-import org.jfrog.build.api.BuildType;
-import org.jfrog.build.api.Governance;
-import org.jfrog.build.api.LicenseControl;
+import org.jfrog.build.api.*;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.PromotionStatusBuilder;
 import org.jfrog.build.api.release.Promotion;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
-import org.jfrog.build.client.IncludeExcludePatterns;
-import org.jfrog.build.client.PatternMatcher;
+import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
+import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.util.BuildRetentionFactory;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.IncludesExcludes;
-import org.jfrog.hudson.util.IssuesTrackerHelper;
+import org.jfrog.hudson.util.*;
 
 import java.io.IOException;
 import java.util.Calendar;
@@ -40,10 +29,10 @@ import java.util.Properties;
  * @author Shay Yaakov
  */
 public class AbstractBuildInfoDeployer {
-    private BuildInfoAwareConfigurator configurator;
     protected AbstractBuild build;
     protected BuildListener listener;
     protected ArtifactoryBuildInfoClient client;
+    private BuildInfoAwareConfigurator configurator;
     private EnvVars env;
 
     public AbstractBuildInfoDeployer(BuildInfoAwareConfigurator configurator, AbstractBuild build,
@@ -57,8 +46,8 @@ public class AbstractBuildInfoDeployer {
 
     protected Build createBuildInfo(String buildAgentName, String buildAgentVersion, BuildType buildType) {
         BuildInfoBuilder builder = new BuildInfoBuilder(
-                ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()))
-                .number(build.getNumber() + "").type(buildType)
+                BuildUniqueIdentifierHelper.getBuildName(build))
+                .number(BuildUniqueIdentifierHelper.getBuildNumber(build)).type(buildType)
                 .buildAgent(new BuildAgent(buildAgentName, buildAgentVersion))
                 .agent(new Agent("hudson", build.getHudsonVersion()));
         String buildUrl = ActionableHelper.getBuildUrl(build);

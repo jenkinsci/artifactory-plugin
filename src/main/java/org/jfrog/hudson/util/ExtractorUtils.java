@@ -30,11 +30,12 @@ import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.BuildRetention;
 import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.ArtifactoryClientConfiguration;
-import org.jfrog.build.client.ClientProperties;
-import org.jfrog.build.client.IncludeExcludePatterns;
+import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
+import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
+import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
@@ -144,9 +145,9 @@ public class ExtractorUtils {
 
         if (resolverContext != null) {
             if (publisherContext != null)
-                setResolverInfo(configuration, resolverContext, publisherContext.getDeployerOverrider());
+                setResolverInfo(configuration, build, resolverContext, publisherContext.getDeployerOverrider(), env);
             else
-                setResolverInfo(configuration, resolverContext, null);
+                setResolverInfo(configuration, build, resolverContext, null, env);
             // setProxy(resolverContext.getServer(), configuration);
         }
 
@@ -176,19 +177,40 @@ public class ExtractorUtils {
         }
     }
 
-    private static void setResolverInfo(ArtifactoryClientConfiguration configuration, ResolverContext context,
-                                        DeployerOverrider deployerOverrider) {
+    private static void setResolverInfo(ArtifactoryClientConfiguration configuration, AbstractBuild build, ResolverContext context,
+                                        DeployerOverrider deployerOverrider, Map<String, String> env) {
         configuration.setTimeout(context.getServer().getTimeout());
         configuration.resolver.setContextUrl(context.getServer().getUrl());
-        configuration.resolver.setRepoKey(context.getServerDetails().downloadReleaseRepositoryKey);
-        configuration.resolver.setDownloadSnapshotRepoKey(context.getServerDetails().downloadSnapshotRepositoryKey);
-
+        String inputDownloadReleaseKey = context.getServerDetails().getResolveReleaseRepository().getRepoKey();
+        String inputDownloadSnapshotKey = context.getServerDetails().getResolveSnapshotRepository().getRepoKey();
+        // These input variables might be a variable that should be replaced with it's value
+        replaceRepositoryInputForValues(configuration, build, inputDownloadReleaseKey, inputDownloadSnapshotKey, env);
         Credentials preferredResolver = CredentialResolver.getPreferredResolver(context.getResolverOverrider(),
                 deployerOverrider, context.getServer());
         if (StringUtils.isNotBlank(preferredResolver.getUsername())) {
             configuration.resolver.setUsername(preferredResolver.getUsername());
             configuration.resolver.setPassword(preferredResolver.getPassword());
         }
+    }
+
+    /*
+     * If necessary, replace the input for the configured repositories to their values
+     * under the current environment. We are not allowing for the input or the value to be empty.
+     */
+    private static void replaceRepositoryInputForValues(ArtifactoryClientConfiguration configuration, AbstractBuild build,
+                                                        String resolverReleaseInput, String resolverSnapshotInput, Map<String, String> env) {
+        if (StringUtils.isBlank(resolverReleaseInput) || StringUtils.isBlank(resolverSnapshotInput)) {
+            build.setResult(Result.FAILURE);
+            throw new IllegalStateException("Input for resolve repositories cannot be empty.");
+        }
+        String resolveReleaseRepo = Util.replaceMacro(resolverReleaseInput, env);
+        String resolveSnapshotRepo = Util.replaceMacro(resolverSnapshotInput, env);
+        if (StringUtils.isBlank(resolveReleaseRepo) || StringUtils.isBlank(resolveSnapshotRepo)) {
+            build.setResult(Result.FAILURE);
+            throw new IllegalStateException("Resolver repository variable cannot be replaces with empty value.");
+        }
+        configuration.resolver.setDownloadSnapshotRepoKey(resolveSnapshotRepo);
+        configuration.resolver.setRepoKey(resolveReleaseRepo);
     }
 
     /**
@@ -259,8 +281,16 @@ public class ExtractorUtils {
         }
         configuration.setTimeout(artifactoryServer.getTimeout());
         configuration.publisher.setContextUrl(artifactoryServer.getUrl());
-        configuration.publisher.setRepoKey(context.getServerDetails().repositoryKey);
-        configuration.publisher.setSnapshotRepoKey(context.getServerDetails().snapshotsRepositoryKey);
+
+        ServerDetails serverDetails = context.getServerDetails();
+        if (serverDetails != null) {
+            String inputRepKey = serverDetails.getDeployReleaseRepositoryKey();
+            String repoKEy = Util.replaceMacro(inputRepKey, env);
+            configuration.publisher.setRepoKey(repoKEy);
+            String inputSnapshotRepKey = serverDetails.getDeploySnapshotRepositoryKey();
+            String snapshotRepoKey = Util.replaceMacro(inputSnapshotRepKey, env);
+            configuration.publisher.setSnapshotRepoKey(snapshotRepoKey);
+        }
 
         configuration.info.licenseControl.setRunChecks(context.isRunChecks());
         configuration.info.licenseControl.setIncludePublishedArtifacts(context.isIncludePublishArtifacts());

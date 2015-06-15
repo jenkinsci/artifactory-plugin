@@ -32,6 +32,7 @@ import hudson.util.ListBoxModel;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.maven.transformer.SnapshotNotAllowedException;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
@@ -304,11 +305,15 @@ public class MavenReleaseWrapper extends BuildWrapper {
 
             ArtifactoryRedeployPublisher redeployPublisher =
                     ActionableHelper.getPublisher(project, ArtifactoryRedeployPublisher.class);
-            if (!redeployPublisher.isAllowPromotionOfNonStagedBuilds()) {
-                Result result = run.getResult();
-                if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+            Result result = run.getResult();
+            boolean successRun = result.isBetterOrEqualTo(Result.SUCCESS);
+            if (successRun) {
+                if (!redeployPublisher.isAllowPromotionOfNonStagedBuilds()) {
                     // add a stage action
                     run.addAction(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
+                }
+                if (!redeployPublisher.isAllowBintrayPushOfNonStageBuilds()) {
+                    run.addAction(new BintrayPublishAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
                 }
             }
 

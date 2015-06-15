@@ -7,64 +7,20 @@
         <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
             <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                 <f:nested>
-                    <input type="hidden" name="artifactoryName" value="${s.name}" field="artifactoryName"/>
-                    <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"
-                           field="artifactoryUrl"/>
+                    <input type="hidden" name="artifactoryName" value="${s.name}"/>
+                    <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                    <input type="hidden" name="downloadReleaseRepositoryDisplayName"
-                           id="downloadReleaseRepositoryDisplayName-native-${s.url}"
-                           value="${instance.details.downloadReleaseRepositoryDisplayName}"/>
-                    <input type="hidden" name="downloadSnapshotRepositoryDisplayName"
-                           id="downloadSnapshotRepositoryDisplayName-native-${s.url}"
-                           value="${instance.details.downloadSnapshotRepositoryDisplayName}"/>
-                    <f:entry title="${%Resolution releases repository}">
-                        <select class="setting-input" name="downloadReleaseRepositoryKey" id="maven3NativeReleaseRepositoryKeys-${s.url}"
-                                onchange="onReleaseResolutionSelectChange('${s.url}', this, 'native')">
-                            <j:choose>
-                                <j:when test="${s.name==instance.artifactoryName}">
-                                    <j:choose>
-                                        <j:when test="${instance.downloadReleaseRepositoryKey != null}">
-                                            <f:option selected="${instance.downloadReleaseRepositoryKey}"
-                                                      value="${instance.downloadReleaseRepositoryKey}">
-                                                ${instance.details.downloadReleaseRepositoryDisplayName}
-                                            </f:option>
-                                        </j:when>
-                                        <j:otherwise>
-                                            <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                                <f:option selected="${r.value==instance.downloadReleaseRepositoryKey}"
-                                                          value="${r.value}">${r.displayName}
-                                                </f:option>
-                                            </j:forEach>
-                                        </j:otherwise>
-                                    </j:choose>
-                                </j:when>
-                            </j:choose>
-                        </select>
-                    </f:entry>
-                    <f:entry title="${%Resolution snapshots repository}">
-                        <select class="setting-input" name="downloadSnapshotRepositoryKey" id="maven3NativeSnapshotRepositoryKeys-${s.url}"
-                                onchange="onSnapshotResolutionSelectChange('${s.url}', this, 'native')">
-                            <j:choose>
-                                <j:when test="${s.name==instance.artifactoryName}">
-                                    <j:choose>
-                                        <j:when test="${instance.downloadSnapshotRepositoryKey != null}">
-                                            <f:option selected="${instance.downloadSnapshotRepositoryKey}"
-                                                      value="${instance.downloadSnapshotRepositoryKey}">
-                                                ${instance.details.downloadSnapshotRepositoryDisplayName}
-                                            </f:option>
-                                        </j:when>
-                                        <j:otherwise>
-                                            <j:forEach var="r" items="${instance.virtualRepositoryKeys}">
-                                                <f:option selected="${r.value==instance.downloadSnapshotRepositoryKey}"
-                                                          value="${r.value}">${r.displayName}
-                                                </f:option>
-                                            </j:forEach>
-                                        </j:otherwise>
-                                    </j:choose>
-                                </j:when>
-                            </j:choose>
-                        </select>
-                    </f:entry>
+                    <r:dynamicRepos id="maven3NativeReleaseRepositoryKeys-${s.url}"
+                                    title="Resolution releases repository"
+                                    field="resolveReleaseRepository"
+                                    repositories="${instance.virtualRepositoryList}"
+                                    repositoryConf="${instance.details.resolveReleaseRepository}"/>
+
+                    <r:dynamicRepos id="maven3NativeSnapshotRepositoryKeys-${s.url}"
+                                    title="Resolution snapshots repository"
+                                    field="resolveSnapshotRepository"
+                                    repositories="${instance.virtualRepositoryList}"
+                                    repositoryConf="${instance.details.resolveSnapshotRepository}"/>
                     <script>
                         var maven3NativeResolveBind =
                         <st:bind value="${descriptor}"/>

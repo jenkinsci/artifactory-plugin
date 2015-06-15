@@ -20,7 +20,10 @@ import com.google.common.collect.Lists;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.maven.*;
+import hudson.maven.MavenModuleSet;
+import hudson.maven.MavenModuleSetBuild;
+import hudson.maven.PlexusModuleContributor;
+import hudson.maven.PlexusModuleContributorFactory;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
@@ -29,9 +32,10 @@ import hudson.scm.NullChangeLogParser;
 import hudson.scm.NullSCM;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
-import org.jfrog.build.client.ArtifactoryClientConfiguration;
+import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator;
@@ -86,18 +90,7 @@ public class MavenExtractorEnvironment extends Environment {
         //If an SCM is configured
         if (!initialized && !(build.getProject().getScm() instanceof NullSCM)) {
             //Handle all the extractor info only when a checkout was already done
-            boolean checkoutWasPerformed = true;
-            try {
-                Field scmField = AbstractBuild.class.getDeclaredField("scm");
-                scmField.setAccessible(true);
-                Object scmObject = scmField.get(build);
-                //Null changelog parser is set when a checkout wasn't performed yet
-                checkoutWasPerformed = !(scmObject instanceof NullChangeLogParser);
-            } catch (Exception e) {
-                buildListener.getLogger().println("[Warning] An error occurred while testing if the SCM checkout " +
-                        "has already been performed: " + e.getMessage());
-            }
-            if (!checkoutWasPerformed) {
+            if (!isCheckoutPerformed()) {
                 return;
             }
         }
@@ -144,6 +137,22 @@ public class MavenExtractorEnvironment extends Environment {
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
     }
 
+    private boolean isCheckoutPerformed() {
+        boolean checkoutWasPerformed = false;
+        try {
+            Field scmField = AbstractBuild.class.getDeclaredField("scm");
+            scmField.setAccessible(true);
+            Object scmObject = scmField.get(build);
+            if (scmObject != null) {
+                checkoutWasPerformed = !(scmObject instanceof NullChangeLogParser);
+            }
+        } catch (Exception e) {
+            buildListener.getLogger().println("[Warning] An error occurred while testing if the SCM checkout " +
+                    "has already been performed: " + e.getMessage());
+        }
+        return checkoutWasPerformed;
+    }
+
     private boolean isMavenVersionValid() {
         try {
             return MavenVersionHelper.isAtLeastResolutionCapableVersion(build, envVars, buildListener);
@@ -165,9 +174,9 @@ public class MavenExtractorEnvironment extends Environment {
         if (release != null) {
             // staging build might change the target deployment repository
             String stagingRepoKey = release.getStagingRepositoryKey();
-            if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
-                server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), stagingRepoKey,
-                        server.snapshotsRepositoryKey, server.downloadReleaseRepositoryKey, server.downloadSnapshotRepositoryKey,
+            if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.getDeployReleaseRepository().getRepoKey())) {
+                server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), new RepositoryConf(stagingRepoKey, stagingRepoKey, false),
+                        server.getDeploySnapshotRepository(), server.getResolveReleaseRepository(), server.getResolveSnapshotRepository(),
                         server.getDownloadReleaseRepositoryDisplayName(), server.getDownloadSnapshotRepositoryDisplayName());
             }
         }

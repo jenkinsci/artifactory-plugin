@@ -3,370 +3,351 @@
          xmlns:r="/lib/jfrog"
          xmlns:st="jelly:stapler"
         >
-<f:dropdownList name="details" title="${%Artifactory server}">
-    <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
-        <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
-            <f:nested>
-                <input type="hidden" name="artifactoryName" value="${s.name}"/>
-                <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
-                <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                <f:entry title="${%Target releases repository}"
-                         help="/plugin/artifactory/help/common/help-deployReleases.html">
 
-                    <!--<j:invoke var="releaseRepos" on="${instance}" method="getReleaseRepositoryKeysFirst"/>
-                    <f:editableComboBox field="repositoryKey" items="${releaseRepos}"/>-->
-                    <select class="setting-input" name="repositoryKey" id="publishRepositoryKey-${s.url}">
-                        <j:choose>
-                            <j:when test="${s.name==instance.artifactoryName}">
-                                <j:choose>
-                                    <j:when test="${instance.repositoryKey != null}">
-                                        <f:option selected="${instance.repositoryKey}"
-                                                  value="${instance.repositoryKey}">${instance.repositoryKey}
-                                        </f:option>
-                                    </j:when>
-                                    <j:otherwise>
-                                        <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                            <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}</f:option>
-                                        </j:forEach>
-                                    </j:otherwise>
-                                </j:choose>
-                            </j:when>
-                        </j:choose>
-                    </select>
-                </f:entry>
-                <f:entry title="${%Target snapshots repository}"
-                         help="/plugin/artifactory/help/common/help-deploySnapshots.html">
-                    <select class="setting-input" name="snapshotsRepositoryKey" id="publishSnapshotsRepositoryKeys-${s.url}">
-                        <j:choose>
-                            <j:when test="${s.name==instance.artifactoryName}">
-                                <j:choose>
-                                    <j:when test="${instance.snapshotsRepositoryKey != null}">
-                                        <f:option selected="${instance.snapshotsRepositoryKey}"
-                                                  value="${instance.snapshotsRepositoryKey}">
-                                            ${instance.snapshotsRepositoryKey}
-                                        </f:option>
-                                    </j:when>
-                                    <j:otherwise>
-                                        <j:forEach var="r" items="${instance.snapshotRepositoryKeysFirst}">
-                                            <f:option selected="${r==instance.snapshotsRepositoryKey}" value="${r}">${r}
+    <f:dropdownList name="details" title="${%Artifactory server}">
+        <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
+            <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
+                <f:nested>
+                    <input type="hidden" name="artifactoryName" value="${s.name}"/>
+                    <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
+                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
+
+                    <r:dynamicRepos id="publishRepositoryKey-${s.url}"
+                                    field="deployReleaseRepository"
+                                    title="Target releases repository"
+                                    repositoryConf="${instance.details.deployReleaseRepository}"
+                                    repositories="${instance.releaseRepositoryList}"
+                                    helpUrl="/plugin/artifactory/help/common/help-deployReleases.html"/>
+
+                    <r:dynamicRepos id="publishSnapshotsRepositoryKeys-${s.url}"
+                                    title="Target snapshot repository"
+                                    field="deploySnapshotRepository"
+                                    repositoryConf="${instance.details.deploySnapshotRepository}"
+                                    repositories="${instance.snapshotRepositoryList}"
+                                    helpUrl="/plugin/artifactory/help/common/help-deployReleases.html"/>
+
+                    <f:entry title="${%Custom staging configuration}"
+                             help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
+                        <select class="setting-input" name="userPluginKey" id="customStagingConfiguration-${s.url}"
+                                onchange="setStagingParamsSelectedValue(this)">
+                            <j:choose>
+                                <j:when test="${s.name==instance.artifactoryName}">
+                                    <j:choose>
+                                        <j:when test="${instance.details.stagingPlugin != null}">
+                                            <f:option selected="${instance.details.stagingPlugin.pluginName}"
+                                                      value="${instance.details.stagingPlugin.pluginName}">
+                                                ${instance.details.stagingPlugin.pluginName}
                                             </f:option>
-                                        </j:forEach>
-                                    </j:otherwise>
-                                </j:choose>
-                            </j:when>
-                        </j:choose>
-                    </select>
-                </f:entry>
-                <f:entry title="${%Custom staging configuration}"
-                         help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
-                    <select class="setting-input" name="userPluginKey" id="customStagingConfiguration-${s.url}"
-                            onchange="setStagingParamsSelectedValue(this)">
-                        <j:choose>
-                            <j:when test="${s.name==instance.artifactoryName}">
-                                <j:choose>
-                                    <j:when test="${instance.details.stagingPlugin != null}">
-                                        <f:option selected="${instance.details.stagingPlugin.pluginName}"
-                                                  value="${instance.details.stagingPlugin.pluginName}">
-                                            ${instance.details.stagingPlugin.pluginName}
-                                        </f:option>
-                                    </j:when>
-                                    <j:otherwise>
-                                        <j:forEach var="r" items="${instance.userPluginKeys}">
-                                            <f:option selected="${r.pluginName==instance.details.stagingPlugin.pluginName}" value="${r.pluginName}">${r.pluginName}
-                                            </f:option>
-                                        </j:forEach>
-                                    </j:otherwise>
-                                </j:choose>
-                            </j:when>
-                        </j:choose>
-                    </select>
-                    <div id="stagingParamsDiv">
-                        <j:choose>
-                            <j:when test="${s.name==instance.artifactoryName}">
-                                <j:choose>
-                                    <j:when test="${instance.details.stagingPlugin != null}">
-                                        <j:choose>
-                                            <j:when test="${instance.details.stagingPlugin.paramsString != ''}">
-                                                <input class='setting-input' name='userPluginParams' id='stagingParams-${instance.details.stagingPlugin.pluginName}' type='text' value='${instance.details.stagingPlugin.paramsString}' />
-                                            </j:when>
-                                        </j:choose>
-                                    </j:when>
-                                </j:choose>
-                            </j:when>
-                        </j:choose>
-                    </div>
-                </f:entry>
-                <script>
-                    var bindToDescriptor =
-                    <st:bind value="${descriptor}"/>
-                </script>
-                <r:repos title="${%Refresh}" progress="${%Refreshing...}"
-                         bind="bindToDescriptor"
-                         jsFunction="artifactoryRedeployPublisher"
-                         repoUrl="artifactoryUrlDeploy${s.url}"
-                         credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
-                         credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"
-                         isCredential="$('overridingDeployerCredentials').down('input').checked"/>
-            </f:nested>
-        </f:dropdownListBlock>
-    </j:forEach>
-</f:dropdownList>
-<f:block>
-    <table style="width:100%" id="overridingDeployerCredentials">
-        <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
-        <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
-                         title="Override default deployer credentials"
-                         help="/plugin/artifactory/help/common/help-overridingDeployerCredentials.html">
-            <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-            <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
-                     field="username">
-                <f:textbox value="${overridingDeployerCredentials.username}"/>
-            </f:entry>
-            <f:entry title="Password" field="password"
-                     help="/plugin/artifactory/help/common/help-deployerPassword.html">
-                <f:password value="${overridingDeployerCredentials.password}"/>
-            </f:entry>
-        </f:optionalBlock>
-    </table>
-</f:block>
-<f:block>
-    <table style="width:100%">
-        <f:optionalBlock field="evenIfUnstable"
-                         help="/plugin/artifactory/help/ArtifactoryRedeployPublisher/help-evenIfUnstable.html"
-                         title="Deploy even if the build is unstable"
-                         inline="true">
-        </f:optionalBlock>
-    </table>
-</f:block>
-<f:block>
-    <table style="width:100%">
-        <f:optionalBlock field="deployArtifacts"
-                         help="/plugin/artifactory/help/common/help-deployArtifacts.html"
-                         title="Deploy maven artifacts"
-                         checked="${h.defaultToTrue(instance.deployArtifacts)}"
-                         inline="true">
-            <f:block>
-                <table style="width:100%">
-                    <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
-                    <f:section name="artifactDeploymentPatterns">
-                        <input type="hidden" name="stapler-class"
-                               value="org.jfrog.hudson.util.IncludesExcludes"/>
-                        <f:entry title="Include Patterns" field="includePatterns"
-                                 help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
-                            <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
-                        </f:entry>
-                        <f:entry title="Exclude Patterns"
-                                 field="excludePatterns"
-                                 help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
-                            <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
-                        </f:entry>
-                    </f:section>
-                </table>
-            </f:block>
-            <f:block>
-                <table style="width:100%">
-                    <f:optionalBlock field="filterExcludedArtifactsFromBuild"
-                                     help="/plugin/artifactory/help/common/help-filterExcludedArtifactsFromBuild.html"
-                                     title="Filter excluded artifacts from build Info"
-                                     checked="${h.defaultToTrue(instance.filterExcludedArtifactsFromBuild)}"
-                                     inline="true">
-                    </f:optionalBlock>
-                </table>
-            </f:block>
-            <f:block>
-                <table style="width:100%">
-                    <f:entry title="Deployment properties" field="matrixParams"
-                             help="/plugin/artifactory/help/common/help-matrixParams.html">
-                        <f:textbox value="${instance.matrixParams}"/>
+                                        </j:when>
+                                        <j:otherwise>
+                                            <j:forEach var="r" items="${instance.userPluginKeys}">
+                                                <f:option
+                                                        selected="${r.pluginName==instance.details.stagingPlugin.pluginName}"
+                                                        value="${r.pluginName}">${r.pluginName}
+                                                </f:option>
+                                            </j:forEach>
+                                        </j:otherwise>
+                                    </j:choose>
+                                </j:when>
+                            </j:choose>
+                        </select>
+                        <div id="stagingParamsDiv">
+                            <j:choose>
+                                <j:when test="${s.name==instance.artifactoryName}">
+                                    <j:choose>
+                                        <j:when test="${instance.details.stagingPlugin != null}">
+                                            <j:choose>
+                                                <j:when test="${instance.details.stagingPlugin.paramsString != ''}">
+                                                    <input class='setting-input' name='userPluginParams'
+                                                           id='stagingParams-${instance.details.stagingPlugin.pluginName}'
+                                                           type='text'
+                                                           value='${instance.details.stagingPlugin.paramsString}'/>
+                                                </j:when>
+                                            </j:choose>
+                                        </j:when>
+                                    </j:choose>
+                                </j:when>
+                            </j:choose>
+                        </div>
                     </f:entry>
-                </table>
-            </f:block>
-        </f:optionalBlock>
-    </table>
-</f:block>
-<f:block>
-    <table style="width:100%">
-        <f:optionalBlock name="deployBuildInfo" checked="${h.defaultToTrue(instance.deployBuildInfo)}"
-                         title="Capture and publish build info"
-                         help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
-                         inline="true">
-
-            <f:optionalBlock name="includeEnvVars" checked="${instance.includeEnvVars}"
-                             title="Include environment variables"
-                             help="/plugin/artifactory/help/common/help-includeEnvVars.html"
+                    <script>
+                        var bindToDescriptor =
+                        <st:bind value="${descriptor}"/>
+                    </script>
+                    <r:repos title="${%Refresh}" progress="${%Refreshing...}"
+                             bind="bindToDescriptor"
+                             jsFunction="artifactoryRedeployPublisher"
+                             repoUrl="artifactoryUrlDeploy${s.url}"
+                             credentialUserName="$('overridingDeployerCredentials').down('input[type=text]').value"
+                             credentialPassword="$('overridingDeployerCredentials').down('input[type=password]').value"
+                             isCredential="$('overridingDeployerCredentials').down('input').checked"/>
+                </f:nested>
+            </f:dropdownListBlock>
+        </j:forEach>
+    </f:dropdownList>
+    <f:block>
+        <table style="width:100%" id="overridingDeployerCredentials">
+            <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
+            <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
+                             title="Override default deployer credentials"
+                             help="/plugin/artifactory/help/common/help-overridingDeployerCredentials.html">
+                <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
+                <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
+                         field="username">
+                    <f:textbox value="${overridingDeployerCredentials.username}"/>
+                </f:entry>
+                <f:entry title="Password" field="password"
+                         help="/plugin/artifactory/help/common/help-deployerPassword.html">
+                    <f:password value="${overridingDeployerCredentials.password}"/>
+                </f:entry>
+            </f:optionalBlock>
+        </table>
+    </f:block>
+    <f:block>
+        <table style="width:100%">
+            <f:optionalBlock field="evenIfUnstable"
+                             help="/plugin/artifactory/help/ArtifactoryRedeployPublisher/help-evenIfUnstable.html"
+                             title="Deploy even if the build is unstable"
+                             inline="true">
+            </f:optionalBlock>
+        </table>
+    </f:block>
+    <f:block>
+        <table style="width:100%">
+            <f:optionalBlock field="deployArtifacts"
+                             help="/plugin/artifactory/help/common/help-deployArtifacts.html"
+                             title="Deploy maven artifacts"
+                             checked="${h.defaultToTrue(instance.deployArtifacts)}"
                              inline="true">
                 <f:block>
                     <table style="width:100%">
-                        <j:set var="envVarsPatterns" value="${instance.envVarsPatterns}"/>
-                        <f:section name="envVarsPatterns">
+                        <j:set var="artifactDeploymentPatterns" value="${instance.artifactDeploymentPatterns}"/>
+                        <f:section name="artifactDeploymentPatterns">
                             <input type="hidden" name="stapler-class"
                                    value="org.jfrog.hudson.util.IncludesExcludes"/>
                             <f:entry title="Include Patterns" field="includePatterns"
-                                     help="/plugin/artifactory/help/common/help-envVarsIncludePatterns.html">
-                                <f:textbox value="${envVarsPatterns.includePatterns}"/>
+                                     help="/plugin/artifactory/help/common/help-deployedArtifactIncludePattern.html">
+                                <f:textbox value="${artifactDeploymentPatterns.includePatterns}"/>
                             </f:entry>
                             <f:entry title="Exclude Patterns"
                                      field="excludePatterns"
-                                     help="/plugin/artifactory/help/common/help-envVarsExcludePatterns.html">
-                                <f:textbox value="${envVarsPatterns.excludePatterns}"
-                                           default="*password*,*secret*"/>
+                                     help="/plugin/artifactory/help/common/help-deployedArtifactExcludePattern.html">
+                                <f:textbox value="${artifactDeploymentPatterns.excludePatterns}"/>
                             </f:entry>
                         </f:section>
                     </table>
                 </f:block>
+                <f:block>
+                    <table style="width:100%">
+                        <f:optionalBlock field="filterExcludedArtifactsFromBuild"
+                                         help="/plugin/artifactory/help/common/help-filterExcludedArtifactsFromBuild.html"
+                                         title="Filter excluded artifacts from build Info"
+                                         checked="${h.defaultToTrue(instance.filterExcludedArtifactsFromBuild)}"
+                                         inline="true">
+                        </f:optionalBlock>
+                    </table>
+                </f:block>
+                <f:block>
+                    <table style="width:100%">
+                        <f:entry title="Deployment properties" field="matrixParams"
+                                 help="/plugin/artifactory/help/common/help-matrixParams.html">
+                            <f:textbox value="${instance.matrixParams}"/>
+                        </f:entry>
+                    </table>
+                </f:block>
             </f:optionalBlock>
-            <f:block>
-                <table style="width:100%">
-                    <f:optionalBlock field="recordAllDependencies"
-                                     help="/plugin/artifactory/help/common/help-recordAllDependencies.html"
-                                     title="Record implicit project dependencies and build-time dependencies"
-                                     inline="true">
-                    </f:optionalBlock>
-                </table>
-            </f:block>
-            <f:block>
-                <table style="width:100%">
-                    <f:optionalBlock field="allowPromotionOfNonStagedBuilds"
-                                     help="/plugin/artifactory/help/common/help-allowPromotionOfNonStagedBuilds.html"
-                                     title="Allow promotion of non-staged builds"
-                                     inline="true">
-                    </f:optionalBlock>
-                </table>
-            </f:block>
-            <f:block>
-                <table style="width:100%">
-                    <f:optionalBlock name="runChecks"
-                                     checked="${instance.runChecks}"
-                                     title="Run Artifactory license checks (requires Artifactory Pro)"
-                                     inline="true"
-                                     help="/plugin/artifactory/help/common/help-runChecks.html">
-                        <f:entry title="${%Send license violation notifications to: }"
-                                 field="violationRecipients"
-                                 help="/plugin/artifactory/help/common/help-sendViolationNotification.html"
-                                 description="Space-separated list of recipient addresses.">
-                            <f:textbox value="${instance.violationRecipients}"/>
-                        </f:entry>
-                        <f:entry title="${%Limit checks to the following scopes: }"
-                                 help="/plugin/artifactory/help/common/help-scopes.html"
-                                 field="scopes"
-                                 description="Space-separated list of scopes.">
-                            <f:textbox value="${instance.scopes}"/>
-                        </f:entry>
-                        <f:entry field="includePublishArtifacts"
-                                 help="/plugin/artifactory/help/common/help-includePublishArtifacts.html">
-                            <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
-                            <label class="attach-previous">${%Include published artifacts}</label>
-                        </f:entry>
-                        <f:entry field="disableLicenseAutoDiscovery"
-                                 help="/plugin/artifactory/help/common/help-licenseAutoDiscovery.html">
-                            <f:checkbox default="false" checked="${instance.disableLicenseAutoDiscovery}"/>
-                            <label class="attach-previous">${%Disable automatic license discovery}</label>
-                        </f:entry>
-                    </f:optionalBlock>
-                </table>
-            </f:block>
-
-            <f:block>
-                <table style="width:100%">
-                    <f:optionalBlock name="blackDuckRunChecks"
-                                     checked="${instance.blackDuckRunChecks}"
-                                     inline="true"
-                                     title="Run Black Duck Code Center compliance checks (requires Artifactory Pro)"
-                                     help="/plugin/artifactory/help/common/help-blackDuckRunChecks.html">
-                        <f:entry title="${%Code Center application name: }"
-                                 field="blackDuckAppName"
-                                 help="/plugin/artifactory/help/common/help-blackDuckAppName.html"
-                                 description="Black Duck Code Center application name.">
-                            <f:textbox value="${instance.blackDuckAppName}"/>
-                        </f:entry>
-                        <f:entry title="${%Code Center application version: }"
-                                 field="blackDuckAppVersion"
-                                 help="/plugin/artifactory/help/common/help-blackDuckAppVersion.html"
-                                 description="Black Duck Code Center application version.">
-                            <f:textbox value="${instance.blackDuckAppVersion}"/>
-                        </f:entry>
-                        <f:entry title="${%Send compliance report email to: }"
-                                 field="blackDuckReportRecipients"
-                                 help="/plugin/artifactory/help/common/help-blackDuckReportRecipients.html"
-                                 description="Space-separated list of recipient addresses.">
-                            <f:textbox value="${instance.blackDuckReportRecipients}"/>
-                        </f:entry>
-                        <f:entry title="${%Limit checks to the following scopes: }"
-                                 help="/plugin/artifactory/help/common/help-blackDuckScopes.html"
-                                 field="blackDuckScopes"
-                                 description="Space-separated list of scopes.">
-                            <f:textbox value="${instance.blackDuckScopes}"/>
-                        </f:entry>
-                        <f:entry field="blackDuckIncludePublishedArtifacts"
-                                 help="/plugin/artifactory/help/common/help-blackDuckIncludePublishedArtifacts.html">
-                            <f:checkbox default="false" checked="${instance.blackDuckIncludePublishedArtifacts}"/>
-                            <label class="attach-previous">${%Include published artifacts}</label>
-                        </f:entry>
-                        <f:entry field="autoCreateMissingComponentRequests"
-                                 help="/plugin/artifactory/help/common/help-autoCreateMissingComponentRequests.html">
-                            <f:checkbox default="true" checked="${instance.autoCreateMissingComponentRequests}"/>
-                            <label>${%Auto-create missing component requests}</label>
-                        </f:entry>
-                        <f:entry field="autoDiscardStaleComponentRequests"
-                                 help="/plugin/artifactory/help/common/help-autoDiscardStaleComponentRequests.html">
-                            <f:checkbox default="true" checked="${instance.autoDiscardStaleComponentRequests}"/>
-                            <label>${%Auto-discard stale component requests}</label>
-                        </f:entry>
-                    </f:optionalBlock>
-                </table>
-            </f:block>
-
-            <f:block>
-                <table style="width:100%">
-                    <f:optionalBlock name="discardOldBuilds"
-                                     checked="${instance.discardOldBuilds}"
-                                     title="Discard old builds from Artifactory (requires Artifactory Pro)"
-                                     inline="true"
-                                     help="/plugin/artifactory/help/common/help-discardBuilds.html">
-                        <f:entry field="discardBuildArtifacts"
-                                 help="/plugin/artifactory/help/common/help-discardBuildArtifacts.html">
-                            <f:checkbox default="true" checked="${instance.discardBuildArtifacts}"/>
-                            <label class="attach-previous">${%Discard build artifacts}</label>
-                        </f:entry>
-                    </f:optionalBlock>
-                </table>
-            </f:block>
-        </f:optionalBlock>
-    </table>
-</f:block>
-<f:block>
-    <table style="width:100%">
-        <f:optionalBlock field="passIdentifiedDownstream"
-                         help="/plugin/artifactory/help/common/help-passIdentifiedDownstream.html"
-                         title="Enable isolated resolution for downstream builds (requires Artifactory Pro)"
-                         inline="true">
-        </f:optionalBlock>
-    </table>
-</f:block>
-<f:block>
-    <table style="width:100%">
-        <j:if test="${descriptor.jiraPluginEnabled}">
-            <f:optionalBlock name="enableIssueTrackerIntegration"
-                             checked="${instance.enableIssueTrackerIntegration}"
-                             title="Enable JIRA Integration"
-                             help="/plugin/artifactory/help/common/help-enableIssueTrackerIntegration.html"
+        </table>
+    </f:block>
+    <f:block>
+        <table style="width:100%">
+            <f:optionalBlock name="deployBuildInfo" checked="${h.defaultToTrue(instance.deployBuildInfo)}"
+                             title="Capture and publish build info"
+                             help="/plugin/artifactory/help/common/help-deployBuildInfo.html"
                              inline="true">
 
-                <f:optionalBlock name="aggregateBuildIssues"
-                                 checked="${instance.aggregateBuildIssues}"
-                                 title="Aggregate issues from previous builds"
-                                 inline="true"
-                                 help="/plugin/artifactory/help/common/help-aggregateBuildIssues.html">
-                    <f:entry field="aggregationBuildStatus" title="${%Aggregate from status}"
-                             description="Define the latest build status to stop the aggregation at">
-                        <f:textbox value="${instance.aggregationBuildStatus}" default="Released"/>
-                    </f:entry>
+                <f:optionalBlock name="includeEnvVars" checked="${instance.includeEnvVars}"
+                                 title="Include environment variables"
+                                 help="/plugin/artifactory/help/common/help-includeEnvVars.html"
+                                 inline="true">
+                    <f:block>
+                        <table style="width:100%">
+                            <j:set var="envVarsPatterns" value="${instance.envVarsPatterns}"/>
+                            <f:section name="envVarsPatterns">
+                                <input type="hidden" name="stapler-class"
+                                       value="org.jfrog.hudson.util.IncludesExcludes"/>
+                                <f:entry title="Include Patterns" field="includePatterns"
+                                         help="/plugin/artifactory/help/common/help-envVarsIncludePatterns.html">
+                                    <f:textbox value="${envVarsPatterns.includePatterns}"/>
+                                </f:entry>
+                                <f:entry title="Exclude Patterns"
+                                         field="excludePatterns"
+                                         help="/plugin/artifactory/help/common/help-envVarsExcludePatterns.html">
+                                    <f:textbox value="${envVarsPatterns.excludePatterns}"
+                                               default="*password*,*secret*"/>
+                                </f:entry>
+                            </f:section>
+                        </table>
+                    </f:block>
                 </f:optionalBlock>
+                <f:block>
+                    <table style="width:100%">
+                        <f:optionalBlock field="recordAllDependencies"
+                                         help="/plugin/artifactory/help/common/help-recordAllDependencies.html"
+                                         title="Record implicit project dependencies and build-time dependencies"
+                                         inline="true">
+                        </f:optionalBlock>
+                    </table>
+                </f:block>
+                <f:block>
+                    <table style="width:100%">
+                        <f:optionalBlock field="allowPromotionOfNonStagedBuilds"
+                                         help="/plugin/artifactory/help/common/help-allowPromotionOfNonStagedBuilds.html"
+                                         title="Allow promotion of non-staged builds"
+                                         inline="true">
+                        </f:optionalBlock>
+                    </table>
+                    <table style="width: 100%">
+                        <f:optionalBlock field="allowBintrayPushOfNonStageBuilds"
+                                         help="/plugin/artifactory/help/common/help-allowPushToBintrayOfNonStagedBuilds.html"
+                                         title="Allow push to Bintray for non-staged builds"
+                                         inline="true">
+                        </f:optionalBlock>
+                    </table>
+                </f:block>
+                <f:block>
+                    <table style="width:100%">
+                        <f:optionalBlock name="runChecks"
+                                         checked="${instance.runChecks}"
+                                         title="Run Artifactory license checks (requires Artifactory Pro)"
+                                         inline="true"
+                                         help="/plugin/artifactory/help/common/help-runChecks.html">
+                            <f:entry title="${%Send license violation notifications to: }"
+                                     field="violationRecipients"
+                                     help="/plugin/artifactory/help/common/help-sendViolationNotification.html"
+                                     description="Space-separated list of recipient addresses.">
+                                <f:textbox value="${instance.violationRecipients}"/>
+                            </f:entry>
+                            <f:entry title="${%Limit checks to the following scopes: }"
+                                     help="/plugin/artifactory/help/common/help-scopes.html"
+                                     field="scopes"
+                                     description="Space-separated list of scopes.">
+                                <f:textbox value="${instance.scopes}"/>
+                            </f:entry>
+                            <f:entry field="includePublishArtifacts"
+                                     help="/plugin/artifactory/help/common/help-includePublishArtifacts.html">
+                                <f:checkbox default="false" checked="${instance.includePublishArtifacts}"/>
+                                <label class="attach-previous">${%Include published artifacts}</label>
+                            </f:entry>
+                            <f:entry field="disableLicenseAutoDiscovery"
+                                     help="/plugin/artifactory/help/common/help-licenseAutoDiscovery.html">
+                                <f:checkbox default="false" checked="${instance.disableLicenseAutoDiscovery}"/>
+                                <label class="attach-previous">${%Disable automatic license discovery}</label>
+                            </f:entry>
+                        </f:optionalBlock>
+                    </table>
+                </f:block>
+
+                <f:block>
+                    <table style="width:100%">
+                        <f:optionalBlock name="blackDuckRunChecks"
+                                         checked="${instance.blackDuckRunChecks}"
+                                         inline="true"
+                                         title="Run Black Duck Code Center compliance checks (requires Artifactory Pro)"
+                                         help="/plugin/artifactory/help/common/help-blackDuckRunChecks.html">
+                            <f:entry title="${%Code Center application name: }"
+                                     field="blackDuckAppName"
+                                     help="/plugin/artifactory/help/common/help-blackDuckAppName.html"
+                                     description="Black Duck Code Center application name.">
+                                <f:textbox value="${instance.blackDuckAppName}"/>
+                            </f:entry>
+                            <f:entry title="${%Code Center application version: }"
+                                     field="blackDuckAppVersion"
+                                     help="/plugin/artifactory/help/common/help-blackDuckAppVersion.html"
+                                     description="Black Duck Code Center application version.">
+                                <f:textbox value="${instance.blackDuckAppVersion}"/>
+                            </f:entry>
+                            <f:entry title="${%Send compliance report email to: }"
+                                     field="blackDuckReportRecipients"
+                                     help="/plugin/artifactory/help/common/help-blackDuckReportRecipients.html"
+                                     description="Space-separated list of recipient addresses.">
+                                <f:textbox value="${instance.blackDuckReportRecipients}"/>
+                            </f:entry>
+                            <f:entry title="${%Limit checks to the following scopes: }"
+                                     help="/plugin/artifactory/help/common/help-blackDuckScopes.html"
+                                     field="blackDuckScopes"
+                                     description="Space-separated list of scopes.">
+                                <f:textbox value="${instance.blackDuckScopes}"/>
+                            </f:entry>
+                            <f:entry field="blackDuckIncludePublishedArtifacts"
+                                     help="/plugin/artifactory/help/common/help-blackDuckIncludePublishedArtifacts.html">
+                                <f:checkbox default="false" checked="${instance.blackDuckIncludePublishedArtifacts}"/>
+                                <label class="attach-previous">${%Include published artifacts}</label>
+                            </f:entry>
+                            <f:entry field="autoCreateMissingComponentRequests"
+                                     help="/plugin/artifactory/help/common/help-autoCreateMissingComponentRequests.html">
+                                <f:checkbox default="true" checked="${instance.autoCreateMissingComponentRequests}"/>
+                                <label>${%Auto-create missing component requests}</label>
+                            </f:entry>
+                            <f:entry field="autoDiscardStaleComponentRequests"
+                                     help="/plugin/artifactory/help/common/help-autoDiscardStaleComponentRequests.html">
+                                <f:checkbox default="true" checked="${instance.autoDiscardStaleComponentRequests}"/>
+                                <label>${%Auto-discard stale component requests}</label>
+                            </f:entry>
+                        </f:optionalBlock>
+                    </table>
+                </f:block>
+
+                <f:block>
+                    <table style="width:100%">
+                        <f:optionalBlock name="discardOldBuilds"
+                                         checked="${instance.discardOldBuilds}"
+                                         title="Discard old builds from Artifactory (requires Artifactory Pro)"
+                                         inline="true"
+                                         help="/plugin/artifactory/help/common/help-discardBuilds.html">
+                            <f:entry field="discardBuildArtifacts"
+                                     help="/plugin/artifactory/help/common/help-discardBuildArtifacts.html">
+                                <f:checkbox default="true" checked="${instance.discardBuildArtifacts}"/>
+                                <label class="attach-previous">${%Discard build artifacts}</label>
+                            </f:entry>
+                        </f:optionalBlock>
+                    </table>
+                </f:block>
             </f:optionalBlock>
-        </j:if>
-    </table>
-</f:block>
-<f:block>
-    <hr/>
-</f:block>
+        </table>
+    </f:block>
+    <f:block>
+        <table style="width:100%">
+            <f:optionalBlock field="passIdentifiedDownstream"
+                             help="/plugin/artifactory/help/common/help-passIdentifiedDownstream.html"
+                             title="Enable isolated resolution for downstream builds (requires Artifactory Pro)"
+                             inline="true">
+            </f:optionalBlock>
+        </table>
+    </f:block>
+    <f:block>
+        <table style="width:100%">
+            <j:if test="${descriptor.jiraPluginEnabled}">
+                <f:optionalBlock name="enableIssueTrackerIntegration"
+                                 checked="${instance.enableIssueTrackerIntegration}"
+                                 title="Enable JIRA Integration"
+                                 help="/plugin/artifactory/help/common/help-enableIssueTrackerIntegration.html"
+                                 inline="true">
+
+                    <f:optionalBlock name="aggregateBuildIssues"
+                                     checked="${instance.aggregateBuildIssues}"
+                                     title="Aggregate issues from previous builds"
+                                     inline="true"
+                                     help="/plugin/artifactory/help/common/help-aggregateBuildIssues.html">
+                        <f:entry field="aggregationBuildStatus" title="${%Aggregate from status}"
+                                 description="Define the latest build status to stop the aggregation at">
+                            <f:textbox value="${instance.aggregationBuildStatus}" default="Released"/>
+                        </f:entry>
+                    </f:optionalBlock>
+                </f:optionalBlock>
+            </j:if>
+        </table>
+    </f:block>
+    <f:block>
+        <hr/>
+    </f:block>
 </j:jelly>

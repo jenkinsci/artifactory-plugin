@@ -1,13 +1,37 @@
 <div>
-    Plugin functionality of build combinations that you want to <b>deploy</b> through a Groovy expression that returns
+    Build combinations that you want to <b>deploy</b> through a Groovy expression that returns
     true or false.
 
     <p>
         When you specify a Groovy expression here, only the build combinations that result in <b>true</b>
-        will be influence by the Artifactory plugin deploy functionality. In evaluating the expression, multi
-        configuration axes are exposed
-        as variables
-        (with their values set to the current combination evaluated).
+        will be deployed to Artifactory. In evaluating the expression, multi
+        configuration axes are exposed as variables (with their values set to the current combination evaluated).
+
     </p>
     The Groovy expression is in the same syntax like in <b>Combination Filter</b> under <b>Configuration Matrix</b>
+
+    <p>
+        For example, let's say you are building on different agents for different jdk`s.
+    <center>
+        <table>
+            <tr>
+                <td>Deploy "if both linux and jdk7, it's invalid "<b>=> </b></td>
+                <td></td>
+                <td>
+                    <pre>!(label=="linux" && jdk=="jdk7")</pre>
+                </td>
+            </tr>
+            <tr>
+                <td>Deploy "if on master, just do jdk7 "<b>=> </b></td>
+                <td></td>
+                <td>
+                    <pre>(label=="master").implies(jdk=="jdk7")</pre>
+                </td>
+            </tr>
+        </table>
+    </center>
+
+    <p>
+        <b>Important Note:</b>
+        Deployment of the same Maven artifacts by more than one matrix job is not supported!
 </div>

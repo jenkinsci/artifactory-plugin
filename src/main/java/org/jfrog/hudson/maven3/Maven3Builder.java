@@ -29,6 +29,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.extractor.maven.Maven3BuildInfoLogger;
 import org.jfrog.hudson.util.PluginDependencyHelper;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -231,8 +232,10 @@ public class Maven3Builder extends Builder {
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-            return hudson.model.FreeStyleProject.class.isAssignableFrom(jobType)
-                    || hudson.matrix.MatrixProject.class.isAssignableFrom(jobType);
+            return hudson.model.FreeStyleProject.class.isAssignableFrom(jobType) ||
+                    hudson.matrix.MatrixProject.class.isAssignableFrom(jobType) ||
+                        (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
+                                com.tikal.jenkins.plugins.multijob.MultiJobProject.class.isAssignableFrom(jobType));
         }
 
         @Override

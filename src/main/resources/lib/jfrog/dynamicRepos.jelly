@@ -1,0 +1,89 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler"
+         xmlns:f="/lib/form">
+
+    <st:documentation>
+        <st:attribute name="id" use="required">
+            Elements Id
+        </st:attribute>
+        <st:attribute name="title" use="required">
+            Title
+        </st:attribute>
+        <st:attribute name="field" use="required">
+            Corresponding RepositoryConf field in ServerDetails
+        </st:attribute>
+        <st:attribute name="repositories" use="required">
+            List of current repositories for the Select box
+        </st:attribute>
+        <st:attribute name="helpUrl">
+            Help url if exists
+        </st:attribute>
+        <st:attribute name="repositoryConf" use="required">
+            RepositoryConf object
+        </st:attribute>
+    </st:documentation>
+    <style type="text/css">
+        .inline-float-button {
+        width: 186px;
+        text-align: right;
+        }
+        .inline-float-button .first-child {
+        display: inline-block;
+        }
+        .inline-float-button .first-child button {
+        width: 180px;
+        }
+    </style>
+    <st:adjunct includes="lib.jfrog.repos.repos"/>
+    <f:section name="${field}">
+        <input type="hidden" name="stapler-class" value="org.jfrog.hudson.RepositoryConf"/>
+        <input type="hidden" id="mode_${id}" name="dynamicMode"
+               value="${repositoryConf.dynamicMode}"/>
+        <f:entry title="${title}"
+                 help="${helpUrl}">
+            <j:choose>
+                <j:when test="${s.name==instance.artifactoryName}">
+                    <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;"
+                           class="setting-input"
+                           id="${id}"
+                           value="${repositoryConf.keyFromText}"/>
+                    <select style="float: left; width: 80%" class="setting-input"
+                            id="select_${id}" name="keyFromSelect">
+                        <j:forEach var="r" items="${repositories}">
+                            <f:option selected="${r==repositoryConf.keyFromSelect}" value="${r.value}">
+                                ${r}
+                            </f:option>
+                        </j:forEach>
+                    </select>
+                    <input
+                            class="yui-button validate-button inline-float-button" type="button" id="btn_${id}"
+                            onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
+                </j:when>
+                <j:otherwise>
+                    <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;"
+                           class="setting-input"
+                           id="${id}"/>
+                    <select style="float: left; width: 80%" class="setting-input"
+                            id="select_${id}" name="keyFromSelect">
+                    </select>
+                    <input
+                            class="yui-button validate-button inline-float-button" type="button" id="btn_${id}"
+                            value="Set a different value"
+                            onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
+                </j:otherwise>
+            </j:choose>
+        </f:entry>
+        <j:choose>
+            <j:when test="${repositoryConf.dynamicMode}">
+                <script>
+                    initTextAndSelectOnLoad('${id}', '', 'none');
+                </script>
+            </j:when>
+            <j:otherwise>
+                <script>
+                    initTextAndSelectOnLoad('${id}', 'none', '');
+                </script>
+            </j:otherwise>
+        </j:choose>
+    </f:section>
+</j:jelly>

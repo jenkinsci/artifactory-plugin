@@ -30,11 +30,11 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.jfrog.build.api.builder.PromotionBuilder;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.*;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialResolver;
 import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -72,7 +72,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
     }
 
     public String getIconFileName() {
-        return "/plugin/artifactory/images/artifactory-release.png";
+        return "/plugin/artifactory/images/artifactory-promote.png";
     }
 
     public String getDisplayName() {
@@ -263,7 +263,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
                 build.save();
                 // if the client gets back to the progress (after the redirect) page when this thread already done,
-                // she will get an error message because the log dies with the thread. So lets delay up to 3 seconds
+                // she will get an error message because the log dies with the thread. So lets delay up to 2 seconds
                 long timeToWait = 2000 - (System.currentTimeMillis() - started);
                 if (timeToWait > 0) {
                     Thread.sleep(timeToWait);
@@ -280,8 +280,8 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
         private void handlePluginPromotion(TaskListener listener, ArtifactoryBuildInfoClient client)
                 throws IOException {
-            String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getFullName());
-            String buildNumber = build.getNumber() + "";
+            String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
+            String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
             HttpResponse pluginPromotionResponse = client.executePromotionUserPlugin(
                     promotionPlugin.getPluginName(), buildName, buildNumber, promotionPlugin.getParamMap());
             if (checkSuccess(pluginPromotionResponse, false, false, listener)) {
@@ -302,8 +302,8 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                     .dryRun(true);
             listener.getLogger()
                     .println("Performing dry run promotion (no changes are made during dry run) ...");
-            String buildName = ExtractorUtils.sanitizeBuildName(build.getParent().getFullName());
-            String buildNumber = build.getNumber() + "";
+            String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
+            String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
             HttpResponse dryResponse = client.stageBuild(buildName, buildNumber, promotionBuilder.build());
             if (checkSuccess(dryResponse, true, true, listener)) {
                 listener.getLogger().println("Dry run finished successfully.\nPerforming promotion ...");

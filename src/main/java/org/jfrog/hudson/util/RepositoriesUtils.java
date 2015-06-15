@@ -2,12 +2,15 @@ package org.jfrog.hudson.util;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.model.Hudson;
+import hudson.model.Result;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.ProxyConfiguration;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.*;
 
 import java.io.IOException;
@@ -152,5 +155,45 @@ public abstract class RepositoriesUtils {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
         return descriptor.getArtifactoryServers();
+    }
+
+    public static List<Repository> createRepositoriesList(List<String> repositoriesValueList) {
+        List<Repository> repositories = Lists.newArrayList();
+        for (String repositoryKey : repositoriesValueList) {
+            Repository repository = new Repository(repositoryKey);
+            repositories.add(repository);
+        }
+        return repositories;
+    }
+
+    public static List<VirtualRepository> collectVirtualRepositories(List<VirtualRepository> repositories, String repoKey) {
+        if (repositories == null) {
+            if (StringUtils.isNotBlank(repoKey)) {
+                VirtualRepository vr = new VirtualRepository(repoKey, repoKey);
+                repositories = Lists.newArrayList(vr);
+            }
+        }
+        return repositories;
+    }
+
+    public static List<Repository> collectRepositories(List<Repository> repositories, String repoKey) {
+        if (repositories == null) {
+            if (StringUtils.isNotBlank(repoKey)) {
+                Repository r = new Repository(repoKey);
+                repositories = Lists.newArrayList(r);
+            }
+        }
+        return repositories;
+    }
+
+    public static void validateServerConfig(AbstractBuild build, BuildListener listener,
+            ArtifactoryServer artifactoryServer, String artifactoryUrl) throws IOException {
+        if (artifactoryServer == null) {
+            String error = "No Artifactory server configured for " + artifactoryUrl +
+                    ". Please check your configuration.";
+            listener.getLogger().println(error);
+            build.setResult(Result.FAILURE);
+            throw new IOException(error);
+        }
     }
 }

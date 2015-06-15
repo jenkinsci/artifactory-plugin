@@ -25,28 +25,14 @@
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <f:entry title="${%Target Repository}"
-                                 help="/plugin/artifactory/help/common/help-deployRepository.html">
-                            <select class="setting-input" name="repositoryKey" id="publishRepositoryKey-${s.url}">
-                                <j:choose>
-                                    <j:when test="${s.name==instance.artifactoryName}">
-                                        <j:choose>
-                                            <j:when test="${instance.repositoryKey != null}">
-                                                <f:option selected="${instance.repositoryKey}"
-                                                          value="${instance.repositoryKey}">${instance.repositoryKey}
-                                                </f:option>
-                                            </j:when>
-                                            <j:otherwise>
-                                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                                    <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
-                                                    </f:option>
-                                                </j:forEach>
-                                            </j:otherwise>
-                                        </j:choose>
-                                    </j:when>
-                                </j:choose>
-                            </select>
-                        </f:entry>
+
+                        <r:dynamicRepos id="publishRepositoryKey-${s.url}"
+                                        title="Target Repository"
+                                        field="deployReleaseRepository"
+                                        repositoryConf="${instance.details.deployReleaseRepository}"
+                                        repositories="${instance.releaseRepositoryList}"
+                                        helpUrl="/plugin/artifactory/help/common/help-deployRepository.html"/>
+
                         <script>
                             var ivyDeployBind =
                             <st:bind value="${descriptor}"/>
@@ -58,7 +44,6 @@
                                  credentialUserName="$('overridingDeployerCredentials-ivy-project').down('input[type=text]').value"
                                  credentialPassword="$('overridingDeployerCredentials-ivy-project').down('input[type=password]').value"
                                  isCredential="$('overridingDeployerCredentials-ivy-project').down('input').checked"/>
-
                     </f:nested>
                 </f:dropdownListBlock>
             </j:forEach>

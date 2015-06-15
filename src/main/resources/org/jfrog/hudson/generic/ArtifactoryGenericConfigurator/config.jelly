@@ -7,28 +7,14 @@
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <f:entry title="${%Target Repository}"
-                                 help="/plugin/artifactory/help/common/help-deployRepository.html">
-                            <select class="setting-input" name="repositoryKey" id="genericRepositoryKeys-${s.url}">
-                                <j:choose>
-                                    <j:when test="${s.name==instance.artifactoryName}">
-                                        <j:choose>
-                                            <j:when test="${instance.repositoryKey != null}">
-                                                <f:option selected="${instance.repositoryKey}"
-                                                          value="${instance.repositoryKey}">${instance.repositoryKey}
-                                                </f:option>
-                                            </j:when>
-                                            <j:otherwise>
-                                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                                    <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
-                                                    </f:option>
-                                                </j:forEach>
-                                            </j:otherwise>
-                                        </j:choose>
-                                    </j:when>
-                                </j:choose>
-                            </select>
-                        </f:entry>
+
+                        <r:dynamicRepos id="genericRepositoryKeys-${s.url}"
+                                        title="Target Repository"
+                                        field="deployReleaseRepository"
+                                        repositoryConf="${instance.details.deployReleaseRepository}"
+                                        repositories="${instance.releaseRepositoryList}"
+                                        helpUrl="/plugin/artifactory/help/common/help-deployRepository.html"/>
+
                         <script>
                             var genericDeployBind =
                             <st:bind value="${descriptor}"/>
@@ -124,23 +110,25 @@
                 </f:optionalBlock>
             </table>
         </f:block>
-        <j:if test="${descriptor.isMultiConfProject()}">
-            <f:block>
-                <table style="width:100%">
-                    <f:optionalBlock name="multiConfProject"
-                                     checked="${h.defaultToTrue(instance.multiConfProject)}"
-                                     title="${%Multi Configuration Deploy Matcher}"
-                                     inline="true"
+        <f:block>
+            <j:if test="${descriptor.isMultiConfProject()}">
+                <f:block>
+                    <table style="width:100%">
+                        <f:optionalBlock name="multiConfProject"
+                                         checked="${instance.multiConfProject == null || instance.multiConfProject}"
+                                         title="${%Multi Configuration Deploy Matcher}"
+                                         inline="true">
+                            <f:entry field="artifactoryCombinationFilter" title="${%Combination Matches}"
+                                     description="Groovy expression"
                                      help="/plugin/artifactory/help/common/help-combinationFilter.html">
-                        <f:entry field="artifactoryCombinationFilter" title="${%Combination Matches}"
-                                 description="Groovy expression">
-                            <f:textbox value="${instance.artifactoryCombinationFilter}"
-                                       field="artifactoryCombinationFilter"/>
-                        </f:entry>
-                    </f:optionalBlock>
-                </table>
-            </f:block>
-        </j:if>
+                                <f:textbox value="${instance.artifactoryCombinationFilter}"
+                                           field="artifactoryCombinationFilter"/>
+                            </f:entry>
+                        </f:optionalBlock>
+                    </table>
+                </f:block>
+            </j:if>
+        </f:block>
     </f:section>
     <f:block>
         <hr/>

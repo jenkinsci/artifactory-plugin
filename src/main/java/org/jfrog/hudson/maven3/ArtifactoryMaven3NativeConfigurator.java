@@ -49,11 +49,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public String getDownloadReleaseRepositoryKey() {
-        return details != null ? details.downloadReleaseRepositoryKey : null;
+        return details != null ? details.getResolveReleaseRepository().getRepoKey() : null;
     }
 
     public String getDownloadSnapshotRepositoryKey() {
-        return details != null ? details.downloadSnapshotRepositoryKey : null;
+        return details != null ? details.getResolveSnapshotRepositoryKey() : null;
     }
 
     public String getArtifactoryName() {
@@ -108,13 +108,8 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         return null;
     }
 
-    public List<VirtualRepository> getVirtualRepositoryKeys() {
-        if (getDownloadReleaseRepositoryKey() == null || getDownloadSnapshotRepositoryKey() == null) {
-            getDescriptor().virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(this, null, getArtifactoryServer());
-            return getDescriptor().virtualRepositoryKeys;
-        }
-
-        return getDescriptor().virtualRepositoryKeys;
+    public List<VirtualRepository> getVirtualRepositoryList(){
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys, details.getResolveReleaseRepository().getKeyFromSelect());
     }
 
     @Override
