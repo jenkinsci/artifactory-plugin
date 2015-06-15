@@ -88,6 +88,11 @@ public class AbstractBuildInfoDeployer {
             builder.vcsRevision(revision);
         }
 
+        String vcsUrl = ExtractorUtils.getVcsUrl(env);
+        if (StringUtils.isNotBlank(vcsUrl)) {
+            builder.vcsUrl(vcsUrl);
+        }
+        
         addBuildInfoProperties(builder);
 
         LicenseControl licenseControl = new LicenseControl(configurator.isRunChecks());
