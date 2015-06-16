@@ -95,8 +95,14 @@ public class Maven3Builder extends Builder {
         }
     }
 
+    @Override
+    public DescriptorImpl getDescriptor() {
+        return (DescriptorImpl) super.getDescriptor();
+    }
+
     private ArgumentListBuilder buildMavenCmdLine(AbstractBuild<?, ?> build, BuildListener listener,
-                                                  EnvVars env, Launcher launcher) throws IOException, InterruptedException {
+                                                  EnvVars env, Launcher launcher)
+            throws IOException, InterruptedException {
 
         Maven.MavenInstallation mi = getMaven();
         if (mi == null) {
@@ -168,6 +174,9 @@ public class Maven3Builder extends Builder {
 
         args.addKeyValuePair("-D", "classworlds.conf", classworldsConfPath, false);
 
+        //Starting from Maven 3.3.3
+        args.addKeyValuePair("-D", "maven.multiModuleProjectDirectory", getMavenProjectPath(build), false);
+
         // maven opts
         if (StringUtils.isNotBlank(getMavenOpts())) {
             String mavenOpts = Util.replaceMacro(getMavenOpts(), build.getBuildVariableResolver());
@@ -191,6 +200,24 @@ public class Maven3Builder extends Builder {
         return args;
     }
 
+    private Maven.MavenInstallation getMaven() {
+        Maven.MavenInstallation[] installations = getDescriptor().getInstallations();
+        for (Maven.MavenInstallation i : installations) {
+            if (mavenName != null && mavenName.equals(i.getName())) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+    private String getMavenProjectPath(AbstractBuild<?, ?> build) {
+        if(StringUtils.isNotBlank(getRootPom())){
+            return build.getModuleRoot().getRemote() + File.separatorChar +
+                    getRootPom().replace("/pom.xml", StringUtils.EMPTY);
+        }
+        return build.getModuleRoot().getRemote();
+    }
+
     /**
      * Copies a classworlds file to a temporary location either on the local filesystem or on a slave depending on the
      * node type.
@@ -206,21 +233,6 @@ public class Maven3Builder extends Builder {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public Maven.MavenInstallation getMaven() {
-        Maven.MavenInstallation[] installations = getDescriptor().getInstallations();
-        for (Maven.MavenInstallation i : installations) {
-            if (mavenName != null && mavenName.equals(i.getName())) {
-                return i;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) super.getDescriptor();
     }
 
     @Extension
