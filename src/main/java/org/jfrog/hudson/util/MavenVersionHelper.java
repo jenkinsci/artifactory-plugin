@@ -78,7 +78,7 @@ public class MavenVersionHelper {
     public static boolean isAtLeastVersion(MavenModuleSetBuild build, EnvVars vars, BuildListener listener,
             String version) throws IOException, InterruptedException {
         MavenModuleSet project = build.getProject();
-        Maven.MavenInstallation mavenInstallation = getMavenInstallation(project, vars, listener);
+        Maven.MavenInstallation mavenInstallation = getMavenInstallation(build, vars, listener);
         return isAtLeast(build, mavenInstallation.getHome(), version);
     }
 
@@ -89,20 +89,21 @@ public class MavenVersionHelper {
      * the process is currently running in e.g. the MAVEN_HOME variable may be defined only in the remote node and
      * Jenkins is not persisting it as part of its installations.
      *
-     * @param project  The Maven project that the maven installation is taken from.
+     * @param build  The Maven project build that the maven installation is taken from.
      * @param vars     The build's environment variables.
      * @param listener The build's event listener
      * @throws hudson.AbortException If the {@link hudson.tasks.Maven.MavenInstallation} that is taken from the project
      *                               is {@code null} then this exception is thrown.
      */
-    private static Maven.MavenInstallation getMavenInstallation(MavenModuleSet project, EnvVars vars,
+    private static Maven.MavenInstallation getMavenInstallation(MavenModuleSetBuild build, EnvVars vars,
             BuildListener listener) throws IOException, InterruptedException {
+        MavenModuleSet project = build.getProject();
         Maven.MavenInstallation mavenInstallation = project.getMaven();
         if (mavenInstallation == null) {
             throw new AbortException("A Maven installation needs to be available for this project to be built.\n" +
                     "Either your server has no Maven installations defined, or the requested Maven version does not exist.");
         }
-        return mavenInstallation.forEnvironment(vars).forNode(Computer.currentComputer().getNode(), listener);
+        return mavenInstallation.forEnvironment(vars).forNode(build.getBuiltOn().toComputer().getNode(), listener);
     }
 
     private static boolean isAtLeast(MavenModuleSetBuild build, String mavenHome, String version)
@@ -112,7 +113,7 @@ public class MavenVersionHelper {
 
     private static String getMavenVersion(MavenModuleSetBuild build, EnvVars vars,
             BuildListener listener) throws IOException, InterruptedException {
-        final Maven.MavenInstallation installation = getMavenInstallation(build.getProject(), vars, listener);
+        final Maven.MavenInstallation installation = getMavenInstallation(build, vars, listener);
         return build.getWorkspace().act(new FilePath.FileCallable<String>() {
             public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
                 try {
