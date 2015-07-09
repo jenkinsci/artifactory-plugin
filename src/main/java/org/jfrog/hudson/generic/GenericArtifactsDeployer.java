@@ -76,9 +76,10 @@ public class GenericArtifactsDeployer {
 		ArrayListMultimap<String, String> propertiesToAdd = getbuildPropertiesMap();
 		ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
 		String repositoryKey = Util.replaceMacro(configurator.getRepositoryKey(), env);
+		boolean removeRelativePath = configurator.isRemoveRelativePath();
 		artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer, credentials,
 				repositoryKey, propertiesToAdd,
-				artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
+				artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy), removeRelativePath));
 	}
 
 	private ArrayListMultimap<String, String> getbuildPropertiesMap() {
@@ -126,10 +127,12 @@ public class GenericArtifactsDeployer {
 		private Credentials credentials;
 		private ArrayListMultimap<String, String> buildProperties;
 		private ProxyConfiguration proxyConfiguration;
+		private final boolean removeRelativePath;
 
 		public FilesDeployerCallable(BuildListener listener, Multimap<String, String> patternPairs,
 									ArtifactoryServer server, Credentials credentials, String repositoryKey,
-									ArrayListMultimap<String, String> buildProperties, ProxyConfiguration proxyConfiguration) {
+									ArrayListMultimap<String, String> buildProperties, ProxyConfiguration proxyConfiguration,
+									boolean removeRelativePath) {
 			this.listener = listener;
 			this.patternPairs = patternPairs;
 			this.server = server;
@@ -137,6 +140,7 @@ public class GenericArtifactsDeployer {
 			this.repositoryKey = repositoryKey;
 			this.buildProperties = buildProperties;
 			this.proxyConfiguration = proxyConfiguration;
+			this.removeRelativePath = removeRelativePath;
 		}
 
 		public List<Artifact> invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
@@ -186,22 +190,12 @@ public class GenericArtifactsDeployer {
 			for (Map.Entry<String, String> entry : patternPairs.entries()) {
 				String pattern = entry.getKey();
 				String targetPath = entry.getValue();
-				Multimap<String, File> publishingData = PublishedItemsHelper.buildPublishingData(workspace, pattern,
+				Multimap<String, File> publishingData = PublishedItemsHelper.buildPublishingData(workspace, pattern, 
 						targetPath);
 				
-				/*boolean overrideDefaultRelativePath = true;
-				if(overrideDefaultRelativePath) {
+				if(removeRelativePath) {
 					publishingData = overrideRelativePath(publishingData, targetPath);
-				}*/
-				//if(configurator.is)
-				
-				/*publishingData.clear();
-				File f = new File("D:\\workspace\\artifactory-plugin\\work\\jobs\\Artifactory-Test\\workspace\\target\\path\\to\\zaproxy.jar");
-				publishingData.put(targetPath+"/my/path", f);*/
-				
-				listener.getLogger().println("From buildTargetPathToFiles: pattern = " + pattern);
-				listener.getLogger().println("From buildTargetPathToFiles: targetPath = " + targetPath);
-				listener.getLogger().println("From buildTargetPathToFiles: publishingData = " + publishingData);
+				}
 				
 				if (publishingData != null) {
 					listener.getLogger().println(
@@ -217,7 +211,6 @@ public class GenericArtifactsDeployer {
 		
 		private Multimap<String, File> overrideRelativePath(Multimap<String, File> publishingData, String targetPath) {
 			Multimap<String, File> result = HashMultimap.create();
-			
 			for(File f : publishingData.values()) {
 				result.put(targetPath, f);
 			}
@@ -232,10 +225,6 @@ public class GenericArtifactsDeployer {
 			File artifactFile = fileEntry.getValue();
 			String path = PublishedItemsHelper.calculateTargetPath(targetPath, artifactFile);
 			path = StringUtils.replace(path, "//", "/");
-			
-			listener.getLogger().println("From buildDeployDetailsFromFileEntry: targetPath = " + targetPath);
-			listener.getLogger().println("From buildDeployDetailsFromFileEntry: artifactFile = " + artifactFile);
-			listener.getLogger().println("From buildDeployDetailsFromFileEntry: path = " + path);
 
 			// calculate the sha1 checksum that is not given by Jenkins and add it to the deploy artifactsToDeploy
 			Map<String, String> checksums = Maps.newHashMap();

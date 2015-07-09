@@ -56,18 +56,12 @@
 		<f:textarea value="${instance.resolvePattern}"/>
 		</f:entry>
 		
-			<f:optionalBlock field="removeRelativePath"
-				help="/plugin/artifactory/help/common/help-removeRelativePath.html"
-				title="${%Override/Remove Original Relative Path}"
-				checked="${instance.removeRelativePath}"
-				inline="true">
-			</f:optionalBlock>
-			<!--<f:entry field="removeRelativePath" title="${%Override/Remove Original Relative Path}"
-			help="/plugin/artifactory/help/common/help-removeRelativePath.html">
-			<f:checkbox default="true" checked="${instance.removeRelativePath}"/>-->
-			<!--<label class="attach-previous">${%Override/Remove Original Relative Path}</label>-->
-		<!--</f:entry>-->
-		
+		<f:optionalBlock field="removeRelativePath"
+			help="/plugin/artifactory/help/common/help-removeRelativePath.html"
+			title="${%Override/Remove Original Relative Path}"
+			checked="${instance.removeRelativePath}"
+			inline="true">
+		</f:optionalBlock>		
 		
 		<f:entry title="Published Artifacts" field="deployPattern"
 			help="/plugin/artifactory/help/common/help-deployPattern.html">
