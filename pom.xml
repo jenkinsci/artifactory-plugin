@@ -1,474 +1,472 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-~ Copyright (C) 2011 JFrog Ltd.
-~
-~ Licensed under the Apache License, Version 2.0 (the "License");
-~ you may not use this file except in compliance with the License.
-~ You may obtain a copy of the License at
-~
-~ http://www.apache.org/licenses/LICENSE-2.0
-~
-~ Unless required by applicable law or agreed to in writing, software
-~ distributed under the License is distributed on an "AS IS" BASIS,
-~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-~ See the License for the specific language governing permissions and
-~ limitations under the License.
-~test
---><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-<modelVersion>4.0.0</modelVersion>
-<parent>
-	<groupId>org.jenkins-ci.plugins</groupId>
-	<artifactId>plugin</artifactId>
-<!-- 	<version>1.521</version> -->
-	<version>1.532</version>
-	<!-- <version>1.615</version> -->
-</parent>
+  ~ Copyright (C) 2011 JFrog Ltd.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~test
+  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>plugin</artifactId>
+        <version>1.521</version>
+    </parent>
 
-<artifactId>artifactory</artifactId>
-<version>2.3.1-SNAPSHOT</version>
-<packaging>hpi</packaging>
-<name>Jenkins Artifactory Plugin</name>
-<description>Integrates Artifactory to Jenkins</description>
-<url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
+    <artifactId>artifactory</artifactId>
+    <version>2.3.1-SNAPSHOT</version>
+    <packaging>hpi</packaging>
+    <name>Jenkins Artifactory Plugin</name>
+    <description>Integrates Artifactory to Jenkins</description>
+    <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
-<properties>
-	<buildinfo.version>2.5.0</buildinfo.version>
-	<buildinfo.maven3.version>2.5.0</buildinfo.maven3.version>
-	<buildinfo.gradle.version>3.1.0</buildinfo.gradle.version>
-	<buildinfo.ivy.version>2.5.0</buildinfo.ivy.version>
-	<maven-release-plugin.version>2.2</maven-release-plugin.version>
-</properties>
+    <properties>
+        <buildinfo.version>2.5.0</buildinfo.version>
+        <buildinfo.maven3.version>2.5.0</buildinfo.maven3.version>
+        <buildinfo.gradle.version>3.1.0</buildinfo.gradle.version>
+        <buildinfo.ivy.version>2.5.0</buildinfo.ivy.version>
+        <maven-release-plugin.version>2.2</maven-release-plugin.version>
+    </properties>
 
-<developers>
-	<developer>
-	<id>yossis</id>
-	<name>Yossi Shaul</name>
-	<email>yossis@jfrog.org</email>
-	<roles>
-		<role>Lead Developer</role>
-	</roles>
-	</developer>
-</developers>
+    <developers>
+        <developer>
+            <id>yossis</id>
+            <name>Yossi Shaul</name>
+            <email>yossis@jfrog.org</email>
+            <roles>
+                <role>Lead Developer</role>
+            </roles>
+        </developer>
+    </developers>
 
-<organization>
-	<name>JFrog</name>
-	<url>http://www.jfrog.org</url>
-</organization>
+    <organization>
+        <name>JFrog</name>
+        <url>http://www.jfrog.org</url>
+    </organization>
 
-<issueManagement>
-	<system>jira</system>
-	<url>http://issues.jfrog.org/jira/browse/HAP</url>
-</issueManagement>
+    <issueManagement>
+        <system>jira</system>
+        <url>http://issues.jfrog.org/jira/browse/HAP</url>
+    </issueManagement>
 
-<licenses>
-	<license>
-	<name>The Apache Software License, Version 2.0</name>
-	<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-	<distribution>repo</distribution>
-	</license>
-</licenses>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
-<dependencies>
-	<dependency>
-	<groupId>org.jenkins-ci.main</groupId>
-	<artifactId>maven-plugin</artifactId>
-	<version>${project.parent.version}</version>
-	<optional>true</optional>
-	</dependency>
-	<dependency>
-	<groupId>org.jenkins-ci.plugins</groupId>
-	<artifactId>subversion</artifactId>
-	<version>2.0</version>
-	<optional>true</optional>
-	</dependency>
-	<dependency>
-	<groupId>org.jenkins-ci.plugins</groupId>
-	<artifactId>git</artifactId>
-	<version>2.0</version>
-	<exclusions>
-		<exclusion>
-		<groupId>org.slf4j</groupId>
-		<artifactId>slf4j-jdk14</artifactId>
-		</exclusion>
-	</exclusions>
-	<optional>true</optional>
-	</dependency>
-	<dependency>
-	<groupId>org.jvnet.hudson.plugins</groupId>
-	<artifactId>perforce</artifactId>
-	<version>1.3.7</version>
-	<optional>true</optional>
-	</dependency>
-	<dependency>
-	<groupId>org.jenkins-ci.plugins</groupId>
-	<artifactId>ivy</artifactId>
-	<version>1.17</version>
-	<optional>true</optional>
-	</dependency>
-	<dependency>
-	<groupId>org.jenkins-ci.plugins</groupId>
-	<artifactId>ant</artifactId>
-	<version>1.2</version>
-	<optional>true</optional>
-	</dependency>
-	<dependency>
-	<groupId>org.jenkins-ci.plugins</groupId>
-	<artifactId>gradle</artifactId>
-	<version>1.15</version>
-	<optional>true</optional>
-	</dependency>
-	<dependency>
-	<groupId>org.jenkins-ci.plugins</groupId>
-	<artifactId>flexible-publish</artifactId>
-	<version>0.12</version>
-	<optional>true</optional>
-	</dependency>
-	<!-- usage of jenkins customized xstream is a must for the integration tests -->
-	<dependency>
-	<groupId>org.jvnet.hudson</groupId>
-	<artifactId>xstream</artifactId>
-	<version>1.3.1-hudson-8</version>
-	<scope>provided</scope>
-	</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.jenkins-ci.main</groupId>
+            <artifactId>maven-plugin</artifactId>
+            <version>${project.parent.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>subversion</artifactId>
+            <version>2.0</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
+            <version>2.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-jdk14</artifactId>
+                </exclusion>
+            </exclusions>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jvnet.hudson.plugins</groupId>
+            <artifactId>perforce</artifactId>
+            <version>1.3.7</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>ivy</artifactId>
+            <version>1.17</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>ant</artifactId>
+            <version>1.2</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>gradle</artifactId>
+            <version>1.15</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>flexible-publish</artifactId>
+            <version>0.12</version>
+            <optional>true</optional>
+        </dependency>
+        <!-- usage of jenkins customized xstream is a must for the integration tests -->
+        <dependency>
+            <groupId>org.jvnet.hudson</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.3.1-hudson-8</version>
+            <scope>provided</scope>
+        </dependency>
 
-	<dependency>
-	<groupId>org.jfrog.buildinfo</groupId>
-	<artifactId>build-info-api</artifactId>
-	<version>${buildinfo.version}</version>
-	<exclusions>
-		<exclusion>
-		<groupId>com.thoughtworks.xstream</groupId>
-		<artifactId>xstream</artifactId>
-		</exclusion>
-	</exclusions>
-	</dependency>
-	<dependency>
-	<groupId>org.jfrog.buildinfo</groupId>
-	<artifactId>build-info-client</artifactId>
-	<version>${buildinfo.version}</version>
-	<exclusions>
-		<exclusion>
-		<groupId>com.thoughtworks.xstream</groupId>
-		<artifactId>xstream</artifactId>
-		</exclusion>
-	</exclusions>
-	</dependency>
-	<dependency>
-	<groupId>org.jfrog.buildinfo</groupId>
-	<artifactId>build-info-extractor</artifactId>
-	<version>${buildinfo.version}</version>
-	<exclusions>
-		<exclusion>
-		<groupId>com.thoughtworks.xstream</groupId>
-		<artifactId>xstream</artifactId>
-		</exclusion>
-	</exclusions>
-	</dependency>
-	<dependency>
-	<groupId>org.jfrog.buildinfo</groupId>
-	<artifactId>build-info-vcs</artifactId>
-	<version>${buildinfo.version}</version>
-	<exclusions>
-		<exclusion>
-		<groupId>com.thoughtworks.xstream</groupId>
-		<artifactId>xstream</artifactId>
-		</exclusion>
-	</exclusions>
-	</dependency>
-	<dependency>
-	<!--
-		ZStream is declared final in 1.0.7, which is what build-info-vcs pulls in.
-		This causes a conflict with jzlib-1.1.2 that newer Jenkins uses.
-		If we didn't put too many classes into plexus.core, this would have been a non-issue.
-		See JENKINS-18401
-	-->
-	<groupId>com.jcraft</groupId>
-	<artifactId>jzlib</artifactId>
-	<version>1.1.2</version>
-	</dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-api</artifactId>
+            <version>${buildinfo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.thoughtworks.xstream</groupId>
+                    <artifactId>xstream</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-client</artifactId>
+            <version>${buildinfo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.thoughtworks.xstream</groupId>
+                    <artifactId>xstream</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-extractor</artifactId>
+            <version>${buildinfo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.thoughtworks.xstream</groupId>
+                    <artifactId>xstream</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-vcs</artifactId>
+            <version>${buildinfo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.thoughtworks.xstream</groupId>
+                    <artifactId>xstream</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <!--
+                ZStream is declared final in 1.0.7, which is what build-info-vcs pulls in.
+                This causes a conflict with jzlib-1.1.2 that newer Jenkins uses.
+                If we didn't put too many classes into plexus.core, this would have been a non-issue.
+                See JENKINS-18401
+             -->
+            <groupId>com.jcraft</groupId>
+            <artifactId>jzlib</artifactId>
+            <version>1.1.2</version>
+        </dependency>
 
-	<dependency>
-	<groupId>org.jfrog.buildinfo</groupId>
-	<artifactId>build-info-extractor-ivy</artifactId>
-	<version>${buildinfo.ivy.version}</version>
-	<exclusions>
-		<exclusion>
-		<groupId>org.apache.ant</groupId>
-		<artifactId>ant</artifactId>
-		</exclusion>
-		<exclusion>
-		<artifactId>groovy-all</artifactId>
-		<groupId>org.codehaus.groovy</groupId>
-		</exclusion>
-	</exclusions>
-	</dependency>
-	<dependency>
-	<groupId>org.jfrog.buildinfo</groupId>
-	<artifactId>build-info-extractor-maven3</artifactId>
-	<version>${buildinfo.maven3.version}</version>
-	</dependency>
-	<dependency>
-	<groupId>org.jfrog.buildinfo</groupId>
-	<artifactId>build-info-extractor-gradle</artifactId>
-	<version>${buildinfo.gradle.version}</version>
-	<exclusions>
-		<exclusion>
-		<groupId>org.apache.ant</groupId>
-		<artifactId>ant</artifactId>
-		</exclusion>
-		<exclusion>
-		<artifactId>groovy-all</artifactId>
-		<groupId>org.codehaus.groovy</groupId>
-		</exclusion>
-		<exclusion>
-		<groupId>org.codehaus.groovy</groupId>
-		<artifactId>groovy-all-minimal</artifactId>
-		</exclusion>
-		<exclusion>
-		<artifactId>gmaven-runtime-1.6</artifactId>
-		<groupId>org.codehaus.groovy.maven.runtime</groupId>
-		</exclusion>
-		<exclusion>
-		<groupId>org.gradle</groupId>
-		<artifactId>gradle-core</artifactId>
-		</exclusion>
-		<exclusion>
-		<groupId>org.gradle</groupId>
-		<artifactId>gradle-plugins</artifactId>
-		</exclusion>
-		<exclusion>
-		<groupId>com.tonicsystems.jarjar</groupId>
-		<artifactId>jarjar-plugin</artifactId>
-		</exclusion>
-	</exclusions>
-	</dependency>
-	<dependency>
-	<groupId>commons-lang</groupId>
-	<artifactId>commons-lang</artifactId>
-	<version>2.4</version>
-	</dependency>
-	<dependency>
-	<groupId>commons-codec</groupId>
-	<artifactId>commons-codec</artifactId>
-	<version>1.4</version>
-	</dependency>
-	<dependency>
-	<groupId>commons-io</groupId>
-	<artifactId>commons-io</artifactId>
-	<version>2.0.1</version>
-	</dependency>
-	<dependency>
-	<groupId>com.google.guava</groupId>
-	<artifactId>guava</artifactId>
-	<version>r08</version>
-	</dependency>
-	<dependency>
-	<groupId>org.codehaus.jackson</groupId>
-	<artifactId>jackson-mapper-asl</artifactId>
-	<version>1.5.1</version>
-	</dependency>
-	<dependency>
-	<groupId>org.jdom</groupId>
-	<artifactId>jdom</artifactId>
-	<version>1.1</version>
-	</dependency>
-	<dependency>
-	<groupId>org.apache.ivy</groupId>
-	<artifactId>ivy</artifactId>
-	<version>2.2.0</version>
-	</dependency>
-	<dependency>
-	<groupId>org.jenkins-ci.plugins</groupId>
-	<artifactId>jira</artifactId>
-	<version>1.29</version>
-	<optional>true</optional>
-	</dependency>
-	<dependency>
-	<groupId>org.jenkins-ci.plugins</groupId>
-	<artifactId>jenkins-multijob-plugin</artifactId>
-	<version>1.13</version>
-	<optional>true</optional>
-	</dependency>
-	<dependency>
-	<groupId>junit</groupId>
-	<artifactId>junit</artifactId>
-	<version>4.8.2</version>
-	<scope>test</scope>
-	</dependency>
-</dependencies>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-extractor-ivy</artifactId>
+            <version>${buildinfo.ivy.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.ant</groupId>
+                    <artifactId>ant</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>groovy-all</artifactId>
+                    <groupId>org.codehaus.groovy</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-extractor-maven3</artifactId>
+            <version>${buildinfo.maven3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-extractor-gradle</artifactId>
+            <version>${buildinfo.gradle.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.ant</groupId>
+                    <artifactId>ant</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>groovy-all</artifactId>
+                    <groupId>org.codehaus.groovy</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-all-minimal</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>gmaven-runtime-1.6</artifactId>
+                    <groupId>org.codehaus.groovy.maven.runtime</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.gradle</groupId>
+                    <artifactId>gradle-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.gradle</groupId>
+                    <artifactId>gradle-plugins</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.tonicsystems.jarjar</groupId>
+                    <artifactId>jarjar-plugin</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>r08</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jdom</groupId>
+            <artifactId>jdom</artifactId>
+            <version>1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ivy</groupId>
+            <artifactId>ivy</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>jira</artifactId>
+            <version>1.29</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>jenkins-multijob-plugin</artifactId>
+            <version>1.13</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
-<build>
-	<plugins>
-	<plugin>
-		<artifactId>maven-release-plugin</artifactId>
-		<configuration>
-		<goals>deploy</goals>
-		</configuration>
-	</plugin>
-	<plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-surefire-plugin</artifactId>
-		<version>2.8.1</version>
-		<configuration>
-		<excludes>
-			<exclude>**/InjectedTest.java</exclude>
-			<exclude>**/*ITest.java</exclude>
-		</excludes>
-		</configuration>
-	</plugin>
-	<plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-failsafe-plugin</artifactId>
-		<version>2.8.1</version>
-		<configuration>
-		<skipITs>true</skipITs>
-		<includes>
-			<include>**/*ITest.java</include>
-		</includes>
-		</configuration>
-		<executions>
-		<execution>
-			<id>integration-test</id>
-			<goals>
-			<goal>integration-test</goal>
-			</goals>
-		</execution>
-		<execution>
-			<id>verify</id>
-			<goals>
-			<goal>verify</goal>
-			</goals>
-		</execution>
-		</executions>
-	</plugin>
-	<plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-enforcer-plugin</artifactId>
-		<version>1.0</version>
-		<executions>
-		<execution>
-			<goals>
-			<goal>enforce</goal>
-			</goals>
-			<configuration>
-			<rules>
-				<bannedDependencies>
-				<excludes>
-					<!-- HAP-211 -->
-					<exclude>com.thoughtworks.xstream:xstream</exclude>
-					<exclude>org.slf4j:slf4j-jdk14:*:jar:compile</exclude>
-				</excludes>
-				</bannedDependencies>
-			</rules>
-			<fail>true</fail>
-			</configuration>
-		</execution>
-		</executions>
-	</plugin>
-	<plugin>
-		<groupId>org.zeroturnaround</groupId>
-		<artifactId>jrebel-maven-plugin</artifactId>
-		<version>1.1.1</version>
-		<configuration>
-		<packaging>jar</packaging>
-		</configuration>
-		<executions>
-		<execution>
-			<id>generate-rebel-xml</id>
-			<phase>process-resources</phase>
-			<goals>
-			<goal>generate</goal>
-			</goals>
-		</execution>
-		</executions>
-	</plugin>
-	</plugins>
-</build>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <goals>deploy</goals>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.8.1</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/InjectedTest.java</exclude>
+                        <exclude>**/*ITest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.8.1</version>
+                <configuration>
+                    <skipITs>true</skipITs>
+                    <includes>
+                        <include>**/*ITest.java</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>verify</id>
+                        <goals>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <!-- HAP-211 -->
+                                        <exclude>com.thoughtworks.xstream:xstream</exclude>
+                                        <exclude>org.slf4j:slf4j-jdk14:*:jar:compile</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.zeroturnaround</groupId>
+                <artifactId>jrebel-maven-plugin</artifactId>
+                <version>1.1.1</version>
+                <configuration>
+                    <packaging>jar</packaging>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-rebel-xml</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
-<scm>
-	<connection>scm:git:git://github.com/jenkinsci/artifactory-plugin.git</connection>
-	<developerConnection>scm:git:git@github.com:jenkinsci/artifactory-plugin.git</developerConnection>
-	<url>https://github.com/jenkinsci/artifactory-plugin</url>
-</scm>
+    <scm>
+        <connection>scm:git:git://github.com/jenkinsci/artifactory-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:jenkinsci/artifactory-plugin.git</developerConnection>
+        <url>https://github.com/jenkinsci/artifactory-plugin</url>
+    </scm>
 
-<profiles>
-	<profile>
-	<id>itest</id>
-	<build>
-		<plugins>
-		<plugin>
-			<groupId>org.apache.maven.plugins</groupId>
-			<artifactId>maven-failsafe-plugin</artifactId>
-			<version>2.8.1</version>
-			<configuration>
-			<skipITs>false</skipITs>
-			</configuration>
-		</plugin>
-		</plugins>
-	</build>
-	</profile>
-	<profile>
-	<id>maven-glassfish</id>
-	<repositories>
-		<repository>
-		<id>repo.jenkins-ci.org</id>
-		<url>http://repo.jenkins-ci.org/public/</url>
-		</repository>
-	</repositories>
+    <profiles>
+        <profile>
+            <id>itest</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>2.8.1</version>
+                        <configuration>
+                            <skipITs>false</skipITs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>maven-glassfish</id>
+            <repositories>
+                <repository>
+                    <id>repo.jenkins-ci.org</id>
+                    <url>http://repo.jenkins-ci.org/public/</url>
+                </repository>
+            </repositories>
 
-	<pluginRepositories>
-		<pluginRepository>
-		<id>repo.jenkins-ci.org</id>
-		<url>http://repo.jenkins-ci.org/public/</url>
-		</pluginRepository>
-	</pluginRepositories>
-	</profile>
+            <pluginRepositories>
+                <pluginRepository>
+                    <id>repo.jenkins-ci.org</id>
+                    <url>http://repo.jenkins-ci.org/public/</url>
+                </pluginRepository>
+            </pluginRepositories>
+        </profile>
 
-	<profile>
-	<id>jfrog</id>
-	<repositories>
-		<repository>
-		<id>central</id>
-		<name>jfrog-apps-dist</name>
-		<url>http://repo.jfrog.org/artifactory/libs-releases</url>
-		<snapshots>
-			<enabled>false</enabled>
-		</snapshots>
-		</repository>
-		<repository>
-		<id>snapshots</id>
-		<name>jfrog-apps-snapshots</name>
-		<url>http://repo.jfrog.org/artifactory/libs-snapshots</url>
-		<snapshots>
-			<enabled>true</enabled>
-		</snapshots>
-		</repository>
-	</repositories>
-	<pluginRepositories>
-		<pluginRepository>
-		<id>central</id>
-		<name>jfrog-plugins-dist</name>
-		<url>http://repo.jfrog.org/artifactory/plugins-releases</url>
-		<snapshots>
-			<enabled>false</enabled>
-		</snapshots>
-		</pluginRepository>
-		<pluginRepository>
-		<id>snapshots</id>
-		<name>jfrog-plugins-snapshots</name>
-		<url>http://repo.jfrog.org/artifactory/plugins-snapshots</url>
-		<snapshots>
-			<enabled>true</enabled>
-		</snapshots>
-		</pluginRepository>
-	</pluginRepositories>
-	</profile>
-</profiles>
+        <profile>
+            <id>jfrog</id>
+            <repositories>
+                <repository>
+                    <id>central</id>
+                    <name>jfrog-apps-dist</name>
+                    <url>http://repo.jfrog.org/artifactory/libs-releases</url>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </repository>
+                <repository>
+                    <id>snapshots</id>
+                    <name>jfrog-apps-snapshots</name>
+                    <url>http://repo.jfrog.org/artifactory/libs-snapshots</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+            <pluginRepositories>
+                <pluginRepository>
+                    <id>central</id>
+                    <name>jfrog-plugins-dist</name>
+                    <url>http://repo.jfrog.org/artifactory/plugins-releases</url>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </pluginRepository>
+                <pluginRepository>
+                    <id>snapshots</id>
+                    <name>jfrog-plugins-snapshots</name>
+                    <url>http://repo.jfrog.org/artifactory/plugins-snapshots</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </pluginRepository>
+            </pluginRepositories>
+        </profile>
+    </profiles>
 
-<distributionManagement>
-	<repository>
-	<id>maven.jenkins-ci.org</id>
-	<url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
-	</repository>
-</distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>maven.jenkins-ci.org</id>
+            <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
+        </repository>
+    </distributionManagement>
 </project>
