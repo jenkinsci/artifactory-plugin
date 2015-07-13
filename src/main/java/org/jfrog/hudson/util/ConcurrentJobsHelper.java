@@ -70,7 +70,7 @@ public class ConcurrentJobsHelper {
     public static abstract class ConcurrentBuildTearDownSync {
         public ConcurrentBuildTearDownSync(String buildName, Result buildResult) {
             ConcurrentBuild build = concurrentBuildHandler.get(buildName);
-            if (build.getThreadsCounter().decrementAndGet() == 0 || Result.ABORTED.equals(buildResult)) {
+            if ((build != null && build.getThreadsCounter().decrementAndGet() == 0) || Result.ABORTED.equals(buildResult)) {
                 tearDown();
                 concurrentBuildHandler.remove(buildName);
             }
