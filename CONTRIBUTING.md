@@ -5,4 +5,4 @@ Before we can accept your contribution, process your GitHub pull requests, and t
 [Click here](https://secure.echosign.com/public/hostedForm?formid=5IYKLZ2RXB543N) to submit the JFrog CLA.
 This should only take a minute to complete and is a one-time process.
 
-*Thanks for Your Contribution to the Community!* :-)
+*Thanks for Your Contribution to the Community!*  :-)
