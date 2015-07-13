@@ -77,11 +77,9 @@ public class MavenVersionHelper {
      */
     public static boolean isAtLeastVersion(MavenModuleSetBuild build, EnvVars vars, BuildListener listener,
             String version) throws IOException, InterruptedException {
-        MavenModuleSet project = build.getProject();
         Maven.MavenInstallation mavenInstallation = getMavenInstallation(build, vars, listener);
         return isAtLeast(build, mavenInstallation.getHome(), version);
     }
-
 
     /**
      * Get the {@link hudson.model.EnvironmentSpecific} and {@link hudson.slaves.NodeSpecific} Maven installation. First
