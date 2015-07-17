@@ -401,7 +401,7 @@ function displayErrorResponse(spinner, target, message) {
 
 function displayWarningMessage(warning) {
     warning.innerHTML = "Warning! One of your previously configured items does not exist.";
-    warning.style.color = "orange"
+    warning.style.color = "orange";
 }
 
 function removeElements(e) {
