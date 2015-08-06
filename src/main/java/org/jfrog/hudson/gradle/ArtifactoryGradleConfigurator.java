@@ -46,6 +46,7 @@ import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseApiAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
@@ -73,6 +74,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
     private final Credentials overridingDeployerCredentials;
+    private final Credentials overridingResolverCredentials;
     private final boolean runChecks;
     private final String violationRecipients;
     private final boolean includePublishArtifacts;
@@ -97,6 +99,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final String blackDuckAppName;
     private final String blackDuckAppVersion;
     private final boolean filterExcludedArtifactsFromBuild;
+    private final ServerDetails resolverDetails;
     private ServerDetails details;
     private boolean deployArtifacts;
     private IncludesExcludes envVarsPatterns;
@@ -119,23 +122,32 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private transient String scrambledPassword;
 
     @DataBoundConstructor
-    public ArtifactoryGradleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
-                                         boolean deployMaven, boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
+    public ArtifactoryGradleConfigurator(ServerDetails details, ServerDetails resolverDetails,
+                                         Credentials overridingDeployerCredentials,
+                                         Credentials overridingResolverCredentials, boolean deployMaven,
+                                         boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
                                          boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                          boolean deployBuildInfo, boolean runChecks, String violationRecipients,
-                                         boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
-                                         String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-                                         boolean discardOldBuilds, boolean passIdentifiedDownstream, GradleReleaseWrapper releaseWrapper,
-                                         boolean discardBuildArtifacts, String matrixParams, boolean skipInjectInitScript,
-                                         boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
-                                         boolean allowPromotionOfNonStagedBuilds, boolean allowBintrayPushOfNonStageBuilds,
-                                         boolean blackDuckRunChecks, String blackDuckAppName,
-                                         String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
-                                         boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
-                                         boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild,
-                                         String artifactoryCombinationFilter) {
+                                         boolean includePublishArtifacts, String scopes,
+                                         boolean disableLicenseAutoDiscovery, String ivyPattern, String artifactPattern,
+                                         boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
+                                         boolean discardOldBuilds, boolean passIdentifiedDownstream,
+                                         GradleReleaseWrapper releaseWrapper, boolean discardBuildArtifacts,
+                                         String matrixParams, boolean skipInjectInitScript,
+                                         boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
+                                         String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
+                                         boolean allowBintrayPushOfNonStageBuilds, boolean blackDuckRunChecks,
+                                         String blackDuckAppName, String blackDuckAppVersion,
+                                         String blackDuckReportRecipients, String blackDuckScopes,
+                                         boolean blackDuckIncludePublishedArtifacts,
+                                         boolean autoCreateMissingComponentRequests,
+                                         boolean autoDiscardStaleComponentRequests,
+                                         boolean filterExcludedArtifactsFromBuild, String artifactoryCombinationFilter)
+    {
         this.details = details;
+        this.resolverDetails = resolverDetails;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
+        this.overridingResolverCredentials = overridingResolverCredentials;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
         this.deployArtifacts = deployArtifacts;
@@ -182,6 +194,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public ServerDetails getResolverDetails() {
+        return resolverDetails;
     }
 
     public String getMatrixParams() {
@@ -274,6 +290,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
+    }
+
+    public String getArtifactoryResolverName() {
+        return resolverDetails != null ? resolverDetails.artifactoryName : null;
     }
 
     public String getArtifactoryUrl() {
@@ -490,40 +510,21 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 env.put("ARTIFACTORY_TASKS", tasks + " " + BuildInfoBaseTask.BUILD_INFO_TASK_NAME);
 
                 ServerDetails serverDetails = getDetails();
-                ReleaseAction releaseAction = ActionableHelper.getLatestAction(build, ReleaseAction.class);
-                if (releaseAction != null) {
-                    releaseAction.addVars(env);
-                    String stagingRepository = releaseAction.getStagingRepositoryKey();
-                    if (StringUtils.isBlank(stagingRepository)) {
-                        stagingRepository = getRepositoryKey();
-                    }
-                    serverDetails = new ServerDetails(
-                            serverDetails.artifactoryName,
-                            serverDetails.getArtifactoryUrl(),
-                            new RepositoryConf(stagingRepository, stagingRepository, false),
-                            serverDetails.getDeploySnapshotRepository(),
-                            serverDetails.getResolveReleaseRepository(),
-                            serverDetails.getResolveSnapshotRepository());
-                }
+                serverDetails = releaseActionOverride(env, serverDetails);
                 finalPublisherBuilder.serverDetails(serverDetails);
 
+                ServerDetails resolverServerDetails = getResolverDetails();
                 ResolverContext resolverContext = null;
-                if (StringUtils.isNotBlank(serverDetails.getResolveReleaseRepository().getRepoKey())) {
-                    // Resolution server and overriding credentials are currently shared by the deployer and resolver in
-                    // the UI. So here we use the same server details and for credentials we try deployer override and
-                    // then default resolver
-                    Credentials resolverCredentials;
-                    if (isOverridingDefaultDeployer()) {
-                        resolverCredentials = getOverridingDeployerCredentials();
-                    } else {
-                        resolverCredentials = getArtifactoryServer().getResolvingCredentials();
-                    }
-                    resolverContext = new ResolverContext(getArtifactoryServer(), serverDetails, resolverCredentials,
-                            ArtifactoryGradleConfigurator.this);
+                if (StringUtils.isNotBlank(resolverServerDetails.getResolveReleaseRepository().getRepoKey())) {
+                    Credentials resolverCredentials = CredentialResolver.getPreferredResolver(
+                                ArtifactoryGradleConfigurator.this, getArtifactoryServer());
+                    resolverContext = new ResolverContext(getArtifactoryResolverServer(), resolverServerDetails,
+                            resolverCredentials, ArtifactoryGradleConfigurator.this);
                 }
 
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, finalPublisherBuilder.build(), resolverContext);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, finalPublisherBuilder.build(),
+                            resolverContext);
                 } catch (Exception e) {
                     listener.getLogger().println(e.getMessage());
                     throw new RuntimeException(e);
@@ -587,9 +588,27 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
                 return success && releaseSuccess;
             }
+
+            private ServerDetails releaseActionOverride(Map<String, String> env, ServerDetails serverDetails) {
+                ReleaseAction releaseAction = ActionableHelper.getLatestAction(build, ReleaseAction.class);
+                if (releaseAction != null) {
+                    releaseAction.addVars(env);
+                    String stagingRepository = releaseAction.getStagingRepositoryKey();
+                    if (StringUtils.isBlank(stagingRepository)) {
+                        stagingRepository = getRepositoryKey();
+                    }
+                    serverDetails = new ServerDetails(
+                            serverDetails.artifactoryName,
+                            serverDetails.getArtifactoryUrl(),
+                            new RepositoryConf(stagingRepository, stagingRepository, false),
+                            serverDetails.getDeploySnapshotRepository(),
+                            serverDetails.getResolveReleaseRepository(),
+                            serverDetails.getResolveSnapshotRepository());
+                }
+                return serverDetails;
+            }
         };
     }
-
 
     private PublisherContext.Builder getBuilder() {
         return new PublisherContext.Builder()
@@ -642,6 +661,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
+    public ArtifactoryServer getArtifactoryResolverServer() {
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryResolverName(),
+                getDescriptor().getArtifactoryServers());
+    }
+
     public List<PluginSettings> getUserPluginKeys() {
         return getDescriptor().userPluginKeys;
     }
@@ -651,15 +675,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public List<VirtualRepository> getVirtualRepositories() {
-        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositories, details.getResolveSnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositories, resolverDetails.getResolveSnapshotRepository().getKeyFromSelect());
     }
 
     public boolean isOverridingDefaultResolver() {
-        return (getOverridingDeployerCredentials() != null);
+        return (getOverridingResolverCredentials() != null);
     }
 
     public Credentials getOverridingResolverCredentials() {
-        return overridingDeployerCredentials;
+        return overridingResolverCredentials;
     }
 
     public List<UserPluginInfo> getStagingUserPluginInfo() {
@@ -823,15 +847,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     /**
-     * Convert any remaining local credential variables to a credentials object
-     */
-    public static final class ConverterImpl extends OverridingDeployerCredentialsConverter {
-        public ConverterImpl(XStream2 xstream) {
-            super(xstream);
-        }
-    }
-
-    /**
      * This run listener handles the job completed event to cleanup svn tags and working copy in case of build failure.
      */
     @Extension
@@ -890,6 +905,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
             // remove the release action from the build. the stage action is the point of interaction for successful builds
             run.getActions().remove(releaseAction);
+        }
+    }
+
+    /**
+     * Page Converter
+     */
+    public static final class ConverterImpl extends DeployerResolverOverriderConverter {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
         }
     }
 }

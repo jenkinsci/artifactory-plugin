@@ -54,20 +54,17 @@ public abstract class CredentialResolver {
 
     /**
      * Decides and returns the preferred resolver credentials to use from this builder settings and selected server
-     *
+     * Override priority:
+     * 1) Job override resolver
+     * 2) Plugin manage override resolver
+     * 3) Plugin manage general
      * @param resolverOverrider Resolve-overriding capable builder
-     * @param deployerOverrider Deploy-overriding capable builder
      * @param server            Selected Artifactory server
      * @return Preferred resolver credentials
      */
-    public static Credentials getPreferredResolver(ResolverOverrider resolverOverrider,
-                                                   DeployerOverrider deployerOverrider, ArtifactoryServer server) {
+    public static Credentials getPreferredResolver(ResolverOverrider resolverOverrider, ArtifactoryServer server) {
         if (resolverOverrider != null && resolverOverrider.isOverridingDefaultResolver()) {
             return resolverOverrider.getOverridingResolverCredentials();
-        }
-
-        if (deployerOverrider != null && deployerOverrider.isOverridingDefaultDeployer()) {
-            return deployerOverrider.getOverridingDeployerCredentials();
         }
 
         return server.getResolvingCredentials();

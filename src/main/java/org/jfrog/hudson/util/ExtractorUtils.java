@@ -144,13 +144,9 @@ public class ExtractorUtils {
         }
 
         if (resolverContext != null) {
-            if (publisherContext != null)
-                setResolverInfo(configuration, build, resolverContext, publisherContext.getDeployerOverrider(), env);
-            else
-                setResolverInfo(configuration, build, resolverContext, null, env);
+            setResolverInfo(configuration, build, resolverContext, env);
             // setProxy(resolverContext.getServer(), configuration);
         }
-
 
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
                 publisherContext.isEnableIssueTrackerIntegration()) {
@@ -177,8 +173,8 @@ public class ExtractorUtils {
         }
     }
 
-    private static void setResolverInfo(ArtifactoryClientConfiguration configuration, AbstractBuild build, ResolverContext context,
-                                        DeployerOverrider deployerOverrider, Map<String, String> env) {
+    private static void setResolverInfo(ArtifactoryClientConfiguration configuration, AbstractBuild build,
+                                        ResolverContext context, Map<String, String> env) {
         configuration.setTimeout(context.getServer().getTimeout());
         configuration.resolver.setContextUrl(context.getServer().getUrl());
         String inputDownloadReleaseKey = context.getServerDetails().getResolveReleaseRepository().getRepoKey();
@@ -186,7 +182,7 @@ public class ExtractorUtils {
         // These input variables might be a variable that should be replaced with it's value
         replaceRepositoryInputForValues(configuration, build, inputDownloadReleaseKey, inputDownloadSnapshotKey, env);
         Credentials preferredResolver = CredentialResolver.getPreferredResolver(context.getResolverOverrider(),
-                deployerOverrider, context.getServer());
+                context.getServer());
         if (StringUtils.isNotBlank(preferredResolver.getUsername())) {
             configuration.resolver.setUsername(preferredResolver.getUsername());
             configuration.resolver.setPassword(preferredResolver.getPassword());
@@ -197,8 +193,9 @@ public class ExtractorUtils {
      * If necessary, replace the input for the configured repositories to their values
      * under the current environment. We are not allowing for the input or the value to be empty.
      */
-    private static void replaceRepositoryInputForValues(ArtifactoryClientConfiguration configuration, AbstractBuild build,
-                                                        String resolverReleaseInput, String resolverSnapshotInput, Map<String, String> env) {
+    private static void replaceRepositoryInputForValues(ArtifactoryClientConfiguration configuration,
+                                                        AbstractBuild build, String resolverReleaseInput,
+                                                        String resolverSnapshotInput, Map<String, String> env) {
         if (StringUtils.isBlank(resolverReleaseInput) || StringUtils.isBlank(resolverSnapshotInput)) {
             build.setResult(Result.FAILURE);
             throw new IllegalStateException("Input for resolve repositories cannot be empty.");

@@ -38,12 +38,13 @@ public abstract class RepositoriesUtils {
     }
 
     public static List<VirtualRepository> getVirtualRepositoryKeys(ResolverOverrider resolverOverrider,
-                                                                   DeployerOverrider deployerOverrider, ArtifactoryServer server) {
+                                                                   DeployerOverrider deployerOverrider,
+                                                                   ArtifactoryServer server) {
         if (server == null) {
             return Lists.newArrayList();
         }
 
-        return server.getVirtualRepositoryKeys(resolverOverrider, deployerOverrider);
+        return server.getVirtualRepositoryKeys(resolverOverrider);
     }
 
     public static List<VirtualRepository> generateVirtualRepos(ArtifactoryBuildInfoClient client) throws IOException {

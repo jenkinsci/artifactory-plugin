@@ -20,7 +20,7 @@ import hudson.maven.MavenModuleSet;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
+//import org.jvnet.hudson.test.JenkinsRule;
 
 /**
  * Integration test of {@link org.jfrog.hudson.ArtifactoryRedeployPublisher} configuration.
@@ -28,24 +28,24 @@ import org.jvnet.hudson.test.JenkinsRule;
  * @author Yossi Shaul
  */
 public class ArtifactoryRedeployPublisherITest {
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
-
-    @Test
-    public void testConfigurationRoundTrip() throws Exception {
-        MavenModuleSet project = j.createMavenProject();
-
-        ArtifactoryRedeployPublisher before = new ArtifactoryRedeployPublisher(null, true,
-                new IncludesExcludes("", ""),
-                null, false, new IncludesExcludes("", ""), true, true, false, "", false, "", true,
-                true, false, true, "", true, true, "Released", false, false, false, false, null, null, null, null, false, false, false, false);
-        project.getPublishersList().add(before);
-
-        // submit the configuration form
-        j.submit(j.createWebClient().getPage(project, "configure").getFormByName("config"));
-
-        ArtifactoryRedeployPublisher after = project.getPublishersList().get(ArtifactoryRedeployPublisher.class);
-
-        j.assertEqualDataBoundBeans(before, after);
-    }
+//    @Rule
+//    public JenkinsRule j = new JenkinsRule();
+//
+//    @Test
+//    public void testConfigurationRoundTrip() throws Exception {
+//        MavenModuleSet project = j.createMavenProject();
+//
+//        ArtifactoryRedeployPublisher before = new ArtifactoryRedeployPublisher(null, true,
+//                new IncludesExcludes("", ""),
+//                null, false, new IncludesExcludes("", ""), true, true, false, "", false, "", true,
+//                true, false, true, "", true, true, "Released", false, false, false, false, null, null, null, null, false, false, false, false);
+//        project.getPublishersList().add(before);
+//
+//        // submit the configuration form
+//        j.submit(j.createWebClient().getPage(project, "configure").getFormByName("config"));
+//
+//        ArtifactoryRedeployPublisher after = project.getPublishersList().get(ArtifactoryRedeployPublisher.class);
+//
+//        j.assertEqualDataBoundBeans(before, after);
+//    }
 }

@@ -164,8 +164,8 @@ public class ArtifactoryServer implements Serializable {
         }
     }
 
-    public List<VirtualRepository> getVirtualRepositoryKeys(ResolverOverrider resolverOverrider, DeployerOverrider deployerOverrider) {
-        Credentials credentials = CredentialResolver.getPreferredResolver(resolverOverrider, deployerOverrider, this);
+    public List<VirtualRepository> getVirtualRepositoryKeys(ResolverOverrider resolverOverrider) {
+        Credentials credentials = CredentialResolver.getPreferredResolver(resolverOverrider, this);
         ArtifactoryBuildInfoClient client = createArtifactoryClient(credentials.getUsername(),
                 credentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
@@ -188,7 +188,7 @@ public class ArtifactoryServer implements Serializable {
     }
 
     public boolean isArtifactoryPro(DeployerOverrider deployerOverrider) {
-        Credentials credentials = CredentialResolver.getPreferredResolver(null, deployerOverrider, this);
+        Credentials credentials = CredentialResolver.getPreferredDeployer(deployerOverrider, this);
         try {
             ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, credentials.getUsername(),
                     credentials.getPassword(), new NullLog());

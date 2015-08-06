@@ -9,6 +9,7 @@ import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -23,6 +24,7 @@ import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -40,15 +42,17 @@ import java.util.List;
  *
  * @author Shay Yaakov
  */
-public class ArtifactoryGenericConfigurator extends BuildWrapper implements DeployerOverrider,
+public class ArtifactoryGenericConfigurator extends BuildWrapper implements DeployerOverrider, ResolverOverrider,
         BuildInfoAwareConfigurator, MultiConfigurationAware {
 
     private final ServerDetails details;
+    private final ServerDetails resolverDetails;
     private final Credentials overridingDeployerCredentials;
+    private final Credentials overridingResolverCredentials;
     private final String deployPattern;
+
     private final String resolvePattern;
     private final String matrixParams;
-
     private final boolean deployBuildInfo;
     /**
      * Include environment variables in the generated build info
@@ -68,7 +72,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private transient String keepArchivedArtifacts;
 
     @DataBoundConstructor
-    public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
+    public ArtifactoryGenericConfigurator(ServerDetails details, ServerDetails resolverDetails,
+                                          Credentials overridingDeployerCredentials,
+                                          Credentials overridingResolverCredentials,
                                           String deployPattern, String resolvePattern, String matrixParams,
                                           boolean deployBuildInfo,
                                           boolean includeEnvVars, IncludesExcludes envVarsPatterns,
@@ -77,7 +83,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                                           boolean multiConfProject,
                                           String artifactoryCombinationFilter) {
         this.details = details;
+        this.resolverDetails = resolverDetails;
         this.overridingDeployerCredentials = overridingDeployerCredentials;
+        this.overridingResolverCredentials = overridingResolverCredentials;
         this.deployPattern = deployPattern;
         this.resolvePattern = resolvePattern;
         this.matrixParams = matrixParams;
@@ -94,6 +102,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return details != null ? details.artifactoryName : null;
     }
 
+    public String getArtifactoryResolverName() {
+        return resolverDetails != null ? resolverDetails.artifactoryName : null;
+    }
+
     public String getArtifactoryUrl() {
         return details != null ? details.getArtifactoryUrl() : null;
     }
@@ -108,6 +120,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     public ServerDetails getDetails() {
         return details;
+    }
+
+    public ServerDetails getResolverDetails() {
+        return resolverDetails;
     }
 
     public Credentials getOverridingDeployerCredentials() {
@@ -223,8 +239,14 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
+    public ArtifactoryServer getArtifactoryResolverServer() {
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryResolverName(),
+                getDescriptor().getArtifactoryServers());
+    }
+
     public List<Repository> getReleaseRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeploySnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories,
+                details.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
     @Override
@@ -252,8 +274,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             proxyConfiguration.password = proxy.getPassword();
         }
 
-        ArtifactoryServer server = getArtifactoryServer();
-        Credentials preferredResolver = CredentialResolver.getPreferredResolver(null, ArtifactoryGenericConfigurator.this, server);
+        //Resolve process
+        ArtifactoryServer server = getArtifactoryResolverServer();
+        Credentials preferredResolver = CredentialResolver.getPreferredResolver(ArtifactoryGenericConfigurator.this,
+                                        server);
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
                 preferredResolver.getUsername(), preferredResolver.getPassword(), proxyConfiguration,
                 listener);
@@ -340,9 +364,16 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    public boolean isOverridingDefaultResolver() {
+        return (getOverridingResolverCredentials() != null);
+    }
+
+    public Credentials getOverridingResolverCredentials() {
+        return overridingResolverCredentials;
+    }
+
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-
         private List<Repository> releaseRepositories;
         private AbstractProject<?, ?> item;
 
@@ -422,6 +453,15 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
             return RepositoriesUtils.getArtifactoryServers();
+        }
+    }
+
+    /**
+     * Page Converter
+     */
+    public static final class ConverterImpl extends DeployerResolverOverriderConverter {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
         }
     }
 }

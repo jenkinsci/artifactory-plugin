@@ -123,8 +123,8 @@ public class MavenExtractorEnvironment extends Environment {
 
                 ResolverContext resolverContext = null;
                 if (resolver != null) {
-                    Credentials resolverCredentials = CredentialResolver.getPreferredResolver(
-                            resolver, publisher, resolver.getArtifactoryServer());
+                    Credentials resolverCredentials = CredentialResolver.getPreferredResolver(resolver,
+                            resolver.getArtifactoryServer());
                     resolverContext = new ResolverContext(resolver.getArtifactoryServer(), resolver.getDetails(),
                             resolverCredentials, resolver);
                 }

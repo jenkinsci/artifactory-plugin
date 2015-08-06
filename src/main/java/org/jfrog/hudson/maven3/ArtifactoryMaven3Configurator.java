@@ -34,6 +34,7 @@ import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
@@ -440,8 +441,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         ResolverContext resolver = null;
         if (isEnableResolveArtifacts()) {
-            resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(),
-                    overridingResolverCredentials, ArtifactoryMaven3Configurator.this);
+            Credentials credentialResolver = CredentialResolver.getPreferredResolver(
+                    ArtifactoryMaven3Configurator.this, getArtifactoryServer());
+            resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(), credentialResolver,
+                    ArtifactoryMaven3Configurator.this);
         }
         final ResolverContext resolverContext = resolver;
         final PublisherContext publisherContext = publisherBuilder.build();
@@ -615,12 +618,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     /**
-     * Convert any remaining local credential variables to a credentials object
+     * Page Converter
      */
-    public static final class ConverterImpl extends OverridingDeployerCredentialsConverter {
+    public static final class ConverterImpl extends DeployerResolverOverriderConverter {
         public ConverterImpl(XStream2 xstream) {
             super(xstream);
         }
     }
-
 }
