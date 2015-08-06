@@ -17,14 +17,11 @@
 package org.jfrog.hudson;
 
 import com.google.common.collect.Maps;
-import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.util.XStream2;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.util.converters.ServerDetailsConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
