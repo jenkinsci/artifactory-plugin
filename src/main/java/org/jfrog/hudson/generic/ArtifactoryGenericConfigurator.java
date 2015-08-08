@@ -16,6 +16,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.dependency.BuildDependency;
+import org.jfrog.build.api.util.Log;
 import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
@@ -257,6 +258,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
+        Log log = new JenkinsBuildInfoLog(listener);
+        log.info("Running "+ ActionableHelper.getPluginsLongName("artifactory"));
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
 
         final String artifactoryServerName = getArtifactoryName();

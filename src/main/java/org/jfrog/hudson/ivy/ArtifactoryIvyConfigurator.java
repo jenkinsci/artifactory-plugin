@@ -355,6 +355,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
+        String artifactoryPluginVersion = ActionableHelper.getPluginsLongName("artifactory");
+        listener.getLogger().println("Running "+ artifactoryPluginVersion);
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
@@ -373,6 +375,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
+                .artifactoryPluginVersion(artifactoryPluginVersion)
                 .build();
         build.setResult(Result.SUCCESS);
         return new AntIvyBuilderEnvironment() {

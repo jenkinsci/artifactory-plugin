@@ -28,6 +28,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.extractor.maven.Maven3BuildInfoLogger;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -78,6 +79,7 @@ public class Maven3Builder extends Builder {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
+        listener.getLogger().println("Running "+ ActionableHelper.getPluginsLongName("artifactory"));
         EnvVars env = build.getEnvironment(listener);
         FilePath workDir = build.getModuleRoot();
         ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher);

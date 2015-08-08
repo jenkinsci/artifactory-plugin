@@ -17,6 +17,7 @@
 package org.jfrog.hudson.action;
 
 import com.google.common.collect.Lists;
+import hudson.PluginWrapper;
 import hudson.matrix.MatrixConfiguration;
 import hudson.maven.MavenBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
@@ -25,6 +26,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
 import hudson.util.DescribableList;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.util.publisher.PublisherFindImpl;
 import org.jfrog.hudson.util.publisher.PublisherFlexible;
@@ -184,5 +186,21 @@ public abstract class ActionableHelper {
             return Collections.emptyList();
 
         return Lists.newArrayList(new ArtifactoryProjectAction(artifactoryRootUrl, project));
+    }
+
+    /**
+     * Returns Plagin's name and version by the provided short name or "Not found"
+     * @param shortName The short name of the plugin
+     * @return Plagin's name and Version if found if not returns "Not found"
+     */
+    public static String getPluginsLongName(String shortName) {
+
+        if(Jenkins.getInstance()!=null
+                && Jenkins.getInstance().getPlugin(shortName)!=null
+                && Jenkins.getInstance().getPlugin(shortName).getWrapper()!=null){
+            PluginWrapper pluginWrapper= Jenkins.getInstance().getPlugin(shortName).getWrapper();
+            return pluginWrapper.getLongName()+": "+pluginWrapper.getVersion();
+        }
+        return "Not found";
     }
 }
