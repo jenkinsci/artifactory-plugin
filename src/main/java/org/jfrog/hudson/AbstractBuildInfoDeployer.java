@@ -1,6 +1,7 @@
 package org.jfrog.hudson;
 
 import hudson.EnvVars;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
@@ -93,10 +94,14 @@ public class AbstractBuildInfoDeployer {
         LicenseControl licenseControl = new LicenseControl(configurator.isRunChecks());
         if (configurator.isRunChecks()) {
             if (StringUtils.isNotBlank(configurator.getViolationRecipients())) {
-                licenseControl.setLicenseViolationsRecipientsList(configurator.getViolationRecipients());
+                licenseControl.setLicenseViolationsRecipientsList(
+                        Util.replaceMacro(configurator.getViolationRecipients(), env)
+                );
             }
             if (StringUtils.isNotBlank(configurator.getScopes())) {
-                licenseControl.setScopesList(configurator.getScopes());
+                licenseControl.setScopesList(
+                        Util.replaceMacro(configurator.getScopes(), env)
+                );
             }
         }
         licenseControl.setIncludePublishedArtifacts(configurator.isIncludePublishArtifacts());
@@ -105,10 +110,18 @@ public class AbstractBuildInfoDeployer {
 
         BlackDuckProperties blackDuckProperties = new BlackDuckProperties();
         blackDuckProperties.setRunChecks(configurator.isBlackDuckRunChecks());
-        blackDuckProperties.setAppName(configurator.getBlackDuckAppName());
-        blackDuckProperties.setAppVersion(configurator.getBlackDuckAppVersion());
-        blackDuckProperties.setReportRecipients(configurator.getBlackDuckReportRecipients());
-        blackDuckProperties.setScopes(configurator.getBlackDuckScopes());
+        blackDuckProperties.setAppName(
+                Util.replaceMacro(configurator.getBlackDuckAppName(), env)
+        );
+        blackDuckProperties.setAppVersion(
+                Util.replaceMacro(configurator.getBlackDuckAppVersion(), env)
+        );
+        blackDuckProperties.setReportRecipients(
+                Util.replaceMacro(configurator.getBlackDuckReportRecipients(), env)
+        );
+        blackDuckProperties.setScopes(
+                Util.replaceMacro(configurator.getBlackDuckScopes(), env)
+        );
         blackDuckProperties.setIncludePublishedArtifacts(configurator.isBlackDuckIncludePublishedArtifacts());
         blackDuckProperties.setAutoCreateMissingComponentRequests(configurator.isAutoCreateMissingComponentRequests());
         blackDuckProperties.setAutoDiscardStaleComponentRequests(configurator.isAutoDiscardStaleComponentRequests());
@@ -133,7 +146,7 @@ public class AbstractBuildInfoDeployer {
         if (release != null) {
             String stagingRepoKey = release.getStagingRepositoryKey();
             if (StringUtils.isBlank(stagingRepoKey)) {
-                stagingRepoKey = configurator.getRepositoryKey();
+                stagingRepoKey = Util.replaceMacro(configurator.getRepositoryKey(), env);
             }
             builder.addStatus(new PromotionStatusBuilder(Promotion.STAGED)
                     .timestampDate(startedTimestamp.getTime())
@@ -155,8 +168,10 @@ public class AbstractBuildInfoDeployer {
         if (configurator.isIncludeEnvVars()) {
             IncludesExcludes envVarsPatterns = configurator.getEnvVarsPatterns();
             if (envVarsPatterns != null) {
-                IncludeExcludePatterns patterns = new IncludeExcludePatterns(envVarsPatterns.getIncludePatterns(),
-                        envVarsPatterns.getExcludePatterns());
+                IncludeExcludePatterns patterns = new IncludeExcludePatterns(
+                        Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env),
+                        Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env)
+                        );
                 // First add all build related variables
                 addBuildVariables(builder, patterns);
 

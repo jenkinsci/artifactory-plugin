@@ -72,7 +72,8 @@ public class ArtifactsDeployer {
     private final AbstractBuild<?, ?> rootBuild;
 
     public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
-                             MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener) throws IOException, InterruptedException {
+                             MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener)
+            throws IOException, InterruptedException {
         this.client = client;
         this.mavenModuleSetBuild = mavenModuleSetBuild;
         this.listener = listener;
@@ -83,21 +84,24 @@ public class ArtifactsDeployer {
         if (releaseAction != null) {
             String stagingRepoKey = releaseAction.getStagingRepositoryKey();
             if (StringUtils.isBlank(stagingRepoKey)) {
-                stagingRepoKey = artifactoryPublisher.getRepositoryKey();
+                stagingRepoKey = Util.replaceMacro(artifactoryPublisher.getRepositoryKey(), env);
             }
             this.targetReleasesRepository = stagingRepoKey;
         } else {
-            this.targetReleasesRepository = artifactoryPublisher.getRepositoryKey();
+            this.targetReleasesRepository = Util.replaceMacro(artifactoryPublisher.getRepositoryKey(), env);
         }
-        this.targetSnapshotsRepository = artifactoryPublisher.getSnapshotsRepositoryKey();
+        this.targetSnapshotsRepository = Util.replaceMacro(artifactoryPublisher.getSnapshotsRepositoryKey(), env);
         this.downstreamIdentifier = artifactoryPublisher.isPassIdentifiedDownstream();
         IncludesExcludes patterns = artifactoryPublisher.getArtifactDeploymentPatterns();
         if (patterns != null) {
-            this.patterns = new IncludeExcludePatterns(patterns.getIncludePatterns(), patterns.getExcludePatterns());
+            this.patterns = new IncludeExcludePatterns(
+                    Util.replaceMacro(patterns.getIncludePatterns(), env),
+                    Util.replaceMacro(patterns.getExcludePatterns(), env)
+            );
         } else {
             this.patterns = IncludeExcludePatterns.EMPTY;
         }
-        this.matrixParams = StringUtils.split(artifactoryPublisher.getMatrixParams(), "; ");
+        this.matrixParams = StringUtils.split(Util.replaceMacro(artifactoryPublisher.getMatrixParams(), env), "; ");
         debuggingLogger.fine("Getting root build");
         this.rootBuild = BuildUniqueIdentifierHelper.getRootBuild(mavenModuleSetBuild);
         this.isArchiveJenkinsVersion = Hudson.getVersion().isNewerThan(new VersionNumber(
@@ -193,7 +197,7 @@ public class ArtifactsDeployer {
         for (String matrixParam : matrixParams) {
             String[] split = StringUtils.split(matrixParam, '=');
             if (split.length == 2) {
-                String value = Util.replaceMacro(split[1], env);
+                String value = split[1];
                 builder.addProperty(split[0], value);
             }
         }

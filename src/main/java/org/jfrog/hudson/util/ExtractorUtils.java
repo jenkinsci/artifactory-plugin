@@ -241,10 +241,10 @@ public class ExtractorUtils {
         }
 
         if (StringUtils.isNotBlank(context.getArtifactsPattern())) {
-            configuration.publisher.setIvyArtifactPattern(context.getArtifactsPattern());
+            configuration.publisher.setIvyArtifactPattern(Util.replaceMacro(context.getArtifactsPattern(), env));
         }
         if (StringUtils.isNotBlank(context.getIvyPattern())) {
-            configuration.publisher.setIvyPattern(context.getIvyPattern());
+            configuration.publisher.setIvyPattern(Util.replaceMacro(context.getIvyPattern(), env));
         }
         configuration.publisher.setM2Compatible(context.isMaven2Compatible());
         String buildUrl = ActionableHelper.getBuildUrl(build);
@@ -294,18 +294,22 @@ public class ExtractorUtils {
         configuration.info.licenseControl.setAutoDiscover(context.isLicenseAutoDiscovery());
         if (context.isRunChecks()) {
             if (StringUtils.isNotBlank(context.getViolationRecipients())) {
-                configuration.info.licenseControl.setViolationRecipients(context.getViolationRecipients());
+                configuration.info.licenseControl.setViolationRecipients(
+                        Util.replaceMacro(context.getViolationRecipients(), env)
+                );
             }
             if (StringUtils.isNotBlank(context.getScopes())) {
-                configuration.info.licenseControl.setScopes(context.getScopes());
+                configuration.info.licenseControl.setScopes(Util.replaceMacro(context.getScopes(), env));
             }
         }
 
         configuration.info.blackDuckProperties.setRunChecks(context.isBlackDuckRunChecks());
-        configuration.info.blackDuckProperties.setAppName(context.getBlackDuckAppName());
-        configuration.info.blackDuckProperties.setAppVersion(context.getBlackDuckAppVersion());
-        configuration.info.blackDuckProperties.setReportRecipients(context.getBlackDuckReportRecipients());
-        configuration.info.blackDuckProperties.setScopes(context.getBlackDuckScopes());
+        configuration.info.blackDuckProperties.setAppName(Util.replaceMacro(context.getBlackDuckAppName(), env));
+        configuration.info.blackDuckProperties.setAppVersion(Util.replaceMacro(context.getBlackDuckAppVersion(), env));
+        configuration.info.blackDuckProperties.setReportRecipients(
+                Util.replaceMacro(context.getBlackDuckReportRecipients(), env)
+        );
+        configuration.info.blackDuckProperties.setScopes(Util.replaceMacro(context.getBlackDuckScopes(), env));
         configuration.info.blackDuckProperties.setIncludePublishedArtifacts(context.isBlackDuckIncludePublishedArtifacts());
         configuration.info.blackDuckProperties.setAutoCreateMissingComponentRequests(context.isAutoCreateMissingComponentRequests());
         configuration.info.blackDuckProperties.setAutoDiscardStaleComponentRequests(context.isAutoDiscardStaleComponentRequests());
@@ -330,11 +334,11 @@ public class ExtractorUtils {
         if (deploymentPatterns != null) {
             String includePatterns = deploymentPatterns.getIncludePatterns();
             if (StringUtils.isNotBlank(includePatterns)) {
-                configuration.publisher.setIncludePatterns(includePatterns);
+                configuration.publisher.setIncludePatterns(Util.replaceMacro(includePatterns, env));
             }
             String excludePatterns = deploymentPatterns.getExcludePatterns();
             if (StringUtils.isNotBlank(excludePatterns)) {
-                configuration.publisher.setExcludePatterns(excludePatterns);
+                configuration.publisher.setExcludePatterns(Util.replaceMacro(excludePatterns, env));
             }
         }
         ReleaseAction releaseAction = ActionableHelper.getLatestAction(build, ReleaseAction.class);
@@ -351,8 +355,8 @@ public class ExtractorUtils {
         configuration.setIncludeEnvVars(context.isIncludeEnvVars());
         IncludesExcludes envVarsPatterns = context.getEnvVarsPatterns();
         if (envVarsPatterns != null) {
-            configuration.setEnvVarsIncludePatterns(envVarsPatterns.getIncludePatterns());
-            configuration.setEnvVarsExcludePatterns(envVarsPatterns.getExcludePatterns());
+            configuration.setEnvVarsIncludePatterns(Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env));
+            configuration.setEnvVarsExcludePatterns(Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env));
         }
         addMatrixParams(context, configuration.publisher, env);
     }
@@ -443,6 +447,8 @@ public class ExtractorUtils {
         if (StringUtils.isBlank(matrixParams)) {
             return;
         }
+
+        matrixParams = Util.replaceMacro(matrixParams, env);
         String[] keyValuePairs = StringUtils.split(matrixParams, "; ");
         if (keyValuePairs == null) {
             return;
@@ -450,7 +456,7 @@ public class ExtractorUtils {
         for (String keyValuePair : keyValuePairs) {
             String[] split = StringUtils.split(keyValuePair, "=");
             if (split.length == 2) {
-                String value = Util.replaceMacro(split[1], env);
+                String value = split[1];
                 publisher.addMatrixParam(split[0], value);
             }
         }
@@ -458,8 +464,10 @@ public class ExtractorUtils {
 
     private static void addEnvVars(Map<String, String> env, AbstractBuild<?, ?> build,
                                    ArtifactoryClientConfiguration configuration, IncludesExcludes envVarsPatterns) {
-        IncludeExcludePatterns patterns = new IncludeExcludePatterns(envVarsPatterns.getIncludePatterns(),
-                envVarsPatterns.getExcludePatterns());
+        IncludeExcludePatterns patterns = new IncludeExcludePatterns(
+                Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env),
+                Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env)
+        );
 
         // Add only the jenkins specific environment variables
         MapDifference<String, String> envDifference = Maps.difference(env, System.getenv());
