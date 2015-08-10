@@ -37,6 +37,16 @@
                                                     </j:forEach>
                                                 </select>
                                             </f:entry>
+                                            <f:entry title="${%Source promotion repository}" field="sourceRepositoryKey"
+                                                     help="/plugin/artifactory/help/release/PromoteBuildAction/help-promotionSourceRepository.html">
+                                                <select class="setting-input" name="sourceRepositoryKey">
+                                                    <j:forEach var="r" items="${it.repositoryKeys}">
+                                                        <f:option selected="${r==it.lastPromotionRepository}"
+                                                                  value="${r}">${r}
+                                                        </f:option>
+                                                    </j:forEach>
+                                                </select>
+                                            </f:entry>
                                             <f:entry field="includeDependencies"
                                                      help="/plugin/artifactory/help/release/PromoteBuildAction/help-includeDependencies.html">
                                                 <f:checkbox default="false" name="includeDependencies"/>

@@ -56,6 +56,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
     private String targetStatus;
     private String repositoryKey;
+    private String sourceRepositoryKey;
     private String comment;
     private boolean useCopy;
     private boolean includeDependencies;
@@ -101,6 +102,10 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
     public void setRepositoryKey(String repositoryKey) {
         this.repositoryKey = repositoryKey;
+    }
+
+    public void setSourceRepositoryKey(String sourceRepositoryKey) {
+        this.sourceRepositoryKey = sourceRepositoryKey;
     }
 
     public void setComment(String comment) {
@@ -297,6 +302,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                     .comment(comment)
                     .ciUser(ciUser)
                     .targetRepo(repositoryKey)
+                    .sourceRepo(sourceRepositoryKey)
                     .dependencies(includeDependencies)
                     .copy(useCopy)
                     .dryRun(true);
