@@ -48,6 +48,9 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         overrideDeployerCredentials(overrider, overriderClass);
         overrideResolverDetails(overrider, overriderClass);
 
+        if(!converterErrors.isEmpty()){
+            throw new RuntimeException(converterErrors.toString());
+        }
     }
 
     /**
