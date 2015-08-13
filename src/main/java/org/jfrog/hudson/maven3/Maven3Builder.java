@@ -79,7 +79,7 @@ public class Maven3Builder extends Builder {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
-        listener.getLogger().println("Running "+ ActionableHelper.getPluginsLongName("artifactory"));
+        listener.getLogger().println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         EnvVars env = build.getEnvironment(listener);
         FilePath workDir = build.getModuleRoot();
         ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher);

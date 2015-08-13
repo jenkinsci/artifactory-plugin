@@ -48,7 +48,7 @@ public class AbstractBuildInfoDeployer {
         BuildInfoBuilder builder = new BuildInfoBuilder(
                 BuildUniqueIdentifierHelper.getBuildName(build))
                 .number(BuildUniqueIdentifierHelper.getBuildNumber(build)).type(buildType)
-                .artifactoryPluginVersion(ActionableHelper.getPluginsLongName("artifactory"))
+                .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
                 .buildAgent(new BuildAgent(buildAgentName, buildAgentVersion))
                 .agent(new Agent("hudson", build.getHudsonVersion()));
         String buildUrl = ActionableHelper.getBuildUrl(build);

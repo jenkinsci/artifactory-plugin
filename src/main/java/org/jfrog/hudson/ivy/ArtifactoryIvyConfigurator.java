@@ -355,8 +355,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
-        String artifactoryPluginVersion = ActionableHelper.getPluginsLongName("artifactory");
-        listener.getLogger().println("Running "+ artifactoryPluginVersion);
+        String artifactoryPluginVersion = ActionableHelper.getArtifactoryPluginVersion();
+        listener.getLogger().println( "Jenkins Artifactory Plugin version: " + artifactoryPluginVersion);
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);

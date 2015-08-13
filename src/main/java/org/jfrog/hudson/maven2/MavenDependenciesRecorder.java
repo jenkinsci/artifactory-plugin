@@ -17,18 +17,15 @@
 package org.jfrog.hudson.maven2;
 
 import hudson.Extension;
-import hudson.maven.MavenBuild;
-import hudson.maven.MavenBuildProxy;
+import hudson.Launcher;
+import hudson.maven.*;
 import hudson.maven.MavenBuildProxy.BuildCallable;
-import hudson.maven.MavenModule;
-import hudson.maven.MavenReporter;
-import hudson.maven.MavenReporterDescriptor;
-import hudson.maven.MojoInfo;
 import hudson.model.BuildListener;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.project.MavenProject;
 import org.jfrog.hudson.MavenDependenciesRecord;
 import org.jfrog.hudson.MavenDependency;
+import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -107,6 +104,13 @@ public class MavenDependenciesRecorder extends MavenReporter {
         public MavenReporter newAutoInstance(MavenModule module) {
             return new MavenDependenciesRecorder();
         }
+    }
+
+    //The method end is the first method where Jenkins instance is reachable which needed for the Plugin Version Printing
+    @Override
+    public boolean end(MavenBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        listener.getLogger().println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
+        return true;
     }
 
     private static final long serialVersionUID = 1L;

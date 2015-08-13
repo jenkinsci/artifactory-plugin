@@ -34,7 +34,6 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -154,7 +153,7 @@ public class ExtractorUtils {
                     publisherContext.getAggregationBuildStatus()).setIssueTrackerInfo(configuration);
         }
 
-        publisherContext.setArtifactoryPluginVersion(ActionableHelper.getPluginsLongName("artifactory"));
+        publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
         IncludesExcludes envVarsPatterns = new IncludesExcludes("", "");
         if (publisherContext != null && publisherContext.getEnvVarsPatterns() != null) {
@@ -225,7 +224,7 @@ public class ExtractorUtils {
         String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
         configuration.info.setBuildNumber(buildNumber);
         configuration.publisher.addMatrixParam("build.number", buildNumber);
-        configuration.info.setArtifactoryPluginVersion(ActionableHelper.getPluginsLongName("artifactory"));
+        configuration.info.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
         Date buildStartDate = build.getTimestamp().getTime();
         configuration.info.setBuildStarted(buildStartDate.getTime());

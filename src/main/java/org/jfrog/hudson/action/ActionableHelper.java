@@ -17,7 +17,6 @@
 package org.jfrog.hudson.action;
 
 import com.google.common.collect.Lists;
-import hudson.PluginWrapper;
 import hudson.matrix.MatrixConfiguration;
 import hudson.maven.MavenBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
@@ -189,18 +188,17 @@ public abstract class ActionableHelper {
     }
 
     /**
-     * Returns Plagin's name and version by the provided short name or "Not found"
-     * @param shortName The short name of the plugin
-     * @return Plagin's name and Version if found if not returns "Not found"
+     * Returns the version of Jenkins Artifactory Plugin or empty string if not found
+     * @return the version of Jenkins Artifactory Plugin or empty string if not found
      */
-    public static String getPluginsLongName(String shortName) {
-
-        if(Jenkins.getInstance()!=null
-                && Jenkins.getInstance().getPlugin(shortName)!=null
-                && Jenkins.getInstance().getPlugin(shortName).getWrapper()!=null){
-            PluginWrapper pluginWrapper= Jenkins.getInstance().getPlugin(shortName).getWrapper();
-            return pluginWrapper.getLongName()+": "+pluginWrapper.getVersion();
+    public static String getArtifactoryPluginVersion(){
+        String pluginsSortName = "artifactory";
+        //Validates Jenkins existence because in some jobs the Jenkins instance is unreachable
+        if(Jenkins.getInstance() != null
+                && Jenkins.getInstance().getPlugin(pluginsSortName) != null
+                && Jenkins.getInstance().getPlugin(pluginsSortName).getWrapper() != null) {
+            return Jenkins.getInstance().getPlugin(pluginsSortName).getWrapper().getVersion();
         }
-        return "Not found";
+        return "";
     }
 }

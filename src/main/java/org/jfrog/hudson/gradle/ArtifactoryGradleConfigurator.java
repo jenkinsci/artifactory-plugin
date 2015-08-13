@@ -412,7 +412,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
         final PrintStream log = listener.getLogger();
-        log.println("Running " + ActionableHelper.getPluginsLongName("artifactory"));
+        log.println( "Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         PublisherContext.Builder publisherBuilder = getBuilder();
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
 
@@ -634,7 +634,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         isBlackDuckIncludePublishedArtifacts(), isAutoCreateMissingComponentRequests(),
                         isAutoDiscardStaleComponentRequests())
                 .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
-                .artifactoryPluginVersion(ActionableHelper.getPluginsLongName("artifactory"));
+                .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
     }
 
     public boolean isRelease(AbstractBuild build) {

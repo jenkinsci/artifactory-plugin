@@ -84,7 +84,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         }
 
         PrintStream log = listener.getLogger();
-        log.println("Running "+ActionableHelper.getPluginsLongName("artifactory"));
+        log.println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         EnvVars envVars = build.getEnvironment(listener);
         boolean supportedMavenVersion =
                 MavenVersionHelper.isAtLeastResolutionCapableVersion((MavenModuleSetBuild) build, envVars, listener);
