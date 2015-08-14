@@ -90,16 +90,7 @@ public class MavenDependenciesRecorder extends MavenReporter {
         if (artifacts != null) {
             for (Artifact dependency : artifacts) {
                 if (dependency.isResolved() && dependency.getFile() != null) {
-                    MavenDependency mavenDependency = new MavenDependency();
-                    mavenDependency.id = dependency.getId();
-                    mavenDependency.groupId = dependency.getGroupId();
-                    mavenDependency.artifactId = dependency.getArtifactId();
-                    mavenDependency.version = dependency.getVersion();
-                    mavenDependency.classifier = dependency.getClassifier();
-                    mavenDependency.scope = dependency.getScope();
-                    mavenDependency.fileName = dependency.getFile().getName();
-                    mavenDependency.type = dependency.getType();
-                    dependencies.add(mavenDependency);
+                    dependencies.add(new MavenDependency(dependency));
                 }
             }
         }

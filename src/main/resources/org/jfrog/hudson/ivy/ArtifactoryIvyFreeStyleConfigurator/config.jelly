@@ -10,28 +10,12 @@
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
                         <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
-                        <f:entry title="${%Publishing repository}">
-                            <select class="setting-input" name="repositoryKey" id="ivyFreeRepositoryKeys-${s.url}">
-                                <j:choose>
-                                    <j:when test="${s.name==instance.artifactoryName}">
-                                        <j:choose>
-                                            <j:when test="${instance.repositoryKey != null}">
-                                                <f:option selected="${instance.repositoryKey}"
-                                                          value="${instance.repositoryKey}">${instance.repositoryKey}
-                                                </f:option>
-                                            </j:when>
-                                            <j:otherwise>
-                                                <j:forEach var="r" items="${instance.releaseRepositoryKeysFirst}">
-                                                    <f:option selected="${r==instance.repositoryKey}" value="${r}">${r}
-                                                    </f:option>
-                                                </j:forEach>
-                                            </j:otherwise>
-                                        </j:choose>
+                        <r:dynamicRepos id="ivyFreeRepositoryKeys-${s.url}"
+                                        title="Publishing repository"
+                                        field="deployReleaseRepository"
+                                        repositoryConf="${instance.details.deployReleaseRepository}"
+                                        repositories="${instance.releaseRepositoryList}"/>
 
-                                    </j:when>
-                                </j:choose>
-                            </select>
-                        </f:entry>
                         <script>
                             var ivyFreeDeployBind =
                             <st:bind value="${descriptor}"/>
@@ -203,6 +187,21 @@
                                  inline="true"
                                  checked="${h.defaultToTrue(instance.deployArtifacts)}"
                                  title="Publish artifacts to Artifactory">
+
+                    <f:block>
+                        <j:if test="${descriptor.isMultiConfProject()}">
+                            <f:block>
+                                <table style="width:100%">
+                                    <f:entry field="artifactoryCombinationFilter" title="${%Combination Matches}"
+                                             description="Groovy expression"
+                                             help="/plugin/artifactory/help/common/help-combinationFilter.html">
+                                        <f:textbox value="${instance.artifactoryCombinationFilter}"
+                                                   field="artifactoryCombinationFilter"/>
+                                    </f:entry>
+                                </table>
+                            </f:block>
+                        </j:if>
+                    </f:block>
                     <f:block>
                         <table style="width:100%">
                             <f:optionalBlock field="notM2Compatible" negative="true"

@@ -607,4 +607,16 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
             return displayMessage;
         }
     }
+
+    /**
+     * Add some of the release build properties to a map.
+     */
+    public void addVars(Map<String, String> env) {
+        if (tagUrl != null) {
+            env.put("RELEASE_SCM_TAG", tagUrl);
+        }
+        if (releaseBranch != null) {
+            env.put("RELEASE_SCM_BRANCH", releaseBranch);
+        }
+    }
 }

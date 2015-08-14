@@ -12,19 +12,19 @@ import hudson.model.BuildListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.*;
-import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.maven3.extractor.MavenExtractorHelper;
-import org.jfrog.hudson.release.ReleaseAction;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.ResolverOverrider;
+import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.VirtualRepository;
 import org.jfrog.hudson.util.*;
-import org.jfrog.hudson.util.publisher.PublisherContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A wrapper that takes over artifacts resolution and using the configured repository for resolution.<p/>
@@ -49,11 +49,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public String getDownloadReleaseRepositoryKey() {
-        return details != null ? details.downloadReleaseRepositoryKey : null;
+        return details != null ? details.getResolveReleaseRepository().getRepoKey() : null;
     }
 
     public String getDownloadSnapshotRepositoryKey() {
-        return details != null ? details.downloadSnapshotRepositoryKey : null;
+        return details != null ? details.getResolveSnapshotRepositoryKey() : null;
     }
 
     public String getArtifactoryName() {
@@ -91,12 +91,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             };
         }
 
-        MavenExtractorHelper.PublisherResolverTuple tuple = MavenExtractorHelper.getPublisherResolverTuple(build);
-        if (tuple == null) {
-            return new Environment() {
-            };
-        }
-        return new MavenExtractorEnvironment((MavenModuleSetBuild) build, tuple.publisher, tuple.resolver, listener);
+        /**
+         * {@link org.jfrog.hudson.maven3.Maven3ExtractorListener} will populate the resolver context
+         * */
+        return new Environment() {
+        };
     }
 
     public ArtifactoryServer getArtifactoryServer() {
@@ -109,13 +108,8 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         return null;
     }
 
-    public List<VirtualRepository> getVirtualRepositoryKeys() {
-        if (getDownloadReleaseRepositoryKey() == null || getDownloadSnapshotRepositoryKey() == null) {
-            getDescriptor().virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(this, null, getArtifactoryServer());
-            return getDescriptor().virtualRepositoryKeys;
-        }
-
-        return getDescriptor().virtualRepositoryKeys;
+    public List<VirtualRepository> getVirtualRepositoryList(){
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys, details.getResolveReleaseRepository().getKeyFromSelect());
     }
 
     @Override
@@ -157,7 +151,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
             RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
@@ -202,84 +196,6 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
             return RepositoriesUtils.getArtifactoryServers();
-        }
-    }
-
-    public class MavenExtractorEnvironment extends Environment {
-        private final ArtifactoryRedeployPublisher publisher;
-        private final MavenModuleSetBuild build;
-        private final ArtifactoryMaven3NativeConfigurator resolver;
-        private final BuildListener buildListener;
-
-        public MavenExtractorEnvironment(MavenModuleSetBuild build, ArtifactoryRedeployPublisher publisher,
-                                         ArtifactoryMaven3NativeConfigurator resolver, BuildListener buildListener)
-                throws IOException, InterruptedException {
-            this.buildListener = buildListener;
-            this.build = build;
-            this.publisher = publisher;
-            this.resolver = resolver;
-        }
-
-        @Override
-        public void buildEnvVars(Map<String, String> env) {
-            PublisherContext publisherContext = null;
-            if (publisher != null) {
-                publisherContext = createPublisherContext(publisher, build);
-            }
-
-            ResolverContext resolverContext = null;
-            if (resolver != null) {
-                Credentials resolverCredentials = CredentialResolver.getPreferredResolver(
-                        resolver, publisher, resolver.getArtifactoryServer());
-                resolverContext = new ResolverContext(resolver.getArtifactoryServer(), resolver.getDetails(),
-                        resolverCredentials);
-            }
-
-            try {
-                ExtractorUtils.addBuilderInfoArguments(env, build, buildListener, publisherContext, resolverContext);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        private PublisherContext createPublisherContext(ArtifactoryRedeployPublisher publisher, AbstractBuild build) {
-            ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
-            ServerDetails server = publisher.getDetails();
-            if (release != null) {
-                // staging build might change the target deployment repository
-                String stagingRepoKey = release.getStagingRepositoryKey();
-                if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
-                    server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), stagingRepoKey,
-                            server.snapshotsRepositoryKey, server.downloadReleaseRepositoryKey, server.downloadSnapshotRepositoryKey,
-                            server.getDownloadReleaseRepositoryDisplayName(), server.getDownloadSnapshotRepositoryDisplayName());
-                }
-            }
-
-            PublisherContext context = new PublisherContext.Builder().artifactoryServer(
-                    publisher.getArtifactoryServer())
-                    .serverDetails(server).deployerOverrider(publisher).runChecks(publisher.isRunChecks())
-                    .includePublishArtifacts(publisher.isIncludePublishArtifacts())
-                    .violationRecipients(publisher.getViolationRecipients()).scopes(publisher.getScopes())
-                    .licenseAutoDiscovery(publisher.isLicenseAutoDiscovery())
-                    .discardOldBuilds(publisher.isDiscardOldBuilds()).deployArtifacts(publisher.isDeployArtifacts())
-                    .includesExcludes(publisher.getArtifactDeploymentPatterns())
-                    .skipBuildInfoDeploy(!publisher.isDeployBuildInfo())
-                    .recordAllDependencies(publisher.isRecordAllDependencies())
-                    .includeEnvVars(publisher.isIncludeEnvVars()).envVarsPatterns(publisher.getEnvVarsPatterns())
-                    .discardBuildArtifacts(publisher.isDiscardBuildArtifacts())
-                    .matrixParams(publisher.getMatrixParams()).evenIfUnstable(publisher.isEvenIfUnstable())
-                    .enableIssueTrackerIntegration(publisher.isEnableIssueTrackerIntegration())
-                    .aggregateBuildIssues(publisher.isAggregateBuildIssues())
-                    .aggregationBuildStatus(publisher.getAggregationBuildStatus())
-                    .integrateBlackDuck(publisher.isBlackDuckRunChecks(), publisher.getBlackDuckAppName(),
-                            publisher.getBlackDuckAppVersion(), publisher.getBlackDuckReportRecipients(),
-                            publisher.getBlackDuckScopes(), publisher.isBlackDuckIncludePublishedArtifacts(),
-                            publisher.isAutoCreateMissingComponentRequests(),
-                            publisher.isAutoDiscardStaleComponentRequests())
-                    .filterExcludedArtifactsFromBuild(publisher.isFilterExcludedArtifactsFromBuild())
-                    .build();
-
-            return context;
         }
     }
 }

@@ -17,6 +17,7 @@
 package org.jfrog.hudson.maven2;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
@@ -32,7 +33,7 @@ import org.jfrog.build.api.Module;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
 import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.MavenDependenciesRecord;
@@ -40,7 +41,6 @@ import org.jfrog.hudson.MavenDependency;
 import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -106,10 +106,10 @@ public class MavenBuildInfoDeployer extends AbstractBuildInfoDeployer {
             Set<MavenDependency> dependencies = dependenciesRecord.getDependencies();
             for (MavenDependency dependency : dependencies) {
                 DependencyBuilder dependencyBuilder = new DependencyBuilder()
-                        .id(dependency.id)
-                        .scopes(Arrays.asList(dependency.scope))
-                        .type(dependency.type)
-                        .md5(getMd5(dependency.groupId, dependency.fileName, mavenBuild));
+                        .id(dependency.getId())
+                        .scopes(Sets.newHashSet(dependency.getScope()))
+                        .type(dependency.getType())
+                        .md5(getMd5(dependency.getGroupId(), dependency.getFileName(), mavenBuild));
                 moduleBuilder.addDependency(dependencyBuilder.build());
             }
             // delete them once used

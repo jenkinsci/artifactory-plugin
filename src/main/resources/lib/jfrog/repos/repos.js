@@ -13,23 +13,17 @@ function repos(button, jsFunction, artifactoryUrl, deployUsername, deployPasswor
 
     if (jsFunction == "artifactoryIvyFreeStyleConfigurator") {
         artifactoryIvyFreeStyleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryGenericConfigurator") {
+    } else if (jsFunction == "artifactoryGenericConfigurator") {
         artifactoryGenericConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryMaven3NativeConfigurator") {
+    } else if (jsFunction == "artifactoryMaven3NativeConfigurator") {
         artifactoryMaven3NativeConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryMaven3Configurator") {
+    } else if (jsFunction == "artifactoryMaven3Configurator") {
         artifactoryMaven3Configurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryGradleConfigurator") {
+    } else if (jsFunction == "artifactoryGradleConfigurator") {
         artifactoryGradleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryRedeployPublisher") {
+    } else if (jsFunction == "artifactoryRedeployPublisher") {
         artifactoryRedeployPublisher(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
-    } else
-    if (jsFunction == "artifactoryIvyConfigurator") {
+    } else if (jsFunction == "artifactoryIvyConfigurator") {
         artifactoryIvyConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
     }
 }
@@ -44,7 +38,7 @@ function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, deployUser
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var select = document.getElementById("ivyFreeRepositoryKeys-" + artifactoryUrl);
+            var select = document.getElementById("select_ivyFreeRepositoryKeys-" + artifactoryUrl);
             var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
             removeElements(select);
@@ -70,7 +64,7 @@ function artifactoryGenericConfigurator(spinner, artifactoryUrl, deployUsername,
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var select = document.getElementById("genericRepositoryKeys-" + artifactoryUrl);
+            var select = document.getElementById("select_genericRepositoryKeys-" + artifactoryUrl);
             var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
             removeElements(select);
@@ -87,7 +81,7 @@ function artifactoryGenericConfigurator(spinner, artifactoryUrl, deployUsername,
 }
 
 function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+    bind.refreshResolversFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -96,8 +90,8 @@ function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUser
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectRelease = document.getElementById("maven3NativeReleaseRepositoryKeys-" + artifactoryUrl);
-            var selectSnapshot = document.getElementById("maven3NativeSnapshotRepositoryKeys-" + artifactoryUrl);
+            var selectRelease = document.getElementById("select_maven3NativeReleaseRepositoryKeys-" + artifactoryUrl);
+            var selectSnapshot = document.getElementById("select_maven3NativeSnapshotRepositoryKeys-" + artifactoryUrl);
 
             var oldReleaseValue = selectRelease.value;
             var oldSnapshotValue = selectSnapshot.value;
@@ -113,9 +107,6 @@ function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUser
 
             setSelectValue(selectRelease, oldReleaseValue);
             setSelectValue(selectSnapshot, oldSnapshotValue);
-
-            selectRelease.onchange();
-            selectSnapshot.onchange();
 
             var oldValueExistsInNewList = true;
             if (oldValueExistsInNewList) {
@@ -143,8 +134,8 @@ function artifactoryMaven3Configurator(spinner, artifactoryUrl, deployUsername, 
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectRelease = document.getElementById("maven3RepositoryKeys-" + artifactoryUrl);
-            var selectSnapshot = document.getElementById("maven3SnapshotsRepositoryKeys-" + artifactoryUrl);
+            var selectRelease = document.getElementById("select_maven3RepositoryKeys-" + artifactoryUrl);
+            var selectSnapshot = document.getElementById("select_maven3SnapshotsRepositoryKeys-" + artifactoryUrl);
 
             var oldReleaseValue = selectRelease.value;
             var oldSnapshotValue = selectSnapshot.value;
@@ -187,8 +178,8 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, 
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectResolution = document.getElementById("gradleResolutionRepositoryKeys-" + artifactoryUrl);
-            var selectPublish = document.getElementById("gradlePublishRepositoryKeys-" + artifactoryUrl);
+            var selectResolution = document.getElementById("select_gradleResolutionRepositoryKeys-" + artifactoryUrl);
+            var selectPublish = document.getElementById("select_gradlePublishRepositoryKeys-" + artifactoryUrl);
             var selectPlugins = document.getElementById("gradleCustomStagingConfiguration-" + artifactoryUrl);
 
             var oldResolutionValue = selectResolution.value;
@@ -209,7 +200,6 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, 
             createStagingParamsInputs(response.userPlugins);
 
             setSelectValue(selectResolution, oldResolutionValue);
-            selectResolution.onchange();
 
             setSelectValue(selectPublish, oldPublishValue);
             setSelectValue(selectPlugins, oldPluginsValue);
@@ -244,8 +234,8 @@ function artifactoryRedeployPublisher(spinner, artifactoryUrl, deployUsername, d
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectRelease = document.getElementById("publishRepositoryKey-" + artifactoryUrl);
-            var selectSnapshot = document.getElementById("publishSnapshotsRepositoryKeys-" + artifactoryUrl);
+            var selectRelease = document.getElementById("select_publishRepositoryKey-" + artifactoryUrl);
+            var selectSnapshot = document.getElementById("select_publishSnapshotsRepositoryKeys-" + artifactoryUrl);
             var selectPlugins = document.getElementById("customStagingConfiguration-" + artifactoryUrl);
 
             var oldReleaseValue = selectRelease.value;
@@ -299,7 +289,7 @@ function artifactoryIvyConfigurator(spinner, artifactoryUrl, deployUsername, dep
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var select = document.getElementById("publishRepositoryKey-" + artifactoryUrl);
+            var select = document.getElementById("select_publishRepositoryKey-" + artifactoryUrl);
             var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
             removeElements(select);
@@ -320,18 +310,28 @@ function artifactoryIvyConfigurator(spinner, artifactoryUrl, deployUsername, dep
 }
 
 function fillSelect(select, list) {
-    for(var i=0; i < list.length; i++) {
+    var txtId = "txt_" + select.id;
+    var txtElement = document.getElementById(txtId);
+    if (list.length > 0 && txtElement != undefined && txtElement.value == "") {
+        txtElement.value = list[0];
+    }
+    for (var i = 0; i < list.length; i++) {
         var item = list[i];
         var option = document.createElement("option");
-        option.text = item;
-        option.innerText = item;
-        option.value = item;
+        option.text = item.value;
+        option.innerText = item.value;
+        option.value = item.value;
         select.appendChild(option);
     }
 }
 
 function fillVirtualReposSelect(select, list) {
-    for(var i=0; i < list.length; i++) {
+    var txtId = "txt_" + select.id;
+    var txtElement = document.getElementById(txtId);
+    if (list.length > 0 && txtElement != undefined && txtElement.value == "") {
+        txtElement.value = list[0].value;
+    }
+    for (var i = 0; i < list.length; i++) {
         var item = list[i];
         var option = document.createElement("option");
         option.text = item.displayName;
@@ -342,7 +342,7 @@ function fillVirtualReposSelect(select, list) {
 }
 
 function fillStagingPluginsSelect(select, list) {
-    for(var i=0; i < list.length; i++) {
+    for (var i = 0; i < list.length; i++) {
         var item = list[i];
         var option = document.createElement("option");
         option.text = item.pluginName;
@@ -363,7 +363,7 @@ function createStagingParamsInputs(list) {
 }
 
 function setStagingParamsSelectedValue(select) {
-    for(var i=0; i < select.options.length; i++) {
+    for (var i = 0; i < select.options.length; i++) {
         var display = (i == select.selectedIndex) ? "" : "none";
         var inputName = "stagingParams-" + select.options[i].value;
         var input = document.getElementById(inputName);
@@ -411,8 +411,8 @@ function removeElements(e) {
 }
 
 function setSelectValue(select, value) {
-    for(var i=0; i < select.options.length; i++) {
-        if(select.options[i].value == value) {
+    for (var i = 0; i < select.options.length; i++) {
+        if (select.options[i].value == value) {
             select.selectedIndex = i;
             return;
         }
@@ -424,11 +424,11 @@ function compareSelectTags(newRepos, oldRepos) {
         return true;
     }
 
-    for(var i=0; i < oldRepos.length; i++) {
+    for (var i = 0; i < oldRepos.length; i++) {
         var itemOld = oldRepos[i].value;
 
         var flag = false;
-        for(var j=0; j < newRepos.length; j++) {
+        for (var j = 0; j < newRepos.length; j++) {
             itemNew = newRepos[j].value;
             if (itemNew.value === itemOld.value) {
                 flag = true;
@@ -440,4 +440,92 @@ function compareSelectTags(newRepos, oldRepos) {
         }
     }
     return true;
+}
+
+function onReleaseResolutionSelectChange(url, select, postfix) {
+    var textFieldRelease = document.getElementById('downloadReleaseRepositoryDisplayName-' + postfix + '-' + url);
+    var selectFieldRelease = select;
+
+    var releaseDisplayName = selectFieldRelease.options[selectFieldRelease.selectedIndex].text;
+    if (releaseDisplayName == undefined || releaseDisplayName == null || releaseDisplayName == '') {
+        releaseDisplayName = selectFieldRelease.options[selectFieldRelease.selectedIndex].innerText;
+    }
+
+    textFieldRelease.value = releaseDisplayName;
+}
+
+function onSnapshotResolutionSelectChange(url, select, postfix) {
+    var textFieldSnapshot = document.getElementById('downloadSnapshotRepositoryDisplayName-' + postfix + '-' + url);
+    var selectFieldSnapshot = select;
+
+    var snapshotDisplayName = selectFieldSnapshot.options[selectFieldSnapshot.selectedIndex].text;
+    if (snapshotDisplayName == undefined || snapshotDisplayName == null || snapshotDisplayName == '') {
+        snapshotDisplayName = selectFieldSnapshot.options[selectFieldSnapshot.selectedIndex].innerText;
+    }
+    textFieldSnapshot.value = snapshotDisplayName;
+}
+
+function afterRefreshTxtUpdate(selectId, value) {
+    var txtElement = document.getElementById("txt_" + selectId);
+    if (txtElement != undefined && txtElement.value == "") {
+        txtElement.value = value;
+    }
+}
+
+// toggle button onClick callback
+function toggleTxtAndSelect(txtId, txtModeId, urlRoot) {
+
+    var select = document.getElementById('select_' + txtId);
+    var txt = document.getElementById(txtId);
+    var shouldUseText = document.getElementById(txtModeId);
+    var button = document.getElementById('btn_' + txtId);
+
+    var currentValue = shouldUseText.value;
+
+    if (currentValue == undefined || currentValue == "") {
+        currentValue = false;
+    }
+
+    if (JSON.parse(currentValue)) {
+        shouldUseText.value = false;
+    } else {
+        shouldUseText.value = true;
+    }
+    swapHiddenValue(txt, select, button);
+}
+
+function swapHiddenValue(txt, select, button) {
+    if (txt.style.display == '') {
+        txt.style.display = 'none';
+        select.style.display = '';
+        button.firstChild.firstChild.innerHTML = "Set a different value";
+    } else {
+        select.style.display = 'none';
+        txt.style.display = '';
+        button.firstChild.firstChild.innerHTML = "Click to select from list";
+    }
+}
+
+function updateTxtValue(txtName, txtValue) {
+    var txtElement = document.getElementById(txtName);
+    if (txtElement != undefined) {
+        txtElement.value = txtValue;
+    }
+}
+
+function initTextAndSelectOnLoad(label, txtValue, selectValue) {
+    var select = document.getElementById('select_' + label);
+    var txt = document.getElementById(label);
+    var button = document.getElementById('btn_' + label);
+    if (select != undefined && txt != undefined) {
+        txt.style.display = txtValue;
+        select.style.display = selectValue;
+        if (button != undefined) {
+            if (txtValue == '') {
+                button.value = "Click to select from list";
+            } else {
+                button.value = "Set a different value";
+            }
+        }
+    }
 }

@@ -71,7 +71,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
         }
     }
 
-    public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
+    public void afterSuccessfulReleaseVersionBuild() throws Exception {
         if (modifiedFilesForReleaseVersion) {
             // commit local changes
             log(String.format("Committing release version on branch '%s'", state.currentWorkingBranch));
@@ -88,12 +88,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
             // push the current branch
             scmManager.push(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), state.currentWorkingBranch);
             state.releaseBranchPushed = true;
-        }
-
-        if (releaseAction.isCreateVcsTag()) {
-            // push the tag
-            scmManager.pushTag(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl());
-            state.tagPushed = true;
         }
     }
 
@@ -114,7 +108,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
         }
     }
 
-    public void buildCompleted() throws IOException, InterruptedException {
+    public void buildCompleted() throws Exception {
         if (build.getResult().isBetterOrEqualTo(Result.SUCCESS)) {
             // pull before attempting to push changes?
             //scmManager.pull(scmManager.getRemoteUrl(), checkoutBranch);
@@ -134,9 +128,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
             }
             if (state.tagCreated) {
                 safeDeleteTag(releaseAction.getTagUrl());
-            }
-            if (state.tagPushed) {
-                safeDeleteRemoteTag(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl());
             }
             // reset changes done on the original checkout branch (next dev version)
             safeRevertWorkingCopy();
@@ -170,15 +161,6 @@ public class GitCoordinator extends AbstractScmCoordinator {
         }
     }
 
-    private void safeDeleteRemoteTag(ReleaseRepository remoteRepository, String tag) {
-        try {
-            scmManager.deleteRemoteTag(remoteRepository, tag);
-        } catch (Exception e) {
-            debuggingLogger.log(Level.FINE, "Failed to delete remote tag: ", e);
-            log("Failed to delete remote tag: " + e.getLocalizedMessage());
-        }
-    }
-
     private void safeRevertWorkingCopy() {
         try {
             scmManager.revertWorkingCopy();
@@ -197,6 +179,5 @@ public class GitCoordinator extends AbstractScmCoordinator {
         boolean releaseBranchCreated;
         boolean releaseBranchPushed;
         boolean tagCreated;
-        boolean tagPushed;
     }
 }

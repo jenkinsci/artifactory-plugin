@@ -16,6 +16,8 @@
 
 package org.jfrog.hudson;
 
+import org.apache.maven.artifact.Artifact;
+
 import java.io.Serializable;
 
 /**
@@ -24,14 +26,23 @@ import java.io.Serializable;
  * @author Yossi Shaul
  */
 public class MavenDependency implements Serializable {
-    public String id;
-    public String groupId;
-    public String artifactId;
-    public String version;
-    public String type;
-    public String classifier;
-    public String scope;
-    public String fileName;
+    private String id;
+    private String groupId;
+    private String artifactId;
+    private String version;
+    private String type;
+    private String scope;
+    private String fileName;
+
+    public MavenDependency(Artifact artifact) {
+        id = artifact.getId() != null ? artifact.getId().intern() : null;
+        groupId = artifact.getGroupId() != null ? artifact.getGroupId().intern() : null;
+        artifactId = artifact.getArtifactId() != null ? artifact.getArtifactId().intern() : null;
+        version = artifact.getVersion() != null ? artifact.getVersion().intern() : null;
+        scope = artifact.getScope() != null ? artifact.getScope().intern() : null;
+        fileName = artifact.getFile() != null ? artifact.getFile().getName().intern() : null;
+        type = artifact.getType() != null ? artifact.getType().intern() : null;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -54,5 +65,53 @@ public class MavenDependency implements Serializable {
     @Override
     public int hashCode() {
         return id.hashCode();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public String getArtifactId() {
+        return artifactId;
+    }
+
+    public void setArtifactId(String artifactId) {
+        this.artifactId = artifactId;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getScope() {
+        return scope;
+    }
+
+    public String getFileName() {
+        return fileName;
     }
 }

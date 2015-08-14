@@ -91,26 +91,28 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
      * Get the root path where the build is located, the project may be checked out to
      * a sub-directory from the root workspace location.
      *
-     * @param env EnvVars to take the workspace from, if workspace is not found
+     * @param globalEnv EnvVars to take the workspace from, if workspace is not found
      *            then it is take from project.getSomeWorkspace()
      * @return The location of the root of the Gradle build.
      * @throws IOException
      * @throws InterruptedException
      */
-    public FilePath getModuleRoot(Map<String, String> env) throws IOException, InterruptedException {
+    public FilePath getModuleRoot(Map<String, String> globalEnv) throws IOException, InterruptedException {
         FilePath someWorkspace = project.getSomeWorkspace();
         if (someWorkspace == null) {
             throw new IllegalStateException("Couldn't find workspace");
         }
-        env.put("WORKSPACE", someWorkspace.getRemote());
+
+        Map<String, String> workspaceEnv = Maps.newHashMap();
+        workspaceEnv.put("WORKSPACE", someWorkspace.getRemote());
 
         for (Builder builder : getBuilders()) {
             if (builder instanceof Gradle) {
                 Gradle gradleBuilder = (Gradle) builder;
                 String rootBuildScriptDir = gradleBuilder.getRootBuildScriptDir();
                 if (rootBuildScriptDir != null && rootBuildScriptDir.trim().length() != 0) {
-                    String rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptDir.trim(), env);
-                    rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptNormalized, env);
+                    String rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptDir.trim(), workspaceEnv);
+                    rootBuildScriptNormalized = Util.replaceMacro(rootBuildScriptNormalized, globalEnv);
                     return new FilePath(someWorkspace, rootBuildScriptNormalized);
                 } else {
                     return someWorkspace;

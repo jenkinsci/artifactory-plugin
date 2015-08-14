@@ -26,7 +26,8 @@ import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
 import hudson.util.DescribableList;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.util.publisher.PublisherFactory;
+import org.jfrog.hudson.util.publisher.PublisherFindImpl;
+import org.jfrog.hudson.util.publisher.PublisherFlexible;
 
 import java.util.Collections;
 import java.util.List;
@@ -60,12 +61,19 @@ public abstract class ActionableHelper {
 
 
     /**
-     * @return The project publisher of the given type. Null if not found.
+     * Search for a publisher of the given type in a project and return it, or null if it is not found.
+     * @return  The publisher
      */
     public static <T extends Publisher> T getPublisher(AbstractProject<?, ?> project, Class<T> type) {
-        PublisherFactory<T> factory = new PublisherFactory<T>();
-
-        return factory.create(project.getPublishersList(), type);
+        // Search for a publisher of the given type in the project and return it if found:
+        T publisher = new PublisherFindImpl<T>().find(project, type);
+        if (publisher != null) {
+            return publisher;
+        }
+        // If not found, the publisher might be wrapped by a "Flexible Publish" publisher. The below searches for it inside the
+        // Flexible Publisher:
+        publisher = new PublisherFlexible<T>().find(project, type);
+        return publisher;
     }
 
     /**

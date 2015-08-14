@@ -30,19 +30,18 @@ import hudson.model.Environment;
 import hudson.remoting.Which;
 import hudson.scm.NullChangeLogParser;
 import hudson.scm.NullSCM;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
-import org.jfrog.build.client.ArtifactoryClientConfiguration;
+import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.publisher.PublisherContext;
-import org.jfrog.hudson.util.publisher.PublisherFactory;
 import org.jfrog.hudson.util.publisher.PublisherFlexible;
 
 import java.io.File;
@@ -83,7 +82,6 @@ public class MavenExtractorEnvironment extends Environment {
 
     @Override
     public void buildEnvVars(Map<String, String> env) {
-
         if (build.getWorkspace() == null) {
             // HAP-274 - workspace might not be initialized yet (this method will be called later in the build lifecycle)
             return;
@@ -92,18 +90,7 @@ public class MavenExtractorEnvironment extends Environment {
         //If an SCM is configured
         if (!initialized && !(build.getProject().getScm() instanceof NullSCM)) {
             //Handle all the extractor info only when a checkout was already done
-            boolean checkoutWasPerformed = true;
-            try {
-                Field scmField = AbstractBuild.class.getDeclaredField("scm");
-                scmField.setAccessible(true);
-                Object scmObject = scmField.get(build);
-                //Null changelog parser is set when a checkout wasn't performed yet
-                checkoutWasPerformed = !(scmObject instanceof NullChangeLogParser);
-            } catch (Exception e) {
-                buildListener.getLogger().println("[Warning] An error occurred while testing if the SCM checkout " +
-                        "has already been performed: " + e.getMessage());
-            }
-            if (!checkoutWasPerformed) {
+            if (!isCheckoutPerformed()) {
                 return;
             }
         }
@@ -118,11 +105,19 @@ public class MavenExtractorEnvironment extends Environment {
             return;
         }
 
-        if (isFlexibleEnable()) {
+        // Check if the Artifactory publisher is wrapped with the "Flexible Publish" publisher.
+        // If it is, we will stop here to have the Maven Extractor functionality disabled for this build.
+        // (and have the same behavior as a Maven 2 build):
+        if (isFlexibleWrapsPublisher(build.getProject())) {
+            buildListener.getLogger().println("Artifactory publisher is wrapped by the Flexible-Publish publisher. Build-Info-Maven3-Extractor is disabled.");
             return;
         }
 
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
+        ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
+        if (release != null) {
+            release.addVars(env);
+        }
 
         if (!initialized) {
             try {
@@ -136,7 +131,7 @@ public class MavenExtractorEnvironment extends Environment {
                     Credentials resolverCredentials = CredentialResolver.getPreferredResolver(
                             resolver, publisher, resolver.getArtifactoryServer());
                     resolverContext = new ResolverContext(resolver.getArtifactoryServer(), resolver.getDetails(),
-                            resolverCredentials);
+                            resolverCredentials, resolver);
                 }
 
                 ArtifactoryClientConfiguration configuration = ExtractorUtils.addBuilderInfoArguments(
@@ -151,23 +146,31 @@ public class MavenExtractorEnvironment extends Environment {
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
     }
 
+    private boolean isCheckoutPerformed() {
+        boolean checkoutWasPerformed = false;
+        try {
+            Field scmField = AbstractBuild.class.getDeclaredField("scm");
+            scmField.setAccessible(true);
+            Object scmObject = scmField.get(build);
+            if (scmObject != null) {
+                checkoutWasPerformed = !(scmObject instanceof NullChangeLogParser);
+            }
+        } catch (Exception e) {
+            buildListener.getLogger().println("[Warning] An error occurred while testing if the SCM checkout " +
+                    "has already been performed: " + e.getMessage());
+        }
+        return checkoutWasPerformed;
+    }
+
     private boolean isMavenVersionValid() throws Exception {
-        return MavenVersionHelper.isAtLeastResolutionCapableVersion(build, envVars, buildListener);
+            return MavenVersionHelper.isAtLeastResolutionCapableVersion(build, envVars, buildListener);
     }
 
     /**
-     * Check to see if the Artifactory plugin is wrapped under Flexible plugin.
-     * If true, we will disable Maven extractor, and override the environment from the plugin
-     * (like Maven 2 behavior)
+     * Determines whether the Artifactory publisher is wrapped by the "Flexible Publish" publisher.
      */
-    private boolean isFlexibleEnable() {
-        if (Jenkins.getInstance().getPlugin(PublisherFactory.FLEXIBLE_PLUGIN) != null) {
-            PublisherFlexible<ArtifactoryRedeployPublisher> flexible = new PublisherFlexible<ArtifactoryRedeployPublisher>();
-            if (flexible.isPublisherWrapped(build.getProject(), ArtifactoryRedeployPublisher.class))
-                return true;
-        }
-
-        return false;
+    private boolean isFlexibleWrapsPublisher(MavenModuleSet project) {
+        return (new PublisherFlexible<ArtifactoryRedeployPublisher>()).isPublisherWrapped(project, ArtifactoryRedeployPublisher.class);
     }
 
     private PublisherContext createPublisherContext(ArtifactoryRedeployPublisher publisher, AbstractBuild build) {
@@ -176,9 +179,9 @@ public class MavenExtractorEnvironment extends Environment {
         if (release != null) {
             // staging build might change the target deployment repository
             String stagingRepoKey = release.getStagingRepositoryKey();
-            if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.repositoryKey)) {
-                server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), stagingRepoKey,
-                        server.snapshotsRepositoryKey, server.downloadReleaseRepositoryKey, server.downloadSnapshotRepositoryKey,
+            if (!StringUtils.isBlank(stagingRepoKey) && !stagingRepoKey.equals(server.getDeployReleaseRepository().getRepoKey())) {
+                server = new ServerDetails(server.artifactoryName, server.getArtifactoryUrl(), new RepositoryConf(stagingRepoKey, stagingRepoKey, false),
+                        server.getDeploySnapshotRepository(), server.getResolveReleaseRepository(), server.getResolveSnapshotRepository(),
                         server.getDownloadReleaseRepositoryDisplayName(), server.getDownloadSnapshotRepositoryDisplayName());
             }
         }

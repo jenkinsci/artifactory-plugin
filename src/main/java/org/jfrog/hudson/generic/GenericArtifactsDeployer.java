@@ -15,12 +15,13 @@ import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.util.FileChecksumCalculator;
-import org.jfrog.build.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.client.DeployDetails;
 import org.jfrog.build.client.ProxyConfiguration;
-import org.jfrog.build.util.PublishedItemsHelper;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.util.PublishedItemsHelper;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 
@@ -74,16 +75,17 @@ public class GenericArtifactsDeployer {
         FilePath workingDir = build.getWorkspace();
         ArrayListMultimap<String, String> propertiesToAdd = getbuildPropertiesMap();
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
+        String repositoryKey = Util.replaceMacro(configurator.getRepositoryKey(), env);
         artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer, credentials,
-                configurator.getRepositoryKey(), propertiesToAdd,
+                repositoryKey, propertiesToAdd,
                 artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
     }
 
     private ArrayListMultimap<String, String> getbuildPropertiesMap() {
         ArrayListMultimap<String, String> properties = ArrayListMultimap.create();
 
-        properties.put("build.name", ExtractorUtils.sanitizeBuildName(build.getParent().getFullName()));
-        properties.put("build.number", build.getNumber() + "");
+        properties.put("build.name", BuildUniqueIdentifierHelper.getBuildName(build));
+        properties.put("build.number", BuildUniqueIdentifierHelper.getBuildNumber(build));
         properties.put("build.timestamp", build.getTimestamp().getTime().getTime() + "");
         Cause.UpstreamCause parent = ActionableHelper.getUpstreamCause(build);
         if (parent != null) {

@@ -17,6 +17,7 @@
 package org.jfrog.hudson.util;
 
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
 
 /**
@@ -29,11 +30,14 @@ public class ResolverContext {
     private ServerDetails serverDetails;
     private Credentials credentials;
     private ArtifactoryServer server;
+    private ResolverOverrider resolverOverrider;
 
-    public ResolverContext(ArtifactoryServer server, ServerDetails serverDetails, Credentials credentials) {
+    public ResolverContext(ArtifactoryServer server, ServerDetails serverDetails, Credentials credentials,
+                           ResolverOverrider resolverOverrider) {
         this.serverDetails = serverDetails;
         this.credentials = credentials;
         this.server = server;
+        this.resolverOverrider = resolverOverrider;
     }
 
     public ArtifactoryServer getServer() {
@@ -46,5 +50,13 @@ public class ResolverContext {
 
     public Credentials getCredentials() {
         return credentials;
+    }
+
+    public ResolverOverrider getResolverOverrider() {
+        return resolverOverrider;
+    }
+
+    public void setResolverOverrider(ResolverOverrider resolverOverrider) {
+        this.resolverOverrider = resolverOverrider;
     }
 }
