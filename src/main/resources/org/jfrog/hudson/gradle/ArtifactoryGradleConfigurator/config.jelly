@@ -1,6 +1,6 @@
 <!--suppress XmlUnusedNamespaceDeclaration -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:r="/lib/jfrog">
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:r="/lib/jfrog" xmlns:c="/lib/credentials">
     <f:section title="${%Artifactory Configuration}">
         <f:dropdownList name="details" title="${%Artifactory deployment server}">
             <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
@@ -69,9 +69,7 @@
                                  bind="bindToDescriptor"
                                  jsFunction="artifactoryGradleConfigurator"
                                  repoUrl="artifactoryUrlDeploy${s.url}"
-                                 credentialUserName="$('overridingDeployerCredentials-gradle').down('input[type=text]').value"
-                                 credentialPassword="$('overridingDeployerCredentials-gradle').down('input[type=password]').value"
-                                 isCredential="$('overridingDeployerCredentials-gradle').down('input').checked"/>
+                                 credentialsId="$('overridingDeployerCredentials-gradle').down('select').value"/>
 
                     </f:nested>
                 </f:dropdownListBlock>
@@ -80,20 +78,9 @@
 
         <f:block>
             <table style="width:100%" id="overridingDeployerCredentials-gradle">
-                <j:set var="overridingDeployerCredentials" value="${instance.overridingDeployerCredentials}"/>
-                <f:optionalBlock name="overridingDeployerCredentials" checked="${overridingDeployerCredentials != null}"
-                                 title="Override default deployer credentials"
-                                 help="/plugin/artifactory/help/common/help-overridingDeployerCredentials.html">
-                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-                    <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
-                             field="username">
-                        <f:textbox value="${overridingDeployerCredentials.username}"/>
-                    </f:entry>
-                    <f:entry title="Password" field="password"
-                             help="/plugin/artifactory/help/common/help-deployerPassword.html">
-                        <f:password value="${overridingDeployerCredentials.password}"/>
-                    </f:entry>
-                </f:optionalBlock>
+                <f:entry title="Override default deployer credentials" field="deployerCredentialsId">
+                    <c:select/>
+                </f:entry>
             </table>
         </f:block>
 
@@ -118,9 +105,7 @@
                                  bind="bindToDescriptorResolver"
                                  jsFunction="artifactoryGradleConfigurator"
                                  repoUrl="artifactoryUrlResolver${s.url}"
-                                 credentialUserName="$('overridingResolverCredentials-gradle').down('input[type=text]').value"
-                                 credentialPassword="$('overridingResolverCredentials-gradle').down('input[type=password]').value"
-                                 isCredential="$('overridingResolverCredentials-gradle').down('input').checked"/>
+                                 credentialsId="$('overridingResolverCredentials-gradle').down('select').value"/>
 
                     </f:nested>
                 </f:dropdownListBlock>
@@ -129,23 +114,11 @@
 
         <f:block>
             <table style="width:100%" id="overridingResolverCredentials-gradle">
-                <j:set var="overridingResolverCredentials" value="${instance.overridingResolverCredentials}"/>
-                <f:optionalBlock name="overridingResolverCredentials" checked="${overridingResolverCredentials != null}"
-                                 title="Override default resolver credentials"
-                                 help="/plugin/artifactory/help/common/help-overridingResolverCredentials.html">
-                    <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-                    <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html"
-                             field="username">
-                        <f:textbox value="${overridingResolverCredentials.username}"/>
-                    </f:entry>
-                    <f:entry title="Password" field="password"
-                             help="/plugin/artifactory/help/common/help-deployerPassword.html">
-                        <f:password value="${overridingResolverCredentials.password}"/>
-                    </f:entry>
-                </f:optionalBlock>
+                <f:entry title="Override default resolver credentials" field="resolverCredentialsId">
+                    <c:select/>
+                </f:entry>
             </table>
         </f:block>
-
 
         <f:block>
             <table style="width:100%">

@@ -34,6 +34,7 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -45,6 +46,8 @@ import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -77,7 +80,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      */
     private final boolean deployArtifacts;
     private final IncludesExcludes artifactDeploymentPatterns;
-    private final Credentials overridingDeployerCredentials;
+    private final String deployerCredentialsId;
     /**
      * Include environment variables in the generated build info
      */
@@ -114,12 +117,16 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
      */
     @Deprecated
     private transient Boolean skipBuildInfoDeploy;
-
+    /**
+     * @deprecated: Use org.jfrog.hudson.ArtifactoryRedeployPublisher#getDeployerCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingDeployerCredentials;
     // NOTE: The following getters are used by jelly. Do not remove them
 
     @DataBoundConstructor
     public ArtifactoryRedeployPublisher(ServerDetails details, boolean deployArtifacts,
-                                        IncludesExcludes artifactDeploymentPatterns, Credentials overridingDeployerCredentials,
+                                        IncludesExcludes artifactDeploymentPatterns, String deployerCredentialsId,
                                         boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                         boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
                                         String violationRecipients, boolean includePublishArtifacts, String scopes,
@@ -135,7 +142,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.details = details;
         this.deployArtifacts = deployArtifacts;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
-        this.overridingDeployerCredentials = overridingDeployerCredentials;
+        this.deployerCredentialsId = deployerCredentialsId;
         this.includeEnvVars = includeEnvVars;
         this.envVarsPatterns = envVarsPatterns;
         this.evenIfUnstable = evenIfUnstable;
@@ -196,8 +203,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return passIdentifiedDownstream;
     }
 
+    public String getDeployerCredentialsId() {
+        return deployerCredentialsId;
+    }
+
     public boolean isOverridingDefaultDeployer() {
-        return (getOverridingDeployerCredentials() != null);
+        return (StringUtils.isNotBlank(getDeployerCredentialsId()));
     }
 
     public Credentials getOverridingDeployerCredentials() {
@@ -390,7 +401,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
 
         ArtifactoryServer server = getArtifactoryServer();
-        Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(this, server);
+        Credentials preferredDeployer = CredentialManager.getPreferredDeployer(this, server);
         ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
                 preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
@@ -509,23 +520,26 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             load();
         }
 
-        private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            List<String> repositoriesKeys = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+        private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsId)
+                throws IOException {
+            List<String> repositoriesKeys = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(),
+                    credentialsId, artifactoryServer);
             releaseRepositories = RepositoriesUtils.createRepositoriesList(repositoriesKeys);
             Collections.sort(releaseRepositories);
             deploySnapshotRepositories = releaseRepositories;
         }
 
-        private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final String credentialsUsername, final String credentialsPassword, final boolean overridingDeployerCredentials) {
+        private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final String credentialsId) {
             List<UserPluginInfo> pluginInfoList = artifactoryServer.getStagingUserPluginInfo(new DeployerOverrider() {
                 public boolean isOverridingDefaultDeployer() {
-                    return overridingDeployerCredentials;
+                    return StringUtils.isNotBlank(credentialsId);
                 }
                 public Credentials getOverridingDeployerCredentials() {
-                    if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
-                        return new Credentials(credentialsUsername, credentialsPassword);
-                    }
                     return null;
+                }
+
+                public String getDeployerCredentialsId() {
+                    return credentialsId;
                 }
             });
 
@@ -547,20 +561,20 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+         * @param url                     the artifactory url
+         * @param credentialsId           credential id from the "Credential" plugin
          * @return {@link RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId) {
             RefreshServerResponse response = new RefreshServerResponse();
 
             try {
-                ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
-                refreshRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
-                refreshUserPlugins(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
+                        url, getArtifactoryServers()
+                );
+                refreshRepositories(artifactoryServer, credentialsId);
+                refreshUserPlugins(artifactoryServer, credentialsId);
 
                 response.setRepositories(releaseRepositories);
                 response.setUserPlugins(userPluginKeys);
@@ -572,6 +586,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             }
             return response;
         }
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
+        }
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
@@ -580,8 +598,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         @Override
         public ArtifactoryRedeployPublisher newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            ArtifactoryRedeployPublisher publisher = req.bindJSON(ArtifactoryRedeployPublisher.class, formData);
-            return publisher;
+            return req.bindJSON(ArtifactoryRedeployPublisher.class, formData);
         }
 
         @Override

@@ -2,7 +2,7 @@
  * @author Lior Hasson
  */
 
-function repos(button, jsFunction, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
+function repos(button, jsFunction, artifactoryUrl, credentialsId, bind) {
     button = button._button;
     var spinner = $(button).up("DIV").next();
     spinner.style.display = "block";
@@ -12,24 +12,24 @@ function repos(button, jsFunction, artifactoryUrl, deployUsername, deployPasswor
     warning.innerHTML = "";
 
     if (jsFunction == "artifactoryIvyFreeStyleConfigurator") {
-        artifactoryIvyFreeStyleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+        artifactoryIvyFreeStyleConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
     } else if (jsFunction == "artifactoryGenericConfigurator") {
-        artifactoryGenericConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+        artifactoryGenericConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
     } else if (jsFunction == "artifactoryMaven3NativeConfigurator") {
-        artifactoryMaven3NativeConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+        artifactoryMaven3NativeConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
     } else if (jsFunction == "artifactoryMaven3Configurator") {
-        artifactoryMaven3Configurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+        artifactoryMaven3Configurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
     } else if (jsFunction == "artifactoryGradleConfigurator") {
-        artifactoryGradleConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+        artifactoryGradleConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
     } else if (jsFunction == "artifactoryRedeployPublisher") {
-        artifactoryRedeployPublisher(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+        artifactoryRedeployPublisher(spinner, $(artifactoryUrl).value, credentialsId, bind);
     } else if (jsFunction == "artifactoryIvyConfigurator") {
-        artifactoryIvyConfigurator(spinner, $(artifactoryUrl).value, deployUsername, deployPassword, overridingDeployerCredentials, bind);
+        artifactoryIvyConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
     }
 }
 
-function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -54,8 +54,8 @@ function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, deployUser
     });
 }
 
-function artifactoryGenericConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+function artifactoryGenericConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -80,8 +80,8 @@ function artifactoryGenericConfigurator(spinner, artifactoryUrl, deployUsername,
     });
 }
 
-function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
-    bind.refreshResolversFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
+    bind.refreshResolversFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -124,8 +124,8 @@ function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, deployUser
     });
 }
 
-function artifactoryMaven3Configurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+function artifactoryMaven3Configurator(spinner, artifactoryUrl, credentialsId, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -168,8 +168,8 @@ function artifactoryMaven3Configurator(spinner, artifactoryUrl, deployUsername, 
     });
 }
 
-function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+function artifactoryGradleConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -224,8 +224,8 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, deployUsername, 
     });
 }
 
-function artifactoryRedeployPublisher(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+function artifactoryRedeployPublisher(spinner, artifactoryUrl, credentialsId, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -279,8 +279,8 @@ function artifactoryRedeployPublisher(spinner, artifactoryUrl, deployUsername, d
     });
 }
 
-function artifactoryIvyConfigurator(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, deployUsername, deployPassword, overridingDeployerCredentials, function (t) {
+function artifactoryIvyConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
         var target = spinner.next();
         var warning = target.next();
 

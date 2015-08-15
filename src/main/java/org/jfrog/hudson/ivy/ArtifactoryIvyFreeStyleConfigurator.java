@@ -29,6 +29,7 @@ import hudson.tasks.Ant;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -42,6 +43,7 @@ import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -72,7 +74,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     public final String remotePluginLocation;
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
-    private final Credentials overridingDeployerCredentials;
+    private final String deployerCredentialsId;
     private final boolean runChecks;
     private final String violationRecipients;
     private final boolean includePublishArtifacts;
@@ -113,9 +115,14 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
      */
     @Deprecated
     private transient String scrambledPassword;
+    /**
+     * @deprecated: Use org.jfrog.hudson.ivy.ArtifactoryIvyFreeStyleConfigurator#getDeployerCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingDeployerCredentials;
 
     @DataBoundConstructor
-    public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
+    public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, String deployerCredentialsId,
                                                boolean deployArtifacts, String remotePluginLocation,
                                                boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                                boolean deployBuildInfo, boolean runChecks, String violationRecipients,
@@ -129,7 +136,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                                                boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild,
                                                String artifactoryCombinationFilter) {
         this.details = details;
-        this.overridingDeployerCredentials = overridingDeployerCredentials;
+        this.deployerCredentialsId = deployerCredentialsId;
         this.deployArtifacts = deployArtifacts;
         this.remotePluginLocation = remotePluginLocation;
         this.includeEnvVars = includeEnvVars;
@@ -192,11 +199,15 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return (getOverridingDeployerCredentials() != null);
+        return StringUtils.isNotBlank(getDeployerCredentialsId());
     }
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
+    }
+
+    public String getDeployerCredentialsId() {
+        return deployerCredentialsId;
     }
 
     public String getViolationRecipients() {
@@ -529,24 +540,19 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+         * @param url                     the artifactory url
+         * @param credentialsId           credential id from the "Credential" plugin
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername,
-                                                            String credentialsPassword,
-                                                            boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId) {
             RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url,
                     RepositoriesUtils.getArtifactoryServers());
 
             try {
-                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url,
-                        credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsId,
+                        artifactoryServer);
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
                 response.setRepositories(releaseRepositoryList);
@@ -563,6 +569,11 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             * In case of Exception, we write error in the Javascript scope!
             * */
             return response;
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
         }
 
         @Override

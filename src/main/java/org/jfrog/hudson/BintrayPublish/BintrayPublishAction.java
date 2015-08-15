@@ -1,7 +1,6 @@
 package org.jfrog.hudson.BintrayPublish;
 
 import com.google.common.collect.Lists;
-import hudson.Util;
 import hudson.model.*;
 import hudson.security.ACL;
 import hudson.security.Permission;
@@ -17,7 +16,7 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.BuildInfoAwareConfigurator;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
-import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.CredentialManager;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -62,7 +61,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         if (!override){
             resetOverrideFields();
         }
-        Credentials credentials = CredentialResolver.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
+        Credentials credentials = CredentialManager.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
         new PushToBintrayWorker(artifactory, credentials).start();
         resp.sendRedirect(".");
     }

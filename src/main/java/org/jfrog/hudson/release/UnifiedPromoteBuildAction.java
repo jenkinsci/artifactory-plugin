@@ -33,7 +33,7 @@ import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
-import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.CredentialManager;
 import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -210,7 +210,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
         ArtifactoryServer server = configurator.getArtifactoryServer();
 
-        new PromoteWorkerThread(server, CredentialResolver.getPreferredDeployer(configurator, server), ciUser).start();
+        new PromoteWorkerThread(server, CredentialManager.getPreferredDeployer(configurator, server), ciUser).start();
 
         resp.sendRedirect(".");
     }

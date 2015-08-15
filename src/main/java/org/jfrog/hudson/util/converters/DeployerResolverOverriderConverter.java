@@ -16,14 +16,21 @@
 
 package org.jfrog.hudson.util.converters;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.CredentialsStore;
+import com.cloudbees.plugins.credentials.domains.Domain;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.util.Scrambler;
 import hudson.util.XStream2;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.util.Credentials;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -47,9 +54,27 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         Class<? extends DeployerOverrider> overriderClass = overrider.getClass();
         overrideDeployerCredentials(overrider, overriderClass);
         overrideResolverDetails(overrider, overriderClass);
+        credentialsMigration(overrider, overriderClass);
 
         if(!converterErrors.isEmpty()){
             throw new RuntimeException(converterErrors.toString());
+        }
+    }
+
+    /**
+     * Migrate to Jenkins "Credentials" plugin from the old credential implementation
+     */
+    public void credentialsMigration(T overrider, Class<? extends DeployerOverrider> overriderClass){
+        try{
+            deployerMigration(overrider, overriderClass);
+            resolverMigration(overrider, overriderClass);
+        }
+        catch (NoSuchFieldException e) {
+            converterErrors.add(getConversionErrorMessage(overrider, e));
+        } catch (IllegalAccessException e) {
+            converterErrors.add(getConversionErrorMessage(overrider, e));
+        } catch (IOException e) {
+            converterErrors.add(getConversionErrorMessage(overrider, e));
         }
     }
 
@@ -91,6 +116,66 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
             converterErrors.add(getConversionErrorMessage(deployerOverrider, e));
         } catch (IllegalAccessException e) {
             converterErrors.add(getConversionErrorMessage(deployerOverrider, e));
+        }
+    }
+
+    private void deployerMigration(T overrider, Class<? extends DeployerOverrider> overriderClass) throws NoSuchFieldException, IllegalAccessException, IOException {
+        Field overridingDeployerCredentialsField = overriderClass.getDeclaredField("overridingDeployerCredentials");
+        overridingDeployerCredentialsField.setAccessible(true);
+        Object overridingDeployerCredentials = overridingDeployerCredentialsField.get(overrider);
+
+        if(overridingDeployerCredentials != null) {
+            CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
+            String userName = ((Credentials) overridingDeployerCredentials).getUsername();
+            String password = ((Credentials) overridingDeployerCredentials).getPassword();
+
+            if (StringUtils.isNotBlank(userName)) {
+                UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
+                        CredentialsScope.GLOBAL, null, "Migrated from Artifactory plugin.", userName, password
+                );
+
+                if (store.addCredentials(Domain.global(), usernamePasswordCredentials)) {
+                    int credentialsIndex = store.getCredentials(
+                            Domain.global()).lastIndexOf(usernamePasswordCredentials);
+                    String newCredentialsId = ((UsernamePasswordCredentialsImpl) store.getCredentials(
+                            Domain.global()).get(credentialsIndex)).getId();
+
+
+                    Field deployerCredentialsIdField = overriderClass.getDeclaredField("deployerCredentialsId");
+                    deployerCredentialsIdField.setAccessible(true);
+                    deployerCredentialsIdField.set(overrider, newCredentialsId);
+                }
+            }
+        }
+    }
+
+    private void resolverMigration(T server, Class<? extends DeployerOverrider> overriderClass) throws NoSuchFieldException, IllegalAccessException, IOException {
+        Field resolverCredentialsField = overriderClass.getDeclaredField("resolverCredentials");
+        resolverCredentialsField.setAccessible(true);
+        Object resolverCredentials = resolverCredentialsField.get(server);
+
+        if (resolverCredentials != null) {
+            CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
+            String userName = ((Credentials) resolverCredentials).getUsername();
+            String password = ((Credentials) resolverCredentials).getPassword();
+
+            if (StringUtils.isNotBlank(userName)) {
+                UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
+                        CredentialsScope.GLOBAL, null, "Migrated from Artifactory plugin", userName, password
+                );
+
+                if (store.addCredentials(Domain.global(), usernamePasswordCredentials)) {
+                    int credentialsIndex = store.getCredentials(
+                            Domain.global()).lastIndexOf(usernamePasswordCredentials);
+                    String newCredentialsId = ((UsernamePasswordCredentialsImpl) store.getCredentials(
+                            Domain.global()).get(credentialsIndex)).getId();
+
+
+                    Field deployerCredentialsIdField = overriderClass.getDeclaredField("resolverCredentialsId");
+                    deployerCredentialsIdField.setAccessible(true);
+                    deployerCredentialsIdField.set(server, newCredentialsId);
+                }
+            }
         }
     }
 

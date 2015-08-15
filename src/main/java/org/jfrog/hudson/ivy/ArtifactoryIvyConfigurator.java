@@ -24,6 +24,7 @@ import hudson.model.*;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -33,7 +34,9 @@ import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -53,7 +56,7 @@ import java.util.Map;
 public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements DeployerOverrider,
         BuildInfoAwareConfigurator {
 
-    private final Credentials overridingDeployerCredentials;
+    private final String deployerCredentialsId;
     private final IncludesExcludes artifactDeploymentPatterns;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
@@ -94,9 +97,14 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
      */
     @Deprecated
     private transient String password;
+    /**
+     * @deprecated: Use org.jfrog.hudson.ivy.ArtifactoryIvyConfigurator#getDeployerCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingDeployerCredentials;
 
     @DataBoundConstructor
-    public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
+    public ArtifactoryIvyConfigurator(ServerDetails details, String deployerCredentialsId,
                                       boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
                                       boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                       boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
@@ -108,8 +116,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                                       boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
                                       boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
-        this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
+        this.deployerCredentialsId = deployerCredentialsId;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
@@ -156,11 +164,15 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return (getOverridingDeployerCredentials() != null);
+        return StringUtils.isNotBlank(getDeployerCredentialsId());
     }
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
+    }
+
+    public String getDeployerCredentialsId() {
+        return deployerCredentialsId;
     }
 
     public boolean isNotM2Compatible() {
@@ -431,20 +443,20 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+         * @param url                     the artifactory url
+         * @param credentialsId           credential id from the "Credential" plugin
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId) {
             RefreshServerResponse response = new RefreshServerResponse();
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
+                    url, RepositoriesUtils.getArtifactoryServers()
+            );
 
             try {
-                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsId,
+                        artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
@@ -459,6 +471,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             }
 
             return response;
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
         }
 
         @Override

@@ -25,6 +25,7 @@ import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -38,6 +39,7 @@ import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -62,8 +64,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
      */
     private final ServerDetails details;
     private final ServerDetails resolverDetails;
-    private final Credentials overridingDeployerCredentials;
-    private final Credentials overridingResolverCredentials;
+    private final String deployerCredentialsId;
+    private final String resolverCredentialsId;
+
     /**
      * If checked (default) deploy maven artifacts
      */
@@ -118,13 +121,22 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
      */
     @Deprecated
     private transient boolean skipBuildInfoDeploy;
+    /**
+     * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator#getDeployerCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingDeployerCredentials;
+    /**
+     * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator#getResolverCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingResolverCredentials;
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, ServerDetails resolverDetails,
-                                         Credentials overridingDeployerCredentials,
-                                         Credentials overridingResolverCredentials, boolean enableResolveArtifacts,
-                                         IncludesExcludes artifactDeploymentPatterns, boolean deployArtifacts,
-                                         boolean deployBuildInfo, boolean includeEnvVars,
+                                         String deployerCredentialsId, String resolverCredentialsId,
+                                         boolean enableResolveArtifacts, IncludesExcludes artifactDeploymentPatterns,
+                                         boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
                                          IncludesExcludes envVarsPatterns,
                                          boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
                                          String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
@@ -142,8 +154,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     ) {
         this.details = details;
         this.resolverDetails = resolverDetails;
-        this.overridingDeployerCredentials = overridingDeployerCredentials;
-        this.overridingResolverCredentials = overridingResolverCredentials;
+        this.deployerCredentialsId = deployerCredentialsId;
+        this.resolverCredentialsId = resolverCredentialsId;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.envVarsPatterns = envVarsPatterns;
         this.runChecks = runChecks;
@@ -199,19 +211,27 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return (getOverridingDeployerCredentials() != null);
+        return StringUtils.isNotBlank(getDeployerCredentialsId());
     }
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
     }
 
+    public String getDeployerCredentialsId() {
+        return deployerCredentialsId;
+    }
+
     public boolean isOverridingDefaultResolver() {
-        return (getOverridingResolverCredentials() != null);
+        return StringUtils.isNotBlank(getResolverCredentialsId());
     }
 
     public Credentials getOverridingResolverCredentials() {
         return overridingResolverCredentials;
+    }
+
+    public String getResolverCredentialsId() {
+        return resolverCredentialsId;
     }
 
     public boolean isOverridingResolverCredentials() {
@@ -441,7 +461,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         ResolverContext resolver = null;
         if (isEnableResolveArtifacts()) {
-            Credentials credentialResolver = CredentialResolver.getPreferredResolver(
+            Credentials credentialResolver = CredentialManager.getPreferredResolver(
                     ArtifactoryMaven3Configurator.this, getArtifactoryServer());
             resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(), credentialResolver,
                     ArtifactoryMaven3Configurator.this);
@@ -503,8 +523,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                             item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsId)
+                throws IOException {
+            virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
+                    credentialsId, artifactoryServer);
             Collections.sort(virtualRepositoryList);
         }
 
@@ -512,20 +534,18 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+         * @param url                     the artifactory url
+         * @param credentialsId           credential id from the "Credential" plugin
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId) {
             RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsId,
+                        artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
@@ -550,19 +570,17 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          * This method is triggered from the client side by ajax call.
          * The method is triggered by the "Refresh Repositories" button.
          *
-         * @param url                           The artifactory url
-         * @param credentialsUsername           Override credentials user name
-         * @param credentialsPassword           Override credentials password
-         * @param overridingDeployerCredentials Indicates whether to override the credentials
+         * @param url                     The artifactory url
+         * @param credentialsId           credential id from the "Credential" plugin
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId) {
             RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                refreshVirtualRepositories(artifactoryServer, credentialsId);
                 response.setVirtualRepositories(virtualRepositoryList);
                 response.setSuccess(true);
                 return response;
@@ -576,6 +594,16 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             * In case of Exception, we write the error in the Javascript scope!
             * */
             return response;
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillResolverCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
         }
 
         @Override

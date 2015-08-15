@@ -16,18 +16,20 @@
 
 package org.jfrog.hudson.util;
 
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ResolverOverrider;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 
 /**
  * A utility class the helps find the preferred credentials to use out of each setting and server
  *
  * @author Noam Y. Tenne
  */
-public abstract class CredentialResolver {
+public abstract class CredentialManager {
 
-    private CredentialResolver() {
+    private CredentialManager() {
     }
 
     /**
@@ -39,7 +41,8 @@ public abstract class CredentialResolver {
      */
     public static Credentials getPreferredDeployer(DeployerOverrider deployerOverrider, ArtifactoryServer server) {
         if (deployerOverrider.isOverridingDefaultDeployer()) {
-            return deployerOverrider.getOverridingDeployerCredentials();
+            String credentialsId = deployerOverrider.getDeployerCredentialsId();
+            return PluginsUtils.credentialsLookup(credentialsId);
         }
 
         if (server != null) {
@@ -50,6 +53,22 @@ public abstract class CredentialResolver {
         }
 
         return new Credentials(null, null);
+    }
+
+    public static Credentials getPreferredDeployer(String credentialsId, ArtifactoryServer server) {
+        String username;
+        String password;
+
+        if(StringUtils.isBlank(credentialsId)) {
+            Credentials deployedCredentials = server.getDeployerCredentials();
+            username = deployedCredentials.getUsername();
+            password = deployedCredentials.getPassword();
+        }
+        else {
+            return PluginsUtils.credentialsLookup(credentialsId);
+        }
+
+        return new Credentials(username, password);
     }
 
     /**
@@ -64,9 +83,26 @@ public abstract class CredentialResolver {
      */
     public static Credentials getPreferredResolver(ResolverOverrider resolverOverrider, ArtifactoryServer server) {
         if (resolverOverrider != null && resolverOverrider.isOverridingDefaultResolver()) {
-            return resolverOverrider.getOverridingResolverCredentials();
+            String credentialsId = resolverOverrider.getResolverCredentialsId();
+            return PluginsUtils.credentialsLookup(credentialsId);
         }
 
         return server.getResolvingCredentials();
+    }
+
+    public static Credentials getPreferredResolver(String credentialsId, ArtifactoryServer server) {
+        String username;
+        String password;
+
+        if(StringUtils.isBlank(credentialsId)) {
+            Credentials deployedCredentials = server.getResolvingCredentials();
+            username = deployedCredentials.getUsername();
+            password = deployedCredentials.getPassword();
+        }
+        else {
+            return PluginsUtils.credentialsLookup(credentialsId);
+        }
+
+        return new Credentials(username, password);
     }
 }

@@ -18,7 +18,9 @@ package org.jfrog.hudson;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONNull;
@@ -27,7 +29,10 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.RepositoriesUtils;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -59,6 +64,16 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             load();
         }
 
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillResolverCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
+        }
+
         /**
          * Performs on-the-fly validation of the form field 'name'.
          *
@@ -75,20 +90,15 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             return FormValidation.ok();
         }
 
-        public FormValidation doTestConnection(@QueryParameter("artifactoryUrl") final String url,
-                                               @QueryParameter("username") final String deployerUsername,
-                                               @QueryParameter("password") final String deployerPassword,
-                                               @QueryParameter("resolverCredentials") final boolean resolverCredentials,
-                                               @QueryParameter("resolverUsername") final String resolverUsername,
-                                               @QueryParameter("resolverPassword") final String resolverPassword,
-                                               @QueryParameter("artifactory.timeout") final String timeout) throws ServletException {
+        public FormValidation doTestConnection(
+                @QueryParameter("artifactoryUrl") final String url,
+                @QueryParameter("deployerCredentialsId") final String deployerCredentialsId,
+                @QueryParameter("artifactory.timeout") final String timeout,
+                @QueryParameter("artifactory.bypassProxy") final boolean bypassProxy) throws ServletException {
 
-            String username = deployerUsername;
-            String password = deployerPassword;
-            if (resolverCredentials && StringUtils.isNotBlank(resolverUsername) && StringUtils.isNotBlank(resolverPassword)) {
-                username = resolverUsername;
-                password = resolverPassword;
-            }
+                Credentials credentials = PluginsUtils.credentialsLookup(deployerCredentialsId);
+            String username = credentials.getUsername();
+            String password = credentials.getPassword();
 
             if (StringUtils.isBlank(url)) {
                 return FormValidation.error("Please set a valid Artifactory URL");
@@ -101,9 +111,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 client = new ArtifactoryBuildInfoClient(url, new NullLog());
             }
 
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
-
-            if (((artifactoryServer != null && !artifactoryServer.isBypassProxy()) || artifactoryServer == null) && Jenkins.getInstance().proxy != null) {
+            if (!bypassProxy && Jenkins.getInstance().proxy != null) {
                 client.setProxyConfiguration(RepositoriesUtils.createProxyConfiguration(Jenkins.getInstance().proxy));
             }
 

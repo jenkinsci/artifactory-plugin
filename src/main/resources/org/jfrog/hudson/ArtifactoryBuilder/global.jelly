@@ -1,5 +1,6 @@
 <j:jelly xmlns:j="jelly:core"
-         xmlns:f="/lib/form">
+         xmlns:f="/lib/form"
+         xmlns:c="/lib/credentials">
     <f:section title="Artifactory">
         <f:entry title="Artifactory servers"
                  description="List of Artifactory servers that projects will want to deploy artifacts and build info to">
@@ -7,55 +8,45 @@
                           header="Artifactory">
                 <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ArtifactoryServer"/>
                 <input type="hidden" name="serverId" value="${server.name}"/>
+
                 <table width="100%">
                     <f:entry title="URL" help="/plugin/artifactory/help/ArtifactoryBuilder/help-url.html">
                         <f:textbox field="artifactoryUrl" value="${server.url}"/>
                     </f:entry>
 
-                    <j:set var="deployerCredentials" value="${server.deployerCredentials}"/>
-                    <f:section title="Default Deployer Credentials" name="deployerCredentials">
-                        <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-                        <f:entry title="User Name" help="/plugin/artifactory/help/common/help-deployerUserName.html">
-                            <f:textbox field="username" value="${deployerCredentials.username}"/>
-                        </f:entry>
-                        <f:entry title="Password" help="/plugin/artifactory/help/common/help-deployerPassword.html">
-                            <f:password field="password" value="${deployerCredentials.password}"/>
-                        </f:entry>
-                    </f:section>
+                    <f:section title="Default Deployer Credentials"></f:section>
+                    <f:block>
+                        <table id="deployerCredentialsId${server.url}">
+                            <f:entry title="${%Credentials}" field="deployerCredentialsId">
+                                <c:select default="${server.deployerCredentialsId}"/>
+                            </f:entry>
+                        </table>
 
-                    <j:set var="resolverCredentials" value="${server.resolverCredentials}"/>
-                    <f:optionalBlock name="resolverCredentials" checked="${resolverCredentials != null}"
-                                     title="Use Different Resolver Credentials"
-                                     help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverCredentials.html">
-                        <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-                        <f:entry title="User Name"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverUserName.html">
-                            <f:textbox field="resolverUsername" value="${resolverCredentials.username}"/>
-                        </f:entry>
-                        <f:entry title="Password"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-resolverPassword.html">
-                            <f:password field="resolverPassword" value="${resolverCredentials.password}"/>
-                        </f:entry>
-                    </f:optionalBlock>
+                        <f:section title="Use Different Resolver Credentials"></f:section>
+                        <f:block>
+                            <table>
+                                <f:entry title="${%Credentials}" field="resolverCredentialsId">
+                                    <c:select/>
+                                </f:entry>
+                            </table>
+                        </f:block>
+                        <f:advanced>
+                            <f:entry title="Connection Timeout" field="artifactory.timeout"
+                                     help="/plugin/artifactory/help/ArtifactoryBuilder/help-timeout.html">
+                                <f:textbox clazz="number" value="${server.timeout}"/>
+                            </f:entry>
+                            <f:entry name="artifactory.bypassProxy" field="artifactory.bypassProxy"
+                                     help="/plugin/artifactory/help/ArtifactoryBuilder/help-bypassproxy.html">
+                                <f:checkbox checked="${server.bypassProxy}"/>
+                                <label class="attach-previous">${%Bypass HTTP Proxy}</label>
+                            </f:entry>
+                        </f:advanced>
 
-                    <f:advanced>
-                        <f:entry title="Connection Timeout"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-timeout.html">
-                            <f:textbox clazz="number" name="artifactory.timeout" value="${server.timeout}"/>
-                        </f:entry>
-                        <f:entry name="artifactory.bypassProxy"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-bypassproxy.html">
-                            <f:checkbox name="artifactory.bypassProxy" checked="${server.bypassProxy}"/>
-                            <label class="attach-previous">${%Bypass HTTP Proxy}</label>
-                        </f:entry>
-                    </f:advanced>
-
-                    <f:validateButton
+                        <f:validateButton
                             title="${%Test Connection}" progress="${%Testing...}"
                             method="testConnection"
-                            with="artifactoryUrl,username,password,resolverCredentials,resolverUsername,resolverPassword,
-                                                artifactory.timeout"/>
-
+                            with="artifactoryUrl,deployerCredentialsId,artifactory.timeout,artifactory.bypassProxy"/>
+                    </f:block>
                     <f:entry title="">
                         <div align="right">
                             <f:repeatableDeleteButton/>

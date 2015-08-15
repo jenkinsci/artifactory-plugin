@@ -5,18 +5,19 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.util.ListBoxModel;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.VirtualRepository;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
@@ -36,12 +37,17 @@ import java.util.List;
 public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements ResolverOverrider {
 
     private final ServerDetails details;
-    private final Credentials overridingResolverCredentials;
+    /**
+     * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator#getResolverCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingResolverCredentials;
+    private final String deployerCredentialsId;
 
     @DataBoundConstructor
-    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, Credentials overridingResolverCredentials) {
+    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, String deployerCredentialsId) {
         this.details = details;
-        this.overridingResolverCredentials = overridingResolverCredentials;
+        this.deployerCredentialsId = deployerCredentialsId;
     }
 
     public ServerDetails getDetails() {
@@ -66,11 +72,15 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public boolean isOverridingDefaultResolver() {
-        return getOverridingResolverCredentials() != null;
+        return StringUtils.isNotBlank(getResolverCredentialsId());
     }
 
     public Credentials getOverridingResolverCredentials() {
         return overridingResolverCredentials;
+    }
+
+    public String getResolverCredentialsId() {
+        return deployerCredentialsId;
     }
 
     @Override
@@ -135,8 +145,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             return MavenModuleSet.class.equals(item.getClass());
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsId)
+                throws IOException {
+            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
+                    credentialsId, artifactoryServer);
             Collections.sort(virtualRepositoryKeys);
         }
 
@@ -145,18 +157,16 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          * The Element that trig is the "Refresh Repositories" button.
          *
          * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+         * @param credentialsId           credential id from the "Credential" plugin
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId) {
             RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                refreshVirtualRepositories(artifactoryServer, credentialsId);
                 response.setVirtualRepositories(virtualRepositoryKeys);
                 response.setSuccess(true);
                 return response;
@@ -170,6 +180,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             * In case of Exception, we write the error in the Javascript scope!
             * */
             return response;
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillResolverCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
         }
 
         @Override

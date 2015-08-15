@@ -9,6 +9,7 @@ import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -27,6 +28,7 @@ import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -47,10 +49,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     private final ServerDetails details;
     private final ServerDetails resolverDetails;
-    private final Credentials overridingDeployerCredentials;
-    private final Credentials overridingResolverCredentials;
+    private final String deployerCredentialsId;
+    private final String resolverCredentialsId;
     private final String deployPattern;
-
     private final String resolvePattern;
     private final String matrixParams;
     private final boolean deployBuildInfo;
@@ -70,11 +71,20 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
      */
     @Deprecated
     private transient String keepArchivedArtifacts;
+    /**
+     * @deprecated: Use org.jfrog.hudson.generic.ArtifactoryGenericConfigurator#getDeployerCredentials()()
+     */
+    @Deprecated
+    private Credentials overridingDeployerCredentials;
+    /**
+     * @deprecated: Use org.jfrog.hudson.generic.ArtifactoryGenericConfigurator#getResolverCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingResolverCredentials;
 
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, ServerDetails resolverDetails,
-                                          Credentials overridingDeployerCredentials,
-                                          Credentials overridingResolverCredentials,
+                                          String deployerCredentialsId, String resolverCredentialsId,
                                           String deployPattern, String resolvePattern, String matrixParams,
                                           boolean deployBuildInfo,
                                           boolean includeEnvVars, IncludesExcludes envVarsPatterns,
@@ -84,8 +94,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                                           String artifactoryCombinationFilter) {
         this.details = details;
         this.resolverDetails = resolverDetails;
-        this.overridingDeployerCredentials = overridingDeployerCredentials;
-        this.overridingResolverCredentials = overridingResolverCredentials;
+        this.deployerCredentialsId = deployerCredentialsId;
+        this.resolverCredentialsId = resolverCredentialsId;
         this.deployPattern = deployPattern;
         this.resolvePattern = resolvePattern;
         this.matrixParams = matrixParams;
@@ -111,7 +121,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return getOverridingDeployerCredentials() != null;
+        return StringUtils.isNotBlank(getDeployerCredentialsId());
     }
 
     public String getRepositoryKey() {
@@ -128,6 +138,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
+    }
+
+    public String getDeployerCredentialsId() {
+        return deployerCredentialsId;
     }
 
     public String getDeployPattern() {
@@ -276,8 +290,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
         //Resolve process
         ArtifactoryServer server = getArtifactoryResolverServer();
-        Credentials preferredResolver = CredentialResolver.getPreferredResolver(ArtifactoryGenericConfigurator.this,
-                                        server);
+        Credentials preferredResolver = CredentialManager.getPreferredResolver(ArtifactoryGenericConfigurator.this,
+                server);
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
                 preferredResolver.getUsername(), preferredResolver.getPassword(), proxyConfiguration,
                 listener);
@@ -308,7 +322,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 }
 
                 ArtifactoryServer server = getArtifactoryServer();
-                Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(ArtifactoryGenericConfigurator.this, server);
+                Credentials preferredDeployer = CredentialManager.getPreferredDeployer(ArtifactoryGenericConfigurator.this, server);
                 ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
                         preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
                 try {
@@ -365,11 +379,15 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public boolean isOverridingDefaultResolver() {
-        return (getOverridingResolverCredentials() != null);
+        return StringUtils.isNotBlank(getResolverCredentialsId());
     }
 
     public Credentials getOverridingResolverCredentials() {
         return overridingResolverCredentials;
+    }
+
+    public String getResolverCredentialsId() {
+        return resolverCredentialsId;
     }
 
     @Extension(optional = true)
@@ -396,19 +414,21 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
          * The Element that trig is the "Refresh Repositories" button.
          *
          * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+//         * @param credentialsUsername           override credentials user name
+//         * @param credentialsPassword           override credentials password
+//         * @param overridingDeployerCredentials user choose to override credentials
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId) {
             RefreshServerResponse response = new RefreshServerResponse();
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
+                    url, RepositoriesUtils.getArtifactoryServers()
+            );
 
             try {
-                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsId,
+                        artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
@@ -423,6 +443,16 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             }
 
             return response;
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillResolverCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
         }
 
         @Override

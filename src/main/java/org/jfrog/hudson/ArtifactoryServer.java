@@ -17,9 +17,7 @@
 package org.jfrog.hudson;
 
 import com.google.common.collect.Lists;
-import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.model.BuildListener;
-import hudson.util.Scrambler;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
@@ -29,10 +27,12 @@ import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
-import org.jfrog.hudson.util.CredentialResolver;
+import org.jfrog.hudson.util.CredentialManager;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.jfrog.hudson.util.RepositoriesUtils;
+import org.jfrog.hudson.util.converters.ArtifactoryServerConverter;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -55,10 +55,10 @@ public class ArtifactoryServer implements Serializable {
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;    // 5 Minutes
     private final String url;
     private final String id;
-    private final Credentials deployerCredentials;
+    private final String deployerCredentialsId;
+    private final String resolverCredentialsId;
     // Network timeout in seconds to use both for connection establishment and for unanswered requests
     private int timeout = DEFAULT_CONNECTION_TIMEOUT;
-    private Credentials resolverCredentials;
     private boolean bypassProxy;
 
     /**
@@ -77,13 +77,23 @@ public class ArtifactoryServer implements Serializable {
      */
     @Deprecated
     private transient String password;    // base64 scrambled password
+    /**
+     * @deprecated: Use org.jfrog.hudson.ArtifactoryServer#getDeployerCredentials()()
+     */
+    @Deprecated
+    private Credentials deployerCredentials;
+    /**
+     * @deprecated: Use org.jfrog.hudson.ArtifactoryServer#getResolverCredentials()
+     */
+    @Deprecated
+    private Credentials resolverCredentials;
 
     @DataBoundConstructor
-    public ArtifactoryServer(String serverId, String artifactoryUrl, Credentials deployerCredentials, Credentials resolverCredentials, int timeout,
-                             boolean bypassProxy) {
+    public ArtifactoryServer(String serverId, String artifactoryUrl, String deployerCredentialsId,
+                             String resolverCredentialsId, int timeout, boolean bypassProxy) {
         this.url = StringUtils.removeEnd(artifactoryUrl, "/");
-        this.deployerCredentials = deployerCredentials;
-        this.resolverCredentials = resolverCredentials;
+        this.deployerCredentialsId = deployerCredentialsId;
+        this.resolverCredentialsId = resolverCredentialsId;
         this.timeout = timeout > 0 ? timeout : DEFAULT_CONNECTION_TIMEOUT;
         this.bypassProxy = bypassProxy;
         this.id = serverId == null || serverId.isEmpty() ? artifactoryUrl.hashCode() + "@" + System.currentTimeMillis() : serverId;
@@ -98,11 +108,18 @@ public class ArtifactoryServer implements Serializable {
     }
 
     public Credentials getDeployerCredentials() {
-        return deployerCredentials;
+        return PluginsUtils.credentialsLookup(getDeployerCredentialsId());
+    }
+    public Credentials getResolverCredentials() {
+        return PluginsUtils.credentialsLookup(getResolverCredentialsId());
     }
 
-    public Credentials getResolverCredentials() {
-        return resolverCredentials;
+    public String getDeployerCredentialsId() {
+        return deployerCredentialsId;
+    }
+
+    public String getResolverCredentialsId() {
+        return resolverCredentialsId;
     }
 
     public int getTimeout() {
@@ -133,7 +150,7 @@ public class ArtifactoryServer implements Serializable {
     }
 
     public List<String> getReleaseRepositoryKeysFirst(DeployerOverrider deployerOverrider) {
-        Credentials credentials = CredentialResolver.getPreferredDeployer(deployerOverrider, this);
+        Credentials credentials = CredentialManager.getPreferredDeployer(deployerOverrider, this);
         List<String> repositoryKeys = getLocalRepositoryKeys(credentials);
         if (repositoryKeys == null || repositoryKeys.isEmpty()) {
             return Lists.newArrayList();
@@ -143,7 +160,7 @@ public class ArtifactoryServer implements Serializable {
     }
 
     public List<String> getSnapshotRepositoryKeysFirst(DeployerOverrider deployerOverrider) {
-        Credentials credentials = CredentialResolver.getPreferredDeployer(deployerOverrider, this);
+        Credentials credentials = CredentialManager.getPreferredDeployer(deployerOverrider, this);
         List<String> repositoryKeys = getLocalRepositoryKeys(credentials);
         if (repositoryKeys == null || repositoryKeys.isEmpty()) {
             return Lists.newArrayList();
@@ -165,7 +182,7 @@ public class ArtifactoryServer implements Serializable {
     }
 
     public List<VirtualRepository> getVirtualRepositoryKeys(ResolverOverrider resolverOverrider) {
-        Credentials credentials = CredentialResolver.getPreferredResolver(resolverOverrider, this);
+        Credentials credentials = CredentialManager.getPreferredResolver(resolverOverrider, this);
         ArtifactoryBuildInfoClient client = createArtifactoryClient(credentials.getUsername(),
                 credentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
@@ -181,14 +198,12 @@ public class ArtifactoryServer implements Serializable {
         } finally {
             client.shutdown();
         }
-//        virtualRepositories
-//                .add(0, new VirtualRepository("-- To use Artifactory for resolution select a virtual repository --",
-//                        ""));
+
         return virtualRepositories;
     }
 
     public boolean isArtifactoryPro(DeployerOverrider deployerOverrider) {
-        Credentials credentials = CredentialResolver.getPreferredDeployer(deployerOverrider, this);
+        Credentials credentials = CredentialManager.getPreferredDeployer(deployerOverrider, this);
         try {
             ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, credentials.getUsername(),
                     credentials.getPassword(), new NullLog());
@@ -281,7 +296,7 @@ public class ArtifactoryServer implements Serializable {
     }
 
     private void gatherUserPluginInfo(List<UserPluginInfo> infosToReturn, String pluginKey, DeployerOverrider deployerOverrider) {
-        Credentials credentials = CredentialResolver.getPreferredDeployer(deployerOverrider, this);
+        Credentials credentials = CredentialManager.getPreferredDeployer(deployerOverrider, this);
         ArtifactoryBuildInfoClient client = createArtifactoryClient(credentials.getUsername(),
                 credentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
@@ -318,20 +333,11 @@ public class ArtifactoryServer implements Serializable {
     }
 
     /**
-     * When upgrading from an older version, a user might have resolver credentials as local variables. This converter
-     * Will check for existing old resolver credentials and "move" them to a credentials object instead
+     * Page Converter
      */
-    public static final class ConverterImpl extends XStream2.PassthruConverter<ArtifactoryServer> {
-
+    public static final class ConverterImpl extends ArtifactoryServerConverter {
         public ConverterImpl(XStream2 xstream) {
             super(xstream);
-        }
-
-        @Override
-        protected void callback(ArtifactoryServer server, UnmarshallingContext context) {
-            if (StringUtils.isNotBlank(server.userName) && (server.resolverCredentials == null)) {
-                server.resolverCredentials = new Credentials(server.userName, Scrambler.descramble(server.password));
-            }
         }
     }
 }

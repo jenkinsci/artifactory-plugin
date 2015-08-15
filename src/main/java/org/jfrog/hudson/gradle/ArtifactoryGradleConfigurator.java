@@ -30,6 +30,7 @@ import hudson.plugins.gradle.Gradle;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -50,6 +51,7 @@ import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -73,8 +75,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     public final String remotePluginLocation;
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
-    private final Credentials overridingDeployerCredentials;
-    private final Credentials overridingResolverCredentials;
+    private final String deployerCredentialsId;
+    private final String resolverCredentialsId;
     private final boolean runChecks;
     private final String violationRecipients;
     private final boolean includePublishArtifacts;
@@ -120,15 +122,24 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
      */
     @Deprecated
     private transient String scrambledPassword;
+    /**
+     * @deprecated: Use org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator#getDeployerCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingDeployerCredentials;
+    /**
+     * @deprecated: Use org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator#getResolverCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingResolverCredentials;
 
     @DataBoundConstructor
     public ArtifactoryGradleConfigurator(ServerDetails details, ServerDetails resolverDetails,
-                                         Credentials overridingDeployerCredentials,
-                                         Credentials overridingResolverCredentials, boolean deployMaven,
-                                         boolean deployIvy, boolean deployArtifacts, String remotePluginLocation,
-                                         boolean includeEnvVars, IncludesExcludes envVarsPatterns,
-                                         boolean deployBuildInfo, boolean runChecks, String violationRecipients,
-                                         boolean includePublishArtifacts, String scopes,
+                                         String deployerCredentialsId, String resolverCredentialsId,
+                                         boolean deployMaven, boolean deployIvy, boolean deployArtifacts,
+                                         String remotePluginLocation, boolean includeEnvVars,
+                                         IncludesExcludes envVarsPatterns, boolean deployBuildInfo, boolean runChecks,
+                                         String violationRecipients, boolean includePublishArtifacts, String scopes,
                                          boolean disableLicenseAutoDiscovery, String ivyPattern, String artifactPattern,
                                          boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
                                          boolean discardOldBuilds, boolean passIdentifiedDownstream,
@@ -146,8 +157,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     {
         this.details = details;
         this.resolverDetails = resolverDetails;
-        this.overridingDeployerCredentials = overridingDeployerCredentials;
-        this.overridingResolverCredentials = overridingResolverCredentials;
+        this.deployerCredentialsId = deployerCredentialsId;
+        this.resolverCredentialsId = resolverCredentialsId;
         this.deployMaven = deployMaven;
         this.deployIvy = deployIvy;
         this.deployArtifacts = deployArtifacts;
@@ -221,11 +232,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return (getOverridingDeployerCredentials() != null);
+        return StringUtils.isNotBlank(getDeployerCredentialsId());
     }
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
+    }
+
+    public String getDeployerCredentialsId() {
+        return deployerCredentialsId;
     }
 
     public String getViolationRecipients() {
@@ -516,8 +531,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 ServerDetails resolverServerDetails = getResolverDetails();
                 ResolverContext resolverContext = null;
                 if (StringUtils.isNotBlank(resolverServerDetails.getResolveReleaseRepository().getRepoKey())) {
-                    Credentials resolverCredentials = CredentialResolver.getPreferredResolver(
-                                ArtifactoryGradleConfigurator.this, getArtifactoryServer());
+                    Credentials resolverCredentials = CredentialManager.getPreferredResolver(
+                            ArtifactoryGradleConfigurator.this, getArtifactoryServer());
                     resolverContext = new ResolverContext(getArtifactoryResolverServer(), resolverServerDetails,
                             resolverCredentials, ArtifactoryGradleConfigurator.this);
                 }
@@ -679,11 +694,15 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public boolean isOverridingDefaultResolver() {
-        return (getOverridingResolverCredentials() != null);
+        return (StringUtils.isNotBlank(getResolverCredentialsId()));
     }
 
     public Credentials getOverridingResolverCredentials() {
         return overridingResolverCredentials;
+    }
+
+    public String getResolverCredentialsId() {
+        return resolverCredentialsId;
     }
 
     public List<UserPluginInfo> getStagingUserPluginInfo() {
@@ -729,28 +748,33 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
-        private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+        private void refreshRepositories(ArtifactoryServer artifactoryServer, String credentialsId)
+                throws IOException {
+            List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(),
+                    credentialsId, artifactoryServer);
             Collections.sort(releaseRepositoryKeysFirst);
             releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsId)
+                throws IOException {
+            virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsId,
+                    artifactoryServer);
             Collections.sort(virtualRepositories);
         }
 
-        private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final String credentialsUsername, final String credentialsPassword, final boolean overridingDeployerCredentials) {
+        private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final String credentialsId) {
             List<UserPluginInfo> pluginInfoList = artifactoryServer.getStagingUserPluginInfo(new DeployerOverrider() {
                 public boolean isOverridingDefaultDeployer() {
-                    return overridingDeployerCredentials;
+                    return StringUtils.isNotBlank(credentialsId);
                 }
 
                 public Credentials getOverridingDeployerCredentials() {
-                    if (overridingDeployerCredentials && StringUtils.isNotBlank(credentialsUsername) && StringUtils.isNotBlank(credentialsPassword)) {
-                        return new Credentials(credentialsUsername, credentialsPassword);
-                    }
                     return null;
+                }
+
+                public String getDeployerCredentialsId() {
+                    return credentialsId;
                 }
             });
 
@@ -773,21 +797,21 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+         * @param url                     the artifactory url
+         * @param credentialsId           override credentials user name
          * @return {@link RefreshServerResponse} object that represents the response of the repositories
          */
+        @SuppressWarnings("unused")
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId) {
             RefreshServerResponse response = new RefreshServerResponse();
 
             try {
-                ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
-                refreshRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
-                refreshVirtualRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
-                refreshUserPlugins(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
+                        url, getArtifactoryServers());
+                refreshRepositories(artifactoryServer, credentialsId);
+                refreshVirtualRepositories(artifactoryServer, credentialsId);
+                refreshUserPlugins(artifactoryServer, credentialsId);
 
                 response.setRepositories(releaseRepositories);
                 response.setVirtualRepositories(virtualRepositories);
@@ -799,6 +823,16 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 response.setSuccess(false);
             }
             return response;
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillResolverCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
         }
 
         @Override
