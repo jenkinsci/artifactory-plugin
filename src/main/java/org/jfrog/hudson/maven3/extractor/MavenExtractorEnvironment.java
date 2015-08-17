@@ -206,6 +206,7 @@ public class MavenExtractorEnvironment extends Environment {
                         publisher.isAutoCreateMissingComponentRequests(),
                         publisher.isAutoDiscardStaleComponentRequests())
                 .filterExcludedArtifactsFromBuild(publisher.isFilterExcludedArtifactsFromBuild())
+                .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
                 .build();
 
         return context;

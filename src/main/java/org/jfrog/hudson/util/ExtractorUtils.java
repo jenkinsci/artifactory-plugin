@@ -153,6 +153,8 @@ public class ExtractorUtils {
                     publisherContext.getAggregationBuildStatus()).setIssueTrackerInfo(configuration);
         }
 
+        publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
+
         IncludesExcludes envVarsPatterns = new IncludesExcludes("", "");
         if (publisherContext != null && publisherContext.getEnvVarsPatterns() != null) {
             envVarsPatterns = publisherContext.getEnvVarsPatterns();
@@ -222,6 +224,7 @@ public class ExtractorUtils {
         String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
         configuration.info.setBuildNumber(buildNumber);
         configuration.publisher.addMatrixParam("build.number", buildNumber);
+        configuration.info.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
         Date buildStartDate = build.getTimestamp().getTime();
         configuration.info.setBuildStarted(buildStartDate.getTime());

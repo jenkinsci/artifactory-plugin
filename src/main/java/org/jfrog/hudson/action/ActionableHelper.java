@@ -25,6 +25,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
 import hudson.util.DescribableList;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.util.publisher.PublisherFindImpl;
 import org.jfrog.hudson.util.publisher.PublisherFlexible;
@@ -184,5 +185,20 @@ public abstract class ActionableHelper {
             return Collections.emptyList();
 
         return Lists.newArrayList(new ArtifactoryProjectAction(artifactoryRootUrl, project));
+    }
+
+    /**
+     * Returns the version of Jenkins Artifactory Plugin or empty string if not found
+     * @return the version of Jenkins Artifactory Plugin or empty string if not found
+     */
+    public static String getArtifactoryPluginVersion(){
+        String pluginsSortName = "artifactory";
+        //Validates Jenkins existence because in some jobs the Jenkins instance is unreachable
+        if(Jenkins.getInstance() != null
+                && Jenkins.getInstance().getPlugin(pluginsSortName) != null
+                && Jenkins.getInstance().getPlugin(pluginsSortName).getWrapper() != null) {
+            return Jenkins.getInstance().getPlugin(pluginsSortName).getWrapper().getVersion();
+        }
+        return "";
     }
 }

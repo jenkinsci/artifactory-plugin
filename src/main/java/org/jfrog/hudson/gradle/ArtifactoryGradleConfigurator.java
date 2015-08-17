@@ -58,6 +58,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -425,6 +426,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
+        final PrintStream log = listener.getLogger();
+        log.println( "Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         PublisherContext.Builder publisherBuilder = getBuilder();
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
 
@@ -436,7 +439,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             if (isDeployArtifacts()) {
                 if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {
                     String error = "The field \"Combination Matches\" is empty, but is defined as mandatory!";
-                    listener.getLogger().println(error);
+                    log.println(error);
                     build.setResult(Result.FAILURE);
                     throw new IllegalArgumentException(error);
                 }
@@ -490,7 +493,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 }
             };
         } else {
-            listener.getLogger().println("[Warning] No Gradle build configured");
+            log.println("[Warning] No Gradle build configured");
         }
 
         final PublisherContext.Builder finalPublisherBuilder = publisherBuilder;
@@ -511,7 +514,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     env.put("ARTIFACTORY_INIT_SCRIPT", " --init-script " + initScriptPath);
 
                 } catch (Exception e) {
-                    listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
+                    log.println("Error occurred while writing Gradle Init Script: " + e.getMessage());
                     build.setResult(Result.FAILURE);
                 }
 
@@ -541,7 +544,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     ExtractorUtils.addBuilderInfoArguments(env, build, listener, finalPublisherBuilder.build(),
                             resolverContext);
                 } catch (Exception e) {
-                    listener.getLogger().println(e.getMessage());
+                    log.println(e.getMessage());
                     throw new RuntimeException(e);
                 }
             }
@@ -645,7 +648,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         getBlackDuckReportRecipients(), getBlackDuckScopes(),
                         isBlackDuckIncludePublishedArtifacts(), isAutoCreateMissingComponentRequests(),
                         isAutoDiscardStaleComponentRequests())
-                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
+                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
+                .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
     }
 
     public boolean isRelease(AbstractBuild build) {

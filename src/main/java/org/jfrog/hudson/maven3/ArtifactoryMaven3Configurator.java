@@ -444,7 +444,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
-                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
+                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
+                .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
         if (isMultiConfProject(build) && isDeployArtifacts()) {
             if (StringUtils.isBlank(getArtifactoryCombinationFilter())) {

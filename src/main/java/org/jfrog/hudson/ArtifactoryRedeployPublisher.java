@@ -41,6 +41,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
@@ -356,6 +357,14 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
+
+        //This step runs in maven2 and in maven3 builds, in maven 3 the plugin version printed to the log earlier
+        //so this line should be printed only in case of Maven 2
+        if (isM2Build(build)) {
+            listener.getLogger().println("Jenkins Artifactory Plugin version: " +
+                    ActionableHelper.getArtifactoryPluginVersion());
+        }
+
         if (build.getResult().isWorseThan(getTreshold())) {
             return true;    // build failed. Don't publish
         }
@@ -438,6 +447,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 return "org.jvnet.hudson.plugins.m2release.ReleaseCause".equals(input.getClass().getName());
             }
         });
+    }
+
+    private boolean isM2Build (AbstractBuild<?, ?> build) {
+        if(build.getClass().getName().contains("MavenModuleSetBuild")
+                && ((MavenModuleSetBuild) build).getMavenVersionUsed().startsWith("2")) return true;
+        return false;
     }
 
     private boolean isExtractorUsed(EnvVars env) {

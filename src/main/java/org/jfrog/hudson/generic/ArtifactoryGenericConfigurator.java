@@ -271,6 +271,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
+        listener.getLogger().println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
 
         final String artifactoryServerName = getArtifactoryName();

@@ -64,6 +64,7 @@ public class PublisherContext {
     private boolean autoDiscardStaleComponentRequests;
     private boolean filterExcludedArtifactsFromBuild;
     private boolean recordAllDependencies;
+    private String artifactoryPluginVersion;
 
     private PublisherContext() {
     }
@@ -214,6 +215,14 @@ public class PublisherContext {
 
     public boolean isFilterExcludedArtifactsFromBuild() {
         return filterExcludedArtifactsFromBuild;
+    }
+
+    public String getArtifactoryPluginVersion() {
+        return artifactoryPluginVersion;
+    }
+
+    public void setArtifactoryPluginVersion(String artifactoryPluginVersion) {
+        this.artifactoryPluginVersion = artifactoryPluginVersion;
     }
 
     public static class Builder {
@@ -376,6 +385,11 @@ public class PublisherContext {
 
         public Builder filterExcludedArtifactsFromBuild(boolean filterExcludedArtifactsFromBuild) {
             publisher.filterExcludedArtifactsFromBuild = filterExcludedArtifactsFromBuild;
+            return this;
+        }
+
+        public Builder artifactoryPluginVersion(String artifactoryPluginVersion){
+            publisher.artifactoryPluginVersion = artifactoryPluginVersion;
             return this;
         }
     }

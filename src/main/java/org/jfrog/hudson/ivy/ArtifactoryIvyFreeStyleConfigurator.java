@@ -346,6 +346,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
+        listener.getLogger().println(
+                "Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         PublisherContext.Builder publisherBuilder = getBuilder();
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
         final String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
@@ -495,7 +497,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
-                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild());
+                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
+                .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
     }
 
     public ArtifactoryServer getArtifactoryServer() {

@@ -15,6 +15,7 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.VirtualRepository;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.AncestorInPath;
@@ -23,6 +24,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -91,11 +93,13 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             };
         }
 
+        PrintStream log = listener.getLogger();
+        log.println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         EnvVars envVars = build.getEnvironment(listener);
         boolean supportedMavenVersion =
                 MavenVersionHelper.isAtLeastResolutionCapableVersion((MavenModuleSetBuild) build, envVars, listener);
         if (!supportedMavenVersion) {
-            listener.getLogger().println("Artifactory resolution is not active. Maven 3.0.2 or higher is required to " +
+            log.println("Artifactory resolution is not active. Maven 3.0.2 or higher is required to " +
                     "force resolution from Artifactory.");
             return new Environment() {
             };
