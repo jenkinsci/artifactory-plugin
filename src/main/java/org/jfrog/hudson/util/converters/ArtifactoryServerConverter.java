@@ -17,13 +17,15 @@ import org.jfrog.hudson.util.Credentials;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Lior Hasson
  */
 public class ArtifactoryServerConverter extends XStream2.PassthruConverter<ArtifactoryServer>{
-    List<String> converterErrors = Lists.newArrayList();
+    Logger logger = Logger.getLogger(ArtifactoryServerConverter.class.getName());
+    List < String > converterErrors = Lists.newArrayList();
     public ArtifactoryServerConverter(XStream2 xstream) {
         super(xstream);
     }
@@ -34,7 +36,7 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
         credentialsMigration(server);
 
         if(!converterErrors.isEmpty()){
-//            throw new RuntimeException(converterErrors.toString());
+            logger.info(converterErrors.toString());
         }
     }
 

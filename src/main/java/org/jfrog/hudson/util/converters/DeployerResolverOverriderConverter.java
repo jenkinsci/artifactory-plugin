@@ -34,6 +34,7 @@ import org.jfrog.hudson.util.Credentials;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * General converter for BuildWrapper or Publisher
@@ -43,8 +44,8 @@ import java.util.List;
  */
 public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         extends XStream2.PassthruConverter<T> {
-
-    List<String> converterErrors = Lists.newArrayList();
+        Logger logger = Logger.getLogger(DeployerResolverOverriderConverter.class.getName());
+        List < String > converterErrors = Lists.newArrayList();
 
     public DeployerResolverOverriderConverter(XStream2 xstream) {
         super(xstream);
@@ -58,7 +59,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         credentialsMigration(overrider, overriderClass);
 
         if(!converterErrors.isEmpty()){
-//            throw new RuntimeException(converterErrors.toString());
+            logger.info(converterErrors.toString());
         }
     }
 

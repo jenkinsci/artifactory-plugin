@@ -11,12 +11,14 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Lior Hasson
  */
 public class ServerDetailsConverter extends XStream2.PassthruConverter<ServerDetails> {
+    Logger logger = Logger.getLogger(ServerDetailsConverter.class.getName());
     List<String> converterErrors = Lists.newArrayList();
     // mapping of the old ServerDetails field to the corresponding new field
     private static final Map<String, String> newToOldFields;
@@ -88,7 +90,7 @@ public class ServerDetailsConverter extends XStream2.PassthruConverter<ServerDet
         convertToDynamicReposSelection(server);
 
         if(!converterErrors.isEmpty()){
-//            throw new RuntimeException(converterErrors.toString());
+            logger.info(converterErrors.toString());
         }
     }
 
