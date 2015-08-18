@@ -284,11 +284,11 @@ public class ArtifactoryServer implements Serializable {
      * @return Preferred credentials for repo resolving. Never null.
      */
     public Credentials getResolvingCredentials() {
-        if (getResolverCredentials() != null) {
+        if (StringUtils.isNotBlank(getResolverCredentialsId())) {
             return getResolverCredentials();
         }
 
-        if (getDeployerCredentials() != null) {
+        if (StringUtils.isNotBlank(getDeployerCredentialsId())) {
             return getDeployerCredentials();
         }
 
