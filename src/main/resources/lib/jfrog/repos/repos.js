@@ -498,11 +498,11 @@ function swapHiddenValue(txt, select, button) {
     if (txt.style.display == '') {
         txt.style.display = 'none';
         select.style.display = '';
-        button.firstChild.firstChild.innerHTML = "Set a different value";
+        button.firstChild.firstChild.innerHTML = "Different Value";
     } else {
         select.style.display = 'none';
         txt.style.display = '';
-        button.firstChild.firstChild.innerHTML = "Click to select from list";
+        button.firstChild.firstChild.innerHTML = "Select from List";
     }
 }
 
@@ -522,9 +522,9 @@ function initTextAndSelectOnLoad(label, txtValue, selectValue) {
         select.style.display = selectValue;
         if (button != undefined) {
             if (txtValue == '') {
-                button.value = "Click to select from list";
+                button.value = "Select from List";
             } else {
-                button.value = "Set a different value";
+                button.value = "Different Value";
             }
         }
     }

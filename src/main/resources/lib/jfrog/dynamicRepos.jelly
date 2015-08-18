@@ -56,7 +56,7 @@
                         </j:forEach>
                     </select>
                     <input
-                            class="yui-button validate-button inline-float-button" type="button" id="btn_${id}"
+                            class="yui-button validate-button" type="button" id="btn_${id}"
                             onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
                 </j:when>
                 <j:otherwise>
@@ -67,8 +67,8 @@
                             id="select_${id}" name="keyFromSelect">
                     </select>
                     <input
-                            class="yui-button validate-button inline-float-button" type="button" id="btn_${id}"
-                            value="Set a different value"
+                            class="yui-button validate-button" type="button" id="btn_${id}"
+                            value="Different Value"
                             onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
                 </j:otherwise>
             </j:choose>

@@ -450,9 +450,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     private boolean isM2Build (AbstractBuild<?, ?> build) {
-        if(build.getClass().getName().contains("MavenModuleSetBuild")
-                && ((MavenModuleSetBuild) build).getMavenVersionUsed().startsWith("2")) return true;
-        return false;
+        return build.getClass().getName().contains("MavenModuleSetBuild")
+                && ((MavenModuleSetBuild)build).getMavenVersionUsed().startsWith("2");
     }
 
     private boolean isExtractorUsed(EnvVars env) {
