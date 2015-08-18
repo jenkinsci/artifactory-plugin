@@ -28,6 +28,7 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.util.Credentials;
 
 import java.io.IOException;
@@ -57,7 +58,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         credentialsMigration(overrider, overriderClass);
 
         if(!converterErrors.isEmpty()){
-            throw new RuntimeException(converterErrors.toString());
+//            throw new RuntimeException(converterErrors.toString());
         }
     }
 
@@ -182,25 +183,25 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
     /**
      * Convert the (ServerDetails)details to (ServerDetails)resolverDetails if it doesn't exists already
      */
-    private void overrideResolverDetails(T resolverOverrider, Class<? extends DeployerOverrider> overriderClass) {
+    private void overrideResolverDetails(T overrider, Class<? extends DeployerOverrider> overriderClass) {
+        if(overrider instanceof ResolverOverrider) {
+            try {
+                Field resolverDetailsField = overriderClass.getDeclaredField("resolverDetails");
+                resolverDetailsField.setAccessible(true);
+                Object resolverDetails = resolverDetailsField.get(overrider);
 
-        try{
-            Field resolverDetailsField = overriderClass.getDeclaredField("resolverDetails");
-            resolverDetailsField.setAccessible(true);
-            Object resolverDetails = resolverDetailsField.get(resolverOverrider);
+                if (resolverDetails == null) {
+                    Field deployerDetailsField = overriderClass.getDeclaredField("details");
+                    deployerDetailsField.setAccessible(true);
+                    Object deployerDetails = deployerDetailsField.get(overrider);
 
-            if (resolverDetails == null) {
-                Field deployerDetailsField = overriderClass.getDeclaredField("details");
-                deployerDetailsField.setAccessible(true);
-                Object deployerDetails = deployerDetailsField.get(resolverOverrider);
-
-                resolverDetailsField.set(resolverOverrider, deployerDetails);
+                    resolverDetailsField.set(overrider, deployerDetails);
+                }
+            } catch (NoSuchFieldException e) {
+                converterErrors.add(getConversionErrorMessage(overrider, e));
+            } catch (IllegalAccessException e) {
+                converterErrors.add(getConversionErrorMessage(overrider, e));
             }
-        }
-        catch (NoSuchFieldException e) {
-            converterErrors.add(getConversionErrorMessage(resolverOverrider, e));
-        } catch (IllegalAccessException e) {
-            converterErrors.add(getConversionErrorMessage(resolverOverrider, e));
         }
     }
 

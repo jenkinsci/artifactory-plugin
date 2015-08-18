@@ -88,7 +88,7 @@ public class ServerDetailsConverter extends XStream2.PassthruConverter<ServerDet
         convertToDynamicReposSelection(server);
 
         if(!converterErrors.isEmpty()){
-            throw new RuntimeException(converterErrors.toString());
+//            throw new RuntimeException(converterErrors.toString());
         }
     }
 

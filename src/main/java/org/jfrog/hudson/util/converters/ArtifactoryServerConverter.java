@@ -34,7 +34,7 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
         credentialsMigration(server);
 
         if(!converterErrors.isEmpty()){
-            throw new RuntimeException(converterErrors.toString());
+//            throw new RuntimeException(converterErrors.toString());
         }
     }
 
