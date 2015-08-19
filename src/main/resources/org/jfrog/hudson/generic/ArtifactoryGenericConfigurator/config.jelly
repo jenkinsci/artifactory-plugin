@@ -39,6 +39,14 @@ xmlns:c="/lib/credentials">
                 </f:entry>
             </table>
         </f:block>
+        <f:block>
+            <table style="width:100%">
+                <f:entry title="Published Artifacts" field="deployPattern"
+                         help="/plugin/artifactory/help/common/help-deployPattern.html">
+                    <f:textarea value="${instance.deployPattern}"/>
+                </f:entry>
+            </table>
+        </f:block>
     </f:section>
     <f:section title="Resolution Details">
         <f:dropdownList name="resolverDetails" title="${%Artifactory resolver server}">

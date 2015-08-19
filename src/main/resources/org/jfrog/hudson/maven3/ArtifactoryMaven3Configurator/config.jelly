@@ -120,29 +120,6 @@
                             </f:entry>
                         </table>
                     </f:block>
-
-                    <f:block>
-                        <table style="width:100%" id="overridingResolverCredentials-maven3">
-                            <j:set var="overridingResolverCredentials"
-                                   value="${instance.overridingResolverCredentials}"/>
-                            <f:optionalBlock name="overridingResolverCredentials"
-                                             checked="${overridingResolverCredentials != null}"
-                                             title="Override default resolution credentials"
-                                             help="/plugin/artifactory/help/common/help-overridingResolverCredentials.html">
-                                <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-                                <f:entry title="User Name"
-                                         help="/plugin/artifactory/help/common/help-resolverUserName.html"
-                                         field="username">
-                                    <f:textbox value="${overridingResolverCredentials.username}"/>
-                                </f:entry>
-                                <f:entry title="Password" field="password"
-                                         help="/plugin/artifactory/help/common/help-deployerPassword.html">
-                                    <f:password value="${overridingResolverCredentials.password}"/>
-                                </f:entry>
-                            </f:optionalBlock>
-                        </table>
-                    </f:block>
-
                 </f:optionalBlock>
             </table>
         </f:block>

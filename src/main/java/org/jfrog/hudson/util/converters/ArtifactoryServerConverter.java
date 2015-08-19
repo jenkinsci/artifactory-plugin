@@ -96,26 +96,25 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
             String password = ((Credentials) deployerCredentials).getPassword();
 
             if (StringUtils.isNotBlank(userName)) {
+                String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":deployer";
                 UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                        CredentialsScope.GLOBAL, null, "Migrated from Artifactory plugin", userName, password
+                        CredentialsScope.GLOBAL, credentialId,
+                        "Migrated from Artifactory plugin ("+ server.getUrl() +")", userName, password
                 );
 
-                if (store.addCredentials(Domain.global(), usernamePasswordCredentials)) {
-                    int credentialsIndex = store.getCredentials(
-                            Domain.global()).lastIndexOf(usernamePasswordCredentials);
-                    String newCredentialsId = ((UsernamePasswordCredentialsImpl) store.getCredentials(
-                            Domain.global()).get(credentialsIndex)).getId();
-
-
-                    Field deployerCredentialsIdField = overriderClass.getDeclaredField("deployerCredentialsId");
-                    deployerCredentialsIdField.setAccessible(true);
-                    deployerCredentialsIdField.set(server, newCredentialsId);
+                if(!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
+                    store.addCredentials(Domain.global(), usernamePasswordCredentials);
                 }
+
+                Field deployerCredentialsIdField = overriderClass.getDeclaredField("deployerCredentialsId");
+                deployerCredentialsIdField.setAccessible(true);
+                deployerCredentialsIdField.set(server, credentialId);
             }
         }
     }
 
-    private void resolverMigration(ArtifactoryServer server) throws NoSuchFieldException, IllegalAccessException, IOException {
+    private void resolverMigration(ArtifactoryServer server)
+            throws NoSuchFieldException, IllegalAccessException, IOException {
         Class<? extends ArtifactoryServer> overriderClass = server.getClass();
         Field resolverCredentialsField = overriderClass.getDeclaredField("resolverCredentials");
         resolverCredentialsField.setAccessible(true);
@@ -127,21 +126,19 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
             String password = ((Credentials) resolverCredentials).getPassword();
 
             if (StringUtils.isNotBlank(userName)) {
+                String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":resolver";
                 UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                        CredentialsScope.GLOBAL, null, "Migrated from Artifactory plugin.", userName, password
+                        CredentialsScope.GLOBAL, credentialId, "Migrated from Artifactory plugin ("+ server.getUrl() +")",
+                        userName, password
                 );
 
-                if (store.addCredentials(Domain.global(), usernamePasswordCredentials)) {
-                    int credentialsIndex = store.getCredentials(
-                            Domain.global()).lastIndexOf(usernamePasswordCredentials);
-                    String newCredentialsId = ((UsernamePasswordCredentialsImpl) store.getCredentials(
-                            Domain.global()).get(credentialsIndex)).getId();
-
-
-                    Field deployerCredentialsIdField = overriderClass.getDeclaredField("resolverCredentialsId");
-                    deployerCredentialsIdField.setAccessible(true);
-                    deployerCredentialsIdField.set(server, newCredentialsId);
+                if(!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
+                    store.addCredentials(Domain.global(), usernamePasswordCredentials);
                 }
+
+                Field deployerCredentialsIdField = overriderClass.getDeclaredField("resolverCredentialsId");
+                deployerCredentialsIdField.setAccessible(true);
+                deployerCredentialsIdField.set(server, credentialId);
             }
         }
     }

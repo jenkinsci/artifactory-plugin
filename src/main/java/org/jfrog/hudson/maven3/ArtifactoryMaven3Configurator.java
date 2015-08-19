@@ -52,7 +52,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Freestyle Maven 3 configurator. Currently for publishing only.
+ * Freestyle Maven 3 configurator.
  *
  * @author Noam Y. Tenne
  */

@@ -132,50 +132,51 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
             String password = ((Credentials) overridingDeployerCredentials).getPassword();
 
             if (StringUtils.isNotBlank(userName)) {
+                String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":deployer";
                 UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                        CredentialsScope.GLOBAL, null, "Migrated from Artifactory plugin.", userName, password
+                        CredentialsScope.GLOBAL, credentialId,
+                        "Migrated from Artifactory plugin Job: " + overrider.getClass().getSimpleName() + " (deployer)",
+                        userName, password
                 );
 
-                if (store.addCredentials(Domain.global(), usernamePasswordCredentials)) {
-                    int credentialsIndex = store.getCredentials(
-                            Domain.global()).lastIndexOf(usernamePasswordCredentials);
-                    String newCredentialsId = ((UsernamePasswordCredentialsImpl) store.getCredentials(
-                            Domain.global()).get(credentialsIndex)).getId();
-
-
-                    Field deployerCredentialsIdField = overriderClass.getDeclaredField("deployerCredentialsId");
-                    deployerCredentialsIdField.setAccessible(true);
-                    deployerCredentialsIdField.set(overrider, newCredentialsId);
+                if(!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)){
+                    store.addCredentials(Domain.global(), usernamePasswordCredentials);
                 }
+
+                Field deployerCredentialsIdField = overriderClass.getDeclaredField("deployerCredentialsId");
+                deployerCredentialsIdField.setAccessible(true);
+                deployerCredentialsIdField.set(overrider, credentialId);
             }
         }
     }
 
-    private void resolverMigration(T server, Class<? extends DeployerOverrider> overriderClass) throws NoSuchFieldException, IllegalAccessException, IOException {
-        Field resolverCredentialsField = overriderClass.getDeclaredField("resolverCredentials");
-        resolverCredentialsField.setAccessible(true);
-        Object resolverCredentials = resolverCredentialsField.get(server);
+    private void resolverMigration(T overrider, Class<? extends DeployerOverrider> overriderClass)
+            throws NoSuchFieldException, IllegalAccessException, IOException {
+        if(overrider instanceof ResolverOverrider) {
+            Field resolverCredentialsField = overriderClass.getDeclaredField("overridingResolverCredentials");
+            resolverCredentialsField.setAccessible(true);
+            Object resolverCredentials = resolverCredentialsField.get(overrider);
 
-        if (resolverCredentials != null) {
-            CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
-            String userName = ((Credentials) resolverCredentials).getUsername();
-            String password = ((Credentials) resolverCredentials).getPassword();
+            if (resolverCredentials != null) {
+                CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
+                String userName = ((Credentials) resolverCredentials).getUsername();
+                String password = ((Credentials) resolverCredentials).getPassword();
 
-            if (StringUtils.isNotBlank(userName)) {
-                UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                        CredentialsScope.GLOBAL, null, "Migrated from Artifactory plugin", userName, password
-                );
+                if (StringUtils.isNotBlank(userName)) {
+                    String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":resolver";
+                    UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
+                        CredentialsScope.GLOBAL, credentialId,
+                        "Migrated from Artifactory plugin Job: " + overrider.getClass().getSimpleName() + " (resolver)",
+                        userName, password
+                    );
 
-                if (store.addCredentials(Domain.global(), usernamePasswordCredentials)) {
-                    int credentialsIndex = store.getCredentials(
-                            Domain.global()).lastIndexOf(usernamePasswordCredentials);
-                    String newCredentialsId = ((UsernamePasswordCredentialsImpl) store.getCredentials(
-                            Domain.global()).get(credentialsIndex)).getId();
-
+                    if(!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
+                        store.addCredentials(Domain.global(), usernamePasswordCredentials);
+                    }
 
                     Field deployerCredentialsIdField = overriderClass.getDeclaredField("resolverCredentialsId");
                     deployerCredentialsIdField.setAccessible(true);
-                    deployerCredentialsIdField.set(server, newCredentialsId);
+                    deployerCredentialsIdField.set(overrider, credentialId);
                 }
             }
         }
