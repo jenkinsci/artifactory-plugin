@@ -174,8 +174,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         getACL().checkPermission(getPermission());
 
-        req.bindParameters(this);
-
+        bindParameters(req);
         // current user is bound to the thread and will be lost in the perform method
         User user = User.current();
         String ciUser = (user == null) ? "anonymous" : user.getId();
@@ -213,6 +212,16 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         new PromoteWorkerThread(server, CredentialManager.getPreferredDeployer(configurator, server), ciUser).start();
 
         resp.sendRedirect(".");
+    }
+
+    private void bindParameters(StaplerRequest req) throws ServletException {
+        req.bindParameters(this);
+        JSONObject formData = req.getSubmittedForm();
+        JSONObject pluginSettings = formData.getJSONObject("promotionPlugin");
+        // StaplerRequest.bindParameters doesn't work well with jelly <f:checkbox> element,
+        // so we set the "boolean" fields manually
+        this.setIncludeDependencies(pluginSettings.getBoolean("includeDependencies"));
+        this.setUseCopy(pluginSettings.getBoolean("useCopy"));
     }
 
     public List<UserPluginInfo> getPromotionsUserPluginInfo() {
