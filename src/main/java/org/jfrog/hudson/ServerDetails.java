@@ -109,6 +109,10 @@ public class ServerDetails {
                 resolveSnapshotRepository, null, null);
     }
 
+    public String getArtifactoryName() {
+        return artifactoryName;
+    }
+
     public RepositoryConf getDeployReleaseRepository() {
         return deployReleaseRepository;
     }

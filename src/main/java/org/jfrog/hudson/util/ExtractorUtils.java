@@ -177,7 +177,7 @@ public class ExtractorUtils {
     private static void setResolverInfo(ArtifactoryClientConfiguration configuration, AbstractBuild build,
                                         ResolverContext context, Map<String, String> env) {
         configuration.setTimeout(context.getServer().getTimeout());
-        configuration.resolver.setContextUrl(context.getServer().getUrl());
+        configuration.resolver.setContextUrl(context.getServerDetails().getArtifactoryUrl());
         String inputDownloadReleaseKey = context.getServerDetails().getResolveReleaseRepository().getRepoKey();
         String inputDownloadSnapshotKey = context.getServerDetails().getResolveSnapshotRepository().getRepoKey();
         // These input variables might be a variable that should be replaced with it's value
@@ -279,7 +279,7 @@ public class ExtractorUtils {
             configuration.publisher.setPassword(preferredDeployer.getPassword());
         }
         configuration.setTimeout(artifactoryServer.getTimeout());
-        configuration.publisher.setContextUrl(artifactoryServer.getUrl());
+        configuration.publisher.setContextUrl(context.getServerDetails().getArtifactoryUrl());
 
         ServerDetails serverDetails = context.getServerDetails();
         if (serverDetails != null) {

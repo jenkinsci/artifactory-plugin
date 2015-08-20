@@ -51,7 +51,8 @@ xmlns:c="/lib/credentials">
     <f:section title="Resolution Details">
         <f:dropdownList name="resolverDetails" title="${%Artifactory resolver server}">
             <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
-                <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
+                <f:dropdownListBlock value="${s.name}" title="${s.url}"
+                                     selected="${s.name==instance.resolverDetails.artifactoryName}">
                     <f:nested>
                         <input type="hidden" name="artifactoryName" value="${s.name}"/>
                         <input type="hidden" name="artifactoryUrl" id="artifactoryUrlResolve${s.url}" value="${s.url}"/>
