@@ -26,7 +26,7 @@
                         <f:block>
                             <table>
                                 <f:entry title="${%Credentials}" field="resolverCredentialsId">
-                                    <c:select/>
+                                    <c:select default="${server.resolverCredentialsId}"/>
                                 </f:entry>
                             </table>
                         </f:block>
