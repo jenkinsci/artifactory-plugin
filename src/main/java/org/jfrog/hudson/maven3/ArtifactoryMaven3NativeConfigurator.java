@@ -44,12 +44,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
      */
     @Deprecated
     private Credentials overridingResolverCredentials;
-    private final String deployerCredentialsId;
+    private final String resolverCredentialsId;
 
     @DataBoundConstructor
-    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, String deployerCredentialsId) {
+    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, String resolverCredentialsId) {
         this.details = details;
-        this.deployerCredentialsId = deployerCredentialsId;
+        this.resolverCredentialsId = resolverCredentialsId;
     }
 
     public ServerDetails getDetails() {
@@ -82,7 +82,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public String getResolverCredentialsId() {
-        return deployerCredentialsId;
+        return resolverCredentialsId;
     }
 
     @Override
