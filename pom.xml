@@ -30,10 +30,10 @@
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
     <properties>
-        <buildinfo.version>2.5.x-SNAPSHOT</buildinfo.version>
-        <buildinfo.maven3.version>2.5.x-SNAPSHOT</buildinfo.maven3.version>
-        <buildinfo.gradle.version>3.1.x-SNAPSHOT</buildinfo.gradle.version>
-        <buildinfo.ivy.version>2.5.x-SNAPSHOT</buildinfo.ivy.version>
+        <buildinfo.version>2.5.3</buildinfo.version>
+        <buildinfo.maven3.version>2.5.2</buildinfo.maven3.version>
+        <buildinfo.gradle.version>3.1.2</buildinfo.gradle.version>
+        <buildinfo.ivy.version>2.5.2</buildinfo.ivy.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
     </properties>
 
