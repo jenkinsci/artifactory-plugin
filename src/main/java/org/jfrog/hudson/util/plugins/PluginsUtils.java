@@ -7,8 +7,9 @@ import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
+import org.acegisecurity.Authentication;
 import org.jfrog.hudson.util.Credentials;
-import org.kohsuke.stapler.AncestorInPath;
 
 import java.util.Collections;
 import java.util.List;
@@ -16,12 +17,16 @@ import java.util.List;
 public class PluginsUtils {
     public static final String MULTIJOB_PLUGIN_ID = "jenkins-multijob-plugin";
 
-    public static ListBoxModel fillPluginCredentials(@AncestorInPath Item project) {
+    public static ListBoxModel fillPluginCredentials(Item project){
+        return fillPluginCredentials(project, Jenkins.getAuthentication());
+    }
+
+    public static ListBoxModel fillPluginCredentials(Item project, Authentication authentication) {
         if (project != null && !project.hasPermission(Item.CONFIGURE)) {
             return new StandardListBoxModel();
         }
         List<DomainRequirement> domainRequirements = Collections.emptyList();
-
+        //((DeployerOverrider)((FreeStyleProject) project).buildWrappers.get(0)).getDeployerCredentialsId()
         return new StandardListBoxModel()
                 .withEmptySelection()
                 .withMatching(
@@ -31,7 +36,7 @@ public class PluginsUtils {
                         ),
                         CredentialsProvider.lookupCredentials(StandardCredentials.class,
                                 project,
-                                ACL.SYSTEM,
+                                authentication,
                                 domainRequirements)
                 );
     }

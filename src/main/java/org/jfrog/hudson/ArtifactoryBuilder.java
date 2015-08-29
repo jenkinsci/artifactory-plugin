@@ -19,6 +19,7 @@ package org.jfrog.hudson;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Item;
+import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.GlobalConfiguration;
@@ -66,12 +67,12 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
 
         @SuppressWarnings("unused")
         public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
-            return PluginsUtils.fillPluginCredentials(project);
+            return PluginsUtils.fillPluginCredentials(project, ACL.SYSTEM);
         }
 
         @SuppressWarnings("unused")
         public ListBoxModel doFillResolverCredentialsIdItems(@AncestorInPath Item project) {
-            return PluginsUtils.fillPluginCredentials(project);
+            return PluginsUtils.fillPluginCredentials(project, ACL.SYSTEM);
         }
 
         /**
