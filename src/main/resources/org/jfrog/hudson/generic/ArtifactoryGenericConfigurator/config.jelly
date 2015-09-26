@@ -45,6 +45,10 @@ xmlns:c="/lib/credentials">
                          help="/plugin/artifactory/help/common/help-deployPattern.html">
                     <f:textarea value="${instance.deployPattern}"/>
                 </f:entry>
+                <f:entry title="Deployment properties" field="matrixParams"
+                         help="/plugin/artifactory/help/common/help-matrixParams.html">
+                    <f:textbox value="${instance.matrixParams}"/>
+                </f:entry>
             </table>
         </f:block>
     </f:section>
