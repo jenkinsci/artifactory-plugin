@@ -60,16 +60,16 @@ public abstract class RepositoriesUtils {
         return virtualRepositories;
     }
 
-    public static List<VirtualRepository> getVirtualRepositoryKeys(String url, String credentialsId,
+    public static List<VirtualRepository> getVirtualRepositoryKeys(String url, CredentialsConfig credentialsConfig,
                                                                    ArtifactoryServer artifactoryServer)
             throws IOException {
         List<VirtualRepository> virtualRepositories;
-        Credentials preferredResolver = CredentialManager.getPreferredResolver(credentialsId, artifactoryServer);
+        CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(credentialsConfig, artifactoryServer);
 
         ArtifactoryBuildInfoClient client;
-        if (StringUtils.isNotBlank(preferredResolver.getUsername())) {
-            client = new ArtifactoryBuildInfoClient(url, preferredResolver.getUsername(),
-                    preferredResolver.getPassword(), new NullLog());
+        if (StringUtils.isNotBlank(preferredResolver.provideUsername())) {
+            client = new ArtifactoryBuildInfoClient(url, preferredResolver.provideUsername(),
+                    preferredResolver.providePassword(), new NullLog());
         } else {
             client = new ArtifactoryBuildInfoClient(url, new NullLog());
         }
@@ -83,15 +83,15 @@ public abstract class RepositoriesUtils {
         return virtualRepositories;
     }
 
-    public static List<String> getLocalRepositories(String url, String credentialsId,
+    public static List<String> getLocalRepositories(String url, CredentialsConfig credentialsConfig,
                                                     ArtifactoryServer artifactoryServer) throws IOException {
         List<String> localRepository;
-        Credentials preferredDeployer = CredentialManager.getPreferredDeployer(credentialsId, artifactoryServer);
+        CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(credentialsConfig, artifactoryServer);
 
         ArtifactoryBuildInfoClient client;
         if (StringUtils.isNotBlank(preferredDeployer.getUsername())) {
-            client = new ArtifactoryBuildInfoClient(url, preferredDeployer.getUsername(),
-                    preferredDeployer.getPassword(), new NullLog());
+            client = new ArtifactoryBuildInfoClient(url, preferredDeployer.provideUsername(),
+                    preferredDeployer.providePassword(), new NullLog());
         } else {
             client = new ArtifactoryBuildInfoClient(url, new NullLog());
         }

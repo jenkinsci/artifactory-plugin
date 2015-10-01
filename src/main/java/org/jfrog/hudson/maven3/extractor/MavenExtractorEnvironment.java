@@ -35,6 +35,7 @@ import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.maven.BuildInfoRecorder;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -123,10 +124,10 @@ public class MavenExtractorEnvironment extends Environment {
 
                 ResolverContext resolverContext = null;
                 if (resolver != null) {
-                    Credentials resolverCredentials = CredentialManager.getPreferredResolver(resolver,
+                    CredentialsConfig resolverCredentials = CredentialManager.getPreferredResolver(resolver,
                             resolver.getArtifactoryServer());
                     resolverContext = new ResolverContext(resolver.getArtifactoryServer(), resolver.getDetails(),
-                            resolverCredentials, resolver);
+                            resolverCredentials.getCredentials(), resolver);
                 }
 
                 ArtifactoryClientConfiguration configuration = ExtractorUtils.addBuilderInfoArguments(

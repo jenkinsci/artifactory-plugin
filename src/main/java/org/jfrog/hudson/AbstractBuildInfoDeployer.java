@@ -63,7 +63,7 @@ public class AbstractBuildInfoDeployer {
         long duration = System.currentTimeMillis() - startedTimestamp.getTimeInMillis();
         builder.durationMillis(duration);
 
-        String artifactoryPrincipal = configurator.getArtifactoryServer().getResolvingCredentials().getUsername();
+        String artifactoryPrincipal = configurator.getArtifactoryServer().getResolvingCredentialsConfig().provideUsername();
         if (StringUtils.isBlank(artifactoryPrincipal)) {
             artifactoryPrincipal = "";
         }

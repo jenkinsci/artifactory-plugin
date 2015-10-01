@@ -17,10 +17,11 @@
         <st:attribute name="repoUrl" use="required">
             Caption of the repository URL
         </st:attribute>
-        <st:attribute name="credentialsId">
-            Caption of the Artifactory credential user name
+        <st:attribute name="credentialsDescriber">
+
         </st:attribute>
     </st:documentation>
+
     <st:adjunct includes="lib.jfrog.repos.repos"/>
 
     <f:entry>
@@ -29,9 +30,8 @@
                    onclick="repos(this,
                                 '${jsFunction}',
                                 '${repoUrl}',
-                                ${credentialsId},
-                                ${bind})"
-                    />
+                                '${credentialsDescriber}',
+                                 ${bind})"/>
 
         </div>
         <div style="display:none;">

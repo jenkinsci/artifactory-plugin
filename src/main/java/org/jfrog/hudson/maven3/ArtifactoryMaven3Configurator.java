@@ -64,8 +64,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
      */
     private final ServerDetails details;
     private final ServerDetails resolverDetails;
-    private final String deployerCredentialsId;
-    private final String resolverCredentialsId;
+    private final CredentialsConfig deployerCredentialsConfig;
+    private final CredentialsConfig resolverCredentialsConfig;
 
     /**
      * If checked (default) deploy maven artifacts
@@ -122,7 +122,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     @Deprecated
     private transient boolean skipBuildInfoDeploy;
     /**
-     * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator#getDeployerCredentialsId()()
+     * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator#getDeployerCredentialsConfig()()
      */
     @Deprecated
     private Credentials overridingDeployerCredentials;
@@ -134,7 +134,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     @DataBoundConstructor
     public ArtifactoryMaven3Configurator(ServerDetails details, ServerDetails resolverDetails,
-                                         String deployerCredentialsId, String resolverCredentialsId,
+                                         CredentialsConfig deployerCredentialsConfig, CredentialsConfig resolverCredentialsConfig,
                                          boolean enableResolveArtifacts, IncludesExcludes artifactDeploymentPatterns,
                                          boolean deployArtifacts, boolean deployBuildInfo, boolean includeEnvVars,
                                          IncludesExcludes envVarsPatterns,
@@ -154,8 +154,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     ) {
         this.details = details;
         this.resolverDetails = resolverDetails;
-        this.deployerCredentialsId = deployerCredentialsId;
-        this.resolverCredentialsId = resolverCredentialsId;
+        this.deployerCredentialsConfig = deployerCredentialsConfig;
+        this.resolverCredentialsConfig = resolverCredentialsConfig;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.envVarsPatterns = envVarsPatterns;
         this.runChecks = runChecks;
@@ -211,31 +211,31 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return StringUtils.isNotBlank(getDeployerCredentialsId());
+        return deployerCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
     }
 
-    public String getDeployerCredentialsId() {
-        return deployerCredentialsId;
+    public CredentialsConfig getDeployerCredentialsConfig() {
+        return deployerCredentialsConfig;
     }
 
     public boolean isOverridingDefaultResolver() {
-        return StringUtils.isNotBlank(getResolverCredentialsId());
+        return resolverCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingResolverCredentials() {
         return overridingResolverCredentials;
     }
 
-    public String getResolverCredentialsId() {
-        return resolverCredentialsId;
+    public CredentialsConfig getResolverCredentialsConfig() {
+        return resolverCredentialsConfig;
     }
 
     public boolean isOverridingResolverCredentials() {
-        return (getOverridingResolverCredentials() != null);
+        return resolverCredentialsConfig.isCredentialsProvided();
     }
 
     public boolean isDeployArtifacts() {
@@ -462,9 +462,9 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
         ResolverContext resolver = null;
         if (isEnableResolveArtifacts()) {
-            Credentials credentialResolver = CredentialManager.getPreferredResolver(
+            CredentialsConfig credentialResolver = CredentialManager.getPreferredResolver(
                     ArtifactoryMaven3Configurator.this, getArtifactoryServer());
-            resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(), credentialResolver,
+            resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(), credentialResolver.getCredentials(),
                     ArtifactoryMaven3Configurator.this);
         }
         final ResolverContext resolverContext = resolver;
@@ -524,10 +524,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                             item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsId)
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
             virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
-                    credentialsId, artifactoryServer);
+                    credentialsConfig, artifactoryServer);
             Collections.sort(virtualRepositoryList);
         }
 
@@ -535,17 +535,20 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                     the artifactory url
-         * @param credentialsId           credential id from the "Credential" plugin
+         * @param url Artifactory url
+         * @param credentialsId credentials Id if using Credentials plugin
+         * @param username credentials legacy mode username
+         * @param password credentials legacy mode password
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
+            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsId,
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
                         artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
@@ -571,17 +574,20 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          * This method is triggered from the client side by ajax call.
          * The method is triggered by the "Refresh Repositories" button.
          *
-         * @param url                     The artifactory url
-         * @param credentialsId           credential id from the "Credential" plugin
-         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response
+         * @param url Artifactory url
+         * @param credentialsId credentials Id if using Credentials plugin
+         * @param username credentials legacy mode username
+         * @param password credentials legacy mode password
+         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
-        @JavaScriptMethod
-        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId) {
+         @JavaScriptMethod
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
+            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsId);
+                refreshVirtualRepositories(artifactoryServer, credentialsConfig);
                 response.setVirtualRepositories(virtualRepositoryList);
                 response.setSuccess(true);
                 return response;
@@ -598,12 +604,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         }
 
         @SuppressWarnings("unused")
-        public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
-            return PluginsUtils.fillPluginCredentials(project);
-        }
-
-        @SuppressWarnings("unused")
-        public ListBoxModel doFillResolverCredentialsIdItems(@AncestorInPath Item project) {
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project){
             return PluginsUtils.fillPluginCredentials(project);
         }
 
@@ -644,6 +645,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         public boolean isJiraPluginEnabled() {
             return (Jenkins.getInstance().getPlugin("jira") != null);
         }
+
+        public boolean isUseLegacyCredentials(){
+            return PluginsUtils.isUseLegacyCredentials();
+        }
+
     }
 
     /**

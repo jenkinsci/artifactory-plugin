@@ -10,11 +10,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.ResolverOverrider;
-import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.VirtualRepository;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
@@ -44,12 +40,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
      */
     @Deprecated
     private Credentials overridingResolverCredentials;
-    private final String resolverCredentialsId;
+    private final CredentialsConfig resolverCredentialsConfig;
 
     @DataBoundConstructor
-    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, String resolverCredentialsId) {
+    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, CredentialsConfig resolverCredentialsConfig) {
         this.details = details;
-        this.resolverCredentialsId = resolverCredentialsId;
+        this.resolverCredentialsConfig = resolverCredentialsConfig;
     }
 
     public ServerDetails getDetails() {
@@ -74,15 +70,15 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public boolean isOverridingDefaultResolver() {
-        return StringUtils.isNotBlank(getResolverCredentialsId());
+        return resolverCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingResolverCredentials() {
         return overridingResolverCredentials;
     }
 
-    public String getResolverCredentialsId() {
-        return resolverCredentialsId;
+    public CredentialsConfig getResolverCredentialsConfig() {
+        return resolverCredentialsConfig;
     }
 
     @Override
@@ -122,7 +118,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         return null;
     }
 
-    public List<VirtualRepository> getVirtualRepositoryList(){
+    public List<VirtualRepository> getVirtualRepositoryList() {
         return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys, details.getResolveReleaseRepository().getKeyFromSelect());
     }
 
@@ -149,10 +145,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             return MavenModuleSet.class.equals(item.getClass());
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsId)
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
             virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
-                    credentialsId, artifactoryServer);
+                    credentialsConfig, artifactoryServer);
             Collections.sort(virtualRepositoryKeys);
         }
 
@@ -160,17 +156,18 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsId           credential id from the "Credential" plugin
+         * @param url           the artifactory url
+         * @param credentialsId credential id from the "Credential" plugin
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId) {
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
+            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsId);
+                refreshVirtualRepositories(artifactoryServer, credentialsConfig);
                 response.setVirtualRepositories(virtualRepositoryKeys);
                 response.setSuccess(true);
                 return response;
@@ -187,7 +184,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         }
 
         @SuppressWarnings("unused")
-        public ListBoxModel doFillResolverCredentialsIdItems(@AncestorInPath Item project) {
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             return PluginsUtils.fillPluginCredentials(project);
         }
 
@@ -215,6 +212,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
             return RepositoriesUtils.getArtifactoryServers();
+        }
+
+        public boolean isUseLegacyCredentials() {
+            return PluginsUtils.isUseLegacyCredentials();
         }
     }
 }
