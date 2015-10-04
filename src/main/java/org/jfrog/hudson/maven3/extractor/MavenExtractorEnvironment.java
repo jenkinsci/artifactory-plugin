@@ -88,10 +88,10 @@ public class MavenExtractorEnvironment extends Environment {
             return;
         }
 
-        //If an SCM is configured
+        // If an SCM is configured
         if (!initialized && !(build.getProject().getScm() instanceof NullSCM)) {
-            //Handle all the extractor info only when a checkout was already done
-            if (!isCheckoutPerformed()) {
+            // Handle all the extractor info only when a checkout was already done
+            if (!isCheckoutPerformed(env)) {
                 return;
             }
         }
@@ -121,7 +121,6 @@ public class MavenExtractorEnvironment extends Environment {
                 if (publisher != null) {
                     publisherContext = createPublisherContext(publisher, build);
                 }
-
                 ResolverContext resolverContext = null;
                 if (resolver != null) {
                     CredentialsConfig resolverCredentials = CredentialManager.getPreferredResolver(resolver,
@@ -142,20 +141,23 @@ public class MavenExtractorEnvironment extends Environment {
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
     }
 
-    private boolean isCheckoutPerformed() {
-        boolean checkoutWasPerformed = false;
+    private boolean isCheckoutPerformed(Map<String, String> env) {
+        if (StringUtils.isBlank(ExtractorUtils.getVcsRevision(env))) {
+            return false;
+        }
         try {
             Field scmField = AbstractBuild.class.getDeclaredField("scm");
             scmField.setAccessible(true);
             Object scmObject = scmField.get(build);
-            if (scmObject != null) {
-                checkoutWasPerformed = !(scmObject instanceof NullChangeLogParser);
+            if (scmObject == null) {
+                return false;
             }
+            return !(scmObject instanceof NullChangeLogParser);
         } catch (Exception e) {
             buildListener.getLogger().println("[Warning] An error occurred while testing if the SCM checkout " +
                     "has already been performed: " + e.getMessage());
         }
-        return checkoutWasPerformed;
+        return false;
     }
 
     private boolean isMavenVersionValid() {
