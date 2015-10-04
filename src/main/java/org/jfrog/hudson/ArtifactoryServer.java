@@ -278,7 +278,7 @@ public class ArtifactoryServer implements Serializable {
      * @return Preferred credentials for repo resolving. Never null.
      */
     public CredentialsConfig getResolvingCredentialsConfig(){
-        if (resolverCredentialsConfig.isCredentialsProvided()) { // todo: the if so the the deployer credentials will be the one to return
+        if (resolverCredentialsConfig != null && resolverCredentialsConfig.isCredentialsProvided()) {
             return getResolverCredentialsConfig();
         }
         if (deployerCredentialsConfig != null) {

@@ -93,7 +93,7 @@ public abstract class CredentialManager {
     public static CredentialsConfig getPreferredResolver(CredentialsConfig credentialsConfig, ArtifactoryServer server) {
 
         if (!credentialsConfig.isCredentialsProvided()) {
-            return server.getResolverCredentialsConfig();
+            return server.getResolvingCredentialsConfig();
         }
 
         return credentialsConfig;
