@@ -257,7 +257,7 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, credentialsId, u
 }
 
 function artifactoryGradleConfigurationResolve(spinner, artifactoryUrl, credentialsId, username, password, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
+    bind.refreshResolversFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
         var target = spinner.next();
         var warning = target.next();
 

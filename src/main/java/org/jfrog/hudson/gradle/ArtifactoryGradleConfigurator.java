@@ -848,12 +848,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
             try {
 
-                virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(url, credentialsConfig, artifactoryServer);
-                Collections.sort(virtualRepositories);
+                refreshVirtualRepositories(artifactoryServer, credentialsConfig);
                 response.setVirtualRepositories(virtualRepositories);
                 response.setSuccess(true);
-
-                return response;
 
             } catch (Exception e) {
                 e.printStackTrace();

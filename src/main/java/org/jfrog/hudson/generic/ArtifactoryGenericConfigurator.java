@@ -444,7 +444,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 response.setRepositories(releaseRepositories);
                 response.setSuccess(true);
 
-                return response;
             } catch (Exception e) {
                 e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
@@ -478,8 +477,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 Collections.sort(virtualRepositoryList);
                 response.setVirtualRepositories(virtualRepositoryList);
                 response.setSuccess(true);
-
-                return response;
 
             } catch (Exception e) {
                 e.printStackTrace();

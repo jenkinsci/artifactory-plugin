@@ -107,7 +107,7 @@
                             </script>
                             <r:repos title="${%Refresh}" progress="${%Refreshing...}"
                                      bind="bindToDescriptorResolver"
-                                     jsFunction="artifactoryGradleConfigurator"
+                                     jsFunction="artifactoryGradleConfigurationResolve"
                                      repoUrl="artifactoryUrlResolver${s.url}"
                                      credentialsDescriber="overridingResolverCredentials-gradle"/>
 
