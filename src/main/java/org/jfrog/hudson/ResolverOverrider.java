@@ -44,5 +44,6 @@ public interface ResolverOverrider {
     @Deprecated
     Credentials getOverridingResolverCredentials();
 
-    String getResolverCredentialsId();
+    CredentialsConfig getResolverCredentialsConfig();
+
 }

@@ -2,7 +2,14 @@
  * @author Lior Hasson
  */
 
-function repos(button, jsFunction, artifactoryUrl, credentialsId, bind) {
+function repos(button, jsFunction, artifactoryUrl, credentialsInput, bind) {
+
+    var username;
+    var password;
+    var credentialsId;
+    var legacyInput;
+    var credentialsPluginInput;
+
     button = button._button;
     var spinner = $(button).up("DIV").next();
     spinner.style.display = "block";
@@ -11,25 +18,37 @@ function repos(button, jsFunction, artifactoryUrl, credentialsId, bind) {
     var warning = target.next();
     warning.innerHTML = "";
 
-    if (jsFunction == "artifactoryIvyFreeStyleConfigurator") {
-        artifactoryIvyFreeStyleConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
-    } else if (jsFunction == "artifactoryGenericConfigurator") {
-        artifactoryGenericConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
-    } else if (jsFunction == "artifactoryMaven3NativeConfigurator") {
-        artifactoryMaven3NativeConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
-    } else if (jsFunction == "artifactoryMaven3Configurator") {
-        artifactoryMaven3Configurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
-    } else if (jsFunction == "artifactoryGradleConfigurator") {
-        artifactoryGradleConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
-    } else if (jsFunction == "artifactoryRedeployPublisher") {
-        artifactoryRedeployPublisher(spinner, $(artifactoryUrl).value, credentialsId, bind);
-    } else if (jsFunction == "artifactoryIvyConfigurator") {
-        artifactoryIvyConfigurator(spinner, $(artifactoryUrl).value, credentialsId, bind);
+    legacyInput = $('legacy' + credentialsInput);
+    if (legacyInput) {
+        username = legacyInput.down('input[type=text]').value;
+        password = legacyInput.down('input[type=password]').value;
+    }
+    credentialsPluginInput = $(credentialsInput);
+    if (credentialsPluginInput) {
+        credentialsId = $(credentialsInput).down('select').value;
+    }
+
+    if (jsFunction) {
+        jsFunctionsMap[jsFunction](spinner, $(artifactoryUrl).value, credentialsId, username, password, bind);
     }
 }
 
-function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
+// maps a function name to the function object
+var jsFunctionsMap = {
+    artifactoryIvyFreeStyleConfigurator: artifactoryIvyFreeStyleConfigurator,
+    artifactoryGenericConfigurator: artifactoryGenericConfigurator,
+    artifactoryMaven3NativeConfigurator: artifactoryMaven3NativeConfigurator,
+    artifactoryMaven3Configurator: artifactoryMaven3Configurator,
+    artifactoryGradleConfigurator: artifactoryGradleConfigurator,
+    artifactoryGradleConfigurationResolve: artifactoryGradleConfigurationResolve,
+    artifactoryRedeployPublisher: artifactoryRedeployPublisher,
+    artifactoryIvyConfigurator: artifactoryIvyConfigurator,
+    artifactoryGenericConfigurationResolve: artifactoryGenericConfigurationResolve
+};
+
+
+function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -54,8 +73,8 @@ function artifactoryIvyFreeStyleConfigurator(spinner, artifactoryUrl, credential
     });
 }
 
-function artifactoryGenericConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
+function artifactoryGenericConfigurator(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -80,8 +99,33 @@ function artifactoryGenericConfigurator(spinner, artifactoryUrl, credentialsId, 
     });
 }
 
-function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
-    bind.refreshResolversFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
+function artifactoryGenericConfigurationResolve(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshResolversFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        } else {
+            var select = document.getElementById('select_genericResolveRepositoryKeys-' + artifactoryUrl);
+            var oldValue = select.value;
+            var oldSelect = select.cloneNode(true);
+            removeElements(select);
+            fillSelect(select, response.virtualRepositories);
+            fillSelect(select, oldValue);
+
+            var oldValueExistsInNewList = compareSelectTags(select, oldSelect);
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshResolversFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -124,8 +168,8 @@ function artifactoryMaven3NativeConfigurator(spinner, artifactoryUrl, credential
     });
 }
 
-function artifactoryMaven3Configurator(spinner, artifactoryUrl, credentialsId, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
+function artifactoryMaven3Configurator(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -168,8 +212,8 @@ function artifactoryMaven3Configurator(spinner, artifactoryUrl, credentialsId, b
     });
 }
 
-function artifactoryGradleConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
+function artifactoryGradleConfigurator(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -178,37 +222,25 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, credentialsId, b
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectResolution = document.getElementById("select_gradleResolutionRepositoryKeys-" + artifactoryUrl);
             var selectPublish = document.getElementById("select_gradlePublishRepositoryKeys-" + artifactoryUrl);
             var selectPlugins = document.getElementById("gradleCustomStagingConfiguration-" + artifactoryUrl);
 
-            var oldResolutionValue = selectResolution.value;
             var oldPublishValue = selectPublish.value;
             var oldPluginsValue = selectPlugins.value;
 
-            var oldSelectResolution = selectResolution.cloneNode(true);
             var oldSelectPublish = selectPublish.cloneNode(true);
             var oldSelectPlugins = selectPlugins.cloneNode(true);
 
-            removeElements(selectResolution);
             removeElements(selectPublish);
             removeElements(selectPlugins);
 
-            fillVirtualReposSelect(selectResolution, response.virtualRepositories);
             fillSelect(selectPublish, response.repositories);
-            fillStagingPluginsSelect(selectPlugins, response.userPlugins);
-            createStagingParamsInputs(response.userPlugins);
-
-            setSelectValue(selectResolution, oldResolutionValue);
 
             setSelectValue(selectPublish, oldPublishValue);
             setSelectValue(selectPlugins, oldPluginsValue);
             setStagingParamsSelectedValue(selectPlugins);
 
             var oldValueExistsInNewList = true;
-            if (oldValueExistsInNewList) {
-                oldValueExistsInNewList = compareSelectTags(selectResolution, oldSelectResolution);
-            }
             if (oldValueExistsInNewList) {
                 oldValueExistsInNewList = compareSelectTags(selectPublish, oldSelectPublish);
             }
@@ -224,8 +256,43 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, credentialsId, b
     });
 }
 
-function artifactoryRedeployPublisher(spinner, artifactoryUrl, credentialsId, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
+function artifactoryGradleConfigurationResolve(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        }
+        else {
+            var selectResolution = document.getElementById("select_gradleResolutionRepositoryKeys-" + artifactoryUrl);
+
+            var oldResolutionValue = selectResolution.value;
+
+            var oldSelectResolution = selectResolution.cloneNode(true);
+
+            removeElements(selectResolution);
+
+            fillVirtualReposSelect(selectResolution, response.virtualRepositories);
+
+            setSelectValue(selectResolution, oldResolutionValue);
+
+            var oldValueExistsInNewList = true;
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectResolution, oldSelectResolution);
+            }
+
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function artifactoryRedeployPublisher(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -279,8 +346,8 @@ function artifactoryRedeployPublisher(spinner, artifactoryUrl, credentialsId, bi
     });
 }
 
-function artifactoryIvyConfigurator(spinner, artifactoryUrl, credentialsId, bind) {
-    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, function (t) {
+function artifactoryIvyConfigurator(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
         var target = spinner.next();
         var warning = target.next();
 
@@ -529,3 +596,4 @@ function initTextAndSelectOnLoad(label, txtValue, selectValue) {
         }
     }
 }
+

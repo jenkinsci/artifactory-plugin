@@ -34,7 +34,6 @@ import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfo
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
-import org.jfrog.hudson.util.Credentials;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -247,13 +246,13 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
     public final class PromoteWorkerThread extends TaskThread {
 
         private final ArtifactoryServer artifactoryServer;
-        private final Credentials deployer;
+        private final CredentialsConfig deployerConfig;
         private final String ciUser;
 
-        public PromoteWorkerThread(ArtifactoryServer artifactoryServer, Credentials deployer, String ciUser) {
+        public PromoteWorkerThread(ArtifactoryServer artifactoryServer, CredentialsConfig deployerConfig, String ciUser) {
             super(UnifiedPromoteBuildAction.this, ListenerAndText.forMemory(null));
             this.artifactoryServer = artifactoryServer;
-            this.deployer = deployer;
+            this.deployerConfig = deployerConfig;
             this.ciUser = ciUser;
         }
 
@@ -264,7 +263,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                 long started = System.currentTimeMillis();
                 listener.getLogger().println("Promoting build ....");
 
-                client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword(),
+                client = artifactoryServer.createArtifactoryClient(deployerConfig.provideUsername(), deployerConfig.providePassword(),
                         artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
                 if ((promotionPlugin != null) &&

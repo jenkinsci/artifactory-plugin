@@ -16,19 +16,13 @@
 
 package org.jfrog.hudson;
 
-import hudson.maven.MavenModuleSet;
-import org.jfrog.hudson.util.IncludesExcludes;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
-
 /**
  * Integration test of {@link org.jfrog.hudson.ArtifactoryRedeployPublisher} configuration.
  *
  * @author Yossi Shaul
  */
 public class ArtifactoryRedeployPublisherITest {
-    @Rule
+/*    @Rule
     public JenkinsRule j = new JenkinsRule();
 
     @Test
@@ -47,5 +41,5 @@ public class ArtifactoryRedeployPublisherITest {
         ArtifactoryRedeployPublisher after = project.getPublishersList().get(ArtifactoryRedeployPublisher.class);
 
         j.assertEqualDataBoundBeans(before, after);
-    }
+    }*/
 }

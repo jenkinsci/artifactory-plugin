@@ -34,6 +34,7 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -182,11 +183,11 @@ public class ExtractorUtils {
         String inputDownloadSnapshotKey = context.getServerDetails().getResolveSnapshotRepository().getRepoKey();
         // These input variables might be a variable that should be replaced with it's value
         replaceRepositoryInputForValues(configuration, build, inputDownloadReleaseKey, inputDownloadSnapshotKey, env);
-        Credentials preferredResolver = CredentialManager.getPreferredResolver(context.getResolverOverrider(),
+        CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(context.getResolverOverrider(),
                 context.getServer());
-        if (StringUtils.isNotBlank(preferredResolver.getUsername())) {
-            configuration.resolver.setUsername(preferredResolver.getUsername());
-            configuration.resolver.setPassword(preferredResolver.getPassword());
+        if (StringUtils.isNotBlank(preferredResolver.provideUsername())) {
+            configuration.resolver.setUsername(preferredResolver.provideUsername());
+            configuration.resolver.setPassword(preferredResolver.providePassword());
         }
     }
 
@@ -272,11 +273,11 @@ public class ExtractorUtils {
         configuration.info.setAgentName("Jenkins");
         configuration.info.setAgentVersion(build.getHudsonVersion());
         ArtifactoryServer artifactoryServer = context.getArtifactoryServer();
-        Credentials preferredDeployer =
+        CredentialsConfig preferredDeployer =
                 CredentialManager.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
-        if (StringUtils.isNotBlank(preferredDeployer.getUsername())) {
-            configuration.publisher.setUsername(preferredDeployer.getUsername());
-            configuration.publisher.setPassword(preferredDeployer.getPassword());
+        if (StringUtils.isNotBlank(preferredDeployer.provideUsername())) {
+            configuration.publisher.setUsername(preferredDeployer.provideUsername());
+            configuration.publisher.setPassword(preferredDeployer.providePassword());
         }
         configuration.setTimeout(artifactoryServer.getTimeout());
         configuration.publisher.setContextUrl(context.getServerDetails().getArtifactoryUrl());

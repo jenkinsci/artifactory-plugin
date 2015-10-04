@@ -11,10 +11,7 @@ import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.client.bintrayResponse.BintrayResponse;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.util.VersionException;
-import org.jfrog.hudson.ArtifactoryPlugin;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.BuildInfoAwareConfigurator;
-import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
 import org.jfrog.hudson.util.Credentials;
@@ -61,8 +58,8 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         if (!override){
             resetOverrideFields();
         }
-        Credentials credentials = CredentialManager.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
-        new PushToBintrayWorker(artifactory, credentials).start();
+        CredentialsConfig credentialsConfig = CredentialManager.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
+        new PushToBintrayWorker(artifactory, credentialsConfig.getCredentials()).start();
         resp.sendRedirect(".");
     }
 

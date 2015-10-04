@@ -74,7 +74,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     public final String remotePluginLocation;
     public final boolean deployBuildInfo;
     public final boolean includeEnvVars;
-    private final String deployerCredentialsId;
+    private final CredentialsConfig deployerCredentialsConfig;
     private final boolean runChecks;
     private final String violationRecipients;
     private final boolean includePublishArtifacts;
@@ -116,13 +116,13 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     @Deprecated
     private transient String scrambledPassword;
     /**
-     * @deprecated: Use org.jfrog.hudson.ivy.ArtifactoryIvyFreeStyleConfigurator#getDeployerCredentialsId()()
+     * @deprecated: Use org.jfrog.hudson.ivy.ArtifactoryIvyFreeStyleConfigurator#getDeployerCredentialsConfig()()
      */
     @Deprecated
     private Credentials overridingDeployerCredentials;
 
     @DataBoundConstructor
-    public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, String deployerCredentialsId,
+    public ArtifactoryIvyFreeStyleConfigurator(ServerDetails details, CredentialsConfig deployerCredentialsConfig,
                                                boolean deployArtifacts, String remotePluginLocation,
                                                boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                                boolean deployBuildInfo, boolean runChecks, String violationRecipients,
@@ -136,7 +136,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                                                boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild,
                                                String artifactoryCombinationFilter) {
         this.details = details;
-        this.deployerCredentialsId = deployerCredentialsId;
+        this.deployerCredentialsConfig = deployerCredentialsConfig;
         this.deployArtifacts = deployArtifacts;
         this.remotePluginLocation = remotePluginLocation;
         this.includeEnvVars = includeEnvVars;
@@ -199,15 +199,15 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return StringUtils.isNotBlank(getDeployerCredentialsId());
+        return deployerCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
     }
 
-    public String getDeployerCredentialsId() {
-        return deployerCredentialsId;
+    public CredentialsConfig getDeployerCredentialsConfig() {
+        return deployerCredentialsConfig;
     }
 
     public String getViolationRecipients() {
@@ -543,18 +543,21 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                     the artifactory url
-         * @param credentialsId           credential id from the "Credential" plugin
+         * @param url Artifactory url
+         * @param credentialsId credentials Id if using Credentials plugin
+         * @param username credentials legacy mode username
+         * @param password credentials legacy mode password
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
+            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url,
                     RepositoriesUtils.getArtifactoryServers());
 
             try {
-                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsId,
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
                         artifactoryServer);
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
@@ -575,7 +578,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         }
 
         @SuppressWarnings("unused")
-        public ListBoxModel doFillDeployerCredentialsIdItems(@AncestorInPath Item project) {
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             return PluginsUtils.fillPluginCredentials(project);
         }
 
@@ -611,6 +614,10 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
             return RepositoriesUtils.getArtifactoryServers();
+        }
+
+        public boolean isUseLegacyCredentials(){
+            return PluginsUtils.isUseLegacyCredentials();
         }
 
         public boolean isJiraPluginEnabled() {
