@@ -28,7 +28,7 @@ function repos(button, jsFunction, artifactoryUrl, credentialsInput, bind) {
         credentialsId = $(credentialsInput).down('select').value;
     }
 
-    if (jsFunction){
+    if (jsFunction) {
         jsFunctionsMap[jsFunction](spinner, $(artifactoryUrl).value, credentialsId, username, password, bind);
     }
 }
@@ -40,8 +40,10 @@ var jsFunctionsMap = {
     artifactoryMaven3NativeConfigurator: artifactoryMaven3NativeConfigurator,
     artifactoryMaven3Configurator: artifactoryMaven3Configurator,
     artifactoryGradleConfigurator: artifactoryGradleConfigurator,
+    artifactoryGradleConfigurationResolve: artifactoryGradleConfigurationResolve,
     artifactoryRedeployPublisher: artifactoryRedeployPublisher,
-    artifactoryIvyConfigurator: artifactoryIvyConfigurator
+    artifactoryIvyConfigurator: artifactoryIvyConfigurator,
+    artifactoryGenericConfigurationResolve: artifactoryGenericConfigurationResolve
 };
 
 
@@ -87,6 +89,31 @@ function artifactoryGenericConfigurator(spinner, artifactoryUrl, credentialsId, 
             removeElements(select);
             fillSelect(select, response.repositories);
             setSelectValue(select, oldValue);
+
+            var oldValueExistsInNewList = compareSelectTags(select, oldSelect);
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function artifactoryGenericConfigurationResolve(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshResolversFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        } else {
+            var select = document.getElementById('select_genericResolveRepositoryKeys-' + artifactoryUrl);
+            var oldValue = select.value;
+            var oldSelect = select.cloneNode(true);
+            removeElements(select);
+            fillSelect(select, response.virtualRepositories);
+            fillSelect(select, oldValue);
 
             var oldValueExistsInNewList = compareSelectTags(select, oldSelect);
             if (!oldValueExistsInNewList) {
@@ -195,28 +222,19 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, credentialsId, u
             displayErrorResponse(spinner, target, response.responseMessage);
         }
         else {
-            var selectResolution = document.getElementById("select_gradleResolutionRepositoryKeys-" + artifactoryUrl);
             var selectPublish = document.getElementById("select_gradlePublishRepositoryKeys-" + artifactoryUrl);
             var selectPlugins = document.getElementById("gradleCustomStagingConfiguration-" + artifactoryUrl);
 
-            var oldResolutionValue = selectResolution.value;
             var oldPublishValue = selectPublish.value;
             var oldPluginsValue = selectPlugins.value;
 
-            var oldSelectResolution = selectResolution.cloneNode(true);
             var oldSelectPublish = selectPublish.cloneNode(true);
             var oldSelectPlugins = selectPlugins.cloneNode(true);
 
-            removeElements(selectResolution);
             removeElements(selectPublish);
             removeElements(selectPlugins);
 
-            fillVirtualReposSelect(selectResolution, response.virtualRepositories);
             fillSelect(selectPublish, response.repositories);
-            fillStagingPluginsSelect(selectPlugins, response.userPlugins);
-            createStagingParamsInputs(response.userPlugins);
-
-            setSelectValue(selectResolution, oldResolutionValue);
 
             setSelectValue(selectPublish, oldPublishValue);
             setSelectValue(selectPlugins, oldPluginsValue);
@@ -224,13 +242,45 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, credentialsId, u
 
             var oldValueExistsInNewList = true;
             if (oldValueExistsInNewList) {
-                oldValueExistsInNewList = compareSelectTags(selectResolution, oldSelectResolution);
-            }
-            if (oldValueExistsInNewList) {
                 oldValueExistsInNewList = compareSelectTags(selectPublish, oldSelectPublish);
             }
             if (oldValueExistsInNewList) {
                 oldValueExistsInNewList = compareSelectTags(selectPlugins, oldSelectPlugins);
+            }
+
+            if (!oldValueExistsInNewList) {
+                displayWarningMessage(warning);
+            }
+            displaySuccessMessage(spinner, target);
+        }
+    });
+}
+
+function artifactoryGradleConfigurationResolve(spinner, artifactoryUrl, credentialsId, username, password, bind) {
+    bind.refreshFromArtifactory(spinner, artifactoryUrl, credentialsId, username, password, function (t) {
+        var target = spinner.next();
+        var warning = target.next();
+
+        var response = t.responseObject();
+        if (!response.success) {
+            displayErrorResponse(spinner, target, response.responseMessage);
+        }
+        else {
+            var selectResolution = document.getElementById("select_gradleResolutionRepositoryKeys-" + artifactoryUrl);
+
+            var oldResolutionValue = selectResolution.value;
+
+            var oldSelectResolution = selectResolution.cloneNode(true);
+
+            removeElements(selectResolution);
+
+            fillVirtualReposSelect(selectResolution, response.virtualRepositories);
+
+            setSelectValue(selectResolution, oldResolutionValue);
+
+            var oldValueExistsInNewList = true;
+            if (oldValueExistsInNewList) {
+                oldValueExistsInNewList = compareSelectTags(selectResolution, oldSelectResolution);
             }
 
             if (!oldValueExistsInNewList) {

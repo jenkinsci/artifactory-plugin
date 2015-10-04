@@ -59,10 +59,9 @@ public abstract class CredentialManager {
 
     public static CredentialsConfig getPreferredDeployer(CredentialsConfig credentialsConfig, ArtifactoryServer server) {
 
-        if(credentialsConfig.isCredentialsProvided()) {
+        if (!credentialsConfig.isCredentialsProvided()) {
             return server.getDeployerCredentialsConfig();
-        }
-        else {
+        } else {
             return credentialsConfig;
         }
 
@@ -74,6 +73,7 @@ public abstract class CredentialManager {
      * 1) Job override resolver
      * 2) Plugin manage override resolver
      * 3) Plugin manage general
+     *
      * @param resolverOverrider Resolve-overriding capable builder
      * @param server            Selected Artifactory server
      * @return Preferred resolver credentials
@@ -90,9 +90,9 @@ public abstract class CredentialManager {
     }
 
 
-    public static CredentialsConfig getPreferredResolver(CredentialsConfig credentialsConfig, ArtifactoryServer server){
+    public static CredentialsConfig getPreferredResolver(CredentialsConfig credentialsConfig, ArtifactoryServer server) {
 
-        if (credentialsConfig.isCredentialsProvided()) {
+        if (!credentialsConfig.isCredentialsProvided()) {
             return server.getResolverCredentialsConfig();
         }
 

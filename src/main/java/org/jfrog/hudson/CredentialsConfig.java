@@ -47,7 +47,7 @@ public class CredentialsConfig implements Serializable {
 
     /**
      * In case of overriding the global configuration this method should be called to check if override credentials was supplied
-     * from configuration - this will take under considuratino the state of the "useLegacyCredentials" option in global config object
+     * from configuration - this will take under  consideration the state of the "useLegacyCredentials" option in global config object
      *
      * @return in legacy mode this will return true if username and password both supplied (todo: check if this is the right logic or should bring back the checkbox),
      * In Credentials plugin mode this will return true if a credentials id was selected in the job configuration

@@ -263,6 +263,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 details.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
+    public List<VirtualRepository> getResolveRepositoryList() {
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryList,
+                resolverDetails.getResolveReleaseRepository().getKeyFromSelect());
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
@@ -395,6 +400,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<Repository> releaseRepositories;
+        private List<VirtualRepository> virtualRepositoryList;
         private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
@@ -406,19 +412,19 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         public boolean isApplicable(AbstractProject<?, ?> item) {
             this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
-                item.getClass().isAssignableFrom(MatrixProject.class) ||
+                    item.getClass().isAssignableFrom(MatrixProject.class) ||
                     (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
-                        item.getClass().isAssignableFrom(MultiJobProject.class));
+                            item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
         /**
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url Artifactory url
+         * @param url           Artifactory url
          * @param credentialsId credentials Id if using Credentials plugin
-         * @param username credentials legacy mode username
-         * @param password credentials legacy mode password
+         * @param username      credentials legacy mode username
+         * @param password      credentials legacy mode password
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
@@ -439,6 +445,42 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 response.setSuccess(true);
 
                 return response;
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.setResponseMessage(e.getMessage());
+                response.setSuccess(false);
+            }
+
+            return response;
+        }
+
+        /**
+         * This method is triggered from the client side by ajax call.
+         * The method is triggered by the "Refresh Repositories" button.
+         *
+         * @param url           Artifactory url
+         * @param credentialsId credentials Id if using Credentials plugin
+         * @param username      credentials legacy mode username
+         * @param password      credentials legacy mode password
+         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
+         */
+        @SuppressWarnings("unused")
+        @JavaScriptMethod
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
+
+            RefreshServerResponse response = new RefreshServerResponse();
+            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
+
+            try {
+
+                virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(url, credentialsConfig, artifactoryServer);
+                Collections.sort(virtualRepositoryList);
+                response.setVirtualRepositories(virtualRepositoryList);
+                response.setSuccess(true);
+
+                return response;
+
             } catch (Exception e) {
                 e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
@@ -483,7 +525,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             return RepositoriesUtils.getArtifactoryServers();
         }
 
-        public boolean isUseLegacyCredentials(){
+        public boolean isUseLegacyCredentials() {
             return PluginsUtils.isUseLegacyCredentials();
         }
     }

@@ -154,8 +154,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                          boolean blackDuckIncludePublishedArtifacts,
                                          boolean autoCreateMissingComponentRequests,
                                          boolean autoDiscardStaleComponentRequests,
-                                         boolean filterExcludedArtifactsFromBuild, String artifactoryCombinationFilter)
-    {
+                                         boolean filterExcludedArtifactsFromBuild, String artifactoryCombinationFilter) {
         this.details = details;
         this.resolverDetails = resolverDetails;
         this.deployerCredentialsConfig = deployerCredentialsConfig;
@@ -240,7 +239,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return overridingDeployerCredentials;
     }
 
-    public CredentialsConfig  getDeployerCredentialsConfig() {
+    public CredentialsConfig getDeployerCredentialsConfig() {
         return deployerCredentialsConfig;
     }
 
@@ -427,7 +426,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
         final PrintStream log = listener.getLogger();
-        log.println( "Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
+        log.println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         PublisherContext.Builder publisherBuilder = getBuilder();
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
 
@@ -800,11 +799,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         /**
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
-
-         * @param url Artifactory url
+         *
+         * @param url           Artifactory url
          * @param credentialsId credentials Id if using Credentials plugin
-         * @param username credentials legacy mode username
-         * @param password credentials legacy mode password
+         * @param username      credentials legacy mode username
+         * @param password      credentials legacy mode password
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @SuppressWarnings("unused")
@@ -816,11 +815,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
                         url, getArtifactoryServers());
                 refreshRepositories(artifactoryServer, credentialsConfig);
-                refreshVirtualRepositories(artifactoryServer, credentialsConfig);
                 refreshUserPlugins(artifactoryServer, credentialsConfig);
 
                 response.setRepositories(releaseRepositories);
-                response.setVirtualRepositories(virtualRepositories);
                 response.setUserPlugins(userPluginKeys);
                 response.setSuccess(true);
             } catch (Exception e) {
@@ -830,6 +827,43 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             }
             return response;
         }
+
+        /**
+         * This method is triggered from the client side by ajax call.
+         * The method is triggered by the "Refresh Repositories" button.
+         *
+         * @param url           Artifactory url
+         * @param credentialsId credentials Id if using Credentials plugin
+         * @param username      credentials legacy mode username
+         * @param password      credentials legacy mode password
+         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
+         */
+        @SuppressWarnings("unused")
+        @JavaScriptMethod
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
+
+            RefreshServerResponse response = new RefreshServerResponse();
+            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
+
+            try {
+
+                virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(url, credentialsConfig, artifactoryServer);
+                Collections.sort(virtualRepositories);
+                response.setVirtualRepositories(virtualRepositories);
+                response.setSuccess(true);
+
+                return response;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.setResponseMessage(e.getMessage());
+                response.setSuccess(false);
+            }
+
+            return response;
+        }
+
 
         @SuppressWarnings("unused")
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
@@ -877,7 +911,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return RepositoriesUtils.getArtifactoryServers();
         }
 
-        public boolean isUseLegacyCredentials(){
+        public boolean isUseLegacyCredentials() {
             return PluginsUtils.isUseLegacyCredentials();
         }
 

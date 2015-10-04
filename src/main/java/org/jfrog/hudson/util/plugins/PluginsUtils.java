@@ -28,7 +28,7 @@ public class PluginsUtils {
             return new StandardListBoxModel();
         }
         List<DomainRequirement> domainRequirements = Collections.emptyList();
-        //((DeployerOverrider)((FreeStyleProject) project).buildWrappers.get(0)).getDeployerCredentialsConfig()
+//        ((DeployerOverrider)((FreeStyleProject) project).buildWrappers.get(0)).getDeployerCredentialsConfig()
         return new StandardListBoxModel()
                 .withEmptySelection()
                 .withMatching(

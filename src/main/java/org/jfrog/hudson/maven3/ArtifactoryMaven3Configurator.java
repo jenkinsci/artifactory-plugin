@@ -535,10 +535,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url Artifactory url
+         * @param url           Artifactory url
          * @param credentialsId credentials Id if using Credentials plugin
-         * @param username credentials legacy mode username
-         * @param password credentials legacy mode password
+         * @param username      credentials legacy mode username
+         * @param password      credentials legacy mode password
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
@@ -574,13 +574,14 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          * This method is triggered from the client side by ajax call.
          * The method is triggered by the "Refresh Repositories" button.
          *
-         * @param url Artifactory url
+         * @param url           Artifactory url
          * @param credentialsId credentials Id if using Credentials plugin
-         * @param username credentials legacy mode username
-         * @param password credentials legacy mode password
+         * @param username      credentials legacy mode username
+         * @param password      credentials legacy mode password
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
-         @JavaScriptMethod
+        @SuppressWarnings("unused")
+        @JavaScriptMethod
         public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
             CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
@@ -604,7 +605,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         }
 
         @SuppressWarnings("unused")
-        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project){
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             return PluginsUtils.fillPluginCredentials(project);
         }
 
@@ -646,7 +647,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             return (Jenkins.getInstance().getPlugin("jira") != null);
         }
 
-        public boolean isUseLegacyCredentials(){
+        public boolean isUseLegacyCredentials() {
             return PluginsUtils.isUseLegacyCredentials();
         }
 
