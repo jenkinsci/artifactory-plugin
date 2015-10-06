@@ -58,13 +58,11 @@ public abstract class CredentialManager {
     }
 
     public static CredentialsConfig getPreferredDeployer(CredentialsConfig credentialsConfig, ArtifactoryServer server) {
-
         if (!credentialsConfig.isCredentialsProvided()) {
             return server.getDeployerCredentialsConfig();
         } else {
             return credentialsConfig;
         }
-
     }
 
     /**
@@ -91,12 +89,9 @@ public abstract class CredentialManager {
 
 
     public static CredentialsConfig getPreferredResolver(CredentialsConfig credentialsConfig, ArtifactoryServer server) {
-
         if (!credentialsConfig.isCredentialsProvided()) {
             return server.getResolvingCredentialsConfig();
         }
-
         return credentialsConfig;
-
     }
 }

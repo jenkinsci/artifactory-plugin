@@ -91,6 +91,9 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
         deployerCredentialsField.setAccessible(true);
         Object deployerCredentials = deployerCredentialsField.get(server);
 
+        Field deployerCredentialsConfigField = overriderClass.getDeclaredField("deployerCredentialsConfig");
+        deployerCredentialsConfigField.setAccessible(true);
+
         if (deployerCredentials != null) {
             CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
             String userName = ((Credentials) deployerCredentials).getUsername();
@@ -107,11 +110,10 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
                     store.addCredentials(Domain.global(), usernamePasswordCredentials);
                 }
 
-
-                Field deployerCredentialsConfigField = overriderClass.getDeclaredField("deployerCredentialsConfig");
-                deployerCredentialsConfigField.setAccessible(true);
-                deployerCredentialsConfigField.set(server, new CredentialsConfig(userName, password, credentialId));
+                deployerCredentialsConfigField.set(server, new CredentialsConfig(new Credentials(userName, password), credentialId));
             }
+        } else {
+            deployerCredentialsField.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
     }
 
@@ -121,6 +123,9 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
         Field resolverCredentialsField = overriderClass.getDeclaredField("resolverCredentials");
         resolverCredentialsField.setAccessible(true);
         Object resolverCredentials = resolverCredentialsField.get(server);
+
+        Field deployerCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
+        deployerCredentialsConfigField.setAccessible(true);
 
         if (resolverCredentials != null) {
             CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
@@ -138,10 +143,10 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
                     store.addCredentials(Domain.global(), usernamePasswordCredentials);
                 }
 
-                Field deployerCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
-                deployerCredentialsConfigField.setAccessible(true);
-                deployerCredentialsConfigField.set(server, new CredentialsConfig(userName, password, credentialId));
+                deployerCredentialsConfigField.set(server, new CredentialsConfig(new Credentials(userName, password), credentialId));
             }
+        } else {
+            deployerCredentialsConfigField.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
     }
 

@@ -45,8 +45,8 @@ import java.util.logging.Logger;
  */
 public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         extends XStream2.PassthruConverter<T> {
-        Logger logger = Logger.getLogger(DeployerResolverOverriderConverter.class.getName());
-        List < String > converterErrors = Lists.newArrayList();
+    Logger logger = Logger.getLogger(DeployerResolverOverriderConverter.class.getName());
+    List<String> converterErrors = Lists.newArrayList();
 
     public DeployerResolverOverriderConverter(XStream2 xstream) {
         super(xstream);
@@ -59,7 +59,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         overrideResolverDetails(overrider, overriderClass);
         credentialsMigration(overrider, overriderClass);
 
-        if(!converterErrors.isEmpty()){
+        if (!converterErrors.isEmpty()) {
             logger.info(converterErrors.toString());
         }
     }
@@ -67,12 +67,11 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
     /**
      * Migrate to Jenkins "Credentials" plugin from the old credential implementation
      */
-    public void credentialsMigration(T overrider, Class<? extends DeployerOverrider> overriderClass){
-        try{
+    public void credentialsMigration(T overrider, Class<? extends DeployerOverrider> overriderClass) {
+        try {
             deployerMigration(overrider, overriderClass);
             resolverMigration(overrider, overriderClass);
-        }
-        catch (NoSuchFieldException e) {
+        } catch (NoSuchFieldException e) {
             converterErrors.add(getConversionErrorMessage(overrider, e));
         } catch (IllegalAccessException e) {
             converterErrors.add(getConversionErrorMessage(overrider, e));
@@ -114,8 +113,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
                 overridingCredentialsField.setAccessible(true);
                 overridingCredentialsField.set(deployerOverrider, new Credentials(oldUsername, oldPassword));
             }
-        }
-        catch (NoSuchFieldException e) {
+        } catch (NoSuchFieldException e) {
             converterErrors.add(getConversionErrorMessage(deployerOverrider, e));
         } catch (IllegalAccessException e) {
             converterErrors.add(getConversionErrorMessage(deployerOverrider, e));
@@ -127,7 +125,10 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         overridingDeployerCredentialsField.setAccessible(true);
         Object overridingDeployerCredentials = overridingDeployerCredentialsField.get(overrider);
 
-        if(overridingDeployerCredentials != null) {
+        Field deployerCredentialsConfigField = overriderClass.getDeclaredField("deployerCredentialsConfig");
+        deployerCredentialsConfigField.setAccessible(true);
+
+        if (overridingDeployerCredentials != null) {
             CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
             String userName = ((Credentials) overridingDeployerCredentials).getUsername();
             String password = ((Credentials) overridingDeployerCredentials).getPassword();
@@ -140,25 +141,26 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
                         userName, password
                 );
 
-                if(!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)){
+                if (!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
                     store.addCredentials(Domain.global(), usernamePasswordCredentials);
                 }
-
-                Field deployerCredentialsConfigField = overriderClass.getDeclaredField("deployerCredentialsConfig");
-                deployerCredentialsConfigField.setAccessible(true);
-                CredentialsConfig credentialsConfig = new CredentialsConfig(userName, password, credentialId);
+                CredentialsConfig credentialsConfig = new CredentialsConfig(new Credentials(userName, password), credentialId);
                 deployerCredentialsConfigField.set(overrider, credentialsConfig);
             }
+        } else {
+            deployerCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
     }
 
     private void resolverMigration(T overrider, Class<? extends DeployerOverrider> overriderClass)
             throws NoSuchFieldException, IllegalAccessException, IOException {
-        if(overrider instanceof ResolverOverrider) {
+        if (overrider instanceof ResolverOverrider) {
             Field resolverCredentialsField = overriderClass.getDeclaredField("overridingResolverCredentials");
             resolverCredentialsField.setAccessible(true);
             Object resolverCredentials = resolverCredentialsField.get(overrider);
 
+            Field resolverCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
+            resolverCredentialsConfigField.setAccessible(true);
             if (resolverCredentials != null) {
                 CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
                 String userName = ((Credentials) resolverCredentials).getUsername();
@@ -167,20 +169,20 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
                 if (StringUtils.isNotBlank(userName)) {
                     String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":resolver";
                     UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                        CredentialsScope.GLOBAL, credentialId,
-                        "Migrated from Artifactory plugin Job: " + overrider.getClass().getSimpleName() + " (resolver)",
-                        userName, password
+                            CredentialsScope.GLOBAL, credentialId,
+                            "Migrated from Artifactory plugin Job: " + overrider.getClass().getSimpleName() + " (resolver)",
+                            userName, password
                     );
 
-                    if(!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
+                    if (!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
                         store.addCredentials(Domain.global(), usernamePasswordCredentials);
                     }
 
-                    Field deployerCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
-                    deployerCredentialsConfigField.setAccessible(true);
-                    CredentialsConfig credentialsConfig = new CredentialsConfig(userName, password, credentialId);
-                    deployerCredentialsConfigField.set(overrider, credentialsConfig);
+                    CredentialsConfig credentialsConfig = new CredentialsConfig(new Credentials(userName, password), credentialId);
+                    resolverCredentialsConfigField.set(overrider, credentialsConfig);
                 }
+            } else {
+                resolverCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
             }
         }
     }
@@ -189,7 +191,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
      * Convert the (ServerDetails)details to (ServerDetails)resolverDetails if it doesn't exists already
      */
     private void overrideResolverDetails(T overrider, Class<? extends DeployerOverrider> overriderClass) {
-        if(overrider instanceof ResolverOverrider) {
+        if (overrider instanceof ResolverOverrider) {
             try {
                 Field resolverDetailsField = overriderClass.getDeclaredField("resolverDetails");
                 resolverDetailsField.setAccessible(true);

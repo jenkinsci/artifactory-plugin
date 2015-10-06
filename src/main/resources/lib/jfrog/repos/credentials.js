@@ -9,7 +9,6 @@ var legacyDeployerPrefix = 'legacyDeployerCredentials';
 var legacyResolverPrefix = 'legacyResolverCredentials'
 
 function updateViewForCredentialsMethod(useLegacyCredentials) {
-    console.log("updating the view", useLegacyCredentials);
     toggleCredentialsPluginFromView(useLegacyCredentials);
     toggleLegacyUsernamePasswordFromView(!useLegacyCredentials);
 }
@@ -22,10 +21,10 @@ function toggleCredentialsPluginFromView(hide) {
     setNewDisplayStyle(deployerTables, newDisplayStyle);
 }
 
-function setNewDisplayStyle(elements, display){
-    elements.forEach(function(element){
-       element.style.display = display;
-    });
+function setNewDisplayStyle(elements, display) {
+    var elementsIndex;
+    for (elementsIndex = 0; elementsIndex < elements.length; elementsIndex++)
+        elements[elementsIndex].style.display = display;
 }
 
 function toggleLegacyUsernamePasswordFromView(hide) {
@@ -57,7 +56,7 @@ function getElementsWithIdPrefix(prefix) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function(event){
+document.addEventListener('DOMContentLoaded', function (event) {
     var useLegacyCredentialsInput = document.getElementById('useLegacyCredentials');
     useLegacyCredentialsInput.checked = JSON.parse(useLegacyCredentialsInput.value);
     updateViewForCredentialsMethod(useLegacyCredentialsInput.checked);

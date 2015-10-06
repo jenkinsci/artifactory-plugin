@@ -102,4 +102,13 @@ public class CredentialsConfig implements Serializable {
     public String getCredentialsId() {
         return credentialsId;
     }
+
+    /**
+     * Create an empty instance of the CredentialsConfig object for cases that the user did not override the server main configuration
+     *
+     * @return all empty strings object
+     */
+    public static CredentialsConfig createEmptyCredentialsConfigObject() {
+        return new CredentialsConfig(new Credentials(StringUtils.EMPTY, StringUtils.EMPTY), StringUtils.EMPTY);
+    }
 }

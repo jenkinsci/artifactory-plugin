@@ -60,6 +60,9 @@ public class PluginsUtils {
     public static boolean isUseLegacyCredentials() {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
-        return descriptor != null && descriptor.getUseLegacyCredentials();
+        if (descriptor != null) {
+            return descriptor.getUseLegacyCredentials();
+        }
+        throw new IllegalStateException("ArtifactoryBuilder descriptor is null");
     }
 }
