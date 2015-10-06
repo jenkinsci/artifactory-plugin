@@ -112,8 +112,6 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
 
                 deployerCredentialsConfigField.set(server, new CredentialsConfig(new Credentials(userName, password), credentialId));
             }
-        } else {
-            deployerCredentialsField.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
     }
 
@@ -145,8 +143,6 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
 
                 deployerCredentialsConfigField.set(server, new CredentialsConfig(new Credentials(userName, password), credentialId));
             }
-        } else {
-            deployerCredentialsConfigField.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
     }
 

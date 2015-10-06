@@ -20,7 +20,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
@@ -46,6 +45,7 @@ import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -135,7 +135,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                                         boolean aggregateBuildIssues, String aggregationBuildStatus,
                                         boolean recordAllDependencies, boolean allowPromotionOfNonStagedBuilds,
                                         boolean allowBintrayPushOfNonStageBuilds,
-                                        boolean blackDuckRunChecks, String blackDuckAppName,  String blackDuckAppVersion,
+                                        boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
                                         String blackDuckReportRecipients, String blackDuckScopes,
                                         boolean blackDuckIncludePublishedArtifacts, boolean autoCreateMissingComponentRequests,
                                         boolean autoDiscardStaleComponentRequests, boolean filterExcludedArtifactsFromBuild) {
@@ -208,7 +208,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return !deployerCredentialsConfig.isCredentialsProvided();
+        return deployerCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingDeployerCredentials() {
@@ -302,7 +302,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return allowPromotionOfNonStagedBuilds;
     }
 
-    public boolean isAllowBintrayPushOfNonStageBuilds() { return allowBintrayPushOfNonStageBuilds; }
+    public boolean isAllowBintrayPushOfNonStageBuilds() {
+        return allowBintrayPushOfNonStageBuilds;
+    }
 
     public boolean isRecordAllDependencies() {
         return recordAllDependencies;
@@ -424,7 +426,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
-                if (isAllowBintrayPushOfNonStageBuilds()){
+                if (isAllowBintrayPushOfNonStageBuilds()) {
                     build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
                 }
             }
@@ -448,9 +450,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         });
     }
 
-    private boolean isM2Build (AbstractBuild<?, ?> build) {
+    private boolean isM2Build(AbstractBuild<?, ?> build) {
         return build.getClass().getName().contains("MavenModuleSetBuild")
-                && ((MavenModuleSetBuild)build).getMavenVersionUsed().startsWith("2");
+                && ((MavenModuleSetBuild) build).getMavenVersionUsed().startsWith("2");
     }
 
     private boolean isExtractorUsed(EnvVars env) {
@@ -508,11 +510,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         return getDescriptor().userPluginKeys;
     }
 
-    public List<Repository> getReleaseRepositoryList(){
+    public List<Repository> getReleaseRepositoryList() {
         return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeployReleaseRepositoryKey());
     }
 
-    public List<Repository> getSnapshotRepositoryList(){
+    public List<Repository> getSnapshotRepositoryList() {
         return RepositoriesUtils.collectRepositories(getDescriptor().deploySnapshotRepositories, details.getDeploySnapshotRepositoryKey());
     }
 
@@ -561,8 +563,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             for (UserPluginInfo p : pluginInfoList) {
                 Map<String, String> paramsMap = Maps.newHashMap();
                 List<UserPluginInfoParam> params = p.getPluginParams();
-                for(UserPluginInfoParam param : params) {
-                    paramsMap.put(((String)param.getKey()), ((String)param.getDefaultValue()));
+                for (UserPluginInfoParam param : params) {
+                    paramsMap.put(((String) param.getKey()), ((String) param.getDefaultValue()));
                 }
                 PluginSettings plugin = new PluginSettings(p.getPluginName(), paramsMap);
                 list.add(plugin);
@@ -575,6 +577,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             return PluginsUtils.fillPluginCredentials(project);
         }
+
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return jobType == MavenModuleSet.class;
@@ -584,8 +587,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                     the artifactory url
-        //         * @param credentialsId           credential id from the "Credential" plugin
+         * @param url the artifactory url
+         *            //         * @param credentialsId           credential id from the "Credential" plugin
          * @return {@link RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
@@ -639,25 +642,17 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return (Jenkins.getInstance().getPlugin("jira") != null);
         }
 
-        public boolean isUseLegacyCredentials(){
+        public boolean isUseLegacyCredentials() {
             return PluginsUtils.isUseLegacyCredentials();
         }
     }
 
-    @SuppressWarnings({"UnusedDeclaration"})
-    public static final class ConverterImpl extends XStream2.PassthruConverter<ArtifactoryRedeployPublisher> {
-
+    /**
+     * Page Converter
+     */
+    public static final class ConverterImpl extends DeployerResolverOverriderConverter {
         public ConverterImpl(XStream2 xstream) {
             super(xstream);
         }
-
-        @Override
-        protected void callback(ArtifactoryRedeployPublisher publisher, UnmarshallingContext context) {
-            // field skipBuildInfoDeploy was replaced by the opposite deployBuildInfo
-            if (publisher.skipBuildInfoDeploy != null) {
-                publisher.deployBuildInfo = !publisher.skipBuildInfoDeploy;
-            }
-        }
     }
-
 }
