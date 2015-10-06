@@ -27,6 +27,7 @@ import hudson.util.Scrambler;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.util.Credentials;
@@ -143,9 +144,10 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
                     store.addCredentials(Domain.global(), usernamePasswordCredentials);
                 }
 
-                Field deployerCredentialsIdField = overriderClass.getDeclaredField("deployerCredentialsId");
-                deployerCredentialsIdField.setAccessible(true);
-                deployerCredentialsIdField.set(overrider, credentialId);
+                Field deployerCredentialsConfigField = overriderClass.getDeclaredField("deployerCredentialsConfig");
+                deployerCredentialsConfigField.setAccessible(true);
+                CredentialsConfig credentialsConfig = new CredentialsConfig(userName, password, credentialId);
+                deployerCredentialsConfigField.set(overrider, credentialsConfig);
             }
         }
     }
@@ -174,9 +176,10 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
                         store.addCredentials(Domain.global(), usernamePasswordCredentials);
                     }
 
-                    Field deployerCredentialsIdField = overriderClass.getDeclaredField("resolverCredentialsId");
-                    deployerCredentialsIdField.setAccessible(true);
-                    deployerCredentialsIdField.set(overrider, credentialId);
+                    Field deployerCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
+                    deployerCredentialsConfigField.setAccessible(true);
+                    CredentialsConfig credentialsConfig = new CredentialsConfig(userName, password, credentialId);
+                    deployerCredentialsConfigField.set(overrider, credentialsConfig);
                 }
             }
         }
@@ -211,4 +214,5 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         return String.format("Could not convert the class '%s' to use the new overriding" +
                 "format. Cause: %s", deployerOverrider.getClass().getName(), e.getCause());
     }
+
 }
