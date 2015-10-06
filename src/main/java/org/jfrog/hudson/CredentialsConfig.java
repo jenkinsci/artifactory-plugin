@@ -35,7 +35,9 @@ public class CredentialsConfig implements Serializable {
     public CredentialsConfig(String username, String password, String credentialsId) {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
-        this.useLegacyCredentials = descriptor.getUseLegacyCredentials();
+        if (descriptor != null) {
+            this.useLegacyCredentials = descriptor.getUseLegacyCredentials();
+        }
         this.credentials = new Credentials(username, password);
         this.credentialsId = credentialsId;
     }

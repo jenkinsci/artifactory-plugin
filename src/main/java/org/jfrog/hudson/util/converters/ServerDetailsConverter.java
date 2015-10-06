@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- *
  * @author Lior Hasson
  */
 public class ServerDetailsConverter extends XStream2.PassthruConverter<ServerDetails> {
@@ -30,6 +29,7 @@ public class ServerDetailsConverter extends XStream2.PassthruConverter<ServerDet
         newToOldFields.put("downloadSnapshotRepositoryKey", "resolveSnapshotRepository");
         newToOldFields.put("downloadReleaseRepositoryKey", "resolveReleaseRepository");
     }
+
     public ServerDetailsConverter(XStream2 xstream) {
         super(xstream);
     }
@@ -37,7 +37,7 @@ public class ServerDetailsConverter extends XStream2.PassthruConverter<ServerDet
     public void convertToReleaseAndSnapshotRepository(ServerDetails server) {
         Class<? extends ServerDetails> overrideClass = server.getClass();
 
-        try{
+        try {
             Field oldReleaseRepositoryField = overrideClass.getDeclaredField("downloadRepositoryKey");
             oldReleaseRepositoryField.setAccessible(true);
             Object oldReleaseRepositoryValue = oldReleaseRepositoryField.get(server);
@@ -66,8 +66,8 @@ public class ServerDetailsConverter extends XStream2.PassthruConverter<ServerDet
     }
 
     private void setNewReposFieldFromOld(ServerDetails reflectedObject, Class classToChange, String oldFieldName,
-                                         String newFieldName)  {
-        try{
+                                         String newFieldName) {
+        try {
             Field oldField = classToChange.getDeclaredField(oldFieldName);
             oldField.setAccessible(true);
             String oldValue = (String) oldField.get(reflectedObject);
@@ -89,7 +89,7 @@ public class ServerDetailsConverter extends XStream2.PassthruConverter<ServerDet
         convertToReleaseAndSnapshotRepository(server);
         convertToDynamicReposSelection(server);
 
-        if(!converterErrors.isEmpty()){
+        if (!converterErrors.isEmpty()) {
             logger.info(converterErrors.toString());
         }
     }

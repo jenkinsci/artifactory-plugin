@@ -12,6 +12,7 @@ import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.util.Credentials;
 
 import java.io.IOException;
@@ -20,12 +21,12 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- *
  * @author Lior Hasson
  */
-public class ArtifactoryServerConverter extends XStream2.PassthruConverter<ArtifactoryServer>{
+public class ArtifactoryServerConverter extends XStream2.PassthruConverter<ArtifactoryServer> {
     Logger logger = Logger.getLogger(ArtifactoryServerConverter.class.getName());
-    List < String > converterErrors = Lists.newArrayList();
+    List<String> converterErrors = Lists.newArrayList();
+
     public ArtifactoryServerConverter(XStream2 xstream) {
         super(xstream);
     }
@@ -35,7 +36,7 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
         oldResolverCredentials(server);
         credentialsMigration(server);
 
-        if(!converterErrors.isEmpty()){
+        if (!converterErrors.isEmpty()) {
             logger.info(converterErrors.toString());
         }
     }
@@ -61,7 +62,7 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
 
             if (userName != null && StringUtils.isNotBlank((String) userName) && (resolverCredentials == null)) {
                 resolverCredentialsField.set(
-                        server, new Credentials((String)userName, Scrambler.descramble((String)password)));
+                        server, new Credentials((String) userName, Scrambler.descramble((String) password)));
             }
 
         } catch (NoSuchFieldException e) {
@@ -99,16 +100,17 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
                 String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":deployer";
                 UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
                         CredentialsScope.GLOBAL, credentialId,
-                        "Migrated from Artifactory plugin ("+ server.getUrl() +")", userName, password
+                        "Migrated from Artifactory plugin (" + server.getUrl() + ")", userName, password
                 );
 
-                if(!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
+                if (!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
                     store.addCredentials(Domain.global(), usernamePasswordCredentials);
                 }
 
-                Field deployerCredentialsIdField = overriderClass.getDeclaredField("deployerCredentialsId");
-                deployerCredentialsIdField.setAccessible(true);
-                deployerCredentialsIdField.set(server, credentialId);
+
+                Field deployerCredentialsConfigField = overriderClass.getDeclaredField("deployerCredentialsConfig");
+                deployerCredentialsConfigField.setAccessible(true);
+                deployerCredentialsConfigField.set(server, new CredentialsConfig(userName, password, credentialId));
             }
         }
     }
@@ -128,17 +130,17 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
             if (StringUtils.isNotBlank(userName)) {
                 String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":resolver";
                 UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                        CredentialsScope.GLOBAL, credentialId, "Migrated from Artifactory plugin ("+ server.getUrl() +")",
+                        CredentialsScope.GLOBAL, credentialId, "Migrated from Artifactory plugin (" + server.getUrl() + ")",
                         userName, password
                 );
 
-                if(!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
+                if (!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
                     store.addCredentials(Domain.global(), usernamePasswordCredentials);
                 }
 
-                Field deployerCredentialsIdField = overriderClass.getDeclaredField("resolverCredentialsId");
-                deployerCredentialsIdField.setAccessible(true);
-                deployerCredentialsIdField.set(server, credentialId);
+                Field deployerCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
+                deployerCredentialsConfigField.setAccessible(true);
+                deployerCredentialsConfigField.set(server, new CredentialsConfig(userName, password, credentialId));
             }
         }
     }
@@ -148,4 +150,3 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
                 "format. Cause: %s", artifactoryServer.getClass().getName(), e.getCause());
     }
 }
-
