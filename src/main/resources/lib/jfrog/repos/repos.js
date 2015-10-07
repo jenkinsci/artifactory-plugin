@@ -235,6 +235,8 @@ function artifactoryGradleConfigurator(spinner, artifactoryUrl, credentialsId, u
             removeElements(selectPlugins);
 
             fillSelect(selectPublish, response.repositories);
+            fillStagingPluginsSelect(selectPlugins, response.userPlugins);
+            createStagingParamsInputs(response.userPlugins);
 
             setSelectValue(selectPublish, oldPublishValue);
             setSelectValue(selectPlugins, oldPluginsValue);

@@ -7,7 +7,6 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
-import hudson.util.Scrambler;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
@@ -33,42 +32,10 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
 
     @Override
     protected void callback(ArtifactoryServer server, UnmarshallingContext context) {
-        oldResolverCredentials(server);
         credentialsMigration(server);
 
         if (!converterErrors.isEmpty()) {
             logger.info(converterErrors.toString());
-        }
-    }
-
-    /**
-     * When upgrading from an older version, a user might have resolver credentials as local variables. This converter
-     * Will check for existing old resolver credentials and "move" them to a credentials object instead
-     */
-    private void oldResolverCredentials(ArtifactoryServer server) {
-        Class<? extends ArtifactoryServer> overriderClass = server.getClass();
-        try {
-            Field userNameField = overriderClass.getDeclaredField("userName");
-            userNameField.setAccessible(true);
-            Object userName = userNameField.get(server);
-
-            Field resolverCredentialsField = overriderClass.getDeclaredField("resolverCredentials");
-            resolverCredentialsField.setAccessible(true);
-            Object resolverCredentials = resolverCredentialsField.get(server);
-
-            Field passwordField = overriderClass.getDeclaredField("password");
-            passwordField.setAccessible(true);
-            Object password = passwordField.get(server);
-
-            if (userName != null && StringUtils.isNotBlank((String) userName) && (resolverCredentials == null)) {
-                resolverCredentialsField.set(
-                        server, new Credentials((String) userName, Scrambler.descramble((String) password)));
-            }
-
-        } catch (NoSuchFieldException e) {
-            converterErrors.add(getConversionErrorMessage(server, e));
-        } catch (IllegalAccessException e) {
-            converterErrors.add(getConversionErrorMessage(server, e));
         }
     }
 
@@ -119,11 +86,11 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
             throws NoSuchFieldException, IllegalAccessException, IOException {
         Class<? extends ArtifactoryServer> overriderClass = server.getClass();
         Field resolverCredentialsField = overriderClass.getDeclaredField("resolverCredentials");
-        resolverCredentialsField.setAccessible(true);
-        Object resolverCredentials = resolverCredentialsField.get(server);
 
         Field deployerCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
         deployerCredentialsConfigField.setAccessible(true);
+        resolverCredentialsField.setAccessible(true);
+        Object resolverCredentials = resolverCredentialsField.get(server);
 
         if (resolverCredentials != null) {
             CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();

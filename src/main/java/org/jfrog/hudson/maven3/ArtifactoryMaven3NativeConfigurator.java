@@ -119,7 +119,8 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public List<VirtualRepository> getVirtualRepositoryList() {
-        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys, details.getResolveReleaseRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys,
+                details.getResolveReleaseRepository().getKeyFromSelect());
     }
 
     @Override

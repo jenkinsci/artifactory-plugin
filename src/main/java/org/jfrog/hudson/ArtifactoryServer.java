@@ -64,16 +64,7 @@ public class ArtifactoryServer implements Serializable {
     private transient volatile List<String> repositories;
 
     private transient volatile List<VirtualRepository> virtualRepositories;
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String userName;
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String password;    // base64 scrambled password
+
     /**
      * @deprecated: Use org.jfrog.hudson.ArtifactoryServer#getDeployerCredentials()()
      */

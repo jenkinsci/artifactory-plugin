@@ -66,11 +66,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private transient List<BuildDependency> buildDependencies;
     private String artifactoryCombinationFilter;
     private boolean multiConfProject;
-    /**
-     * Don't need it anymore since now the slave uses it's own client to deploy the artifacts
-     */
-    @Deprecated
-    private transient String keepArchivedArtifacts;
+
     /**
      * @deprecated: Use org.jfrog.hudson.generic.ArtifactoryGenericConfigurator#getDeployerCredentials()()
      */
@@ -121,7 +117,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return deployerCredentialsConfig.isCredentialsProvided();
+        return deployerCredentialsConfig != null && deployerCredentialsConfig.isCredentialsProvided();
     }
 
     public String getRepositoryKey() {

@@ -208,7 +208,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return deployerCredentialsConfig.isCredentialsProvided();
+        return deployerCredentialsConfig != null &&  deployerCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingDeployerCredentials() {
@@ -547,7 +547,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final CredentialsConfig credentialsConfig) {
             List<UserPluginInfo> pluginInfoList = artifactoryServer.getStagingUserPluginInfo(new DeployerOverrider() {
                 public boolean isOverridingDefaultDeployer() {
-                    return (credentialsConfig != null && credentialsConfig.isCredentialsProvided());
+                    return credentialsConfig != null && credentialsConfig.isCredentialsProvided();
                 }
 
                 public Credentials getOverridingDeployerCredentials() {

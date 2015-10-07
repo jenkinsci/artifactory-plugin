@@ -105,19 +105,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
     private String artifactoryCombinationFilter;
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String username;
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String scrambledPassword;
-    /**
-     * @deprecated: Use org.jfrog.hudson.ivy.ArtifactoryIvyFreeStyleConfigurator#getDeployerCredentialsConfig()()
-     */
+
     @Deprecated
     private Credentials overridingDeployerCredentials;
 
@@ -199,7 +187,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return deployerCredentialsConfig.isCredentialsProvided();
+        return deployerCredentialsConfig != null && deployerCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingDeployerCredentials() {

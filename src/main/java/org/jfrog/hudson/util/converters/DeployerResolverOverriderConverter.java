@@ -23,7 +23,6 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
-import hudson.util.Scrambler;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
@@ -55,7 +54,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
     @Override
     protected void callback(T overrider, UnmarshallingContext context) {
         Class<? extends DeployerOverrider> overriderClass = overrider.getClass();
-        overrideDeployerCredentials(overrider, overriderClass);
+//        overrideDeployerCredentials(overrider, overriderClass);
         overrideResolverDetails(overrider, overriderClass);
         credentialsMigration(overrider, overriderClass);
 
@@ -80,12 +79,12 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         }
     }
 
-    /**
+   /* *//**
      * Convert any remaining local credential variables to a credentials object.
      * When upgrading from an older version, a user might have deployer credentials as local variables of a builder
      * configuration. This converter Will check for existing old deployer credentials and "move" them to a credentials
      * object instead, thus overriding the deployer credentials of the global config.
-     */
+     *//*
     private void overrideDeployerCredentials(T deployerOverrider, Class<? extends DeployerOverrider> overriderClass) {
         try {
             Field oldUsernameField = overriderClass.getDeclaredField("username");
@@ -119,7 +118,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
             converterErrors.add(getConversionErrorMessage(deployerOverrider, e));
         }
     }
-
+*/
     private void deployerMigration(T overrider, Class<? extends DeployerOverrider> overriderClass) throws NoSuchFieldException, IllegalAccessException, IOException {
         Field overridingDeployerCredentialsField = overriderClass.getDeclaredField("overridingDeployerCredentials");
         overridingDeployerCredentialsField.setAccessible(true);
