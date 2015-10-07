@@ -16,15 +16,9 @@
 
 package org.jfrog.hudson.util.converters;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.CredentialsStore;
-import com.cloudbees.plugins.credentials.domains.Domain;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.util.XStream2;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.DeployerOverrider;
@@ -54,7 +48,6 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
     @Override
     protected void callback(T overrider, UnmarshallingContext context) {
         Class<? extends DeployerOverrider> overriderClass = overrider.getClass();
-//        overrideDeployerCredentials(overrider, overriderClass);
         overrideResolverDetails(overrider, overriderClass);
         credentialsMigration(overrider, overriderClass);
 
@@ -79,47 +72,8 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         }
     }
 
-   /* *//**
-     * Convert any remaining local credential variables to a credentials object.
-     * When upgrading from an older version, a user might have deployer credentials as local variables of a builder
-     * configuration. This converter Will check for existing old deployer credentials and "move" them to a credentials
-     * object instead, thus overriding the deployer credentials of the global config.
-     *//*
-    private void overrideDeployerCredentials(T deployerOverrider, Class<? extends DeployerOverrider> overriderClass) {
-        try {
-            Field oldUsernameField = overriderClass.getDeclaredField("username");
-            oldUsernameField.setAccessible(true);
-            Object oldUsernameValue = oldUsernameField.get(deployerOverrider);
-
-            if (oldUsernameValue != null && StringUtils.isNotBlank((String) oldUsernameValue) &&
-                    !deployerOverrider.isOverridingDefaultDeployer()) {
-
-                String oldUsername = (String) oldUsernameValue;
-                String oldPassword = null;
-                Field oldPasswordField;
-                try {
-                    oldPasswordField = overriderClass.getDeclaredField("password");
-                } catch (NoSuchFieldException e) {
-                    oldPasswordField = overriderClass.getDeclaredField("scrambledPassword");
-                }
-                oldPasswordField.setAccessible(true);
-                Object oldPasswordValue = oldPasswordField.get(deployerOverrider);
-                if ((oldPasswordValue != null) && StringUtils.isNotBlank(((String) oldPasswordValue))) {
-                    oldPassword = Scrambler.descramble((String) oldPasswordValue);
-                }
-
-                Field overridingCredentialsField = overriderClass.getDeclaredField("overridingDeployerCredentials");
-                overridingCredentialsField.setAccessible(true);
-                overridingCredentialsField.set(deployerOverrider, new Credentials(oldUsername, oldPassword));
-            }
-        } catch (NoSuchFieldException e) {
-            converterErrors.add(getConversionErrorMessage(deployerOverrider, e));
-        } catch (IllegalAccessException e) {
-            converterErrors.add(getConversionErrorMessage(deployerOverrider, e));
-        }
-    }
-*/
     private void deployerMigration(T overrider, Class<? extends DeployerOverrider> overriderClass) throws NoSuchFieldException, IllegalAccessException, IOException {
+
         Field overridingDeployerCredentialsField = overriderClass.getDeclaredField("overridingDeployerCredentials");
         overridingDeployerCredentialsField.setAccessible(true);
         Object overridingDeployerCredentials = overridingDeployerCredentialsField.get(overrider);
@@ -128,24 +82,10 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         deployerCredentialsConfigField.setAccessible(true);
 
         if (overridingDeployerCredentials != null) {
-            CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
-            String userName = ((Credentials) overridingDeployerCredentials).getUsername();
-            String password = ((Credentials) overridingDeployerCredentials).getPassword();
 
-            if (StringUtils.isNotBlank(userName)) {
-                String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":deployer";
-                UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                        CredentialsScope.GLOBAL, credentialId,
-                        "Migrated from Artifactory plugin Job: " + overrider.getClass().getSimpleName() + " (deployer)",
-                        userName, password
-                );
+            deployerCredentialsConfigField.set(overrider, new CredentialsConfig((Credentials) overridingDeployerCredentials,
+                    StringUtils.EMPTY));
 
-                if (!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
-                    store.addCredentials(Domain.global(), usernamePasswordCredentials);
-                }
-                CredentialsConfig credentialsConfig = new CredentialsConfig(new Credentials(userName, password), credentialId);
-                deployerCredentialsConfigField.set(overrider, credentialsConfig);
-            }
         } else {
             deployerCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
@@ -153,6 +93,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
 
     private void resolverMigration(T overrider, Class<? extends DeployerOverrider> overriderClass)
             throws NoSuchFieldException, IllegalAccessException, IOException {
+
         if (overrider instanceof ResolverOverrider) {
             Field resolverCredentialsField = overriderClass.getDeclaredField("overridingResolverCredentials");
             resolverCredentialsField.setAccessible(true);
@@ -161,25 +102,8 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
             Field resolverCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
             resolverCredentialsConfigField.setAccessible(true);
             if (resolverCredentials != null) {
-                CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
-                String userName = ((Credentials) resolverCredentials).getUsername();
-                String password = ((Credentials) resolverCredentials).getPassword();
-
-                if (StringUtils.isNotBlank(userName)) {
-                    String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":resolver";
-                    UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                            CredentialsScope.GLOBAL, credentialId,
-                            "Migrated from Artifactory plugin Job: " + overrider.getClass().getSimpleName() + " (resolver)",
-                            userName, password
-                    );
-
-                    if (!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
-                        store.addCredentials(Domain.global(), usernamePasswordCredentials);
-                    }
-
-                    CredentialsConfig credentialsConfig = new CredentialsConfig(new Credentials(userName, password), credentialId);
-                    resolverCredentialsConfigField.set(overrider, credentialsConfig);
-                }
+                CredentialsConfig credentialsConfig = new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY);
+                resolverCredentialsConfigField.set(overrider, credentialsConfig);
             } else {
                 resolverCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
             }

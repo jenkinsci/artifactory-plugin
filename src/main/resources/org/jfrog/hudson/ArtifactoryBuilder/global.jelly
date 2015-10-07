@@ -9,9 +9,8 @@
 
             <input id="useLegacyCredentials" type="checkbox" onclick="updateViewForCredentialsMethod(this.checked)"
                    name="useLegacyCredentials" value="${descriptor.useLegacyCredentials}"
-                   field="useLegacyCredentials">Do not use Credentials plugin
+                   field="useLegacyCredentials">Use Credentials plugin
             </input>
-            <!--<f:checkbox name="useLegacyCredentials" field="useLegacyCredentials" title="Use credentials plugin"/>-->
             <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}"
                           header="Artifactory">
                 <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ArtifactoryServer"/>

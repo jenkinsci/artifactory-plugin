@@ -11,13 +11,13 @@ import java.io.Serializable;
 /**
  * Configuration for all available credentials providers - Legacy credentials method or credentials plugin
  * Each call for username/password should go through here and this object will provide the username/password
- * according to the global configuration objects which will configured with the "useLegacyCredentials" property
+ * according to the global configuration objects which will configured with the "useCredentialsPlugin" property
  *
  * @author Aviad Shikloshi
  */
 public class CredentialsConfig implements Serializable {
 
-    private boolean useLegacyCredentials = false;
+    private static boolean useCredentialsPlugin = false;
 
     private Credentials credentials;
     private String credentialsId;
@@ -36,7 +36,7 @@ public class CredentialsConfig implements Serializable {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
         if (descriptor != null) {
-            this.useLegacyCredentials = descriptor.getUseLegacyCredentials();
+            useCredentialsPlugin = descriptor.getUseLegacyCredentials();
         }
         this.credentials = new Credentials(username, password);
         this.credentialsId = credentialsId;
@@ -49,16 +49,16 @@ public class CredentialsConfig implements Serializable {
 
     /**
      * In case of overriding the global configuration this method should be called to check if override credentials was supplied
-     * from configuration - this will take under  consideration the state of the "useLegacyCredentials" option in global config object
+     * from configuration - this will take under  consideration the state of the "useCredentialsPlugin" option in global config object
      *
-     * @return in legacy mode this will return true if username and password both supplied (todo: check if this is the right logic or should bring back the checkbox),
+     * @return in legacy mode this will return true if username and password both supplied
      * In Credentials plugin mode this will return true if a credentials id was selected in the job configuration
      */
     public boolean isCredentialsProvided() {
-        if (useLegacyCredentials) {
-            return StringUtils.isNotBlank(credentials.getUsername()) && StringUtils.isNotBlank(credentials.getPassword());
+        if (useCredentialsPlugin) {
+            return StringUtils.isNotBlank(credentialsId);
         }
-        return StringUtils.isNotBlank(credentialsId);
+        return StringUtils.isNotBlank(credentials.getUsername()) && StringUtils.isNotBlank(credentials.getPassword());
     }
 
     /**
@@ -67,7 +67,7 @@ public class CredentialsConfig implements Serializable {
      * @return the username that should be apply in this configuration
      */
     public String provideUsername() {
-        return useLegacyCredentials ? credentials.getUsername() : PluginsUtils.credentialsLookup(credentialsId).getUsername();
+        return useCredentialsPlugin ? PluginsUtils.credentialsLookup(credentialsId).getUsername() : credentials.getUsername();
     }
 
     /**
@@ -76,11 +76,11 @@ public class CredentialsConfig implements Serializable {
      * @return the password that should be apply in this configuration
      */
     public String providePassword() {
-        return useLegacyCredentials ? credentials.getPassword() : PluginsUtils.credentialsLookup(credentialsId).getPassword();
+        return useCredentialsPlugin ? PluginsUtils.credentialsLookup(credentialsId).getPassword() : credentials.getPassword();
     }
 
     public Credentials getCredentials() {
-        return useLegacyCredentials ? credentials : PluginsUtils.credentialsLookup(credentialsId);
+        return useCredentialsPlugin ? PluginsUtils.credentialsLookup(credentialsId) : credentials;
     }
 
     // Jenkins Jelly getters for displaying values on user interface
@@ -103,12 +103,17 @@ public class CredentialsConfig implements Serializable {
         return credentialsId;
     }
 
+    private static CredentialsConfig emptyCredentialConfig = null;
+
     /**
      * Create an empty instance of the CredentialsConfig object for cases that the user did not override the server main configuration
      *
      * @return all empty strings object
      */
     public static CredentialsConfig createEmptyCredentialsConfigObject() {
-        return new CredentialsConfig(new Credentials(StringUtils.EMPTY, StringUtils.EMPTY), StringUtils.EMPTY);
+        if (emptyCredentialConfig == null) {
+            return new CredentialsConfig(new Credentials(StringUtils.EMPTY, StringUtils.EMPTY), StringUtils.EMPTY);
+        }
+        return emptyCredentialConfig;
     }
 }

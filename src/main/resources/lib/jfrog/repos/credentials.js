@@ -6,15 +6,15 @@ var resolverPrefix = 'resolverCredentialsId';
 var deployerPrefix = 'deployerCredentialsId';
 
 var legacyDeployerPrefix = 'legacyDeployerCredentials';
-var legacyResolverPrefix = 'legacyResolverCredentials'
+var legacyResolverPrefix = 'legacyResolverCredentials';
 
-function updateViewForCredentialsMethod(useLegacyCredentials) {
-    toggleCredentialsPluginFromView(useLegacyCredentials);
-    toggleLegacyUsernamePasswordFromView(!useLegacyCredentials);
+function updateViewForCredentialsMethod(useCredentialsPlugin) {
+    toggleCredentialsPluginFromView(useCredentialsPlugin);
+    toggleLegacyUsernamePasswordFromView(useCredentialsPlugin);
 }
 
-function toggleCredentialsPluginFromView(hide) {
-    var newDisplayStyle = hide ? 'none' : '';
+function toggleCredentialsPluginFromView(show) {
+    var newDisplayStyle = show ? '' : 'none';
     var resolverTables = getElementsWithIdPrefix(resolverPrefix);
     setNewDisplayStyle(resolverTables, newDisplayStyle);
     var deployerTables = getElementsWithIdPrefix(deployerPrefix);

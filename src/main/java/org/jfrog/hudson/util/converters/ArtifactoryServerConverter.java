@@ -1,14 +1,8 @@
 package org.jfrog.hudson.util.converters;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.CredentialsStore;
-import com.cloudbees.plugins.credentials.domains.Domain;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.util.XStream2;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
@@ -53,6 +47,7 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
     }
 
     private void deployerMigration(ArtifactoryServer server) throws NoSuchFieldException, IllegalAccessException, IOException {
+
         Class<? extends ArtifactoryServer> overriderClass = server.getClass();
         Field deployerCredentialsField = overriderClass.getDeclaredField("deployerCredentials");
         deployerCredentialsField.setAccessible(true);
@@ -62,23 +57,9 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
         deployerCredentialsConfigField.setAccessible(true);
 
         if (deployerCredentials != null) {
-            CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
-            String userName = ((Credentials) deployerCredentials).getUsername();
-            String password = ((Credentials) deployerCredentials).getPassword();
-
-            if (StringUtils.isNotBlank(userName)) {
-                String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":deployer";
-                UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                        CredentialsScope.GLOBAL, credentialId,
-                        "Migrated from Artifactory plugin (" + server.getUrl() + ")", userName, password
-                );
-
-                if (!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
-                    store.addCredentials(Domain.global(), usernamePasswordCredentials);
-                }
-
-                deployerCredentialsConfigField.set(server, new CredentialsConfig(new Credentials(userName, password), credentialId));
-            }
+            deployerCredentialsConfigField.set(server, new CredentialsConfig((Credentials) deployerCredentials, StringUtils.EMPTY));
+        } else {
+            deployerCredentialsConfigField.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
     }
 
@@ -86,30 +67,15 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
             throws NoSuchFieldException, IllegalAccessException, IOException {
         Class<? extends ArtifactoryServer> overriderClass = server.getClass();
         Field resolverCredentialsField = overriderClass.getDeclaredField("resolverCredentials");
-
-        Field deployerCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
-        deployerCredentialsConfigField.setAccessible(true);
+        Field resolverCredentialsConfig = overriderClass.getDeclaredField("resolverCredentialsConfig");
+        resolverCredentialsConfig.setAccessible(true);
         resolverCredentialsField.setAccessible(true);
         Object resolverCredentials = resolverCredentialsField.get(server);
 
         if (resolverCredentials != null) {
-            CredentialsStore store = CredentialsProvider.lookupStores(Jenkins.getInstance()).iterator().next();
-            String userName = ((Credentials) resolverCredentials).getUsername();
-            String password = ((Credentials) resolverCredentials).getPassword();
-
-            if (StringUtils.isNotBlank(userName)) {
-                String credentialId = userName + ":" + password + ":" + overriderClass.getName() + ":resolver";
-                UsernamePasswordCredentialsImpl usernamePasswordCredentials = new UsernamePasswordCredentialsImpl(
-                        CredentialsScope.GLOBAL, credentialId, "Migrated from Artifactory plugin (" + server.getUrl() + ")",
-                        userName, password
-                );
-
-                if (!store.getCredentials(Domain.global()).contains(usernamePasswordCredentials)) {
-                    store.addCredentials(Domain.global(), usernamePasswordCredentials);
-                }
-
-                deployerCredentialsConfigField.set(server, new CredentialsConfig(new Credentials(userName, password), credentialId));
-            }
+            resolverCredentialsConfig.set(server, new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY));
+        } else {
+            resolverCredentialsConfig.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
     }
 

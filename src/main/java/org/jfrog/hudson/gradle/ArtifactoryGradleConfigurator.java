@@ -688,7 +688,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public boolean isOverridingDefaultResolver() {
-        return resolverCredentialsConfig.isCredentialsProvided();
+        return resolverCredentialsConfig != null && resolverCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingResolverCredentials() {

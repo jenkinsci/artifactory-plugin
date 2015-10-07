@@ -8,7 +8,6 @@ import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
-import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.util.Credentials;
@@ -20,7 +19,7 @@ public class PluginsUtils {
     public static final String MULTIJOB_PLUGIN_ID = "jenkins-multijob-plugin";
 
     public static ListBoxModel fillPluginCredentials(Item project) {
-        return fillPluginCredentials(project, Jenkins.getAuthentication());
+        return fillPluginCredentials(project, ACL.SYSTEM);
     }
 
     public static ListBoxModel fillPluginCredentials(Item project, Authentication authentication) {
@@ -28,7 +27,6 @@ public class PluginsUtils {
             return new StandardListBoxModel();
         }
         List<DomainRequirement> domainRequirements = Collections.emptyList();
-//        ((DeployerOverrider)((FreeStyleProject) project).buildWrappers.get(0)).getDeployerCredentialsConfig()
         return new StandardListBoxModel()
                 .withEmptySelection()
                 .withMatching(
@@ -49,12 +47,13 @@ public class PluginsUtils {
                 CredentialsProvider.lookupCredentials(
                         UsernamePasswordCredentials.class, dummy, ACL.SYSTEM,
                         Collections.<DomainRequirement>emptyList()),
-                CredentialsMatchers.allOf(
-                        CredentialsMatchers.withId(credentialsId))
+                CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialsId))
         );
-
-        return new Credentials(usernamePasswordCredentials.getUsername(),
-                usernamePasswordCredentials.getPassword().getPlainText());
+        if (usernamePasswordCredentials != null) {
+            return new Credentials(usernamePasswordCredentials.getUsername(),
+                    usernamePasswordCredentials.getPassword().getPlainText());
+        }
+        throw new IllegalStateException("Did not find Credentials with Id: " + credentialsId);
     }
 
     public static boolean isUseLegacyCredentials() {
