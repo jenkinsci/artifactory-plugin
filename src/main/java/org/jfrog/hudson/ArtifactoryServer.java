@@ -276,7 +276,7 @@ public class ArtifactoryServer implements Serializable {
             return getDeployerCredentialsConfig();
         }
 
-        return new CredentialsConfig(null, null);
+        return CredentialsConfig.createEmptyCredentialsConfigObject();
     }
 
     private void gatherUserPluginInfo(List<UserPluginInfo> infosToReturn, String pluginKey, DeployerOverrider deployerOverrider) {

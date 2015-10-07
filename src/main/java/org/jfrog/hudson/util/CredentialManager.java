@@ -53,7 +53,7 @@ public abstract class CredentialManager {
             }
         }
 
-        return new CredentialsConfig(null, null);
+        return CredentialsConfig.createEmptyCredentialsConfigObject();
 
     }
 
