@@ -208,7 +208,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return deployerCredentialsConfig != null &&  deployerCredentialsConfig.isCredentialsProvided();
+        return deployerCredentialsConfig != null && deployerCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingDeployerCredentials() {

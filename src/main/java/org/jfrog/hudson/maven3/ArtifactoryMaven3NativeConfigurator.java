@@ -9,10 +9,12 @@ import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
+import hudson.util.XStream2;
 import net.sf.json.JSONObject;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -70,7 +72,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public boolean isOverridingDefaultResolver() {
-        return resolverCredentialsConfig.isCredentialsProvided();
+        return resolverCredentialsConfig != null && resolverCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingResolverCredentials() {
@@ -217,6 +219,15 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
 
         public boolean isUseCredentialsPlugin() {
             return PluginsUtils.isUseCredentialsPlugin();
+        }
+    }
+
+    /**
+     * Page Converter
+     */
+    public static final class ConverterImpl extends DeployerResolverOverriderConverter {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
         }
     }
 }

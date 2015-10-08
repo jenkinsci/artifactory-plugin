@@ -82,10 +82,8 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         deployerCredentialsConfigField.setAccessible(true);
 
         if (overridingDeployerCredentials != null) {
-
             deployerCredentialsConfigField.set(overrider, new CredentialsConfig((Credentials) overridingDeployerCredentials,
                     StringUtils.EMPTY));
-
         } else {
             deployerCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
