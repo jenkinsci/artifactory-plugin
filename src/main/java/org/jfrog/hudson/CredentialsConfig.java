@@ -21,7 +21,7 @@ public class CredentialsConfig implements Serializable {
 
     private Credentials credentials;
     private String credentialsId;
-    private boolean overridingCredentials;
+    private Boolean overridingCredentials;
     /**
      * Constructed from the build configuration (Maven, Gradle, Ivy, Freestyle, etc)
      * This object obtains the username, password and credentials id (used with the Credentials plugin)
@@ -43,6 +43,7 @@ public class CredentialsConfig implements Serializable {
         this.credentialsId = credentialsId;
     }
 
+//    @DataBoundConstructor
     public CredentialsConfig(String username, String password, String credentialsId) {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
