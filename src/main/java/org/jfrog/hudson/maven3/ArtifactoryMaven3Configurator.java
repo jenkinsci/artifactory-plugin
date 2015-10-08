@@ -580,7 +580,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 refreshVirtualRepositories(artifactoryServer, credentialsConfig);
                 response.setVirtualRepositories(virtualRepositoryList);
                 response.setSuccess(true);
-                return response;
             } catch (Exception e) {
                 e.printStackTrace();
                 response.setResponseMessage(e.getMessage());

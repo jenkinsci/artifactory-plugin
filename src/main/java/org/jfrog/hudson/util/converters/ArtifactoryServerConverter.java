@@ -57,7 +57,7 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
         deployerCredentialsConfigField.setAccessible(true);
 
         if (deployerCredentials != null) {
-            deployerCredentialsConfigField.set(server, new CredentialsConfig((Credentials) deployerCredentials, StringUtils.EMPTY));
+            deployerCredentialsConfigField.set(server, new CredentialsConfig((Credentials) deployerCredentials, StringUtils.EMPTY, true));
         } else {
             deployerCredentialsConfigField.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
@@ -73,7 +73,7 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
         Object resolverCredentials = resolverCredentialsField.get(server);
 
         if (resolverCredentials != null) {
-            resolverCredentialsConfig.set(server, new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY));
+            resolverCredentialsConfig.set(server, new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY, true));
         } else {
             resolverCredentialsConfig.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
         }

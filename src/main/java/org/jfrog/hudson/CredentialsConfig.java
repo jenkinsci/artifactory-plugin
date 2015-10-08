@@ -21,7 +21,7 @@ public class CredentialsConfig implements Serializable {
 
     private Credentials credentials;
     private String credentialsId;
-
+    private boolean overridingCredentials;
     /**
      * Constructed from the build configuration (Maven, Gradle, Ivy, Freestyle, etc)
      * This object obtains the username, password and credentials id (used with the Credentials plugin)
@@ -32,6 +32,17 @@ public class CredentialsConfig implements Serializable {
      * @param credentialsId credentialsId chosen from the select box
      */
     @DataBoundConstructor
+    public CredentialsConfig(String username, String password, String credentialsId, Boolean overridingCredentials) {
+        ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
+                Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
+        if (descriptor != null) {
+            useCredentialsPlugin = descriptor.getUseCredentialsPlugin();
+        }
+        this.overridingCredentials = overridingCredentials;
+        this.credentials = new Credentials(username, password);
+        this.credentialsId = credentialsId;
+    }
+
     public CredentialsConfig(String username, String password, String credentialsId) {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
@@ -42,23 +53,24 @@ public class CredentialsConfig implements Serializable {
         this.credentialsId = credentialsId;
     }
 
-    public CredentialsConfig(Credentials credentials, String credentialsId) {
+    public CredentialsConfig(Credentials credentials, String credentialsId, boolean overridingCredentials) {
         this.credentials = credentials;
         this.credentialsId = credentialsId;
+        this.overridingCredentials = overridingCredentials;
     }
 
     /**
      * In case of overriding the global configuration this method should be called to check if override credentials were supplied
      * from configuration - this will take under  consideration the state of the "useCredentialsPlugin" option in global config object
      *
-     * @return in legacy mode this will return true if username and password both supplied
+     * s@return in legacy mode this will return true if username and password both supplied
      * In Credentials plugin mode this will return true if a credentials id was selected in the job configuration
      */
     public boolean isCredentialsProvided() {
         if (useCredentialsPlugin) {
             return StringUtils.isNotBlank(credentialsId);
         }
-        return StringUtils.isNotBlank(credentials.getUsername()) && StringUtils.isNotBlank(credentials.getPassword());
+        return overridingCredentials;
     }
 
     /**
@@ -104,6 +116,10 @@ public class CredentialsConfig implements Serializable {
         return credentialsId;
     }
 
+    public boolean isOverridingCredentials() {
+        return overridingCredentials;
+    }
+
     private static CredentialsConfig emptyCredentialConfig = null;
 
     /**
@@ -113,7 +129,7 @@ public class CredentialsConfig implements Serializable {
      */
     public static CredentialsConfig createEmptyCredentialsConfigObject() {
         if (emptyCredentialConfig == null) {
-            return new CredentialsConfig(new Credentials(StringUtils.EMPTY, StringUtils.EMPTY), StringUtils.EMPTY);
+            return new CredentialsConfig(new Credentials(StringUtils.EMPTY, StringUtils.EMPTY), StringUtils.EMPTY, false);
         }
         return emptyCredentialConfig;
     }

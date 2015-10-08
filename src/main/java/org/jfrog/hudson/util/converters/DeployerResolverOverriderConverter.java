@@ -83,7 +83,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
 
         if (overridingDeployerCredentials != null) {
             deployerCredentialsConfigField.set(overrider, new CredentialsConfig((Credentials) overridingDeployerCredentials,
-                    StringUtils.EMPTY));
+                    StringUtils.EMPTY, true));
         } else {
             deployerCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
         }
@@ -100,7 +100,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
             Field resolverCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
             resolverCredentialsConfigField.setAccessible(true);
             if (resolverCredentials != null) {
-                CredentialsConfig credentialsConfig = new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY);
+                CredentialsConfig credentialsConfig = new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY, true);
                 resolverCredentialsConfigField.set(overrider, credentialsConfig);
             } else {
                 resolverCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
