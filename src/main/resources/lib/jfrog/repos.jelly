@@ -18,7 +18,8 @@
             Caption of the repository URL
         </st:attribute>
         <st:attribute name="credentialsDescriber">
-
+            CredentialsConfig field name - usually this will be the same as
+            configurationFieldName attribute in r:credentials component
         </st:attribute>
     </st:documentation>
 

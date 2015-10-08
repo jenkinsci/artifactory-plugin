@@ -215,8 +215,8 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             return RepositoriesUtils.getArtifactoryServers();
         }
 
-        public boolean isUseLegacyCredentials() {
-            return PluginsUtils.isUseLegacyCredentials();
+        public boolean isUseCredentialsPlugin() {
+            return PluginsUtils.isUseCredentialsPlugin();
         }
     }
 }

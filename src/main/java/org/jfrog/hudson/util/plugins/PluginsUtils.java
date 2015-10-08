@@ -10,6 +10,7 @@ import hudson.security.ACL;
 import hudson.util.ListBoxModel;
 import org.acegisecurity.Authentication;
 import org.jfrog.hudson.ArtifactoryBuilder;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.util.Credentials;
 
 import java.util.Collections;
@@ -53,14 +54,14 @@ public class PluginsUtils {
             return new Credentials(usernamePasswordCredentials.getUsername(),
                     usernamePasswordCredentials.getPassword().getPlainText());
         }
-        throw new IllegalStateException("Did not find Credentials with Id: " + credentialsId);
+        return CredentialsConfig.createEmptyCredentialsConfigObject().getCredentials();
     }
 
-    public static boolean isUseLegacyCredentials() {
+    public static boolean isUseCredentialsPlugin() {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
         if (descriptor != null) {
-            return descriptor.getUseLegacyCredentials();
+            return descriptor.getUseCredentialsPlugin();
         }
         throw new IllegalStateException("ArtifactoryBuilder descriptor is null");
     }

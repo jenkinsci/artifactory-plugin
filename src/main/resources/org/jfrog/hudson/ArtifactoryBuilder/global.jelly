@@ -7,9 +7,9 @@
         <f:entry title="Artifactory servers"
                  description="List of Artifactory servers that projects will want to deploy artifacts and build info to">
 
-            <input id="useLegacyCredentials" type="checkbox" onclick="updateViewForCredentialsMethod(this.checked)"
-                   name="useLegacyCredentials" value="${descriptor.useLegacyCredentials}"
-                   field="useLegacyCredentials">Use Credentials plugin
+            <input id="useCredentialsPlugin" type="checkbox" onclick="updateViewForCredentialsMethod(this.checked)"
+                   name="useCredentialsPlugin" value="${descriptor.useCredentialsPlugin}"
+                   field="useCredentialsPlugin">Use Credentials plugin
             </input>
             <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}"
                           header="Artifactory">
@@ -49,7 +49,7 @@
                     <f:validateButton
                             title="${%Test Connection}" progress="${%Testing...}"
                             method="testConnection"
-                            with="artifactoryUrl,artifactory.timeout,artifactory.bypassProxy,useLegacyCredentials,credentialsId,username,password"/>
+                            with="artifactoryUrl,artifactory.timeout,artifactory.bypassProxy,useCredentialsPlugin,credentialsId,username,password"/>
                     <f:optionalBlock title="Use Different Resolver Credentials" name="resolverCredentialsConfig"
                                      checked="${server.resolverCredentialsConfig.credentialsProvided}">
                         <f:block>
@@ -76,6 +76,11 @@
                             </f:nested>
                         </f:block>
                     </f:optionalBlock>
+                    <f:entry title="">
+                        <div align="right">
+                            <f:repeatableDeleteButton/>
+                        </div>
+                    </f:entry>
                     <f:advanced>
                         <f:entry title="Connection Timeout" field="artifactory.timeout"
                                  help="/plugin/artifactory/help/ArtifactoryBuilder/help-timeout.html">
@@ -88,12 +93,6 @@
                         </f:entry>
                     </f:advanced>
 
-
-                    <f:entry title="">
-                        <div align="right">
-                            <f:repeatableDeleteButton/>
-                        </div>
-                    </f:entry>
                 </table>
             </f:repeatable>
         </f:entry>

@@ -518,8 +518,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             return RepositoriesUtils.getArtifactoryServers();
         }
 
-        public boolean isUseLegacyCredentials() {
-            return PluginsUtils.isUseLegacyCredentials();
+        public boolean isUseCredentialsPlugin() {
+            return PluginsUtils.isUseCredentialsPlugin();
         }
     }
 

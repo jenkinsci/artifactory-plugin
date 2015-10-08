@@ -604,8 +604,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             return RepositoriesUtils.getArtifactoryServers();
         }
 
-        public boolean isUseLegacyCredentials(){
-            return PluginsUtils.isUseLegacyCredentials();
+        public boolean isUseCredentialsPlugin(){
+            return PluginsUtils.isUseCredentialsPlugin();
         }
 
         public boolean isJiraPluginEnabled() {

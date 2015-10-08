@@ -49,8 +49,8 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
     /**
      * Descriptor for {@link ArtifactoryBuilder}. Used as a singleton. The class is marked as public so that it can be
      * accessed from views.
-     * <p>
-     * <p>
+     * <p/>
+     * <p/>
      * See <tt>views/hudson/plugins/artifactory/ArtifactoryBuilder/*.jelly</tt> for the actual HTML fragment for the
      * configuration screen.
      */
@@ -58,8 +58,8 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
     // this marker indicates Hudson that this is an implementation of an extension point.
     public static final class DescriptorImpl extends Descriptor<GlobalConfiguration> {
 
+        private boolean useCredentialsPlugin;
         private List<ArtifactoryServer> artifactoryServers;
-        private boolean useLegacyCredentials;
 
         public DescriptorImpl() {
             super(ArtifactoryBuilder.class);
@@ -91,11 +91,11 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 @QueryParameter("artifactoryUrl") final String url,
                 @QueryParameter("artifactory.timeout") final String timeout,
                 @QueryParameter("artifactory.bypassProxy") final boolean bypassProxy,
-                @QueryParameter("useLegacyCredentials") final boolean useLegacyCredentials,
-                @QueryParameter("credentialsId")  final String deployerCredentialsId,
+                @QueryParameter("useCredentialsPlugin") final boolean useLegacyCredentials,
+                @QueryParameter("credentialsId") final String deployerCredentialsId,
                 @QueryParameter("username") final String deployerCredentialsUsername,
                 @QueryParameter("password") final String deployerCredentialsPassword
-                ) throws ServletException {
+        ) throws ServletException {
 
 
             if (StringUtils.isBlank(url)) {
@@ -103,8 +103,8 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             }
 
             Credentials credentials = PluginsUtils.credentialsLookup(deployerCredentialsId);
-            String username = useLegacyCredentials ? deployerCredentialsUsername : credentials.getUsername();
-            String password = useLegacyCredentials ? deployerCredentialsPassword : credentials.getPassword();
+            String username = useLegacyCredentials ? credentials.getUsername() : deployerCredentialsUsername;
+            String password = useLegacyCredentials ? credentials.getPassword() : deployerCredentialsPassword;
 
             ArtifactoryBuildInfoClient client;
             if (StringUtils.isNotBlank(username)) {
@@ -142,7 +142,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         @SuppressWarnings({"unchecked"})
         @Override
         public boolean configure(StaplerRequest req, JSONObject o) throws FormException {
-            useLegacyCredentials = (Boolean) o.get("useLegacyCredentials");
+            useCredentialsPlugin = (Boolean) o.get("useCredentialsPlugin");
             Object servers = o.get("artifactoryServer");    // an array or single object
             if (!JSONNull.getInstance().equals(servers)) {
                 artifactoryServers = req.bindJSONToList(ArtifactoryServer.class, servers);
@@ -157,8 +157,8 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             return artifactoryServers;
         }
 
-        public boolean getUseLegacyCredentials() {
-            return useLegacyCredentials;
+        public boolean getUseCredentialsPlugin() {
+            return useCredentialsPlugin;
         }
 
         // Required by external plugins.
@@ -168,8 +168,8 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         }
 
         @SuppressWarnings({"UnusedDeclaration"})
-        public void setUseLegacyCredentials(boolean useLegacyCredentials) {
-            this.useLegacyCredentials = useLegacyCredentials;
+        public void setUseCredentialsPlugin(boolean useCredentialsPlugin) {
+            this.useCredentialsPlugin = useCredentialsPlugin;
         }
     }
 }

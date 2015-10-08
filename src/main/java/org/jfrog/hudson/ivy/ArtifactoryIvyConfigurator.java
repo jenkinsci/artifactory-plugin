@@ -509,8 +509,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             return RepositoriesUtils.getArtifactoryServers();
         }
 
-        public boolean isUseLegacyCredentials(){
-            return PluginsUtils.isUseLegacyCredentials();
+        public boolean isUseCredentialsPlugin(){
+            return PluginsUtils.isUseCredentialsPlugin();
         }
 
         public boolean isJiraPluginEnabled() {

@@ -642,8 +642,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             return (Jenkins.getInstance().getPlugin("jira") != null);
         }
 
-        public boolean isUseLegacyCredentials() {
-            return PluginsUtils.isUseLegacyCredentials();
+        public boolean isUseCredentialsPlugin() {
+            return PluginsUtils.isUseCredentialsPlugin();
         }
     }
 

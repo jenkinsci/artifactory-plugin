@@ -25,7 +25,7 @@ public class CredentialsConfig implements Serializable {
     /**
      * Constructed from the build configuration (Maven, Gradle, Ivy, Freestyle, etc)
      * This object obtains the username, password and credentials id (used with the Credentials plugin)
-     * Each of these properties could be empty string but not null
+     * Each of these properties could be empty string if not specified but not null
      *
      * @param username      legacy username from textbox
      * @param password      legacy password from textbox
@@ -36,7 +36,7 @@ public class CredentialsConfig implements Serializable {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
         if (descriptor != null) {
-            useCredentialsPlugin = descriptor.getUseLegacyCredentials();
+            useCredentialsPlugin = descriptor.getUseCredentialsPlugin();
         }
         this.credentials = new Credentials(username, password);
         this.credentialsId = credentialsId;
@@ -48,7 +48,7 @@ public class CredentialsConfig implements Serializable {
     }
 
     /**
-     * In case of overriding the global configuration this method should be called to check if override credentials was supplied
+     * In case of overriding the global configuration this method should be called to check if override credentials were supplied
      * from configuration - this will take under  consideration the state of the "useCredentialsPlugin" option in global config object
      *
      * @return in legacy mode this will return true if username and password both supplied
@@ -83,7 +83,8 @@ public class CredentialsConfig implements Serializable {
         return useCredentialsPlugin ? PluginsUtils.credentialsLookup(credentialsId) : credentials;
     }
 
-    // Jenkins Jelly getters for displaying values on user interface
+    // NOTE: These getters are not part of the API, but used by Jenkins Jelly for displaying values on user interface
+    // This should not be used in order to retrieve credentials in the configuration - Use provideUsername, providePassword instead
 
     public String getUsername() {
         if (credentials == null) {

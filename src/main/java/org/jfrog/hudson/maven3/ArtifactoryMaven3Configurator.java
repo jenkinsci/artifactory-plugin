@@ -636,8 +636,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             return (Jenkins.getInstance().getPlugin("jira") != null);
         }
 
-        public boolean isUseLegacyCredentials() {
-            return PluginsUtils.isUseLegacyCredentials();
+        public boolean isUseCredentialsPlugin() {
+            return PluginsUtils.isUseCredentialsPlugin();
         }
 
     }

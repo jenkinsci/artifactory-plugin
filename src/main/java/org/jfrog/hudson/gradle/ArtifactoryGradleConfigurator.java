@@ -899,8 +899,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return RepositoriesUtils.getArtifactoryServers();
         }
 
-        public boolean isUseLegacyCredentials() {
-            return PluginsUtils.isUseLegacyCredentials();
+        public boolean isUseCredentialsPlugin() {
+            return PluginsUtils.isUseCredentialsPlugin();
         }
 
         public boolean isJiraPluginEnabled() {
