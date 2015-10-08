@@ -43,7 +43,6 @@ public class CredentialsConfig implements Serializable {
         this.credentialsId = credentialsId;
     }
 
-//    @DataBoundConstructor
     public CredentialsConfig(String username, String password, String credentialsId) {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
                 Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
