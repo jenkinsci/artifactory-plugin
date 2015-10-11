@@ -325,8 +325,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
                 ArtifactoryServer server = getArtifactoryServer();
                 CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(ArtifactoryGenericConfigurator.this, server);
-                ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
-                        preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
+                ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(),
+                        preferredDeployer.providePassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
                 try {
                     boolean isFiltered = false;
                     if (isMultiConfProject(build)) {
