@@ -447,9 +447,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
             CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
             RefreshServerResponse response = new RefreshServerResponse();
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
-                    url, RepositoriesUtils.getArtifactoryServers()
-            );
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
 
             try {
                 List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
@@ -460,7 +458,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 response.setRepositories(releaseRepositoryList);
                 response.setSuccess(true);
 
-                return response;
             } catch (Exception e) {
                 e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
