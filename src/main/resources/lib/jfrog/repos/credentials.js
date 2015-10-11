@@ -57,7 +57,7 @@ function getElementsWithIdPrefix(prefix) {
 }
 
 document.addEventListener('DOMContentLoaded', function (event) {
-    var useLegacyCredentialsInput = document.getElementById('useCredentialsPlugin');
-    useLegacyCredentialsInput.checked = JSON.parse(useLegacyCredentialsInput.value);
-    updateViewForCredentialsMethod(useLegacyCredentialsInput.checked);
+    var useCredentialsPluginInput = document.getElementById('useCredentialsPlugin');
+    useCredentialsPluginInput.checked = JSON.parse(useCredentialsPluginInput.value);
+    updateViewForCredentialsMethod(useCredentialsPluginInput.checked);
 });
