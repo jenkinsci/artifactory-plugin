@@ -21,7 +21,8 @@ public class CredentialsConfig implements Serializable {
 
     private Credentials credentials;
     private String credentialsId;
-    private Boolean overridingCredentials;
+    private Boolean overridingCredentials = false;
+
     /**
      * Constructed from the build configuration (Maven, Gradle, Ivy, Freestyle, etc)
      * This object obtains the username, password and credentials id (used with the Credentials plugin)
