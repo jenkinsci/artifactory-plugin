@@ -5,23 +5,24 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.maven.MavenModuleSet;
 import hudson.maven.MavenModuleSetBuild;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Action;
-import hudson.model.BuildListener;
+import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.util.ListBoxModel;
+import hudson.util.XStream2;
 import net.sf.json.JSONObject;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.ResolverOverrider;
-import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.VirtualRepository;
+import org.jfrog.hudson.*;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -36,12 +37,17 @@ import java.util.List;
 public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements ResolverOverrider {
 
     private final ServerDetails details;
-    private final Credentials overridingResolverCredentials;
+    /**
+     * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator#getResolverCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingResolverCredentials;
+    private final CredentialsConfig resolverCredentialsConfig;
 
     @DataBoundConstructor
-    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, Credentials overridingResolverCredentials) {
+    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, CredentialsConfig resolverCredentialsConfig) {
         this.details = details;
-        this.overridingResolverCredentials = overridingResolverCredentials;
+        this.resolverCredentialsConfig = resolverCredentialsConfig;
     }
 
     public ServerDetails getDetails() {
@@ -66,11 +72,15 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public boolean isOverridingDefaultResolver() {
-        return getOverridingResolverCredentials() != null;
+        return resolverCredentialsConfig != null && resolverCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingResolverCredentials() {
         return overridingResolverCredentials;
+    }
+
+    public CredentialsConfig getResolverCredentialsConfig() {
+        return resolverCredentialsConfig;
     }
 
     @Override
@@ -81,11 +91,13 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             };
         }
 
+        PrintStream log = listener.getLogger();
+        log.println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         EnvVars envVars = build.getEnvironment(listener);
         boolean supportedMavenVersion =
                 MavenVersionHelper.isAtLeastResolutionCapableVersion((MavenModuleSetBuild) build, envVars, listener);
         if (!supportedMavenVersion) {
-            listener.getLogger().println("Artifactory resolution is not active. Maven 3.0.2 or higher is required to " +
+            log.println("Artifactory resolution is not active. Maven 3.0.2 or higher is required to " +
                     "force resolution from Artifactory.");
             return new Environment() {
             };
@@ -108,8 +120,9 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         return null;
     }
 
-    public List<VirtualRepository> getVirtualRepositoryList(){
-        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys, details.getResolveReleaseRepository().getKeyFromSelect());
+    public List<VirtualRepository> getVirtualRepositoryList() {
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys,
+                details.getResolveReleaseRepository().getKeyFromSelect());
     }
 
     @Override
@@ -135,8 +148,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             return MavenModuleSet.class.equals(item.getClass());
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) throws IOException {
-            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsUsername, credentialsPassword, overridingDeployerCredentials, artifactoryServer);
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
+                throws IOException {
+            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
+                    credentialsConfig, artifactoryServer);
             Collections.sort(virtualRepositoryKeys);
         }
 
@@ -144,19 +159,18 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+         * @param url           the artifactory url
+         * @param credentialsId credential id from the "Credential" plugin
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
+            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsUsername, credentialsPassword, overridingDeployerCredentials);
+                refreshVirtualRepositories(artifactoryServer, credentialsConfig);
                 response.setVirtualRepositories(virtualRepositoryKeys);
                 response.setSuccess(true);
                 return response;
@@ -170,6 +184,11 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             * In case of Exception, we write the error in the Javascript scope!
             * */
             return response;
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
         }
 
         @Override
@@ -196,6 +215,19 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
             return RepositoriesUtils.getArtifactoryServers();
+        }
+
+        public boolean isUseCredentialsPlugin() {
+            return PluginsUtils.isUseCredentialsPlugin();
+        }
+    }
+
+    /**
+     * Page Converter
+     */
+    public static final class ConverterImpl extends DeployerResolverOverriderConverter {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
         }
     }
 }

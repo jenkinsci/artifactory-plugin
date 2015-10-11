@@ -38,6 +38,12 @@ public interface DeployerOverrider {
      * Returns the global config - overriding deployer credentials
      *
      * @return Deployer credentials
+     *
+     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getDeployerCredentialsConfig()
      */
+    @Deprecated
     Credentials getOverridingDeployerCredentials();
+
+    CredentialsConfig getDeployerCredentialsConfig();
+
 }

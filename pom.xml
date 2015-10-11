@@ -30,10 +30,10 @@
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
     <properties>
-        <buildinfo.version>2.5.1</buildinfo.version>
-        <buildinfo.maven3.version>2.5.0</buildinfo.maven3.version>
-        <buildinfo.gradle.version>3.1.1</buildinfo.gradle.version>
-        <buildinfo.ivy.version>2.5.1</buildinfo.ivy.version>
+        <buildinfo.version>2.5.3</buildinfo.version>
+        <buildinfo.maven3.version>2.5.3</buildinfo.maven3.version>
+        <buildinfo.gradle.version>3.1.2</buildinfo.gradle.version>
+        <buildinfo.ivy.version>2.5.2</buildinfo.ivy.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
     </properties>
 
@@ -120,6 +120,11 @@
             <artifactId>flexible-publish</artifactId>
             <version>0.12</version>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>credentials</artifactId>
+            <version>1.22</version>
         </dependency>
         <!-- usage of jenkins customized xstream is a must for the integration tests -->
         <dependency>

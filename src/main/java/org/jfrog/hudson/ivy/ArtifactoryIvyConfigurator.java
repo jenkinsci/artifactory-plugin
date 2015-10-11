@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson.ivy;
 
-import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -25,6 +24,7 @@ import hudson.model.*;
 import hudson.remoting.Which;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -33,7 +33,10 @@ import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -53,7 +56,7 @@ import java.util.Map;
 public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements DeployerOverrider,
         BuildInfoAwareConfigurator {
 
-    private final Credentials overridingDeployerCredentials;
+    private final CredentialsConfig deployerCredentialsConfig;
     private final IncludesExcludes artifactDeploymentPatterns;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
@@ -84,19 +87,15 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private boolean blackDuckIncludePublishedArtifacts;
     private boolean autoCreateMissingComponentRequests;
     private boolean autoDiscardStaleComponentRequests;
+
     /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
+     * @deprecated: Use org.jfrog.hudson.ivy.ArtifactoryIvyConfigurator#getDeployerCredentialsConfig()()
      */
     @Deprecated
-    private transient String username;
-    /**
-     * @deprecated: Use org.jfrog.hudson.DeployerOverrider#getOverridingDeployerCredentials()
-     */
-    @Deprecated
-    private transient String password;
+    private Credentials overridingDeployerCredentials;
 
     @DataBoundConstructor
-    public ArtifactoryIvyConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
+    public ArtifactoryIvyConfigurator(ServerDetails details, CredentialsConfig deployerCredentialsConfig,
                                       boolean deployArtifacts, IncludesExcludes artifactDeploymentPatterns, boolean deployBuildInfo,
                                       boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                       boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
@@ -108,8 +107,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                                       boolean autoCreateMissingComponentRequests, boolean autoDiscardStaleComponentRequests,
                                       boolean filterExcludedArtifactsFromBuild) {
         this.details = details;
-        this.overridingDeployerCredentials = overridingDeployerCredentials;
         this.deployArtifacts = deployArtifacts;
+        this.deployerCredentialsConfig = deployerCredentialsConfig;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.deployBuildInfo = deployBuildInfo;
         this.includeEnvVars = includeEnvVars;
@@ -156,11 +155,15 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return (getOverridingDeployerCredentials() != null);
+        return deployerCredentialsConfig != null && deployerCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
+    }
+
+    public CredentialsConfig getDeployerCredentialsConfig() {
+        return deployerCredentialsConfig;
     }
 
     public boolean isNotM2Compatible() {
@@ -355,6 +358,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
+        String artifactoryPluginVersion = ActionableHelper.getArtifactoryPluginVersion();
+        listener.getLogger().println( "Jenkins Artifactory Plugin version: " + artifactoryPluginVersion);
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
                 PluginDependencyHelper.getActualDependencyDirectory(build, localDependencyFile);
@@ -373,6 +378,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),
                         isAutoCreateMissingComponentRequests(), isAutoDiscardStaleComponentRequests())
                 .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
+                .artifactoryPluginVersion(artifactoryPluginVersion)
                 .build();
         build.setResult(Result.SUCCESS);
         return new AntIvyBuilderEnvironment() {
@@ -431,20 +437,23 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+         * @param url Artifactory url
+         * @param credentialsId credentials Id if using Credentials plugin
+         * @param username credentials legacy mode username
+         * @param password credentials legacy mode password
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
             RefreshServerResponse response = new RefreshServerResponse();
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
+                    url, RepositoriesUtils.getArtifactoryServers()
+            );
 
             try {
-                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
+                        artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
@@ -459,6 +468,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             }
 
             return response;
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
         }
 
         @Override
@@ -495,15 +509,19 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             return RepositoriesUtils.getArtifactoryServers();
         }
 
+        public boolean isUseCredentialsPlugin(){
+            return PluginsUtils.isUseCredentialsPlugin();
+        }
+
         public boolean isJiraPluginEnabled() {
             return (Jenkins.getInstance().getPlugin("jira") != null);
         }
     }
 
     /**
-     * Convert any remaining local credential variables to a credentials object
+     * Page Converter
      */
-    public static final class ConverterImpl extends OverridingDeployerCredentialsConverter {
+    public static final class ConverterImpl extends DeployerResolverOverriderConverter {
         public ConverterImpl(XStream2 xstream) {
             super(xstream);
         }

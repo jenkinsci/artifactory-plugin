@@ -8,7 +8,7 @@
             <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
                 <f:nested>
                     <input type="hidden" name="artifactoryName" value="${s.name}"/>
-                    <input type="hidden" name="artifactoryUrl" id="artifactoryUrlDeploy${s.url}" value="${s.url}"/>
+                    <input type="hidden" name="artifactoryUrl" id="artifactoryUrlResolver${s.url}" value="${s.url}"/>
                     <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
                     <r:dynamicRepos id="maven3NativeReleaseRepositoryKeys-${s.url}"
                                     title="Resolution releases repository"
@@ -28,30 +28,14 @@
                     <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
                              bind="maven3NativeResolveBind"
                              jsFunction="artifactoryMaven3NativeConfigurator"
-                             repoUrl="artifactoryUrlDeploy${s.url}"
-                             credentialUserName="$('overridingResolverCredentials').down('input[type=text]').value"
-                             credentialPassword="$('overridingResolverCredentials').down('input[type=password]').value"
-                             isCredential="$('overridingResolverCredentials').down('input').checked"/>
+                             repoUrl="artifactoryUrlResolver${s.url}"
+                             credentialsDescriber="overridingResolverCredentials"/>
                 </f:nested>
             </f:dropdownListBlock>
         </j:forEach>
     </f:dropdownList>
-    <f:block>
-        <table style="width:100%" id="overridingResolverCredentials">
-            <j:set var="overridingResolverCredentials" value="${instance.overridingResolverCredentials}"/>
-            <f:optionalBlock name="overridingResolverCredentials" checked="${overridingResolverCredentials != null}"
-                             title="Override default resolution credentials"
-                             help="/plugin/artifactory/help/common/help-overridingResolverCredentials.html">
-                <input type="hidden" name="stapler-class" value="org.jfrog.hudson.util.Credentials"/>
-                <f:entry title="User Name" help="/plugin/artifactory/help/common/help-resolverUserName.html"
-                         field="username">
-                    <f:textbox value="${overridingResolverCredentials.username}"/>
-                </f:entry>
-                <f:entry title="Password" field="password"
-                         help="/plugin/artifactory/help/common/help-deployerPassword.html">
-                    <f:password value="${overridingResolverCredentials.password}"/>
-                </f:entry>
-            </f:optionalBlock>
-        </table>
-    </f:block>
+    <r:credentials configurationFieldName="resolverCredentialsConfig"
+                   configurationObject="${instance.resolverCredentialsConfig}"
+                   blockTitle="Override default resolver credentials"
+                   elementId="overridingResolverCredentials"/>
 </j:jelly>

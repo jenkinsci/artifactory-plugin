@@ -33,8 +33,7 @@ import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
-import org.jfrog.hudson.util.CredentialResolver;
-import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.CredentialManager;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -56,6 +55,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
     private String targetStatus;
     private String repositoryKey;
+    private String sourceRepositoryKey;
     private String comment;
     private boolean useCopy;
     private boolean includeDependencies;
@@ -101,6 +101,10 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
     public void setRepositoryKey(String repositoryKey) {
         this.repositoryKey = repositoryKey;
+    }
+
+    public void setSourceRepositoryKey(String sourceRepositoryKey) {
+        this.sourceRepositoryKey = sourceRepositoryKey;
     }
 
     public void setComment(String comment) {
@@ -169,8 +173,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         getACL().checkPermission(getPermission());
 
-        req.bindParameters(this);
-
+        bindParameters(req);
         // current user is bound to the thread and will be lost in the perform method
         User user = User.current();
         String ciUser = (user == null) ? "anonymous" : user.getId();
@@ -205,9 +208,19 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
         ArtifactoryServer server = configurator.getArtifactoryServer();
 
-        new PromoteWorkerThread(server, CredentialResolver.getPreferredDeployer(configurator, server), ciUser).start();
+        new PromoteWorkerThread(server, CredentialManager.getPreferredDeployer(configurator, server), ciUser).start();
 
         resp.sendRedirect(".");
+    }
+
+    private void bindParameters(StaplerRequest req) throws ServletException {
+        req.bindParameters(this);
+        JSONObject formData = req.getSubmittedForm();
+        JSONObject pluginSettings = formData.getJSONObject("promotionPlugin");
+        // StaplerRequest.bindParameters doesn't work well with jelly <f:checkbox> element,
+        // so we set the "boolean" fields manually
+        this.setIncludeDependencies(pluginSettings.getBoolean("includeDependencies"));
+        this.setUseCopy(pluginSettings.getBoolean("useCopy"));
     }
 
     public List<UserPluginInfo> getPromotionsUserPluginInfo() {
@@ -233,13 +246,13 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
     public final class PromoteWorkerThread extends TaskThread {
 
         private final ArtifactoryServer artifactoryServer;
-        private final Credentials deployer;
+        private final CredentialsConfig deployerConfig;
         private final String ciUser;
 
-        public PromoteWorkerThread(ArtifactoryServer artifactoryServer, Credentials deployer, String ciUser) {
+        public PromoteWorkerThread(ArtifactoryServer artifactoryServer, CredentialsConfig deployerConfig, String ciUser) {
             super(UnifiedPromoteBuildAction.this, ListenerAndText.forMemory(null));
             this.artifactoryServer = artifactoryServer;
-            this.deployer = deployer;
+            this.deployerConfig = deployerConfig;
             this.ciUser = ciUser;
         }
 
@@ -250,7 +263,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                 long started = System.currentTimeMillis();
                 listener.getLogger().println("Promoting build ....");
 
-                client = artifactoryServer.createArtifactoryClient(deployer.getUsername(), deployer.getPassword(),
+                client = artifactoryServer.createArtifactoryClient(deployerConfig.provideUsername(), deployerConfig.providePassword(),
                         artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
                 if ((promotionPlugin != null) &&
@@ -297,6 +310,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                     .comment(comment)
                     .ciUser(ciUser)
                     .targetRepo(repositoryKey)
+                    .sourceRepo(sourceRepositoryKey)
                     .dependencies(includeDependencies)
                     .copy(useCopy)
                     .dryRun(true);

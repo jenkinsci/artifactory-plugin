@@ -38,6 +38,12 @@ public interface ResolverOverrider {
      * Returns the global config - overriding resolver credentials
      *
      * @return Resolver credentials
+     *
+     * @deprecated: Use org.jfrog.hudson.ResolverOverrider#getResolverCredentialsId()
      */
+    @Deprecated
     Credentials getOverridingResolverCredentials();
+
+    CredentialsConfig getResolverCredentialsConfig();
+
 }

@@ -17,16 +17,12 @@
         <st:attribute name="repoUrl" use="required">
             Caption of the repository URL
         </st:attribute>
-        <st:attribute name="credentialUserName">
-            Caption of the Artifactory credential user name
-        </st:attribute>
-        <st:attribute name="credentialPassword">
-            Caption of the Artifactory credential password
-        </st:attribute>
-        <st:attribute name="isCredential">
-            Caption of the using of credentials
+        <st:attribute name="credentialsDescriber">
+            CredentialsConfig field name - usually this will be the same as
+            configurationFieldName attribute in r:credentials component
         </st:attribute>
     </st:documentation>
+
     <st:adjunct includes="lib.jfrog.repos.repos"/>
 
     <f:entry>
@@ -35,11 +31,8 @@
                    onclick="repos(this,
                                 '${jsFunction}',
                                 '${repoUrl}',
-                                ${credentialUserName},
-                                ${credentialPassword},
-                                ${isCredential},
-                                ${bind})"
-                    />
+                                '${credentialsDescriber}',
+                                 ${bind})"/>
 
         </div>
         <div style="display:none;">

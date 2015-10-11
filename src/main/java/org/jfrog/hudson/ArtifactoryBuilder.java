@@ -18,7 +18,10 @@ package org.jfrog.hudson;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.model.Item;
+import hudson.security.ACL;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONNull;
@@ -27,7 +30,10 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.RepositoriesUtils;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -52,11 +58,17 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
     // this marker indicates Hudson that this is an implementation of an extension point.
     public static final class DescriptorImpl extends Descriptor<GlobalConfiguration> {
 
+        private boolean useCredentialsPlugin;
         private List<ArtifactoryServer> artifactoryServers;
 
         public DescriptorImpl() {
             super(ArtifactoryBuilder.class);
             load();
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project, ACL.SYSTEM);
         }
 
         /**
@@ -75,24 +87,24 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             return FormValidation.ok();
         }
 
-        public FormValidation doTestConnection(@QueryParameter("artifactoryUrl") final String url,
-                                               @QueryParameter("username") final String deployerUsername,
-                                               @QueryParameter("password") final String deployerPassword,
-                                               @QueryParameter("resolverCredentials") final boolean resolverCredentials,
-                                               @QueryParameter("resolverUsername") final String resolverUsername,
-                                               @QueryParameter("resolverPassword") final String resolverPassword,
-                                               @QueryParameter("artifactory.timeout") final String timeout) throws ServletException {
+        public FormValidation doTestConnection(
+                @QueryParameter("artifactoryUrl") final String url,
+                @QueryParameter("artifactory.timeout") final String timeout,
+                @QueryParameter("artifactory.bypassProxy") final boolean bypassProxy,
+                @QueryParameter("useCredentialsPlugin") final boolean useLegacyCredentials,
+                @QueryParameter("credentialsId") final String deployerCredentialsId,
+                @QueryParameter("username") final String deployerCredentialsUsername,
+                @QueryParameter("password") final String deployerCredentialsPassword
+        ) throws ServletException {
 
-            String username = deployerUsername;
-            String password = deployerPassword;
-            if (resolverCredentials && StringUtils.isNotBlank(resolverUsername) && StringUtils.isNotBlank(resolverPassword)) {
-                username = resolverUsername;
-                password = resolverPassword;
-            }
 
             if (StringUtils.isBlank(url)) {
                 return FormValidation.error("Please set a valid Artifactory URL");
             }
+
+            Credentials credentials = PluginsUtils.credentialsLookup(deployerCredentialsId);
+            String username = useLegacyCredentials ? credentials.getUsername() : deployerCredentialsUsername;
+            String password = useLegacyCredentials ? credentials.getPassword() : deployerCredentialsPassword;
 
             ArtifactoryBuildInfoClient client;
             if (StringUtils.isNotBlank(username)) {
@@ -101,9 +113,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 client = new ArtifactoryBuildInfoClient(url, new NullLog());
             }
 
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
-
-            if (((artifactoryServer != null && !artifactoryServer.isBypassProxy()) || artifactoryServer == null) && Jenkins.getInstance().proxy != null) {
+            if (!bypassProxy && Jenkins.getInstance().proxy != null) {
                 client.setProxyConfiguration(RepositoriesUtils.createProxyConfiguration(Jenkins.getInstance().proxy));
             }
 
@@ -132,6 +142,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         @SuppressWarnings({"unchecked"})
         @Override
         public boolean configure(StaplerRequest req, JSONObject o) throws FormException {
+            useCredentialsPlugin = (Boolean) o.get("useCredentialsPlugin");
             Object servers = o.get("artifactoryServer");    // an array or single object
             if (!JSONNull.getInstance().equals(servers)) {
                 artifactoryServers = req.bindJSONToList(ArtifactoryServer.class, servers);
@@ -146,10 +157,19 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             return artifactoryServers;
         }
 
+        public boolean getUseCredentialsPlugin() {
+            return useCredentialsPlugin;
+        }
+
         // Required by external plugins.
         @SuppressWarnings({"UnusedDeclaration"})
         public void setArtifactoryServers(List<ArtifactoryServer> artifactoryServers) {
             this.artifactoryServers = artifactoryServers;
+        }
+
+        @SuppressWarnings({"UnusedDeclaration"})
+        public void setUseCredentialsPlugin(boolean useCredentialsPlugin) {
+            this.useCredentialsPlugin = useCredentialsPlugin;
         }
     }
 }

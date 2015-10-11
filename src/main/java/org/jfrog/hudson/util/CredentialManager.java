@@ -17,6 +17,7 @@
 package org.jfrog.hudson.util;
 
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ResolverOverrider;
 
@@ -25,9 +26,9 @@ import org.jfrog.hudson.ResolverOverrider;
  *
  * @author Noam Y. Tenne
  */
-public abstract class CredentialResolver {
+public abstract class CredentialManager {
 
-    private CredentialResolver() {
+    private CredentialManager() {
     }
 
     /**
@@ -37,39 +38,60 @@ public abstract class CredentialResolver {
      * @param server            Selected Artifactory server
      * @return Preferred deployment credentials
      */
-    public static Credentials getPreferredDeployer(DeployerOverrider deployerOverrider, ArtifactoryServer server) {
+    public static CredentialsConfig getPreferredDeployer(DeployerOverrider deployerOverrider, ArtifactoryServer server) {
         if (deployerOverrider.isOverridingDefaultDeployer()) {
-            return deployerOverrider.getOverridingDeployerCredentials();
+            CredentialsConfig deployerCredentialsConfig = deployerOverrider.getDeployerCredentialsConfig();
+            if (deployerCredentialsConfig != null) {
+                return deployerCredentialsConfig;
+            }
         }
 
         if (server != null) {
-            Credentials deployerCredentials = server.getDeployerCredentials();
+            CredentialsConfig deployerCredentials = server.getDeployerCredentialsConfig();
             if (deployerCredentials != null) {
                 return deployerCredentials;
             }
         }
 
-        return new Credentials(null, null);
+        return CredentialsConfig.createEmptyCredentialsConfigObject();
+
+    }
+
+    public static CredentialsConfig getPreferredDeployer(CredentialsConfig credentialsConfig, ArtifactoryServer server) {
+        if (!credentialsConfig.isCredentialsProvided()) {
+            return server.getDeployerCredentialsConfig();
+        } else {
+            return credentialsConfig;
+        }
     }
 
     /**
      * Decides and returns the preferred resolver credentials to use from this builder settings and selected server
+     * Override priority:
+     * 1) Job override resolver
+     * 2) Plugin manage override resolver
+     * 3) Plugin manage general
      *
      * @param resolverOverrider Resolve-overriding capable builder
-     * @param deployerOverrider Deploy-overriding capable builder
      * @param server            Selected Artifactory server
      * @return Preferred resolver credentials
      */
-    public static Credentials getPreferredResolver(ResolverOverrider resolverOverrider,
-                                                   DeployerOverrider deployerOverrider, ArtifactoryServer server) {
+    public static CredentialsConfig getPreferredResolver(ResolverOverrider resolverOverrider, ArtifactoryServer server) {
         if (resolverOverrider != null && resolverOverrider.isOverridingDefaultResolver()) {
-            return resolverOverrider.getOverridingResolverCredentials();
+            CredentialsConfig resolverCredentialsConfig = resolverOverrider.getResolverCredentialsConfig();
+            if (resolverCredentialsConfig != null) {
+                return resolverCredentialsConfig;
+            }
         }
 
-        if (deployerOverrider != null && deployerOverrider.isOverridingDefaultDeployer()) {
-            return deployerOverrider.getOverridingDeployerCredentials();
-        }
+        return server.getResolvingCredentialsConfig();
+    }
 
-        return server.getResolvingCredentials();
+
+    public static CredentialsConfig getPreferredResolver(CredentialsConfig credentialsConfig, ArtifactoryServer server) {
+        if (!credentialsConfig.isCredentialsProvided()) {
+            return server.getResolvingCredentialsConfig();
+        }
+        return credentialsConfig;
     }
 }

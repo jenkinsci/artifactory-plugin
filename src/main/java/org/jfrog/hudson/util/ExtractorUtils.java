@@ -34,7 +34,7 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -144,19 +144,17 @@ public class ExtractorUtils {
         }
 
         if (resolverContext != null) {
-            if (publisherContext != null)
-                setResolverInfo(configuration, build, resolverContext, publisherContext.getDeployerOverrider(), env);
-            else
-                setResolverInfo(configuration, build, resolverContext, null, env);
+            setResolverInfo(configuration, build, resolverContext, env);
             // setProxy(resolverContext.getServer(), configuration);
         }
-
 
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
                 publisherContext.isEnableIssueTrackerIntegration()) {
             new IssuesTrackerHelper(build, listener, publisherContext.isAggregateBuildIssues(),
                     publisherContext.getAggregationBuildStatus()).setIssueTrackerInfo(configuration);
         }
+
+        publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
         IncludesExcludes envVarsPatterns = new IncludesExcludes("", "");
         if (publisherContext != null && publisherContext.getEnvVarsPatterns() != null) {
@@ -177,19 +175,19 @@ public class ExtractorUtils {
         }
     }
 
-    private static void setResolverInfo(ArtifactoryClientConfiguration configuration, AbstractBuild build, ResolverContext context,
-                                        DeployerOverrider deployerOverrider, Map<String, String> env) {
+    private static void setResolverInfo(ArtifactoryClientConfiguration configuration, AbstractBuild build,
+                                        ResolverContext context, Map<String, String> env) {
         configuration.setTimeout(context.getServer().getTimeout());
-        configuration.resolver.setContextUrl(context.getServer().getUrl());
+        configuration.resolver.setContextUrl(context.getServerDetails().getArtifactoryUrl());
         String inputDownloadReleaseKey = context.getServerDetails().getResolveReleaseRepository().getRepoKey();
         String inputDownloadSnapshotKey = context.getServerDetails().getResolveSnapshotRepository().getRepoKey();
         // These input variables might be a variable that should be replaced with it's value
         replaceRepositoryInputForValues(configuration, build, inputDownloadReleaseKey, inputDownloadSnapshotKey, env);
-        Credentials preferredResolver = CredentialResolver.getPreferredResolver(context.getResolverOverrider(),
-                deployerOverrider, context.getServer());
-        if (StringUtils.isNotBlank(preferredResolver.getUsername())) {
-            configuration.resolver.setUsername(preferredResolver.getUsername());
-            configuration.resolver.setPassword(preferredResolver.getPassword());
+        CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(context.getResolverOverrider(),
+                context.getServer());
+        if (StringUtils.isNotBlank(preferredResolver.provideUsername())) {
+            configuration.resolver.setUsername(preferredResolver.provideUsername());
+            configuration.resolver.setPassword(preferredResolver.providePassword());
         }
     }
 
@@ -197,8 +195,9 @@ public class ExtractorUtils {
      * If necessary, replace the input for the configured repositories to their values
      * under the current environment. We are not allowing for the input or the value to be empty.
      */
-    private static void replaceRepositoryInputForValues(ArtifactoryClientConfiguration configuration, AbstractBuild build,
-                                                        String resolverReleaseInput, String resolverSnapshotInput, Map<String, String> env) {
+    private static void replaceRepositoryInputForValues(ArtifactoryClientConfiguration configuration,
+                                                        AbstractBuild build, String resolverReleaseInput,
+                                                        String resolverSnapshotInput, Map<String, String> env) {
         if (StringUtils.isBlank(resolverReleaseInput) || StringUtils.isBlank(resolverSnapshotInput)) {
             build.setResult(Result.FAILURE);
             throw new IllegalStateException("Input for resolve repositories cannot be empty.");
@@ -226,6 +225,7 @@ public class ExtractorUtils {
         String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
         configuration.info.setBuildNumber(buildNumber);
         configuration.publisher.addMatrixParam("build.number", buildNumber);
+        configuration.info.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
         Date buildStartDate = build.getTimestamp().getTime();
         configuration.info.setBuildStarted(buildStartDate.getTime());
@@ -244,10 +244,10 @@ public class ExtractorUtils {
         }
 
         if (StringUtils.isNotBlank(context.getArtifactsPattern())) {
-            configuration.publisher.setIvyArtifactPattern(context.getArtifactsPattern());
+            configuration.publisher.setIvyArtifactPattern(Util.replaceMacro(context.getArtifactsPattern(), env));
         }
         if (StringUtils.isNotBlank(context.getIvyPattern())) {
-            configuration.publisher.setIvyPattern(context.getIvyPattern());
+            configuration.publisher.setIvyPattern(Util.replaceMacro(context.getIvyPattern(), env));
         }
         configuration.publisher.setM2Compatible(context.isMaven2Compatible());
         String buildUrl = ActionableHelper.getBuildUrl(build);
@@ -273,14 +273,14 @@ public class ExtractorUtils {
         configuration.info.setAgentName("Jenkins");
         configuration.info.setAgentVersion(build.getHudsonVersion());
         ArtifactoryServer artifactoryServer = context.getArtifactoryServer();
-        Credentials preferredDeployer =
-                CredentialResolver.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
-        if (StringUtils.isNotBlank(preferredDeployer.getUsername())) {
-            configuration.publisher.setUsername(preferredDeployer.getUsername());
-            configuration.publisher.setPassword(preferredDeployer.getPassword());
+        CredentialsConfig preferredDeployer =
+                CredentialManager.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
+        if (StringUtils.isNotBlank(preferredDeployer.provideUsername())) {
+            configuration.publisher.setUsername(preferredDeployer.provideUsername());
+            configuration.publisher.setPassword(preferredDeployer.providePassword());
         }
         configuration.setTimeout(artifactoryServer.getTimeout());
-        configuration.publisher.setContextUrl(artifactoryServer.getUrl());
+        configuration.publisher.setContextUrl(context.getServerDetails().getArtifactoryUrl());
 
         ServerDetails serverDetails = context.getServerDetails();
         if (serverDetails != null) {
@@ -297,18 +297,22 @@ public class ExtractorUtils {
         configuration.info.licenseControl.setAutoDiscover(context.isLicenseAutoDiscovery());
         if (context.isRunChecks()) {
             if (StringUtils.isNotBlank(context.getViolationRecipients())) {
-                configuration.info.licenseControl.setViolationRecipients(context.getViolationRecipients());
+                configuration.info.licenseControl.setViolationRecipients(
+                        Util.replaceMacro(context.getViolationRecipients(), env)
+                );
             }
             if (StringUtils.isNotBlank(context.getScopes())) {
-                configuration.info.licenseControl.setScopes(context.getScopes());
+                configuration.info.licenseControl.setScopes(Util.replaceMacro(context.getScopes(), env));
             }
         }
 
         configuration.info.blackDuckProperties.setRunChecks(context.isBlackDuckRunChecks());
-        configuration.info.blackDuckProperties.setAppName(context.getBlackDuckAppName());
-        configuration.info.blackDuckProperties.setAppVersion(context.getBlackDuckAppVersion());
-        configuration.info.blackDuckProperties.setReportRecipients(context.getBlackDuckReportRecipients());
-        configuration.info.blackDuckProperties.setScopes(context.getBlackDuckScopes());
+        configuration.info.blackDuckProperties.setAppName(Util.replaceMacro(context.getBlackDuckAppName(), env));
+        configuration.info.blackDuckProperties.setAppVersion(Util.replaceMacro(context.getBlackDuckAppVersion(), env));
+        configuration.info.blackDuckProperties.setReportRecipients(
+                Util.replaceMacro(context.getBlackDuckReportRecipients(), env)
+        );
+        configuration.info.blackDuckProperties.setScopes(Util.replaceMacro(context.getBlackDuckScopes(), env));
         configuration.info.blackDuckProperties.setIncludePublishedArtifacts(context.isBlackDuckIncludePublishedArtifacts());
         configuration.info.blackDuckProperties.setAutoCreateMissingComponentRequests(context.isAutoCreateMissingComponentRequests());
         configuration.info.blackDuckProperties.setAutoDiscardStaleComponentRequests(context.isAutoDiscardStaleComponentRequests());
@@ -333,11 +337,11 @@ public class ExtractorUtils {
         if (deploymentPatterns != null) {
             String includePatterns = deploymentPatterns.getIncludePatterns();
             if (StringUtils.isNotBlank(includePatterns)) {
-                configuration.publisher.setIncludePatterns(includePatterns);
+                configuration.publisher.setIncludePatterns(Util.replaceMacro(includePatterns, env));
             }
             String excludePatterns = deploymentPatterns.getExcludePatterns();
             if (StringUtils.isNotBlank(excludePatterns)) {
-                configuration.publisher.setExcludePatterns(excludePatterns);
+                configuration.publisher.setExcludePatterns(Util.replaceMacro(excludePatterns, env));
             }
         }
         ReleaseAction releaseAction = ActionableHelper.getLatestAction(build, ReleaseAction.class);
@@ -354,8 +358,8 @@ public class ExtractorUtils {
         configuration.setIncludeEnvVars(context.isIncludeEnvVars());
         IncludesExcludes envVarsPatterns = context.getEnvVarsPatterns();
         if (envVarsPatterns != null) {
-            configuration.setEnvVarsIncludePatterns(envVarsPatterns.getIncludePatterns());
-            configuration.setEnvVarsExcludePatterns(envVarsPatterns.getExcludePatterns());
+            configuration.setEnvVarsIncludePatterns(Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env));
+            configuration.setEnvVarsExcludePatterns(Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env));
         }
         addMatrixParams(context, configuration.publisher, env);
     }
@@ -446,6 +450,8 @@ public class ExtractorUtils {
         if (StringUtils.isBlank(matrixParams)) {
             return;
         }
+
+        matrixParams = Util.replaceMacro(matrixParams, env);
         String[] keyValuePairs = StringUtils.split(matrixParams, "; ");
         if (keyValuePairs == null) {
             return;
@@ -453,7 +459,7 @@ public class ExtractorUtils {
         for (String keyValuePair : keyValuePairs) {
             String[] split = StringUtils.split(keyValuePair, "=");
             if (split.length == 2) {
-                String value = Util.replaceMacro(split[1], env);
+                String value = split[1];
                 publisher.addMatrixParam(split[0], value);
             }
         }
@@ -461,8 +467,10 @@ public class ExtractorUtils {
 
     private static void addEnvVars(Map<String, String> env, AbstractBuild<?, ?> build,
                                    ArtifactoryClientConfiguration configuration, IncludesExcludes envVarsPatterns) {
-        IncludeExcludePatterns patterns = new IncludeExcludePatterns(envVarsPatterns.getIncludePatterns(),
-                envVarsPatterns.getExcludePatterns());
+        IncludeExcludePatterns patterns = new IncludeExcludePatterns(
+                Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env),
+                Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env)
+        );
 
         // Add only the jenkins specific environment variables
         MapDifference<String, String> envDifference = Maps.difference(env, System.getenv());

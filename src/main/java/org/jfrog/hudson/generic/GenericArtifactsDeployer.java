@@ -20,6 +20,7 @@ import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.util.PublishedItemsHelper;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.Credentials;
@@ -44,17 +45,17 @@ public class GenericArtifactsDeployer {
     private AbstractBuild build;
     private ArtifactoryGenericConfigurator configurator;
     private BuildListener listener;
-    private Credentials credentials;
+    private CredentialsConfig credentialsConfig;
     private EnvVars env;
     private List<Artifact> artifactsToDeploy = Lists.newArrayList();
 
     public GenericArtifactsDeployer(AbstractBuild build, ArtifactoryGenericConfigurator configurator,
-                                    BuildListener listener, Credentials credentials)
+                                    BuildListener listener, CredentialsConfig credentialsConfig)
             throws IOException, InterruptedException, NoSuchAlgorithmException {
         this.build = build;
         this.configurator = configurator;
         this.listener = listener;
-        this.credentials = credentials;
+        this.credentialsConfig = credentialsConfig;
         this.env = build.getEnvironment(listener);
     }
 
@@ -76,8 +77,8 @@ public class GenericArtifactsDeployer {
         ArrayListMultimap<String, String> propertiesToAdd = getbuildPropertiesMap();
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
         String repositoryKey = Util.replaceMacro(configurator.getRepositoryKey(), env);
-        artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer, credentials,
-                repositoryKey, propertiesToAdd,
+        artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer,
+                credentialsConfig.getCredentials(), repositoryKey, propertiesToAdd,
                 artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
     }
 

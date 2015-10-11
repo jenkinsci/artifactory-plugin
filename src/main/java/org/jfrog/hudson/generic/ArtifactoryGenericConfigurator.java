@@ -9,6 +9,8 @@ import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -23,8 +25,10 @@ import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -40,15 +44,16 @@ import java.util.List;
  *
  * @author Shay Yaakov
  */
-public class ArtifactoryGenericConfigurator extends BuildWrapper implements DeployerOverrider,
+public class ArtifactoryGenericConfigurator extends BuildWrapper implements DeployerOverrider, ResolverOverrider,
         BuildInfoAwareConfigurator, MultiConfigurationAware {
 
     private final ServerDetails details;
-    private final Credentials overridingDeployerCredentials;
+    private final ServerDetails resolverDetails;
+    private final CredentialsConfig deployerCredentialsConfig;
+    private final CredentialsConfig resolverCredentialsConfig;
     private final String deployPattern;
     private final String resolvePattern;
     private final String matrixParams;
-
     private final boolean deployBuildInfo;
     /**
      * Include environment variables in the generated build info
@@ -61,14 +66,21 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private transient List<BuildDependency> buildDependencies;
     private String artifactoryCombinationFilter;
     private boolean multiConfProject;
+
     /**
-     * Don't need it anymore since now the slave uses it's own client to deploy the artifacts
+     * @deprecated: Use org.jfrog.hudson.generic.ArtifactoryGenericConfigurator#getDeployerCredentials()()
      */
     @Deprecated
-    private transient String keepArchivedArtifacts;
+    private Credentials overridingDeployerCredentials;
+    /**
+     * @deprecated: Use org.jfrog.hudson.generic.ArtifactoryGenericConfigurator#getResolverCredentialsId()()
+     */
+    @Deprecated
+    private Credentials overridingResolverCredentials;
 
     @DataBoundConstructor
-    public ArtifactoryGenericConfigurator(ServerDetails details, Credentials overridingDeployerCredentials,
+    public ArtifactoryGenericConfigurator(ServerDetails details, ServerDetails resolverDetails,
+                                          CredentialsConfig deployerCredentialsConfig, CredentialsConfig resolverCredentialsConfig,
                                           String deployPattern, String resolvePattern, String matrixParams,
                                           boolean deployBuildInfo,
                                           boolean includeEnvVars, IncludesExcludes envVarsPatterns,
@@ -77,7 +89,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                                           boolean multiConfProject,
                                           String artifactoryCombinationFilter) {
         this.details = details;
-        this.overridingDeployerCredentials = overridingDeployerCredentials;
+        this.resolverDetails = resolverDetails;
+        this.deployerCredentialsConfig = deployerCredentialsConfig;
+        this.resolverCredentialsConfig = resolverCredentialsConfig;
         this.deployPattern = deployPattern;
         this.resolvePattern = resolvePattern;
         this.matrixParams = matrixParams;
@@ -94,12 +108,16 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return details != null ? details.artifactoryName : null;
     }
 
+    public String getArtifactoryResolverName() {
+        return resolverDetails != null ? resolverDetails.artifactoryName : null;
+    }
+
     public String getArtifactoryUrl() {
         return details != null ? details.getArtifactoryUrl() : null;
     }
 
     public boolean isOverridingDefaultDeployer() {
-        return getOverridingDeployerCredentials() != null;
+        return deployerCredentialsConfig != null && deployerCredentialsConfig.isCredentialsProvided();
     }
 
     public String getRepositoryKey() {
@@ -110,8 +128,16 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return details;
     }
 
+    public ServerDetails getResolverDetails() {
+        return resolverDetails;
+    }
+
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
+    }
+
+    public CredentialsConfig getDeployerCredentialsConfig() {
+        return deployerCredentialsConfig;
     }
 
     public String getDeployPattern() {
@@ -223,8 +249,19 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
+    public ArtifactoryServer getArtifactoryResolverServer() {
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryResolverName(),
+                getDescriptor().getArtifactoryServers());
+    }
+
     public List<Repository> getReleaseRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeploySnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories,
+                details.getDeploySnapshotRepository().getKeyFromSelect());
+    }
+
+    public List<VirtualRepository> getResolveRepositoryList() {
+        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryList,
+                resolverDetails.getResolveReleaseRepository().getKeyFromSelect());
     }
 
     @Override
@@ -235,6 +272,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Override
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
+        listener.getLogger().println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
 
         final String artifactoryServerName = getArtifactoryName();
@@ -252,10 +290,12 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             proxyConfiguration.password = proxy.getPassword();
         }
 
-        ArtifactoryServer server = getArtifactoryServer();
-        Credentials preferredResolver = CredentialResolver.getPreferredResolver(null, ArtifactoryGenericConfigurator.this, server);
+        //Resolve process
+        ArtifactoryServer server = getArtifactoryResolverServer();
+        CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(ArtifactoryGenericConfigurator.this,
+                server);
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredResolver.getUsername(), preferredResolver.getPassword(), proxyConfiguration,
+                preferredResolver.provideUsername(), preferredResolver.providePassword(), proxyConfiguration,
                 listener);
         try {
             GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener,
@@ -284,7 +324,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 }
 
                 ArtifactoryServer server = getArtifactoryServer();
-                Credentials preferredDeployer = CredentialResolver.getPreferredDeployer(ArtifactoryGenericConfigurator.this, server);
+                CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(ArtifactoryGenericConfigurator.this, server);
                 ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
                         preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
                 try {
@@ -340,10 +380,23 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    public boolean isOverridingDefaultResolver() {
+        return resolverCredentialsConfig.isCredentialsProvided();
+    }
+
+    public Credentials getOverridingResolverCredentials() {
+        return overridingResolverCredentials;
+    }
+
+
+    public CredentialsConfig getResolverCredentialsConfig() {
+        return resolverCredentialsConfig;
+    }
+
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-
         private List<Repository> releaseRepositories;
+        private List<VirtualRepository> virtualRepositoryList;
         private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
@@ -355,36 +408,38 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         public boolean isApplicable(AbstractProject<?, ?> item) {
             this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
-                item.getClass().isAssignableFrom(MatrixProject.class) ||
+                    item.getClass().isAssignableFrom(MatrixProject.class) ||
                     (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
-                        item.getClass().isAssignableFrom(MultiJobProject.class));
+                            item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
         /**
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url                           the artifactory url
-         * @param credentialsUsername           override credentials user name
-         * @param credentialsPassword           override credentials password
-         * @param overridingDeployerCredentials user choose to override credentials
+         * @param url           Artifactory url
+         * @param credentialsId credentials Id if using Credentials plugin
+         * @param username      credentials legacy mode username
+         * @param password      credentials legacy mode password
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsUsername, String credentialsPassword, boolean overridingDeployerCredentials) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
+            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
+                    url, RepositoriesUtils.getArtifactoryServers()
+            );
 
             try {
-                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsUsername, credentialsPassword,
-                        overridingDeployerCredentials, artifactoryServer);
+                List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
+                        artifactoryServer);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
                 response.setRepositories(releaseRepositories);
                 response.setSuccess(true);
 
-                return response;
             } catch (Exception e) {
                 e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
@@ -392,6 +447,45 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             }
 
             return response;
+        }
+
+        /**
+         * This method is triggered from the client side by ajax call.
+         * The method is triggered by the "Refresh Repositories" button.
+         *
+         * @param url           Artifactory url
+         * @param credentialsId credentials Id if using Credentials plugin
+         * @param username      credentials legacy mode username
+         * @param password      credentials legacy mode password
+         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
+         */
+        @SuppressWarnings("unused")
+        @JavaScriptMethod
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
+
+            RefreshServerResponse response = new RefreshServerResponse();
+            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
+            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
+
+            try {
+
+                virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(url, credentialsConfig, artifactoryServer);
+                Collections.sort(virtualRepositoryList);
+                response.setVirtualRepositories(virtualRepositoryList);
+                response.setSuccess(true);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.setResponseMessage(e.getMessage());
+                response.setSuccess(false);
+            }
+
+            return response;
+        }
+
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
+            return PluginsUtils.fillPluginCredentials(project);
         }
 
         @Override
@@ -422,6 +516,19 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
          */
         public List<ArtifactoryServer> getArtifactoryServers() {
             return RepositoriesUtils.getArtifactoryServers();
+        }
+
+        public boolean isUseCredentialsPlugin() {
+            return PluginsUtils.isUseCredentialsPlugin();
+        }
+    }
+
+    /**
+     * Page Converter
+     */
+    public static final class ConverterImpl extends DeployerResolverOverriderConverter {
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream);
         }
     }
 }
