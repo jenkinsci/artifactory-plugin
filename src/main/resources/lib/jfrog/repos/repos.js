@@ -111,9 +111,11 @@ function artifactoryGenericConfigurationResolve(spinner, artifactoryUrl, credent
             var select = document.getElementById('select_genericResolveRepositoryKeys-' + artifactoryUrl);
             var oldValue = select.value;
             var oldSelect = select.cloneNode(true);
+
             removeElements(select);
-            fillSelect(select, response.virtualRepositories);
-            fillSelect(select, oldValue);
+
+            fillVirtualReposSelect(select, response.virtualRepositories);
+            setSelectValue(select, oldValue);
 
             var oldValueExistsInNewList = compareSelectTags(select, oldSelect);
             if (!oldValueExistsInNewList) {
@@ -269,22 +271,15 @@ function artifactoryGradleConfigurationResolve(spinner, artifactoryUrl, credenti
         }
         else {
             var selectResolution = document.getElementById("select_gradleResolutionRepositoryKeys-" + artifactoryUrl);
-
             var oldResolutionValue = selectResolution.value;
-
             var oldSelectResolution = selectResolution.cloneNode(true);
-
             removeElements(selectResolution);
-
             fillVirtualReposSelect(selectResolution, response.virtualRepositories);
-
             setSelectValue(selectResolution, oldResolutionValue);
-
             var oldValueExistsInNewList = true;
             if (oldValueExistsInNewList) {
                 oldValueExistsInNewList = compareSelectTags(selectResolution, oldSelectResolution);
             }
-
             if (!oldValueExistsInNewList) {
                 displayWarningMessage(warning);
             }
