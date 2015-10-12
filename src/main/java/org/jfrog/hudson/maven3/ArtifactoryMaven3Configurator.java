@@ -533,7 +533,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         @JavaScriptMethod
         public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
-            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
@@ -573,7 +573,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         @JavaScriptMethod
         public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
-            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {

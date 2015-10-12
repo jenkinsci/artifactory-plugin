@@ -540,7 +540,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         @JavaScriptMethod
         public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
-            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url,
                     RepositoriesUtils.getArtifactoryServers());
 
@@ -552,7 +552,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 response.setRepositories(releaseRepositoryList);
                 response.setSuccess(true);
 
-                return response;
             } catch (Exception e) {
                 e.printStackTrace();
                 response.setResponseMessage(e.getMessage());

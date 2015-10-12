@@ -89,7 +89,7 @@ public abstract class RepositoriesUtils {
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(credentialsConfig, artifactoryServer);
 
         ArtifactoryBuildInfoClient client;
-        if (StringUtils.isNotBlank(preferredDeployer.getUsername())) {
+        if (StringUtils.isNotBlank(preferredDeployer.provideUsername())) {
             client = new ArtifactoryBuildInfoClient(url, preferredDeployer.provideUsername(),
                     preferredDeployer.providePassword(), new NullLog());
         } else {
