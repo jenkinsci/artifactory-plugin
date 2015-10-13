@@ -1,5 +1,6 @@
 package org.jfrog.hudson;
 
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -59,4 +60,7 @@ public class RepositoryConf {
     public boolean isDynamicMode() {
         return dynamicMode;
     }
+
+    // null object
+    public static final RepositoryConf emptyRepositoryConfig = new RepositoryConf(StringUtils.EMPTY, StringUtils.EMPTY, false);
 }
