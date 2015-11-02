@@ -20,9 +20,7 @@ import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.util.XStream2;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.CredentialsConfig;
-import org.jfrog.hudson.DeployerOverrider;
-import org.jfrog.hudson.ResolverOverrider;
+import org.jfrog.hudson.*;
 import org.jfrog.hudson.util.Credentials;
 
 import java.io.IOException;
@@ -82,8 +80,9 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         deployerCredentialsConfigField.setAccessible(true);
 
         if (overridingDeployerCredentials != null) {
+            boolean shouldOverride = overrider.getOverridingDeployerCredentials() != null;
             deployerCredentialsConfigField.set(overrider, new CredentialsConfig((Credentials) overridingDeployerCredentials,
-                    StringUtils.EMPTY, true));
+                    StringUtils.EMPTY, shouldOverride));
         } else {
             if (deployerCredentialsConfigField.get(overrider) == null) {
                 deployerCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
@@ -102,7 +101,8 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
             Field resolverCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
             resolverCredentialsConfigField.setAccessible(true);
             if (resolverCredentials != null) {
-                CredentialsConfig credentialsConfig = new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY, true);
+                boolean shouldOverride = overrider.getOverridingDeployerCredentials() != null;
+                CredentialsConfig credentialsConfig = new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY, shouldOverride);
                 resolverCredentialsConfigField.set(overrider, credentialsConfig);
             } else {
                 if (resolverCredentialsConfigField.get(overrider) == null) {
@@ -126,8 +126,10 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
                     Field deployerDetailsField = overriderClass.getDeclaredField("details");
                     deployerDetailsField.setAccessible(true);
                     Object deployerDetails = deployerDetailsField.get(overrider);
-
-                    resolverDetailsField.set(overrider, deployerDetails);
+                    if (deployerDetails != null) {
+                        ServerDetails resolverServerDetails = createInitialResolveDetailsFromDeployDetails((ServerDetails) deployerDetails);
+                        resolverDetailsField.set(overrider, resolverServerDetails);
+                    }
                 }
             } catch (NoSuchFieldException e) {
                 converterErrors.add(getConversionErrorMessage(overrider, e));
@@ -135,6 +137,18 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
                 converterErrors.add(getConversionErrorMessage(overrider, e));
             }
         }
+    }
+
+    /**
+     * Creates a new ServerDetails object for resolver, this will take URL and name from the deployer ServerDetails as a default behaviour
+     */
+    private ServerDetails createInitialResolveDetailsFromDeployDetails(ServerDetails deployerDetails) {
+        RepositoryConf oldResolveRepositoryConfig = deployerDetails.getResolveReleaseRepository();
+        RepositoryConf oldSnapshotResolveRepositoryConfig = deployerDetails.getResolveSnapshotRepository();
+        RepositoryConf resolverReleaseRepos = oldResolveRepositoryConfig == null ? RepositoryConf.emptyRepositoryConfig : oldResolveRepositoryConfig;
+        RepositoryConf resolveSnapshotRepos = oldSnapshotResolveRepositoryConfig == null ? RepositoryConf.emptyRepositoryConfig : oldSnapshotResolveRepositoryConfig;
+        return new ServerDetails(deployerDetails.getArtifactoryName(), deployerDetails.getArtifactoryUrl(),
+                null, null, resolverReleaseRepos, resolveSnapshotRepos, null, null);
     }
 
     private String getConversionErrorMessage(T deployerOverrider, Exception e) {

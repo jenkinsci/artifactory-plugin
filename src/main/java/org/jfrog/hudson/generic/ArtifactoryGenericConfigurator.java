@@ -381,7 +381,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public boolean isOverridingDefaultResolver() {
-        return resolverCredentialsConfig.isCredentialsProvided();
+        return resolverCredentialsConfig != null && resolverCredentialsConfig.isCredentialsProvided();
     }
 
     public Credentials getOverridingResolverCredentials() {
@@ -464,7 +464,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
 
             RefreshServerResponse response = new RefreshServerResponse();
-            CredentialsConfig credentialsConfig = new CredentialsConfig(credentialsId, username, password);
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
 
             try {

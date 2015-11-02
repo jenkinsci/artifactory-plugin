@@ -3,7 +3,6 @@
          xmlns:r="/lib/jfrog"
          xmlns:st="jelly:stapler"
         >
-
     <f:dropdownList name="details" title="${%Artifactory server}">
         <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
             <f:dropdownListBlock value="${s.name}" title="${s.url}" selected="${s.name==instance.artifactoryName}">
@@ -336,4 +335,19 @@
     <f:block>
         <hr/>
     </f:block>
+    <script>
+        function updateViewWithCredentials() {
+            try {
+                var credentialsPluginFlag = JSON.parse(document.getElementById('useCredentialsPluginoverridingDeployerCredentials').value);
+                var legacyCredentials = document.getElementById('legacyoverridingDeployerCredentials');
+                var credentialsPlugin = document.getElementById('overridingDeployerCredentials');
+                legacyCredentials.style.display = credentialsPluginFlag ? 'none' : '';
+                credentialsPlugin.style.display = credentialsPluginFlag ? '' : 'none';
+            } catch (exception) {
+                setTimeout(updateViewWithCredentials, 0);
+            }
+        }
+
+        updateViewWithCredentials();
+    </script>
 </j:jelly>

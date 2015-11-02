@@ -50,6 +50,7 @@ public class CredentialsConfig implements Serializable {
         if (descriptor != null) {
             useCredentialsPlugin = descriptor.getUseCredentialsPlugin();
         }
+        this.overridingCredentials = false;
         this.credentials = new Credentials(username, password);
         this.credentialsId = credentialsId;
     }
