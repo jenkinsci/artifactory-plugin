@@ -39,7 +39,6 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
-import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
@@ -361,10 +360,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         //This step runs in maven2 and in maven3 builds, in maven 3 the plugin version printed to the log earlier
         //so this line should be printed only in case of Maven 2
-        if (isM2Build(build)) {
-            listener.getLogger().println("Jenkins Artifactory Plugin version: " +
-                    ActionableHelper.getArtifactoryPluginVersion());
-        }
+        //need to fix the isM2Build, NPE in case of clear workspace
+//        if (isM2Build(build)) {
+//            listener.getLogger().println("Jenkins Artifactory Plugin version: " +
+//                    ActionableHelper.getArtifactoryPluginVersion());
+//        }
 
         if (build.getResult().isWorseThan(getTreshold())) {
             return true;    // build failed. Don't publish
