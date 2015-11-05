@@ -36,7 +36,7 @@ import java.util.List;
  */
 public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements ResolverOverrider {
 
-    private final ServerDetails resolverDetails;
+    private final ServerDetails details;
     /**
      * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator#getResolverCredentialsId()()
      */
@@ -45,29 +45,29 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     private final CredentialsConfig resolverCredentialsConfig;
 
     @DataBoundConstructor
-    public ArtifactoryMaven3NativeConfigurator(ServerDetails resolverDetails, CredentialsConfig resolverCredentialsConfig) {
-        this.resolverDetails = resolverDetails;
+    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, CredentialsConfig resolverCredentialsConfig) {
+        this.details = details;
         this.resolverCredentialsConfig = resolverCredentialsConfig;
     }
 
-    public ServerDetails getResolverDetails() {
-        return resolverDetails;
+    public ServerDetails getdetails() {
+        return details;
     }
 
-    public ServerDetails getDetails() {
-        return getResolverDetails();
+    public ServerDetails getResolverDetails() {
+        return getdetails();
     }
 
     public String getDownloadReleaseRepositoryKey() {
-        return resolverDetails != null ? resolverDetails.getResolveReleaseRepository().getRepoKey() : null;
+        return details != null ? details.getResolveReleaseRepository().getRepoKey() : null;
     }
 
     public String getDownloadSnapshotRepositoryKey() {
-        return resolverDetails != null ? resolverDetails.getResolveSnapshotRepositoryKey() : null;
+        return details != null ? details.getResolveSnapshotRepositoryKey() : null;
     }
 
     public String getArtifactoryName() {
-        return resolverDetails != null ? resolverDetails.artifactoryName : null;
+        return details != null ? details.artifactoryName : null;
     }
 
     @Override
@@ -126,7 +126,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
 
     public List<VirtualRepository> getVirtualRepositoryList() {
         return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys,
-                resolverDetails.getResolveReleaseRepository().getKeyFromSelect());
+                details.getResolveReleaseRepository().getKeyFromSelect());
     }
 
     @Override
