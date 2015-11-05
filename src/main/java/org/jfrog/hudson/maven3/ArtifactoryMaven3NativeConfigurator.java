@@ -36,7 +36,7 @@ import java.util.List;
  */
 public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements ResolverOverrider {
 
-    private final ServerDetails details;
+    private final ServerDetails resolverDetails;
     /**
      * @deprecated: Use org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator#getResolverCredentialsId()()
      */
@@ -45,25 +45,29 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     private final CredentialsConfig resolverCredentialsConfig;
 
     @DataBoundConstructor
-    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, CredentialsConfig resolverCredentialsConfig) {
-        this.details = details;
+    public ArtifactoryMaven3NativeConfigurator(ServerDetails resolverDetails, CredentialsConfig resolverCredentialsConfig) {
+        this.resolverDetails = resolverDetails;
         this.resolverCredentialsConfig = resolverCredentialsConfig;
     }
 
+    public ServerDetails getResolverDetails() {
+        return resolverDetails;
+    }
+
     public ServerDetails getDetails() {
-        return details;
+        return getResolverDetails();
     }
 
     public String getDownloadReleaseRepositoryKey() {
-        return details != null ? details.getResolveReleaseRepository().getRepoKey() : null;
+        return resolverDetails != null ? resolverDetails.getResolveReleaseRepository().getRepoKey() : null;
     }
 
     public String getDownloadSnapshotRepositoryKey() {
-        return details != null ? details.getResolveSnapshotRepositoryKey() : null;
+        return resolverDetails != null ? resolverDetails.getResolveSnapshotRepositoryKey() : null;
     }
 
     public String getArtifactoryName() {
-        return details != null ? details.artifactoryName : null;
+        return resolverDetails != null ? resolverDetails.artifactoryName : null;
     }
 
     @Override
@@ -122,7 +126,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
 
     public List<VirtualRepository> getVirtualRepositoryList() {
         return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys,
-                details.getResolveReleaseRepository().getKeyFromSelect());
+                resolverDetails.getResolveReleaseRepository().getKeyFromSelect());
     }
 
     @Override

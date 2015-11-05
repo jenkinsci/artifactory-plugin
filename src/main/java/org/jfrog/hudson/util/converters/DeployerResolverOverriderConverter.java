@@ -34,8 +34,7 @@ import java.util.logging.Logger;
  * @author Noam Y. Tenne
  * @author Lior Hasson
  */
-public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
-        extends XStream2.PassthruConverter<T> {
+public class DeployerResolverOverriderConverter<T> extends XStream2.PassthruConverter<T> {
     Logger logger = Logger.getLogger(DeployerResolverOverriderConverter.class.getName());
     List<String> converterErrors = Lists.newArrayList();
 
@@ -45,7 +44,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
 
     @Override
     protected void callback(T overrider, UnmarshallingContext context) {
-        Class<? extends DeployerOverrider> overriderClass = overrider.getClass();
+        Class overriderClass = overrider.getClass();
         overrideResolverDetails(overrider, overriderClass);
         credentialsMigration(overrider, overriderClass);
 
@@ -57,7 +56,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
     /**
      * Migrate to Jenkins "Credentials" plugin from the old credential implementation
      */
-    public void credentialsMigration(T overrider, Class<? extends DeployerOverrider> overriderClass) {
+    public void credentialsMigration(T overrider, Class overriderClass) {
         try {
             deployerMigration(overrider, overriderClass);
             resolverMigration(overrider, overriderClass);
@@ -70,29 +69,30 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
         }
     }
 
-    private void deployerMigration(T overrider, Class<? extends DeployerOverrider> overriderClass) throws NoSuchFieldException, IllegalAccessException, IOException {
+    private void deployerMigration(T overrider, Class overriderClass)
+            throws NoSuchFieldException, IllegalAccessException, IOException {
+        if (overrider instanceof DeployerOverrider) {
+            Field overridingDeployerCredentialsField = overriderClass.getDeclaredField("overridingDeployerCredentials");
+            overridingDeployerCredentialsField.setAccessible(true);
+            Object overridingDeployerCredentials = overridingDeployerCredentialsField.get(overrider);
 
-        Field overridingDeployerCredentialsField = overriderClass.getDeclaredField("overridingDeployerCredentials");
-        overridingDeployerCredentialsField.setAccessible(true);
-        Object overridingDeployerCredentials = overridingDeployerCredentialsField.get(overrider);
+            Field deployerCredentialsConfigField = overriderClass.getDeclaredField("deployerCredentialsConfig");
+            deployerCredentialsConfigField.setAccessible(true);
 
-        Field deployerCredentialsConfigField = overriderClass.getDeclaredField("deployerCredentialsConfig");
-        deployerCredentialsConfigField.setAccessible(true);
-
-        if (overridingDeployerCredentials != null) {
-            boolean shouldOverride = overrider.getOverridingDeployerCredentials() != null;
-            deployerCredentialsConfigField.set(overrider, new CredentialsConfig((Credentials) overridingDeployerCredentials,
-                    StringUtils.EMPTY, shouldOverride));
-        } else {
-            if (deployerCredentialsConfigField.get(overrider) == null) {
-                deployerCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
+            if (overridingDeployerCredentials != null) {
+                boolean shouldOverride = ((DeployerOverrider)overrider).getOverridingDeployerCredentials() != null;
+                deployerCredentialsConfigField.set(overrider, new CredentialsConfig((Credentials) overridingDeployerCredentials,
+                        StringUtils.EMPTY, shouldOverride));
+            } else {
+                if (deployerCredentialsConfigField.get(overrider) == null) {
+                    deployerCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
+                }
             }
         }
     }
 
-    private void resolverMigration(T overrider, Class<? extends DeployerOverrider> overriderClass)
+    private void resolverMigration(T overrider, Class overriderClass)
             throws NoSuchFieldException, IllegalAccessException, IOException {
-
         if (overrider instanceof ResolverOverrider) {
             Field resolverCredentialsField = overriderClass.getDeclaredField("overridingResolverCredentials");
             resolverCredentialsField.setAccessible(true);
@@ -101,7 +101,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
             Field resolverCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
             resolverCredentialsConfigField.setAccessible(true);
             if (resolverCredentials != null) {
-                boolean shouldOverride = overrider.getOverridingDeployerCredentials() != null;
+                boolean shouldOverride = ((DeployerOverrider)overrider).getOverridingDeployerCredentials() != null;
                 CredentialsConfig credentialsConfig = new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY, shouldOverride);
                 resolverCredentialsConfigField.set(overrider, credentialsConfig);
             } else {
@@ -115,7 +115,7 @@ public class DeployerResolverOverriderConverter<T extends DeployerOverrider>
     /**
      * Convert the (ServerDetails)details to (ServerDetails)resolverDetails if it doesn't exists already
      */
-    private void overrideResolverDetails(T overrider, Class<? extends DeployerOverrider> overriderClass) {
+    private void overrideResolverDetails(T overrider, Class overriderClass) {
         if (overrider instanceof ResolverOverrider) {
             try {
                 Field resolverDetailsField = overriderClass.getDeclaredField("resolverDetails");
