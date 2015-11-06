@@ -125,8 +125,16 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public List<VirtualRepository> getVirtualRepositoryList() {
-        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryKeys,
-                details.getResolveReleaseRepository().getKeyFromSelect());
+        String releaseRepoKey = details.getResolveReleaseRepository().getKeyFromSelect();
+        String snapshotRepoKey = details.getResolveSnapshotRepository().getKeyFromSelect();
+
+        // Add the releases repo to the reposities list, in case it is not there:
+        List<VirtualRepository> repos = RepositoriesUtils.collectVirtualRepositories(
+            getDescriptor().virtualRepositoryKeys, releaseRepoKey);
+
+        // Add the snapshots repo to the reposities list, in case it is not there:
+        return RepositoriesUtils.collectVirtualRepositories(
+                repos, snapshotRepoKey);
     }
 
     @Override

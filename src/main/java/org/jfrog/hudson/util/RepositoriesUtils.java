@@ -152,10 +152,16 @@ public abstract class RepositoriesUtils {
 
     public static List<VirtualRepository> collectVirtualRepositories(List<VirtualRepository> repositories, String repoKey) {
         if (repositories == null) {
-            if (StringUtils.isNotBlank(repoKey)) {
-                VirtualRepository vr = new VirtualRepository(repoKey, repoKey);
-                repositories = Lists.newArrayList(vr);
+            repositories = Lists.newArrayList();
+        }
+        if (StringUtils.isNotBlank(repoKey)) {
+            for (VirtualRepository vr : repositories) {
+                if (repoKey.equals(vr.getDisplayName())) {
+                    return repositories;
+                }
             }
+            VirtualRepository vr = new VirtualRepository(repoKey, repoKey);
+            repositories.add(vr);
         }
         return repositories;
     }
