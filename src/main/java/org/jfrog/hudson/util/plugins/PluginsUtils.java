@@ -10,7 +10,6 @@ import hudson.security.ACL;
 import hudson.util.ListBoxModel;
 import org.acegisecurity.Authentication;
 import org.jfrog.hudson.ArtifactoryBuilder;
-import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.util.Credentials;
 
 import java.util.Collections;
@@ -54,7 +53,7 @@ public class PluginsUtils {
             return new Credentials(usernamePasswordCredentials.getUsername(),
                     usernamePasswordCredentials.getPassword().getPlainText());
         }
-        return CredentialsConfig.createEmptyCredentialsConfigObject().getCredentials();
+        return Credentials.emptyCredentials;
     }
 
     public static boolean isUseCredentialsPlugin() {

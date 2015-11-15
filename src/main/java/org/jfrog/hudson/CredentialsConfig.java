@@ -81,7 +81,7 @@ public class CredentialsConfig implements Serializable {
      * @return the username that should be apply in this configuration
      */
     public String provideUsername() {
-        return useCredentialsPlugin ? PluginsUtils.credentialsLookup(credentialsId).getUsername() : credentials.getUsername();
+        return !useCredentialsPlugin ? credentials.getUsername() : PluginsUtils.credentialsLookup(credentialsId).getUsername();
     }
 
     /**
@@ -90,11 +90,11 @@ public class CredentialsConfig implements Serializable {
      * @return the password that should be apply in this configuration
      */
     public String providePassword() {
-        return useCredentialsPlugin ? PluginsUtils.credentialsLookup(credentialsId).getPassword() : credentials.getPassword();
+        return !useCredentialsPlugin ? credentials.getPassword() : PluginsUtils.credentialsLookup(credentialsId).getPassword();
     }
 
     public Credentials getCredentials() {
-        return useCredentialsPlugin ? PluginsUtils.credentialsLookup(credentialsId) : credentials;
+        return !useCredentialsPlugin ? credentials : PluginsUtils.credentialsLookup(credentialsId) ;
     }
 
     // NOTE: These getters are not part of the API, but used by Jenkins Jelly for displaying values on user interface

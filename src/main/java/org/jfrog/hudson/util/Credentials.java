@@ -75,4 +75,6 @@ public class Credentials implements Serializable {
     public String getPassword() {
         return Scrambler.descramble(password);
     }
+
+    public static Credentials emptyCredentials = new Credentials(StringUtils.EMPTY, StringUtils.EMPTY);
 }
