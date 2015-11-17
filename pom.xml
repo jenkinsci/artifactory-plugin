@@ -31,7 +31,7 @@
 
     <properties>
         <buildinfo.version>2.5.3</buildinfo.version>
-        <buildinfo.maven3.version>2.5.x-SNAPSHOT</buildinfo.maven3.version>
+        <buildinfo.maven3.version>2.5.4</buildinfo.maven3.version>
         <buildinfo.gradle.version>3.1.2</buildinfo.gradle.version>
         <buildinfo.ivy.version>2.5.2</buildinfo.ivy.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
@@ -411,58 +411,45 @@
             </build>
         </profile>
         <profile>
-            <id>maven-glassfish</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <id>oss</id>
             <repositories>
                 <repository>
                     <id>repo.jenkins-ci.org</id>
                     <url>http://repo.jenkins-ci.org/public/</url>
                 </repository>
+                <repository>
+                    <id>central</id>
+                    <name>jfrog-dependencies</name>
+                    <url>http://oss.jfrog.org/artifactory/jfrog-dependencies</url>
+                </repository>
+                <repository>
+                    <snapshots />
+                    <id>snapshots</id>
+                    <name>libs-snapshot</name>
+                    <url>http://oss.jfrog.org/artifactory/libs-snapshot</url>
+                </repository>
             </repositories>
-
             <pluginRepositories>
                 <pluginRepository>
                     <id>repo.jenkins-ci.org</id>
                     <url>http://repo.jenkins-ci.org/public/</url>
                 </pluginRepository>
-            </pluginRepositories>
-        </profile>
-
-        <profile>
-            <id>jfrog</id>
-            <repositories>
-                <repository>
-                    <id>central</id>
-                    <name>jfrog-apps-dist</name>
-                    <url>http://repo.jfrog.org/artifactory/libs-releases</url>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                </repository>
-                <repository>
-                    <id>snapshots</id>
-                    <name>jfrog-apps-snapshots</name>
-                    <url>http://repo.jfrog.org/artifactory/libs-snapshots</url>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                </repository>
-            </repositories>
-            <pluginRepositories>
                 <pluginRepository>
-                    <id>central</id>
-                    <name>jfrog-plugins-dist</name>
-                    <url>http://repo.jfrog.org/artifactory/plugins-releases</url>
                     <snapshots>
                         <enabled>false</enabled>
                     </snapshots>
+                    <id>central</id>
+                    <name>jfrog-dependencies</name>
+                    <url>http://oss.jfrog.org/artifactory/jfrog-dependencies</url>
                 </pluginRepository>
                 <pluginRepository>
+                    <snapshots />
                     <id>snapshots</id>
-                    <name>jfrog-plugins-snapshots</name>
-                    <url>http://repo.jfrog.org/artifactory/plugins-snapshots</url>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
+                    <name>plugins-snapshot</name>
+                    <url>http://oss.jfrog.org/artifactory/plugins-snapshot</url>
                 </pluginRepository>
             </pluginRepositories>
         </profile>

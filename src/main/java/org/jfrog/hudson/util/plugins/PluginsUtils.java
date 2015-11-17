@@ -53,7 +53,7 @@ public class PluginsUtils {
             return new Credentials(usernamePasswordCredentials.getUsername(),
                     usernamePasswordCredentials.getPassword().getPlainText());
         }
-        return Credentials.emptyCredentials;
+        return Credentials.EMPTY_CREDENTIALS;
     }
 
     public static boolean isUseCredentialsPlugin() {

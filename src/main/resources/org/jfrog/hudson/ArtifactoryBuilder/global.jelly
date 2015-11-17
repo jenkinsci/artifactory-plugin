@@ -9,7 +9,7 @@
 
             <input id="useCredentialsPlugin" type="checkbox" onclick="updateViewForCredentialsMethod(this.checked)"
                    name="useCredentialsPlugin" value="${descriptor.useCredentialsPlugin}"
-                   field="useCredentialsPlugin">Use Credentials plugin
+                   field="useCredentialsPlugin">Use the Credentials Plugin
             </input>
             <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}"
                           header="Artifactory">

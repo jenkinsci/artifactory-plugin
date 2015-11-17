@@ -276,7 +276,7 @@ public class ArtifactoryServer implements Serializable {
             return getDeployerCredentialsConfig();
         }
 
-        return CredentialsConfig.createEmptyCredentialsConfigObject();
+        return CredentialsConfig.EMPTY_CREDENTIALS_CONFIG;
     }
 
     private void gatherUserPluginInfo(List<UserPluginInfo> infosToReturn, String pluginKey, DeployerOverrider deployerOverrider) {
@@ -306,7 +306,6 @@ public class ArtifactoryServer implements Serializable {
     }
 
     private static class RepositoryComparator implements Comparator<String>, Serializable {
-
         public int compare(String o1, String o2) {
             if (o1.contains("snapshot") && !o2.contains("snapshot")) {
                 return 1;

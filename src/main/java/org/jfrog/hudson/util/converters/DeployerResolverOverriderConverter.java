@@ -85,7 +85,7 @@ public class DeployerResolverOverriderConverter<T> extends XStream2.PassthruConv
                         StringUtils.EMPTY, shouldOverride));
             } else {
                 if (deployerCredentialsConfigField.get(overrider) == null) {
-                    deployerCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
+                    deployerCredentialsConfigField.set(overrider, CredentialsConfig.EMPTY_CREDENTIALS_CONFIG);
                 }
             }
         }
@@ -106,7 +106,7 @@ public class DeployerResolverOverriderConverter<T> extends XStream2.PassthruConv
                 resolverCredentialsConfigField.set(overrider, credentialsConfig);
             } else {
                 if (resolverCredentialsConfigField.get(overrider) == null) {
-                    resolverCredentialsConfigField.set(overrider, CredentialsConfig.createEmptyCredentialsConfigObject());
+                    resolverCredentialsConfigField.set(overrider, CredentialsConfig.EMPTY_CREDENTIALS_CONFIG);
                 }
             }
         }

@@ -1,5 +1,0 @@
-= Artifactory Plugin for Jenkins
-
-===  Integrate Jenkins and Artifactory to publish, resolve, promote and release traceable build artifacts 
-
-For more information please visit: http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin

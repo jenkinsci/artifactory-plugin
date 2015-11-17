@@ -28,7 +28,7 @@ import java.io.Serializable;
  * @author Noam Y. Tenne
  */
 public class Credentials implements Serializable {
-
+    public static final Credentials EMPTY_CREDENTIALS = new Credentials(StringUtils.EMPTY, StringUtils.EMPTY);
     private final String username;
     private final String password;
 
@@ -75,6 +75,4 @@ public class Credentials implements Serializable {
     public String getPassword() {
         return Scrambler.descramble(password);
     }
-
-    public static Credentials emptyCredentials = new Credentials(StringUtils.EMPTY, StringUtils.EMPTY);
 }

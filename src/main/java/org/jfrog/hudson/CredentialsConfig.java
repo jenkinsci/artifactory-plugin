@@ -18,7 +18,8 @@ import java.io.Serializable;
 public class CredentialsConfig implements Serializable {
 
     private static boolean useCredentialsPlugin = false;
-
+    public static final CredentialsConfig EMPTY_CREDENTIALS_CONFIG =
+            new CredentialsConfig(new Credentials(StringUtils.EMPTY, StringUtils.EMPTY), StringUtils.EMPTY, false);
     private Credentials credentials;
     private String credentialsId;
     private Boolean overridingCredentials = false;
@@ -120,19 +121,5 @@ public class CredentialsConfig implements Serializable {
 
     public boolean isOverridingCredentials() {
         return overridingCredentials;
-    }
-
-    private static CredentialsConfig emptyCredentialConfig = null;
-
-    /**
-     * Create an empty instance of the CredentialsConfig object for cases that the user did not override the server main configuration
-     *
-     * @return all empty strings object
-     */
-    public static CredentialsConfig createEmptyCredentialsConfigObject() {
-        if (emptyCredentialConfig == null) {
-            return new CredentialsConfig(new Credentials(StringUtils.EMPTY, StringUtils.EMPTY), StringUtils.EMPTY, false);
-        }
-        return emptyCredentialConfig;
     }
 }

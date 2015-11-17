@@ -53,8 +53,7 @@ public abstract class CredentialManager {
             }
         }
 
-        return CredentialsConfig.createEmptyCredentialsConfigObject();
-
+        return CredentialsConfig.EMPTY_CREDENTIALS_CONFIG;
     }
 
     public static CredentialsConfig getPreferredDeployer(CredentialsConfig credentialsConfig, ArtifactoryServer server) {

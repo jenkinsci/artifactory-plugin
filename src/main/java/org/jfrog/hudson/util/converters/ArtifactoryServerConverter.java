@@ -47,7 +47,6 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
     }
 
     private void deployerMigration(ArtifactoryServer server) throws NoSuchFieldException, IllegalAccessException, IOException {
-
         Class<? extends ArtifactoryServer> overriderClass = server.getClass();
         Field deployerCredentialsField = overriderClass.getDeclaredField("deployerCredentials");
         deployerCredentialsField.setAccessible(true);
@@ -60,7 +59,7 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
             deployerCredentialsConfigField.set(server, new CredentialsConfig((Credentials) deployerCredentials, StringUtils.EMPTY, true));
         } else {
             if (deployerCredentialsConfigField.get(server) == null) {
-                deployerCredentialsConfigField.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
+                deployerCredentialsConfigField.set(server, CredentialsConfig.EMPTY_CREDENTIALS_CONFIG);
             }
         }
     }
@@ -78,7 +77,7 @@ public class ArtifactoryServerConverter extends XStream2.PassthruConverter<Artif
             resolverCredentialsConfig.set(server, new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY, true));
         } else {
             if (resolverCredentialsConfig.get(server) == null) {
-                resolverCredentialsConfig.set(server, CredentialsConfig.createEmptyCredentialsConfigObject());
+                resolverCredentialsConfig.set(server, CredentialsConfig.EMPTY_CREDENTIALS_CONFIG);
             }
         }
     }
