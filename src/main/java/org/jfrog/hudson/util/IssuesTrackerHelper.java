@@ -6,9 +6,8 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.StreamBuildListener;
 import hudson.plugins.jira.JiraIssue;
-import hudson.plugins.jira.JiraSession;
 import hudson.plugins.jira.JiraSite;
-import hudson.plugins.jira.soap.RemoteServerInfo;
+import hudson.scm.ChangeLogSet;
 import org.jfrog.build.api.Issue;
 import org.jfrog.build.api.IssueTracker;
 import org.jfrog.build.api.Issues;
@@ -16,10 +15,12 @@ import org.jfrog.build.api.IssuesTrackerFields;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.util.IssuesTrackerUtils;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -40,13 +41,11 @@ public class IssuesTrackerHelper {
         this.aggregationBuildStatus = aggregationBuildStatus;
         JiraSite site = JiraSite.get(build.getProject());
         if (site == null) {
-            return;
+                return;
         }
 
         try {
-            JiraSession session = site.createSession();
-            RemoteServerInfo info = session.service.getServerInfo(session.token);
-            issueTrackerVersion = info.getVersion();
+            issueTrackerVersion = getJiraVersion(site);
             StringBuilder affectedIssuesBuilder = new StringBuilder();
             StringBuilder matrixParamsBuilder = new StringBuilder();
             Set<String> issueIds = Sets.newHashSet(manuallyCollectIssues(build, site.getIssuePattern()));
@@ -73,6 +72,19 @@ public class IssuesTrackerHelper {
                     .print("[Warning] Error while trying to collect issue tracker and change information: " +
                             e.getMessage());
         }
+    }
+
+    private String getJiraVersion(JiraSite site) {
+        return PluginsUtils.getJiraVersion(site.url);
+    }
+
+    private String getProjectKey(Iterator<ChangeLogSet.Entry> iterator) {
+        String projectId = null;
+        while (iterator.hasNext()){
+            ChangeLogSet.Entry next = iterator.next();
+            projectId = next.getMsg().split("-")[0].trim();
+        }
+        return projectId;
     }
 
     private Set<String> manuallyCollectIssues(AbstractBuild build, Pattern issuePattern)
