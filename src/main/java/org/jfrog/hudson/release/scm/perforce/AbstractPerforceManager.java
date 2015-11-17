@@ -19,12 +19,12 @@ package org.jfrog.hudson.release.scm.perforce;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.TaskListener;
-import hudson.plugins.perforce.PerforceSCM;
-import hudson.remoting.VirtualChannel;
+import hudson.scm.SCM;
 import org.jfrog.build.vcs.perforce.PerforceClient;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
+import org.jfrog.hudson.release.scm.perforce.callbacks.CommitFilesCallable;
+import org.jfrog.hudson.release.scm.perforce.callbacks.EditFilesCallable;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -32,38 +32,26 @@ import java.io.IOException;
  *
  * @author Yossi Shaul
  */
-public class PerforceManager extends AbstractScmManager<PerforceSCM> {
+public abstract class AbstractPerforceManager<T extends SCM> extends AbstractScmManager<T> {
 
     /**
-     * This builder is passed to {@link EditFilesCallable} for creating a new perforce
+     * This client is passed to {@link EditFilesCallable} for creating a new perforce
      * connection since the operation may occur on remote agents.
      */
-    private PerforceClient.Builder builder;
-    private PerforceClient perforce;
+    protected PerforceClient perforce;
 
-    public PerforceManager(AbstractBuild<?, ?> build, TaskListener buildListener) {
+    public AbstractPerforceManager(AbstractBuild<?, ?> build, TaskListener buildListener) {
         super(build, buildListener);
     }
 
-    public void prepare() throws IOException, InterruptedException {
-        builder = new PerforceClient.Builder();
-        PerforceSCM jenkinsScm = getJenkinsScm();
-        String hostAddress = jenkinsScm.getP4Port();
-        if (!hostAddress.contains(":")) {
-            hostAddress = "localhost:" + hostAddress;
-        }
-        builder.hostAddress(hostAddress).client(build.getEnvironment(buildListener).get("P4CLIENT"));
-        builder.username(jenkinsScm.getP4User()).password(jenkinsScm.getDecryptedP4Passwd());
-        builder.charset(jenkinsScm.getP4Charset());
-        perforce = builder.build();
-    }
+    public abstract void prepare() throws IOException, InterruptedException;
 
-    public void commitWorkingCopy(int changeListId, String commitMessage) throws IOException, InterruptedException {
+    public void commitWorkingCopy(int changeListId, String commitMessage) throws Exception {
         FilePath workspace = build.getWorkspace();
         if (workspace == null) {
             throw new IOException("Workspace is null, cannot commit changes");
         }
-        workspace.act(new CommitFilesCallable(builder, changeListId, commitMessage));
+        workspace.act(new CommitFilesCallable(this.establishConnection(), changeListId, commitMessage));
     }
 
     public void createTag(String label, String commitMessage, String changeListId) throws IOException {
@@ -117,51 +105,21 @@ public class PerforceManager extends AbstractScmManager<PerforceSCM> {
      * @throws IOException          Thrown in case of perforce communication errors
      * @throws InterruptedException
      */
-    public void edit(int currentChangeListId, FilePath filePath) throws IOException, InterruptedException {
-        filePath.act(new EditFilesCallable(builder, buildListener, currentChangeListId));
+    public void edit(int currentChangeListId, FilePath filePath) throws Exception {
+        filePath.act(new EditFilesCallable(this.establishConnection(), currentChangeListId));
     }
+
+    /**
+     * PerforceClient is using one-time server which closes connection after each operation
+     * This method will re-establish a client-server connection
+     *
+     * @return PerforceClient instance that established a one time connection to the server
+     * @throws Exception
+     */
+    public abstract PerforceClient establishConnection() throws Exception;
 
     public void closeConnection() throws IOException {
         perforce.closeConnection();
     }
 
-    private static class EditFilesCallable implements FilePath.FileCallable<String> {
-        private PerforceClient.Builder builder;
-        private int currentChangeListId;
-        private TaskListener listener;
-
-        public EditFilesCallable(PerforceClient.Builder builder, TaskListener buildListener, int currentChangeListId) {
-            this.builder = builder;
-            this.listener = buildListener;
-            this.currentChangeListId = currentChangeListId;
-        }
-
-        public String invoke(File file, VirtualChannel channel) throws IOException, InterruptedException {
-            log(listener, "Opening file: '" + file.getAbsolutePath() + "' for editing");
-            PerforceClient perforce = builder.build();
-            perforce.editFile(currentChangeListId, file);
-            perforce.closeConnection();
-            return null;
-        }
-    }
-
-    private static class CommitFilesCallable implements FilePath.FileCallable<String> {
-
-        private PerforceClient.Builder builder;
-        private int changeListId;
-        private String commitMessage;
-
-        public CommitFilesCallable(PerforceClient.Builder builder, int changeListId, String commitMessage) {
-            this.builder = builder;
-            this.changeListId = changeListId;
-            this.commitMessage = commitMessage;
-        }
-
-        public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-            PerforceClient perforce = builder.build();
-            perforce.commitWorkingCopy(changeListId, commitMessage);
-            perforce.closeConnection();
-            return null;
-        }
-    }
 }

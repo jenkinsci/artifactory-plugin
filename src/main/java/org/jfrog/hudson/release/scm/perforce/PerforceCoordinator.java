@@ -29,25 +29,26 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Perforce scm coordinator. Interacts with the {@link PerforceManager} to fulfill the release process.
+ * Perforce scm coordinator. Interacts with the {@link AbstractPerforceManager} to fulfill the release process.
  *
  * @author Yossi Shaul
  */
 public class PerforceCoordinator extends AbstractScmCoordinator {
-    private static Logger debuggingLogger = Logger.getLogger(PerforceManager.class.getName());
+    private static Logger debuggingLogger = Logger.getLogger(AbstractPerforceManager.class.getName());
 
-    private PerforceManager perforce;
+    private AbstractPerforceManager perforce;
     private final ReleaseAction releaseAction;
     private boolean tagCreated;
     private int currentChangeListId;
 
-    public PerforceCoordinator(AbstractBuild build, BuildListener listener, ReleaseAction releaseAction) {
+    public PerforceCoordinator(AbstractBuild build, BuildListener listener, ReleaseAction releaseAction,
+                               AbstractPerforceManager perforce) {
         super(build, listener);
+        this.perforce = perforce;
         this.releaseAction = releaseAction;
     }
 
     public void prepare() throws IOException, InterruptedException {
-        perforce = new PerforceManager(build, listener);
         perforce.prepare();
     }
 
@@ -56,10 +57,10 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
         currentChangeListId = perforce.createNewChangeList();
     }
 
-    public void afterSuccessfulReleaseVersionBuild() throws InterruptedException, IOException {
+    public void afterSuccessfulReleaseVersionBuild() throws Exception {
         String labelChangeListId = ExtractorUtils.getVcsRevision(build.getEnvironment(listener));
         if (modifiedFilesForReleaseVersion) {
-            log("Submitting release version changes");
+            log("Submitt  ing release version changes");
             labelChangeListId = currentChangeListId + "";
             perforce.commitWorkingCopy(currentChangeListId, releaseAction.getDefaultGlobalReleaseVersion());
         } else {
@@ -83,7 +84,11 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
         super.afterDevelopmentVersionChange(modified);
         if (modified) {
             log("Submitting next development version changes");
-            perforce.commitWorkingCopy(currentChangeListId, releaseAction.getNextDevelCommitComment());
+            try {
+                perforce.commitWorkingCopy(currentChangeListId, releaseAction.getNextDevelCommitComment());
+            } catch (Exception e) {
+                log("Error: " + e.getMessage());
+            }
         } else {
             safeRevertWorkingCopy();
             currentChangeListId = perforce.getDefaultChangeListId();
@@ -92,7 +97,11 @@ public class PerforceCoordinator extends AbstractScmCoordinator {
 
     @Override
     public void edit(FilePath filePath) throws IOException, InterruptedException {
-        perforce.edit(currentChangeListId, filePath);
+        try {
+            perforce.edit(currentChangeListId, filePath);
+        } catch (Exception e) {
+            log("Error: " + e.getMessage());
+        }
     }
 
     public void buildCompleted() throws IOException, InterruptedException {
