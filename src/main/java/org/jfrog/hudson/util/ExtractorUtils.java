@@ -140,6 +140,7 @@ public class ExtractorUtils {
 
         if (publisherContext != null) {
             setPublisherInfo(env, build, publisherContext, configuration);
+            publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
             // setProxy(publisherContext.getArtifactoryServer(), configuration);
         }
 
@@ -153,8 +154,6 @@ public class ExtractorUtils {
             new IssuesTrackerHelper(build, listener, publisherContext.isAggregateBuildIssues(),
                     publisherContext.getAggregationBuildStatus()).setIssueTrackerInfo(configuration);
         }
-
-        publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
         IncludesExcludes envVarsPatterns = new IncludesExcludes("", "");
         if (publisherContext != null && publisherContext.getEnvVarsPatterns() != null) {

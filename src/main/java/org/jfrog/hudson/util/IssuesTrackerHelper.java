@@ -7,7 +7,6 @@ import hudson.model.BuildListener;
 import hudson.model.StreamBuildListener;
 import hudson.plugins.jira.JiraIssue;
 import hudson.plugins.jira.JiraSite;
-import hudson.scm.ChangeLogSet;
 import org.jfrog.build.api.Issue;
 import org.jfrog.build.api.IssueTracker;
 import org.jfrog.build.api.Issues;
@@ -20,7 +19,6 @@ import org.jfrog.hudson.util.plugins.PluginsUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -78,14 +76,6 @@ public class IssuesTrackerHelper {
         return PluginsUtils.getJiraVersion(site.url);
     }
 
-    private String getProjectKey(Iterator<ChangeLogSet.Entry> iterator) {
-        String projectId = null;
-        while (iterator.hasNext()){
-            ChangeLogSet.Entry next = iterator.next();
-            projectId = next.getMsg().split("-")[0].trim();
-        }
-        return projectId;
-    }
 
     private Set<String> manuallyCollectIssues(AbstractBuild build, Pattern issuePattern)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
