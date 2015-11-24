@@ -211,10 +211,6 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
         return "/plugin/artifactory/images/bintray.png";
     }
 
-    public String getBadgeFileName() {
-        return "/plugin/artifactory/images/bintray-badge.png";
-    }
-
     public String getDisplayName() {
         return "Push to Bintray";
     }
