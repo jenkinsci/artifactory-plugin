@@ -389,7 +389,7 @@
                     <j:if test="${descriptor.multiConfProject==false}">
                         <j:set var="releaseWrapper" value="${instance.releaseWrapper}"/>
                         <f:optionalBlock name="releaseWrapper" checked="${releaseWrapper != null}"
-                                         title="Enabled Release Management">
+                                         title="Enable release management">
                             <input type="hidden" name="stapler-class"
                                    value="org.jfrog.hudson.release.gradle.GradleReleaseWrapper"/>
                             <f:entry field="tagPrefix" title="VCS tags name/base URL"
