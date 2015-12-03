@@ -141,12 +141,10 @@ public class ExtractorUtils {
         if (publisherContext != null) {
             setPublisherInfo(env, build, publisherContext, configuration);
             publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
-            // setProxy(publisherContext.getArtifactoryServer(), configuration);
         }
 
         if (resolverContext != null) {
             setResolverInfo(configuration, build, resolverContext, env);
-            // setProxy(resolverContext.getServer(), configuration);
         }
 
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
