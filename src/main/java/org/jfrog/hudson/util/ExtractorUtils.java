@@ -140,12 +140,11 @@ public class ExtractorUtils {
 
         if (publisherContext != null) {
             setPublisherInfo(env, build, publisherContext, configuration);
-            // setProxy(publisherContext.getArtifactoryServer(), configuration);
+            publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
         }
 
         if (resolverContext != null) {
             setResolverInfo(configuration, build, resolverContext, env);
-            // setProxy(resolverContext.getServer(), configuration);
         }
 
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
@@ -153,8 +152,6 @@ public class ExtractorUtils {
             new IssuesTrackerHelper(build, listener, publisherContext.isAggregateBuildIssues(),
                     publisherContext.getAggregationBuildStatus()).setIssueTrackerInfo(configuration);
         }
-
-        publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
         IncludesExcludes envVarsPatterns = new IncludesExcludes("", "");
         if (publisherContext != null && publisherContext.getEnvVarsPatterns() != null) {

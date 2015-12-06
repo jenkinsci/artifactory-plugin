@@ -65,24 +65,6 @@
                                    value="${s.url}"/>
                             <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ServerDetails"/>
 
-                            <r:dynamicRepos id="genericResolveRepositoryKeys-${s.url}"
-                                            title="Resolve Repository"
-                                            field="resolveReleaseRepository"
-                                            repositoryConf="${instance.resolverDetails.resolveReleaseRepository}"
-                                            repositories="${instance.resolveRepositoryList}"
-                                            helpUrl="/plugin/artifactory/help/common/help-deployRepository.html"/>
-
-                            <script>
-                                var genericResolveBind =
-                                <st:bind value="${descriptor}"/>
-                            </script>
-
-                            <r:repos title="${%Refresh Repositories}" progress="${%Refreshing...}"
-                                     bind="genericResolveBind"
-                                     jsFunction="artifactoryGenericConfigurationResolve"
-                                     repoUrl="artifactoryUrlResolve${s.url}"
-                                     credentialsDescriber="overridingResolverCredentials-generic"/>
-
                         </f:nested>
                     </f:dropdownListBlock>
                 </j:forEach>
