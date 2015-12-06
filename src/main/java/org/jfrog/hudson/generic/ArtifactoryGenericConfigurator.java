@@ -259,11 +259,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 details.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
-    public List<VirtualRepository> getResolveRepositoryList() {
-        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryList,
-                resolverDetails.getResolveReleaseRepository().getKeyFromSelect());
-    }
-
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
@@ -438,40 +433,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
                 response.setRepositories(releaseRepositories);
-                response.setSuccess(true);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                response.setResponseMessage(e.getMessage());
-                response.setSuccess(false);
-            }
-
-            return response;
-        }
-
-        /**
-         * This method is triggered from the client side by ajax call.
-         * The method is triggered by the "Refresh Repositories" button.
-         *
-         * @param url           Artifactory url
-         * @param credentialsId credentials Id if using Credentials plugin
-         * @param username      credentials legacy mode username
-         * @param password      credentials legacy mode password
-         * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
-         */
-        @SuppressWarnings("unused")
-        @JavaScriptMethod
-        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
-
-            RefreshServerResponse response = new RefreshServerResponse();
-            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
-            ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
-
-            try {
-
-                virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(url, credentialsConfig, artifactoryServer);
-                Collections.sort(virtualRepositoryList);
-                response.setVirtualRepositories(virtualRepositoryList);
                 response.setSuccess(true);
 
             } catch (Exception e) {
