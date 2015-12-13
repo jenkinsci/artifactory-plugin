@@ -101,7 +101,7 @@ public class DeployerResolverOverriderConverter<T> extends XStream2.PassthruConv
             Field resolverCredentialsConfigField = overriderClass.getDeclaredField("resolverCredentialsConfig");
             resolverCredentialsConfigField.setAccessible(true);
             if (resolverCredentials != null) {
-                boolean shouldOverride = ((DeployerOverrider)overrider).getOverridingDeployerCredentials() != null;
+                boolean shouldOverride = ((ResolverOverrider)overrider).getOverridingResolverCredentials() != null;
                 CredentialsConfig credentialsConfig = new CredentialsConfig((Credentials) resolverCredentials, StringUtils.EMPTY, shouldOverride);
                 resolverCredentialsConfigField.set(overrider, credentialsConfig);
             } else {
