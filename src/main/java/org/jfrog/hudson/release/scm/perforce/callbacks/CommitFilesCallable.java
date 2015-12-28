@@ -6,11 +6,12 @@ import org.jfrog.build.vcs.perforce.PerforceClient;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * @author Shay Yaakov
  */
-public class CommitFilesCallable implements FilePath.FileCallable<String>{
+public class CommitFilesCallable implements FilePath.FileCallable<String>, Serializable {
 
     private PerforceClient perforceClient;
     private int changeListId;
