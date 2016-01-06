@@ -22,9 +22,8 @@ import hudson.model.TaskListener;
 import hudson.scm.SCM;
 import org.jfrog.build.vcs.perforce.PerforceClient;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
-import org.jfrog.hudson.release.scm.perforce.callbacks.CommitFilesCallable;
-import org.jfrog.hudson.release.scm.perforce.callbacks.EditFilesCallable;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -34,10 +33,6 @@ import java.io.IOException;
  */
 public abstract class AbstractPerforceManager<T extends SCM> extends AbstractScmManager<T> {
 
-    /**
-     * This client is passed to {@link EditFilesCallable} for creating a new perforce
-     * connection since the operation may occur on remote agents.
-     */
     protected PerforceClient perforce;
 
     public AbstractPerforceManager(AbstractBuild<?, ?> build, TaskListener buildListener) {
@@ -51,7 +46,7 @@ public abstract class AbstractPerforceManager<T extends SCM> extends AbstractScm
         if (workspace == null) {
             throw new IOException("Workspace is null, cannot commit changes");
         }
-        workspace.act(new CommitFilesCallable(this.establishConnection(), changeListId, commitMessage));
+        establishConnection().commitWorkingCopy(changeListId, commitMessage);
     }
 
     public void createTag(String label, String commitMessage, String changeListId) throws IOException {
@@ -97,8 +92,7 @@ public abstract class AbstractPerforceManager<T extends SCM> extends AbstractScm
     }
 
     /**
-     * Opens file for editing, this method uses {@link EditFilesCallable} which opens
-     * new connection to perforce server since it may invoke on remote agents.
+     * Opens file for editing.
      *
      * @param currentChangeListId The current change list id to open the file for editing at
      * @param filePath            The filePath which contains the file we need to edit
@@ -106,7 +100,7 @@ public abstract class AbstractPerforceManager<T extends SCM> extends AbstractScm
      * @throws InterruptedException
      */
     public void edit(int currentChangeListId, FilePath filePath) throws Exception {
-        filePath.act(new EditFilesCallable(this.establishConnection(), currentChangeListId));
+        establishConnection().editFile(currentChangeListId, new File(filePath.getRemote()));
     }
 
     /**
