@@ -15,5 +15,7 @@ https://github.com/jenkinsci/artifactory-plugin
 Please make sure to submit pull requests to JFrogDev only.
 
 ### How to build the plugin code
-To build the plugin, please use Maven with JDK 6.
-The plugin's pom file includes all the dependencies repositories.
+To build the plugin, please use Maven with JDK 6 and run:
+```console
+> mvn clean install
+```
