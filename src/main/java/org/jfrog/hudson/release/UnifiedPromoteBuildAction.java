@@ -217,10 +217,15 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         req.bindParameters(this);
         JSONObject formData = req.getSubmittedForm();
         JSONObject pluginSettings = formData.getJSONObject("promotionPlugin");
+
         // StaplerRequest.bindParameters doesn't work well with jelly <f:checkbox> element,
         // so we set the "boolean" fields manually
-        this.setIncludeDependencies(pluginSettings.getBoolean("includeDependencies"));
-        this.setUseCopy(pluginSettings.getBoolean("useCopy"));
+        if (pluginSettings.get("includeDependencies") != null) {
+            this.setIncludeDependencies(pluginSettings.getBoolean("includeDependencies"));
+        }
+        if (pluginSettings.get("useCopy") != null) {
+            this.setUseCopy(pluginSettings.getBoolean("useCopy"));
+        }
     }
 
     public List<UserPluginInfo> getPromotionsUserPluginInfo() {
