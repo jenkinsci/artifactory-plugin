@@ -38,6 +38,7 @@ import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -312,8 +313,11 @@ public class MavenReleaseWrapper extends BuildWrapper {
                     // add a stage action
                     run.addAction(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
                 }
-                if (!redeployPublisher.isAllowBintrayPushOfNonStageBuilds()) {
-                    run.addAction(new BintrayPublishAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
+                // Checks if Push to Bintray is disable.
+                if (PluginsUtils.isPushToBintrayEnabled()) {
+                    if (!redeployPublisher.isAllowBintrayPushOfNonStageBuilds()) {
+                        run.addAction(new BintrayPublishAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
+                    }
                 }
             }
 

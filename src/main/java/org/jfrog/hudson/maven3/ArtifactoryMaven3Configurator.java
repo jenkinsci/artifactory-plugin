@@ -476,7 +476,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryUrl(), build));
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryMaven3Configurator>(build, ArtifactoryMaven3Configurator.this));
-                    build.getActions().add(new BintrayPublishAction<ArtifactoryMaven3Configurator>(build, ArtifactoryMaven3Configurator.this));
+                    // Checks if Push to Bintray is disable.
+                    if (PluginsUtils.isPushToBintrayEnabled()) {
+                        build.getActions().add(new BintrayPublishAction<ArtifactoryMaven3Configurator>(build, ArtifactoryMaven3Configurator.this));
+                    }
                 }
                 return true;
             }
