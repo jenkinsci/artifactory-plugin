@@ -84,7 +84,7 @@
                         <f:entry title="${%Next development version comment}" field="nextDevelCommitComment"
                                  help="/plugin/artifactory/help/release/ReleaseAction/help-nextDevelopmentComment.html">
                             <f:textarea rows="3" name="nextDevelCommitComment"
-                                        default="${it.defaultVcsConfig.nextDevelopmentVersionComment}"/>
+                                        default="${it.defaultVcsConfig.nextDevelopmentVersionComment} ${it.defaultGlobalNextDevelopmentVersion}"/>
                         </f:entry>
                     </f:section>
                     <f:block>
