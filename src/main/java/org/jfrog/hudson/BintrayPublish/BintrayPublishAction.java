@@ -15,6 +15,7 @@ import org.jfrog.hudson.*;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -97,7 +98,13 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public boolean hasPushToBintrayPermission() {
-        return getACL().hasPermission(getPermission());
+        if(getACL().hasPermission(getPermission()) && hasPushToBintrayEnabled())
+            return true;
+        return false;
+    }
+
+    public boolean hasPushToBintrayEnabled() {
+        return PluginsUtils.isPushToBintrayEnabled();
     }
 
     public synchronized String getCurrentAction() {
