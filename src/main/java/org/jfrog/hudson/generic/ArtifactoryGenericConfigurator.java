@@ -347,7 +347,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                             build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                             build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryGenericConfigurator>(build,
                                     ArtifactoryGenericConfigurator.this));
-                            // Checks if Push to Bintray is disable.
+                            // Checks if Push to Bintray is disabled.
                             if (PluginsUtils.isPushToBintrayEnabled()){
                                 build.getActions().add(new BintrayPublishAction<ArtifactoryGenericConfigurator>(build,
                                         ArtifactoryGenericConfigurator.this));

@@ -382,7 +382,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
-                // Checks if Push to Bintray is disable.
+                // Checks if Push to Bintray is disabled.
                 if (PluginsUtils.isPushToBintrayEnabled()) {
                     if (isAllowBintrayPushOfNonStageBuilds()) {
                         build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
@@ -429,7 +429,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
-                // Checks if Push to Bintray is disable.
+                // Checks if Push to Bintray is disabled.
                 if (PluginsUtils.isPushToBintrayEnabled()) {
                     if (isAllowBintrayPushOfNonStageBuilds()) {
                         build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));

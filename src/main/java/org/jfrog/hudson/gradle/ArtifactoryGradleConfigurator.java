@@ -496,9 +496,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 FilePath initScript;
                 String initScriptPath;
                 try {
-                    initScript =
-                            workspace.createTextTempFile("init-artifactory", "gradle", writer.generateInitScript(),
-                                    false);
+                    initScript = workspace.createTextTempFile("init-artifactory", "gradle",
+                        writer.generateInitScript(), false);
                     initScriptPath = initScript.getRemote();
                     initScriptPath = initScriptPath.replace('\\', '/');
                     env.put("ARTIFACTORY_INIT_SCRIPT", " --init-script " + initScriptPath);
@@ -525,14 +524,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 ResolverContext resolverContext = null;
                 if (StringUtils.isNotBlank(resolverServerDetails.getResolveReleaseRepository().getRepoKey())) {
                     CredentialsConfig resolverCredentials = CredentialManager.getPreferredResolver(
-                            ArtifactoryGradleConfigurator.this, getArtifactoryServer());
+                        ArtifactoryGradleConfigurator.this, getArtifactoryServer());
                     resolverContext = new ResolverContext(getArtifactoryResolverServer(), resolverServerDetails,
-                            resolverCredentials.getCredentials(), ArtifactoryGradleConfigurator.this);
+                        resolverCredentials.getCredentials(), ArtifactoryGradleConfigurator.this);
                 }
 
                 try {
-                    ExtractorUtils.addBuilderInfoArguments(env, build, listener, finalPublisherBuilder.build(),
-                            resolverContext);
+                    ExtractorUtils.addBuilderInfoArguments(env, build, listener,
+                        finalPublisherBuilder.build(), resolverContext);
                 } catch (Exception e) {
                     log.println(e.getMessage());
                     throw new RuntimeException(e);
@@ -541,7 +540,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
-                    throws IOException, InterruptedException {
+                throws IOException, InterruptedException {
                 boolean success = false;
                 boolean releaseSuccess = true;
                 Result result = build.getResult();
@@ -572,20 +571,21 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 if (result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     if (isDeployBuildInfo()) {
                         build.getActions().add(new BuildInfoResultAction(getArtifactoryUrl(), build));
-                        ArtifactoryGradleConfigurator configurator = ActionableHelper.getBuildWrapper(
-                                build.getProject(), ArtifactoryGradleConfigurator.class);
+                        ArtifactoryGradleConfigurator configurator =
+                            ActionableHelper.getBuildWrapper(build.getProject(),
+                            ArtifactoryGradleConfigurator.class);
                         if (configurator != null) {
                             if (isAllowPromotionOfNonStagedBuilds()) {
                                 build.getActions()
-                                        .add(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(build,
-                                                ArtifactoryGradleConfigurator.this));
+                                    .add(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(build,
+                                        ArtifactoryGradleConfigurator.this));
                             }
-                            // Checks if Push to Bintray is disable.
+                            // Checks if Push to Bintray is disabled.
                             if (PluginsUtils.isPushToBintrayEnabled()){
                                 if (isAllowBintrayPushOfNonStageBuilds()) {
                                     build.getActions()
-                                            .add(new BintrayPublishAction<ArtifactoryGradleConfigurator>(build,
-                                                    ArtifactoryGradleConfigurator.this));
+                                        .add(new BintrayPublishAction<ArtifactoryGradleConfigurator>(build,
+                                            ArtifactoryGradleConfigurator.this));
                                 }
                             }
                         }
@@ -609,12 +609,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         stagingRepository = getRepositoryKey();
                     }
                     serverDetails = new ServerDetails(
-                            serverDetails.artifactoryName,
-                            serverDetails.getArtifactoryUrl(),
-                            new RepositoryConf(stagingRepository, stagingRepository, false),
-                            serverDetails.getDeploySnapshotRepository(),
-                            serverDetails.getResolveReleaseRepository(),
-                            serverDetails.getResolveSnapshotRepository());
+                        serverDetails.artifactoryName,
+                        serverDetails.getArtifactoryUrl(),
+                        new RepositoryConf(stagingRepository, stagingRepository, false),
+                        serverDetails.getDeploySnapshotRepository(),
+                        serverDetails.getResolveReleaseRepository(),
+                        serverDetails.getResolveSnapshotRepository());
                 }
                 return serverDetails;
             }
@@ -623,31 +623,31 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     private PublisherContext.Builder getBuilder() {
         return new PublisherContext.Builder()
-                .artifactoryServer(getArtifactoryServer())
-                .deployerOverrider(ArtifactoryGradleConfigurator.this).runChecks(isRunChecks())
-                .includePublishArtifacts(isIncludePublishArtifacts())
-                .violationRecipients(getViolationRecipients()).scopes(getScopes())
-                .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
-                .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
-                .skipBuildInfoDeploy(!isDeployBuildInfo())
-                .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
-                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
-                .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
-                .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
-                .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
-                .aggregateBuildIssues(isAggregateBuildIssues())
-                .aggregationBuildStatus(getAggregationBuildStatus())
-                .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
-                        getBlackDuckReportRecipients(), getBlackDuckScopes(),
-                        isBlackDuckIncludePublishedArtifacts(), isAutoCreateMissingComponentRequests(),
-                        isAutoDiscardStaleComponentRequests())
-                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
-                .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
+            .artifactoryServer(getArtifactoryServer())
+            .deployerOverrider(ArtifactoryGradleConfigurator.this).runChecks(isRunChecks())
+            .includePublishArtifacts(isIncludePublishArtifacts())
+            .violationRecipients(getViolationRecipients()).scopes(getScopes())
+            .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
+            .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+            .skipBuildInfoDeploy(!isDeployBuildInfo())
+            .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
+            .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
+            .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
+            .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
+            .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
+            .aggregateBuildIssues(isAggregateBuildIssues())
+            .aggregationBuildStatus(getAggregationBuildStatus())
+            .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
+                getBlackDuckReportRecipients(), getBlackDuckScopes(),
+                isBlackDuckIncludePublishedArtifacts(), isAutoCreateMissingComponentRequests(),
+                isAutoDiscardStaleComponentRequests())
+            .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
+            .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
     }
 
     public boolean isRelease(AbstractBuild build) {
         boolean actionExists = build.getAction(GradleReleaseAction.class) != null ||
-                build.getAction(GradleReleaseApiAction.class) != null;
+            build.getAction(GradleReleaseApiAction.class) != null;
         return getReleaseWrapper() != null && actionExists;
     }
 
@@ -675,7 +675,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public ArtifactoryServer getArtifactoryResolverServer() {
         return RepositoriesUtils.getArtifactoryServer(getArtifactoryResolverName(),
-                getDescriptor().getArtifactoryServers());
+            getDescriptor().getArtifactoryServers());
     }
 
     public List<PluginSettings> getUserPluginKeys() {
@@ -740,23 +740,23 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         public boolean isApplicable(AbstractProject<?, ?> item) {
             this.item = item;
             return item.getClass().isAssignableFrom(FreeStyleProject.class) ||
-                    item.getClass().isAssignableFrom(MatrixProject.class) ||
-                    (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
-                            item.getClass().isAssignableFrom(MultiJobProject.class));
+                item.getClass().isAssignableFrom(MatrixProject.class) ||
+                (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
+                item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
         private void refreshRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
             List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(),
-                    credentialsConfig, artifactoryServer);
+                credentialsConfig, artifactoryServer);
             Collections.sort(releaseRepositoryKeysFirst);
             releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
-                throws IOException {
-            virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(), credentialsConfig,
-                    artifactoryServer);
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer,
+            CredentialsConfig credentialsConfig) throws IOException {
+            virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
+                credentialsConfig, artifactoryServer);
             Collections.sort(virtualRepositories);
         }
 
@@ -807,7 +807,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
             try {
                 ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
-                        url, getArtifactoryServers());
+                    url, getArtifactoryServers());
                 refreshRepositories(artifactoryServer, credentialsConfig);
                 refreshUserPlugins(artifactoryServer, credentialsConfig);
 
@@ -834,18 +834,16 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
          */
         @SuppressWarnings("unused")
         @JavaScriptMethod
-        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
-
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId,
+            String username, String password) {
             RefreshServerResponse response = new RefreshServerResponse();
             CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
 
             try {
-
                 refreshVirtualRepositories(artifactoryServer, credentialsConfig);
                 response.setVirtualRepositories(virtualRepositories);
                 response.setSuccess(true);
-
             } catch (Exception e) {
                 e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
@@ -855,12 +853,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return response;
         }
 
-
         @SuppressWarnings("unused")
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             return PluginsUtils.fillPluginCredentials(project);
         }
-
 
         @Override
         public String getDisplayName() {
@@ -893,7 +889,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         }
 
         public FormValidation doCheckArtifactoryCombinationFilter(@QueryParameter String value)
-                throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
             return FormValidations.validateArtifactoryCombinationFilter(value);
         }
 
@@ -940,7 +936,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
             // signal completion to the scm coordinator
             ArtifactoryGradleConfigurator wrapper = ActionableHelper.getBuildWrapper(
-                    (BuildableItemWithBuildWrappers) run.getProject(), ArtifactoryGradleConfigurator.class);
+                (BuildableItemWithBuildWrappers) run.getProject(), ArtifactoryGradleConfigurator.class);
 
             Result result = run.getResult();
             boolean successRun = result.isBetterOrEqualTo(Result.SUCCESS);
@@ -951,7 +947,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     run.addAction(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(run, wrapper));
                 }
             }
-            // Checks if Push to Bintray is disable.
+            // Checks if Push to Bintray is disabled.
             if (PluginsUtils.isPushToBintrayEnabled()) {
                 if (!wrapper.isAllowBintrayPushOfNonStageBuilds()) {
                     if (successRun) {

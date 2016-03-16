@@ -60,7 +60,7 @@ public class ArtifactoryIvyRunListener extends RunListener<AbstractBuild> {
                 run.getActions().add(new BuildInfoResultAction(artifactoryIvyConfigurator.getArtifactoryUrl(), run));
                 run.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyConfigurator>(run,
                         artifactoryIvyConfigurator));
-                // Checks if Push to Bintray is disable.
+                // Checks if Push to Bintray is disabled.
                 if (PluginsUtils.isPushToBintrayEnabled()){
                     run.getActions().add(new BintrayPublishAction<ArtifactoryIvyConfigurator>(run, artifactoryIvyConfigurator));
                 }

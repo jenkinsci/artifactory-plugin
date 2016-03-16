@@ -313,7 +313,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
                     // add a stage action
                     run.addAction(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
                 }
-                // Checks if Push to Bintray is disable.
+                // Checks if Push to Bintray is disabled.
                 if (PluginsUtils.isPushToBintrayEnabled()) {
                     if (!redeployPublisher.isAllowBintrayPushOfNonStageBuilds()) {
                         run.addAction(new BintrayPublishAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));

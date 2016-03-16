@@ -420,7 +420,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                     build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
                             ArtifactoryIvyFreeStyleConfigurator.this));
-                    // Checks if Push to Bintray is disable.
+                    // Checks if Push to Bintray is disabled.
                     if (PluginsUtils.isPushToBintrayEnabled()){
                         build.getActions().add(new BintrayPublishAction<ArtifactoryIvyFreeStyleConfigurator>(build,
                                 ArtifactoryIvyFreeStyleConfigurator.this));

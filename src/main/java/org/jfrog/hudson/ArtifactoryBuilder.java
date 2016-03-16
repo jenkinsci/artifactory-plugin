@@ -175,7 +175,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             this.useCredentialsPlugin = useCredentialsPlugin;
         }
 
-        //  The global.jelly uses this method to retrieve the value of pushToBintrayEnabled to determine if the checkbox should be checked.
+        // global.jelly uses this method to retrieve the value of pushToBintrayEnabled to determine if the checkbox should be checked.
         public boolean isPushToBintrayEnabled() {
             return pushToBintrayEnabled;
         }

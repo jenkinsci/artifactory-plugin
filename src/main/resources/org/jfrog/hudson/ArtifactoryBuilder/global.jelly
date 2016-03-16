@@ -5,13 +5,13 @@
     <st:adjunct includes="lib.jfrog.repos.credentials"/>
     <f:section title="Artifactory">
 
-    <f:entry title="Disable Push To Bintray"
-        help="/plugin/artifactory/help/ArtifactoryBuilder/help-pushToBintrayEnabled.html"  >
-            <input id="pushToBintrayEnabled" type="checkbox"
-                name="pushToBintrayEnabled" value="${descriptor.pushToBintrayEnabled}"
-                    field="pushToBintrayEnabled">Enable push to Bintray
-            </input>
-    </f:entry>
+        <f:entry title="Disable Push To Bintray"
+            help="/plugin/artifactory/help/ArtifactoryBuilder/help-pushToBintrayEnabled.html"  >
+                <input id="pushToBintrayEnabled" type="checkbox"
+                    name="pushToBintrayEnabled" value="${descriptor.pushToBintrayEnabled}"
+                        field="pushToBintrayEnabled">Enable Push to Bintray
+                </input>
+        </f:entry>
 
         <f:entry title="Artifactory servers"
                  description="List of Artifactory servers that projects will want to deploy artifacts and build info to">

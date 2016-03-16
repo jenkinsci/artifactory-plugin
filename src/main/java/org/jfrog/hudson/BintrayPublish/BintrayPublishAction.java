@@ -30,12 +30,9 @@ import java.util.List;
  * @author Aviad Shikloshi
  */
 public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & DeployerOverrider> extends TaskAction implements BuildBadgeAction {
-
     private final static String MINIMAL_SUPPORTED_VERSION = "3.5.3";
-
     private final AbstractBuild build;
     private final C configurator;
-
     private boolean override;
     private String subject;
     private String repoName;
@@ -98,13 +95,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public boolean hasPushToBintrayPermission() {
-        if(getACL().hasPermission(getPermission()) && hasPushToBintrayEnabled())
-            return true;
-        return false;
-    }
-
-    public boolean hasPushToBintrayEnabled() {
-        return PluginsUtils.isPushToBintrayEnabled();
+         return getACL().hasPermission(getPermission()) && PluginsUtils.isPushToBintrayEnabled();
     }
 
     public synchronized String getCurrentAction() {
