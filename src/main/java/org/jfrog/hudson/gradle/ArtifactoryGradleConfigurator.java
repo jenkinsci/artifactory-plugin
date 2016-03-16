@@ -580,10 +580,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                         .add(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(build,
                                                 ArtifactoryGradleConfigurator.this));
                             }
-                            if (isAllowBintrayPushOfNonStageBuilds()) {
-                                build.getActions()
-                                        .add(new BintrayPublishAction<ArtifactoryGradleConfigurator>(build,
-                                                ArtifactoryGradleConfigurator.this));
+                            // Checks if Push to Bintray is disable.
+                            if (PluginsUtils.isPushToBintrayEnabled()){
+                                if (isAllowBintrayPushOfNonStageBuilds()) {
+                                    build.getActions()
+                                            .add(new BintrayPublishAction<ArtifactoryGradleConfigurator>(build,
+                                                    ArtifactoryGradleConfigurator.this));
+                                }
                             }
                         }
                     }
@@ -864,6 +867,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             return "Gradle-Artifactory Integration";
         }
 
+        public boolean isPushToBintrayEnabled() {
+            return PluginsUtils.isPushToBintrayEnabled();
+        }
+
         @Override
         public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
             req.bindParameters(this, "gradle");
@@ -944,11 +951,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     run.addAction(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(run, wrapper));
                 }
             }
-
-            if (!wrapper.isAllowBintrayPushOfNonStageBuilds()) {
-                if (successRun) {
-                    // add push to bintray action
-                    run.addAction(new BintrayPublishAction<ArtifactoryGradleConfigurator>(run, wrapper));
+            // Checks if Push to Bintray is disable.
+            if (PluginsUtils.isPushToBintrayEnabled()) {
+                if (!wrapper.isAllowBintrayPushOfNonStageBuilds()) {
+                    if (successRun) {
+                        // add push to bintray action
+                        run.addAction(new BintrayPublishAction<ArtifactoryGradleConfigurator>(run, wrapper));
+                    }
                 }
             }
 

@@ -60,6 +60,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
 
         private boolean useCredentialsPlugin;
         private List<ArtifactoryServer> artifactoryServers;
+        private boolean pushToBintrayEnabled = true;
 
         public DescriptorImpl() {
             super(ArtifactoryBuilder.class);
@@ -143,6 +144,8 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         @Override
         public boolean configure(StaplerRequest req, JSONObject o) throws FormException {
             useCredentialsPlugin = (Boolean) o.get("useCredentialsPlugin");
+            pushToBintrayEnabled = (Boolean) o.get("pushToBintrayEnabled");
+
             Object servers = o.get("artifactoryServer");    // an array or single object
             if (!JSONNull.getInstance().equals(servers)) {
                 artifactoryServers = req.bindJSONToList(ArtifactoryServer.class, servers);
@@ -170,6 +173,11 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         @SuppressWarnings({"UnusedDeclaration"})
         public void setUseCredentialsPlugin(boolean useCredentialsPlugin) {
             this.useCredentialsPlugin = useCredentialsPlugin;
+        }
+
+        //  The global.jelly uses this method to retrieve the value of pushToBintrayEnabled to determine if the checkbox should be checked.
+        public boolean isPushToBintrayEnabled() {
+            return pushToBintrayEnabled;
         }
     }
 }

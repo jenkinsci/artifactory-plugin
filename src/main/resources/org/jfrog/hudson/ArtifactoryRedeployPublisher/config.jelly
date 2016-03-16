@@ -191,13 +191,8 @@
                                          inline="true">
                         </f:optionalBlock>
                     </table>
-                    <table style="width: 100%">
-                        <f:optionalBlock field="allowBintrayPushOfNonStageBuilds"
-                                         help="/plugin/artifactory/help/common/help-allowPushToBintrayOfNonStagedBuilds.html"
-                                         title="Allow push to Bintray for non-staged builds"
-                                         inline="true">
-                        </f:optionalBlock>
-                    </table>
+                     <r:bintray configurationFieldName="pushToBintrayEnabledConfig"
+                        elementId="pushToBintrayEnabled"/>
                 </f:block>
                 <f:block>
                     <table style="width:100%">
@@ -348,6 +343,17 @@
             }
         }
 
+         function updateViewPushToBintrayCheckBox() {
+            try {
+                var pushToBintrayEnabledFlag = JSON.parse(document.getElementById('pushToBintrayEnabled').value);
+                var pushToBintrayEnabledCheckBox = document.getElementById('pushToBintrayTable');
+                pushToBintrayEnabledCheckBox.style.display = pushToBintrayEnabledFlag ? '' : 'none';
+            } catch (exception) {
+                setTimeout(updateViewPushToBintrayCheckBox, 0);
+            }
+         }
+
+        updateViewPushToBintrayCheckBox();
         updateViewWithCredentials();
     </script>
 </j:jelly>

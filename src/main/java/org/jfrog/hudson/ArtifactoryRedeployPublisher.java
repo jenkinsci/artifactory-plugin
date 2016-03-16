@@ -382,8 +382,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
-                if (isAllowBintrayPushOfNonStageBuilds()) {
-                    build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
+                // Checks if Push to Bintray is disable.
+                if (PluginsUtils.isPushToBintrayEnabled()) {
+                    if (isAllowBintrayPushOfNonStageBuilds()) {
+                        build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
+                    }
                 }
             }
             return true;
@@ -426,8 +429,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
-                if (isAllowBintrayPushOfNonStageBuilds()) {
-                    build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
+                // Checks if Push to Bintray is disable.
+                if (PluginsUtils.isPushToBintrayEnabled()) {
+                    if (isAllowBintrayPushOfNonStageBuilds()) {
+                        build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
+                    }
                 }
             }
             return true;
@@ -644,6 +650,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         public boolean isUseCredentialsPlugin() {
             return PluginsUtils.isUseCredentialsPlugin();
+        }
+        public boolean isPushToBintrayEnabled() {
+            return PluginsUtils.isPushToBintrayEnabled();
         }
     }
 
