@@ -19,11 +19,11 @@ package org.jfrog.hudson.util;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.common.io.Closeables;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.*;
 import hudson.slaves.SlaveComputer;
+import hudson.util.IOUtils;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
@@ -431,7 +431,7 @@ public class ExtractorUtils {
                 try {
                     properties.store(stream, "");
                 } finally {
-                    Closeables.closeQuietly(stream);
+                    IOUtils.closeQuietly(stream);
                 }
                 propertiesFile.copyFrom(tempFile.toURI().toURL());
             } catch (Exception e) {

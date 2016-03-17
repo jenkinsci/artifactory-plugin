@@ -1,7 +1,7 @@
 package org.jfrog.hudson.util;
 
 import com.google.common.collect.Sets;
-import com.google.common.io.NullOutputStream;
+import com.google.common.io.ByteStreams;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.StreamBuildListener;
@@ -84,7 +84,7 @@ public class IssuesTrackerHelper {
                 Pattern.class, BuildListener.class);
         findIssueIdsRecursive.setAccessible(true);
         return (Set<String>) findIssueIdsRecursive.invoke(null, build, issuePattern,
-                new StreamBuildListener(new NullOutputStream()));
+                new StreamBuildListener(ByteStreams.nullOutputStream()));
     }
 
     /**
