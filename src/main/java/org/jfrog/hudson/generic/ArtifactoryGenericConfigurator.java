@@ -113,7 +113,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -266,7 +267,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
+        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryName(), project);
     }
 
     @Override

@@ -306,7 +306,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     }
 
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     public boolean isDeployArtifacts() {
@@ -413,7 +414,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         List<ArtifactoryProjectAction> action =
-                ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
+                ActionableHelper.getArtifactoryProjectAction(getArtifactoryName(), project);
         if (getReleaseWrapper() != null) {
             List<Action> actions = new ArrayList<Action>();
             actions.addAll(action);

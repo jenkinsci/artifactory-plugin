@@ -168,13 +168,13 @@ public abstract class ActionableHelper {
     /**
      * Return list with {@link ArtifactoryProjectAction} if not already exists in project actions.
      *
-     * @param artifactoryRootUrl The root URL of Artifactory server
-     * @param project            The hudson project
+     * @param artifactoryServerName The name of Artifactory server
+     * @param project               The hudson project
      * @return Empty list or list with one {@link ArtifactoryProjectAction}
      */
     public static List<ArtifactoryProjectAction> getArtifactoryProjectAction(
-            String artifactoryRootUrl, AbstractProject project) {
-        if (artifactoryRootUrl == null) {
+            String artifactoryServerName, AbstractProject project) {
+        if (artifactoryServerName == null) {
             return Collections.emptyList();
         }
         if (project.getAction(ArtifactoryProjectAction.class) != null) {
@@ -184,7 +184,7 @@ public abstract class ActionableHelper {
         if (project instanceof MatrixConfiguration)
             return Collections.emptyList();
 
-        return Lists.newArrayList(new ArtifactoryProjectAction(artifactoryRootUrl, project));
+        return Lists.newArrayList(new ArtifactoryProjectAction(artifactoryServerName, project));
     }
 
     /**

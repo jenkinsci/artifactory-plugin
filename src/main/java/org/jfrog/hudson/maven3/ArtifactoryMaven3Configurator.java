@@ -248,13 +248,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public ArtifactoryServer getArtifactoryServer() {
-        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        for (ArtifactoryServer server : servers) {
-            if (server.getName().equals(getArtifactoryName())) {
-                return server;
-            }
-        }
-        return null;
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -295,7 +289,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     public String getScopes() {
@@ -405,7 +400,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
+        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryName(), project);
     }
 
     @Override

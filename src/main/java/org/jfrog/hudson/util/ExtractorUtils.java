@@ -277,7 +277,7 @@ public class ExtractorUtils {
             configuration.publisher.setPassword(preferredDeployer.providePassword());
         }
         configuration.setTimeout(artifactoryServer.getTimeout());
-        configuration.publisher.setContextUrl(context.getServerDetails().getArtifactoryUrl());
+        configuration.publisher.setContextUrl(artifactoryServer.getUrl());
 
         ServerDetails serverDetails = context.getServerDetails();
         if (serverDetails != null) {

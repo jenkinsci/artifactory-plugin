@@ -272,7 +272,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     }
 
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     public String getViolationRecipients() {
@@ -357,7 +358,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
+        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryName(), project);
     }
 
     @Override

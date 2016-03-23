@@ -265,7 +265,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     /**
@@ -362,7 +363,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     @Override
     public Action getProjectAction(AbstractProject<?, ?> project) {
-        return details != null ? new ArtifactoryProjectAction(details.getArtifactoryUrl(), project) : null;
+        return details != null ? new ArtifactoryProjectAction(details.getArtifactoryName(), project) : null;
     }
 
     @Override
@@ -503,16 +504,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public ArtifactoryServer getArtifactoryServer() {
-        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        if (servers != null) {
-            for (ArtifactoryServer server : servers) {
-                //support legacy code when artifactoryName was the url
-                if (server.getName().equals(getArtifactoryName()) || server.getUrl().equals(getArtifactoryName())) {
-                    return server;
-                }
-            }
-        }
-        return null;
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
     private Result getTreshold() {

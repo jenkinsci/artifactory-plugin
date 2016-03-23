@@ -260,7 +260,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     public boolean isDeployArtifacts() {
@@ -333,7 +334,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
+        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryName(), project);
     }
 
     @Override
