@@ -100,6 +100,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean allowBintrayPushOfNonStageBuilds;
     private final boolean filterExcludedArtifactsFromBuild;
     private final boolean recordAllDependencies;
+    private String defaultPromotionTargetRepository;
     private boolean deployBuildInfo;
     private String aggregationBuildStatus;
     private boolean aggregateBuildIssues;
@@ -133,6 +134,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                                         boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
                                         boolean aggregateBuildIssues, String aggregationBuildStatus,
                                         boolean recordAllDependencies, boolean allowPromotionOfNonStagedBuilds,
+                                        String defaultPromotionTargetRepository,
                                         boolean allowBintrayPushOfNonStageBuilds,
                                         boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
                                         String blackDuckReportRecipients, String blackDuckScopes,
@@ -162,6 +164,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.aggregateBuildIssues = aggregateBuildIssues;
         this.recordAllDependencies = recordAllDependencies;
         this.allowPromotionOfNonStagedBuilds = allowPromotionOfNonStagedBuilds;
+        this.defaultPromotionTargetRepository = defaultPromotionTargetRepository;
         this.blackDuckRunChecks = blackDuckRunChecks;
         this.blackDuckAppName = blackDuckAppName;
         this.blackDuckAppVersion = blackDuckAppVersion;
@@ -299,6 +302,14 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isAllowPromotionOfNonStagedBuilds() {
         return allowPromotionOfNonStagedBuilds;
+    }
+
+    public String getDefaultPromotionTargetRepository() {
+        return defaultPromotionTargetRepository;
+    }
+
+    public void setDefaultPromotionTargetRepository(String defaultPromotionTargetRepository) {
+        this.defaultPromotionTargetRepository = defaultPromotionTargetRepository;
     }
 
     public boolean isAllowBintrayPushOfNonStageBuilds() {

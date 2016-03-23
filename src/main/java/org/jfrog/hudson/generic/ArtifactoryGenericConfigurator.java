@@ -124,6 +124,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return details.getDeployReleaseRepository().getRepoKey();
     }
 
+    public String getDefaultPromotionTargetRepository() {
+        //Not implemented
+        return null;
+    }
+
     public ServerDetails getDetails() {
         return details;
     }

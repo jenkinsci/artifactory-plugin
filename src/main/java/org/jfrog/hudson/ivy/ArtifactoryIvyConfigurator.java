@@ -266,6 +266,11 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return details != null ? details.getDeployReleaseRepository().getRepoKey() : null;
     }
 
+    public String getDefaultPromotionTargetRepository() {
+        //Not implemented
+        return null;
+    }
+
     public String getArtifactoryUrl() {
         return details != null ? details.getArtifactoryUrl() : null;
     }

@@ -169,6 +169,10 @@
                                                  title="Allow promotion of non-staged builds"
                                                  inline="true">
                                 </f:optionalBlock>
+                                <f:entry title="Default promotion target repository" field="defaultPromotionTargetRepository"
+                                         help="/plugin/artifactory/help/release/PromoteBuildAction/help-defaultPromotionTargetRepository.html">
+                                    <f:textbox value="${instance.defaultPromotionTargetRepository}"/>
+                                </f:entry>
                             </table>
                             <r:bintray configurationFieldName="pushToBintrayEnabledConfig"
                                 elementId="pushToBintrayEnabled"/>
@@ -411,6 +415,10 @@
                             <f:entry title="Alternative Gradle tasks and options"
                                      help="/plugin/artifactory/help/release/gradle/GradleReleaseWrapper/help-alternativeTasks.html">
                                 <f:textbox name="alternativeTasks" value="${releaseWrapper.alternativeTasks}"/>
+                            </f:entry>
+                            <f:entry field="defaultReleaseStagingRepository" title="${%Default staging repository}"
+                                    help="/plugin/artifactory/help/release/common/help-defaultReleaseStagingRepository.html">
+                                    <f:textbox name="defaultReleaseStagingRepository" value="${releaseWrapper.defaultReleaseStagingRepository}" />
                             </f:entry>
                         </f:optionalBlock>
                     </j:if>

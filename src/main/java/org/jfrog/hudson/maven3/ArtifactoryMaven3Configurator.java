@@ -262,6 +262,11 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         return details != null ? details.getDeployReleaseRepositoryKey() : null;
     }
 
+    public String getDefaultPromotionTargetRepository() {
+        //Not implemented
+        return null;
+    }
+
     public boolean isIncludePublishArtifacts() {
         return includePublishArtifacts;
     }

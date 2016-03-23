@@ -1,4 +1,3 @@
-
 <!--suppress XmlUnusedNamespaceDeclaration -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
@@ -22,5 +21,9 @@
              help="/plugin/artifactory/help/release/maven/MavenReleaseWrapper/help-alternativeGoals.html">
         <f:textbox name="alternativeGoals" value="${instance.alternativeGoals}"
                    default="${jenkins.artifactory.release.maven.alternativeGoalsDefault}"/>
+    </f:entry>
+    <f:entry field="defaultReleaseStagingRepository" title="${%Default staging repository}"
+        help="/plugin/artifactory/help/release/common/help-defaultReleaseStagingRepository.html">
+        <f:textbox name="defaultReleaseStagingRepository" value="${instance.defaultReleaseStagingRepository}" />
     </f:entry>
 </j:jelly>

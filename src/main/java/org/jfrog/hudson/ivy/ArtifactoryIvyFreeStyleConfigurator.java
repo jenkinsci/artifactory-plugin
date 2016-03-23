@@ -250,6 +250,11 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         return details != null ? details.getDeployReleaseRepository().getRepoKey() : null;
     }
 
+    public String getDefaultPromotionTargetRepository() {
+        //Not implemented
+        return null;
+    }
+
     public String getArtifactoryName() {
         return details != null ? details.artifactoryName : null;
     }

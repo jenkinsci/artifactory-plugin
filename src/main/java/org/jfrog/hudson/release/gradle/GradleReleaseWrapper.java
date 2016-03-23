@@ -49,18 +49,20 @@ public class GradleReleaseWrapper {
     private String alternativeTasks;
     private String releasePropsKeys;
     private String nextIntegPropsKeys;
+    private String defaultReleaseStagingRepository;
 
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
     public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String targetRemoteName, String alternativeTasks,
-                                String releasePropsKeys, String nextIntegPropsKeys) {
+                                String releasePropsKeys, String nextIntegPropsKeys, String defaultReleaseStagingRepository) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.targetRemoteName = targetRemoteName;
         this.alternativeTasks = alternativeTasks;
         this.releasePropsKeys = releasePropsKeys;
         this.nextIntegPropsKeys = nextIntegPropsKeys;
+        this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
     }
 
     public ScmCoordinator getScmCoordinator() {
@@ -120,6 +122,16 @@ public class GradleReleaseWrapper {
     @SuppressWarnings({"UnusedDeclaration"})
     public void setAlternativeTasks(String alternativeTasks) {
         this.alternativeTasks = alternativeTasks;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public String getDefaultReleaseStagingRepository() {
+        return defaultReleaseStagingRepository;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void setDefaultReleaseStagingRepository(String defaultReleaseStagingRepository) {
+        this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
     }
 
     public String[] getReleasePropsKeysList() {

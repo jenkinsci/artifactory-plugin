@@ -61,17 +61,19 @@ public class MavenReleaseWrapper extends BuildWrapper {
     private String targetRemoteName;
     private String alternativeGoals;
     private String defaultVersioning;
+    private String defaultReleaseStagingRepository;
 
     private transient ScmCoordinator scmCoordinator;
 
     @DataBoundConstructor
     public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String targetRemoteName, String alternativeGoals,
-                               String defaultVersioning) {
+                               String defaultVersioning, String defaultReleaseStagingRepository) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.targetRemoteName = targetRemoteName;
         this.alternativeGoals = alternativeGoals;
         this.defaultVersioning = defaultVersioning;
+        this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
     }
 
     public String getTagPrefix() {
@@ -118,6 +120,16 @@ public class MavenReleaseWrapper extends BuildWrapper {
     @SuppressWarnings({"UnusedDeclaration"})
     public void setDefaultVersioning(String defaultVersioning) {
         this.defaultVersioning = defaultVersioning;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public String getDefaultReleaseStagingRepository() {
+        return defaultReleaseStagingRepository;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void setDefaultReleaseStagingRepository(String defaultReleaseStagingRepository) {
+        this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
     }
 
     @Override

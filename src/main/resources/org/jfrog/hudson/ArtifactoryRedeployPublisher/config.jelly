@@ -190,6 +190,10 @@
                                          title="Allow promotion of non-staged builds"
                                          inline="true">
                         </f:optionalBlock>
+                        <f:entry title="Default promotion target repository" field="defaultPromotionTargetRepository"
+                                 help="/plugin/artifactory/help/release/PromoteBuildAction/help-defaultPromotionTargetRepository.html">
+                            <f:textbox value="${instance.defaultPromotionTargetRepository}"/>
+                        </f:entry>
                     </table>
                      <r:bintray configurationFieldName="pushToBintrayEnabledConfig"
                         elementId="pushToBintrayEnabled"/>

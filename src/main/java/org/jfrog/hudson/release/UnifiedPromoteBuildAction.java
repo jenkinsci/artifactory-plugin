@@ -60,6 +60,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
     private boolean useCopy;
     private boolean includeDependencies;
     private PluginSettings promotionPlugin;
+    private String defaultPromotionRepositoryKey;
 
     public UnifiedPromoteBuildAction(AbstractBuild build, C configurator) {
         this.build = build;
@@ -101,6 +102,10 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
     public void setRepositoryKey(String repositoryKey) {
         this.repositoryKey = repositoryKey;
+    }
+
+    public String getSourceRepositoryKey() {
+        return sourceRepositoryKey;
     }
 
     public void setSourceRepositoryKey(String sourceRepositoryKey) {
@@ -149,12 +154,18 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         return Lists.newArrayList(/*"Staged", */"Released", "Rolled-back");
     }
 
+    public String getDefaultPromotionTargetRepository() {
+        if (repositoryKey == null) {
+            return configurator.getDefaultPromotionTargetRepository();
+        }
+        return repositoryKey;
+    }
+
     /**
      * @return The repository selected by the latest promotion (to be selected by default).
      */
-    public String lastPromotionRepository() {
-        // TODO: implement
-        return null;
+    public String lastPromotionSourceRepository() {
+        return sourceRepositoryKey;
     }
 
     /**

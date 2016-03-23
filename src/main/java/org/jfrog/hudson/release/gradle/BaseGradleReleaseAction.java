@@ -290,7 +290,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
 
     @Override
     protected void prepareBuilderSpecificDefaultPromotionConfig() {
-        defaultPromotionConfig = new PromotionConfig(getDefaultStagingRepository(), null);
+        defaultPromotionConfig = new PromotionConfig(getDefaultReleaseStagingRepository(), null);
     }
 
     private GradleReleaseWrapper getReleaseWrapper() {
@@ -354,7 +354,13 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
     /**
      * @return The release repository configured in Artifactory publisher.
      */
-    private String getDefaultStagingRepository() {
+    private String getDefaultReleaseStagingRepository() {
+        //Get default staging repo from configuration.
+        String defaultStagingRepo = getReleaseWrapper().getDefaultReleaseStagingRepository();
+        if (!defaultStagingRepo.isEmpty() && getRepositoryKeys().contains(defaultStagingRepo)) {
+            return defaultStagingRepo;
+        }
+
         ArtifactoryGradleConfigurator publisher = getWrapper();
         if (publisher == null) {
             return null;

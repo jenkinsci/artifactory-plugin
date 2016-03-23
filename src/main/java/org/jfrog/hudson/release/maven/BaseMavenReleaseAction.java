@@ -196,7 +196,7 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
 
     @Override
     protected void prepareBuilderSpecificDefaultPromotionConfig() {
-        defaultPromotionConfig = new PromotionConfig(getDefaultStagingRepository(), null);
+        defaultPromotionConfig = new PromotionConfig(getDefaultReleaseStagingRepository(), null);
     }
 
     private MavenModule getRootModule() {
@@ -248,7 +248,13 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
         return "";
     }
 
-    private String getDefaultStagingRepository() {
+    private String getDefaultReleaseStagingRepository() {
+        //Get default staging repo from configuration.
+        String defaultStagingRepo = getWrapper().getDefaultReleaseStagingRepository();
+        if (!defaultStagingRepo.isEmpty() && getRepositoryKeys().contains(defaultStagingRepo)) {
+            return defaultStagingRepo;
+        }
+
         ArtifactoryRedeployPublisher publisher = getPublisher();
         if (publisher == null) {
             return null;

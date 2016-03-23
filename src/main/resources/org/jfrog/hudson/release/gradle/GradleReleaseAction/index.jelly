@@ -69,7 +69,7 @@
                     <f:block>
                         <hr/>
                     </f:block>
-                    <f:entry title="${%Repository to stage the release to} (requires Artifactory Pro)"
+                    <f:entry title="${%Repository for release staging} (requires Artifactory Pro)"
                              field="repositoryKey"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-stagingRepository.html">
                         <select class="setting-input" name="repositoryKey"

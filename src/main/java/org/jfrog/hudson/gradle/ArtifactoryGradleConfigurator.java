@@ -103,6 +103,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final String blackDuckAppVersion;
     private final boolean filterExcludedArtifactsFromBuild;
     private final ServerDetails resolverDetails;
+    private String defaultPromotionTargetRepository;
     private ServerDetails details;
     private boolean deployArtifacts;
     private IncludesExcludes envVarsPatterns;
@@ -139,6 +140,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                          String matrixParams, boolean skipInjectInitScript,
                                          boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
                                          String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
+                                         String defaultPromotionTargetRepository,
                                          boolean allowBintrayPushOfNonStageBuilds, boolean blackDuckRunChecks,
                                          String blackDuckAppName, String blackDuckAppVersion,
                                          String blackDuckReportRecipients, String blackDuckScopes,
@@ -178,6 +180,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.skipInjectInitScript = skipInjectInitScript;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.allowPromotionOfNonStagedBuilds = allowPromotionOfNonStagedBuilds;
+        this.defaultPromotionTargetRepository = defaultPromotionTargetRepository;
         this.blackDuckRunChecks = blackDuckRunChecks;
         this.allowBintrayPushOfNonStageBuilds = allowBintrayPushOfNonStageBuilds;
         this.blackDuckAppName = blackDuckAppName;
@@ -340,6 +343,14 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public boolean isAllowPromotionOfNonStagedBuilds() {
         return allowPromotionOfNonStagedBuilds;
+    }
+
+    public String getDefaultPromotionTargetRepository() {
+        return defaultPromotionTargetRepository;
+    }
+
+    public void setDefaultPromotionTargetRepository(String defaultPromotionTargetRepository) {
+        this.defaultPromotionTargetRepository = defaultPromotionTargetRepository;
     }
 
     public boolean isAllowBintrayPushOfNonStageBuilds() {
