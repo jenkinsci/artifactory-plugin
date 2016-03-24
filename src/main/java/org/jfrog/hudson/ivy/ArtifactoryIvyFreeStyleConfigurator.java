@@ -344,7 +344,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 "Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         PublisherContext.Builder publisherBuilder = getBuilder();
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
-        final String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         int totalBuilds = 1;
 
         if (isMultiConfProject(build)) {
@@ -365,13 +364,13 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             // inside its setUp() method is invoked by only one job in this build
             // (matrix project builds include more that one job) and that all other jobs
             // wait till the seUup() method finishes.
-            new ConcurrentJobsHelper.ConcurrentBuildSetupSync(buildName, totalBuilds) {
+            new ConcurrentJobsHelper.ConcurrentBuildSetupSync(build, totalBuilds) {
                 @Override
                 public void setUp() {
                     // Obtain the current build and use it to store the configured targets.
                     // We store them because we override them during the build and we'll need
                     // their original values at the tear down stage so that they can be restored.
-                    ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
+                    ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.getConcurrentBuild(build);
                     // Remove the Artifactory Plugin additional arguments, in case they are included in the targets string:
                     String targets = antBuild.getTargets() != null ? antBuild.getTargets().replace(getAntArgs(), "") : "";
                     concurrentBuild.putParam("targets", targets);
@@ -398,7 +397,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             }
 
             @Override
-            public boolean tearDown(AbstractBuild build, BuildListener listener)
+            public boolean tearDown(final AbstractBuild build, BuildListener listener)
                     throws IOException, InterruptedException {
                 Result result = build.getResult();
 
@@ -407,12 +406,12 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                     // inside its tearDown() method is invoked by only one job in this build
                     // (matrix project builds include more that one job) and that this
                     // job is the last one running.
-                    new ConcurrentJobsHelper.ConcurrentBuildTearDownSync(buildName, result) {
+                    new ConcurrentJobsHelper.ConcurrentBuildTearDownSync(build, result) {
                         @Override
                         public void tearDown() {
                             // Restore the original targets of this build (we overrided their
                             // values in the setUp stage):
-                            ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.concurrentBuildHandler.get(buildName);
+                            ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.getConcurrentBuild(build);
                             String targets = concurrentBuild.getParam("targets");
                             // Remove the Artifactory Plugin additional arguments, in case they are included in the targets string:
                             targets = targets.replace(getAntArgs(), "");
@@ -427,7 +426,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
                             ArtifactoryIvyFreeStyleConfigurator.this));
                     // Checks if Push to Bintray is disabled.
-                    if (PluginsUtils.isPushToBintrayEnabled()){
+                    if (PluginsUtils.isPushToBintrayEnabled()) {
                         build.getActions().add(new BintrayPublishAction<ArtifactoryIvyFreeStyleConfigurator>(build,
                                 ArtifactoryIvyFreeStyleConfigurator.this));
                     }
@@ -435,7 +434,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
                 // Aborted action by the user:
                 if (Result.ABORTED.equals(result)) {
-                    ConcurrentJobsHelper.concurrentBuildHandler.remove(buildName);
+                    ConcurrentJobsHelper.removeConcurrentBuildJob(build);
                 }
                 return true;
             }
@@ -613,7 +612,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
             return RepositoriesUtils.getArtifactoryServers();
         }
 
-        public boolean isUseCredentialsPlugin(){
+        public boolean isUseCredentialsPlugin() {
             return PluginsUtils.isUseCredentialsPlugin();
         }
 
