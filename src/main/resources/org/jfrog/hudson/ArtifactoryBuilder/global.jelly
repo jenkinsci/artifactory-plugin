@@ -54,6 +54,17 @@
                             </table>
                         </f:block>
                     </f:section>
+                    <f:advanced>
+                        <f:entry title="Connection Timeout" field="artifactory.timeout"
+                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-timeout.html">
+                            <f:textbox clazz="number" value="${server.timeout}"/>
+                        </f:entry>
+                        <f:entry name="artifactory.bypassProxy" field="artifactory.bypassProxy"
+                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-bypassproxy.html">
+                            <f:checkbox checked="${server.bypassProxy}"/>
+                            <label class="attach-previous">${%Bypass HTTP Proxy}</label>
+                        </f:entry>
+                    </f:advanced>
                     <f:validateButton
                             title="${%Test Connection}" progress="${%Testing...}"
                             method="testConnection"
@@ -94,17 +105,6 @@
                             <f:repeatableDeleteButton/>
                         </div>
                     </f:entry>
-                    <f:advanced>
-                        <f:entry title="Connection Timeout" field="artifactory.timeout"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-timeout.html">
-                            <f:textbox clazz="number" value="${server.timeout}"/>
-                        </f:entry>
-                        <f:entry name="artifactory.bypassProxy" field="artifactory.bypassProxy"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-bypassproxy.html">
-                            <f:checkbox checked="${server.bypassProxy}"/>
-                            <label class="attach-previous">${%Bypass HTTP Proxy}</label>
-                        </f:entry>
-                    </f:advanced>
 
                 </table>
             </f:repeatable>
