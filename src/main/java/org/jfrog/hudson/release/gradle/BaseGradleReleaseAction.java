@@ -357,7 +357,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
     private String getDefaultReleaseStagingRepository() {
         //Get default staging repo from configuration.
         String defaultStagingRepo = getReleaseWrapper().getDefaultReleaseStagingRepository();
-        if (!defaultStagingRepo.isEmpty() && getRepositoryKeys().contains(defaultStagingRepo)) {
+        if ( defaultStagingRepo != null && !defaultStagingRepo.isEmpty() && getRepositoryKeys().contains(defaultStagingRepo)) {
             return defaultStagingRepo;
         }
 
