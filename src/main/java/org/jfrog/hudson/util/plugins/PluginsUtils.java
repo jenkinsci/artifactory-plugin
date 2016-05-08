@@ -93,6 +93,22 @@ public class PluginsUtils {
     }
 
     /**
+     * If Credentials Plugin is enabled. Retrieves this value from the ArtifactoryBuilder class.
+     *
+     * @return Is Credentials Plugin enabled(true) or disabled(false)
+     * @throws IllegalStateException
+     */
+
+    public static boolean isCredentialsPluginEnabled() {
+        ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
+                Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
+        if (descriptor != null) {
+            return descriptor.getUseCredentialsPlugin();
+        }
+        throw new IllegalStateException("ArtifactoryBuilder descriptor is null");
+    }
+
+    /**
      * From Jira plugin version 2.0 (and Jira 7.0) we are not able to retrieve the server info directly from
      * the Java API so we need to access the entry point directly
      *
