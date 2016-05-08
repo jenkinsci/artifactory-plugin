@@ -1,5 +1,6 @@
 package org.jfrog.hudson;
 
+import hudson.model.Hudson;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
