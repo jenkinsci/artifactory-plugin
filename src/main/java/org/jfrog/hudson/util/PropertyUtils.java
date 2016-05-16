@@ -17,9 +17,9 @@
 package org.jfrog.hudson.util;
 
 import com.google.common.collect.Maps;
-import com.google.common.io.Closeables;
 import hudson.FilePath;
 import hudson.remoting.VirtualChannel;
+import org.apache.commons.io.IOUtils;
 import org.jfrog.hudson.release.gradle.GradleModule;
 
 import java.io.File;
@@ -88,7 +88,7 @@ public class PropertyUtils {
                                 gradlePropertiesFile.getAbsolutePath());
                         throw new RuntimeException(e);
                     } finally {
-                        Closeables.closeQuietly(stream);
+                        IOUtils.closeQuietly(stream);
                     }
                 }
                 return gradleProps;

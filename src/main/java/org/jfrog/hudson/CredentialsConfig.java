@@ -1,6 +1,5 @@
 package org.jfrog.hudson;
 
-import hudson.model.Hudson;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
@@ -17,7 +16,6 @@ import java.io.Serializable;
  */
 public class CredentialsConfig implements Serializable {
 
-    private static boolean useCredentialsPlugin = false;
     public static final CredentialsConfig EMPTY_CREDENTIALS_CONFIG =
             new CredentialsConfig(new Credentials(StringUtils.EMPTY, StringUtils.EMPTY), StringUtils.EMPTY, false);
     private Credentials credentials;
@@ -35,11 +33,6 @@ public class CredentialsConfig implements Serializable {
      */
     @DataBoundConstructor
     public CredentialsConfig(String username, String password, String credentialsId, Boolean overridingCredentials) {
-        ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
-                Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
-        if (descriptor != null) {
-            useCredentialsPlugin = descriptor.getUseCredentialsPlugin();
-        }
         this.overridingCredentials = overridingCredentials == null ? false : overridingCredentials;
         this.credentials = new Credentials(username, password);
         this.credentialsId = credentialsId;
@@ -59,7 +52,7 @@ public class CredentialsConfig implements Serializable {
      * In Credentials plugin mode this will return true if a credentials id was selected in the job configuration
      */
     public boolean isCredentialsProvided() {
-        if (useCredentialsPlugin) {
+        if (PluginsUtils.isCredentialsPluginEnabled()) {
             return StringUtils.isNotBlank(credentialsId);
         }
         return overridingCredentials;
@@ -71,7 +64,7 @@ public class CredentialsConfig implements Serializable {
      * @return the username that should be apply in this configuration
      */
     public String provideUsername() {
-        return !useCredentialsPlugin ? credentials.getUsername() : PluginsUtils.credentialsLookup(credentialsId).getUsername();
+        return !PluginsUtils.isCredentialsPluginEnabled() ? credentials.getUsername() : PluginsUtils.credentialsLookup(credentialsId).getUsername();
     }
 
     /**
@@ -80,11 +73,11 @@ public class CredentialsConfig implements Serializable {
      * @return the password that should be apply in this configuration
      */
     public String providePassword() {
-        return !useCredentialsPlugin ? credentials.getPassword() : PluginsUtils.credentialsLookup(credentialsId).getPassword();
+        return !PluginsUtils.isCredentialsPluginEnabled() ? credentials.getPassword() : PluginsUtils.credentialsLookup(credentialsId).getPassword();
     }
 
     public Credentials getCredentials() {
-        return !useCredentialsPlugin ? credentials : PluginsUtils.credentialsLookup(credentialsId) ;
+        return !PluginsUtils.isCredentialsPluginEnabled()? credentials : PluginsUtils.credentialsLookup(credentialsId) ;
     }
 
     // NOTE: These getters are not part of the API, but used by Jenkins Jelly for displaying values on user interface
