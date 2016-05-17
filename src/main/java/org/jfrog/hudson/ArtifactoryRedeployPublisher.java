@@ -427,8 +427,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         ArtifactoryServer server = getArtifactoryServer();
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(this, server);
-        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(),
-                preferredDeployer.providePassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
+        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(((MavenModuleSetBuild) build).getProject()),
+                preferredDeployer.providePassword(((MavenModuleSetBuild) build).getProject()), server.createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             verifySupportedArtifactoryVersion(client);
             if (deployArtifacts) {
@@ -538,6 +538,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         private List<Repository> releaseRepositories;
         private List<Repository> deploySnapshotRepositories;
         private List<PluginSettings> userPluginKeys = Collections.emptyList();
+        private Item item;
 
         public DescriptorImpl() {
             super(ArtifactoryRedeployPublisher.class);
@@ -547,7 +548,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         private void refreshRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
             List<String> repositoriesKeys = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(),
-                    credentialsConfig, artifactoryServer);
+                    credentialsConfig, artifactoryServer, item);
             releaseRepositories = RepositoriesUtils.createRepositoriesList(repositoriesKeys);
             Collections.sort(releaseRepositories);
             deploySnapshotRepositories = releaseRepositories;
@@ -560,13 +561,13 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 }
 
                 public Credentials getOverridingDeployerCredentials() {
-                    return credentialsConfig.getCredentials();
+                    return credentialsConfig.getCredentials(item);
                 }
 
                 public CredentialsConfig getDeployerCredentialsConfig() {
                     return credentialsConfig;
                 }
-            });
+            }, item);
 
             ArrayList<PluginSettings> list = new ArrayList<PluginSettings>(pluginInfoList.size());
             for (UserPluginInfo p : pluginInfoList) {
@@ -584,6 +585,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         @SuppressWarnings("unused")
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
+            this.item = project;
             return PluginsUtils.fillPluginCredentials(project);
         }
 

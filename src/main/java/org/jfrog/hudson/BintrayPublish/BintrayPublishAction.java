@@ -57,7 +57,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             resetOverrideFields();
         }
         CredentialsConfig credentialsConfig = CredentialManager.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
-        new PushToBintrayWorker(artifactory, credentialsConfig.getCredentials()).start();
+        new PushToBintrayWorker(artifactory, credentialsConfig.getCredentials(build.getProject())).start();
         resp.sendRedirect(".");
     }
 

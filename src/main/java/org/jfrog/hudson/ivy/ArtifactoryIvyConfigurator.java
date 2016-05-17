@@ -428,7 +428,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     public static class DescriptorImpl extends BuildWrapperDescriptor {
 
         private List<Repository> releaseRepositoryList;
-
+        private AbstractProject<?, ?> item;
         public DescriptorImpl() {
             super(ArtifactoryIvyConfigurator.class);
             load();
@@ -436,6 +436,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
+            this.item = item;
             return "hudson.ivy.IvyModuleSet".equals(item.getClass().getName());
         }
 
@@ -458,7 +459,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
             try {
                 List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
-                        artifactoryServer);
+                        artifactoryServer, item);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);

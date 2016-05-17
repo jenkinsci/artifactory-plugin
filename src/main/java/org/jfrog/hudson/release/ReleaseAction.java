@@ -102,7 +102,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
         if (!UserPluginInfo.NO_PLUGIN_KEY.equals(getSelectedStagingPluginName())) {
             PluginSettings selectedStagingPluginSettings = getSelectedStagingPlugin();
             try {
-                stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings, Util.rawEncode(project.getName()));
+                stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings, Util.rawEncode(project.getName()), project);
             } catch (Exception e) {
                 log.log(Level.WARNING, "Failed to obtain staging strategy: " + e.getMessage(), e);
                 strategyRequestFailed = true;

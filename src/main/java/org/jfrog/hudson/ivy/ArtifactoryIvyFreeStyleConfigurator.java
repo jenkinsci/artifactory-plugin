@@ -555,7 +555,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
             try {
                 List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
-                        artifactoryServer);
+                        artifactoryServer, item);
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
                 response.setRepositories(releaseRepositoryList);

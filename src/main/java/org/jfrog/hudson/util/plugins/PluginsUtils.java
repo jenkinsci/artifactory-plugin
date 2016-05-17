@@ -53,14 +53,14 @@ public class PluginsUtils {
                 );
     }
 
-    public static Credentials credentialsLookup(String credentialsId) {
-        Item dummy = null;
+    public static Credentials credentialsLookup(String credentialsId, Item item) {
         UsernamePasswordCredentials usernamePasswordCredentials = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
-                        UsernamePasswordCredentials.class, dummy, ACL.SYSTEM,
+                        UsernamePasswordCredentials.class, item, ACL.SYSTEM,
                         Collections.<DomainRequirement>emptyList()),
                 CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialsId))
         );
+
         if (usernamePasswordCredentials != null) {
             return new Credentials(usernamePasswordCredentials.getUsername(),
                     usernamePasswordCredentials.getPassword().getPlainText());

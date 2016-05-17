@@ -453,7 +453,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         if (isEnableResolveArtifacts()) {
             CredentialsConfig credentialResolver = CredentialManager.getPreferredResolver(
                     ArtifactoryMaven3Configurator.this, getArtifactoryServer());
-            resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(), credentialResolver.getCredentials(),
+            resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(), credentialResolver.getCredentials(build.getProject()),
                     ArtifactoryMaven3Configurator.this);
         }
         final ResolverContext resolverContext = resolver;
@@ -516,10 +516,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                             item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig, Item item)
                 throws IOException {
             virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
-                    credentialsConfig, artifactoryServer);
+                    credentialsConfig, artifactoryServer, item);
             Collections.sort(virtualRepositoryList);
         }
 
@@ -542,7 +542,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
             try {
                 List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
-                        artifactoryServer);
+                        artifactoryServer, item);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
@@ -581,7 +581,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsConfig);
+                refreshVirtualRepositories(artifactoryServer, credentialsConfig, item);
                 response.setVirtualRepositories(virtualRepositoryList);
                 response.setSuccess(true);
             } catch (Exception e) {

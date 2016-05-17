@@ -144,7 +144,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         if (artifactoryServer == null) {
             return Lists.newArrayList();
         }
-        List<String> repos = artifactoryServer.getReleaseRepositoryKeysFirst(configurator);
+        List<String> repos = artifactoryServer.getReleaseRepositoryKeysFirst(configurator, build.getProject());
         repos.add(0, "");  // option not to move
         return repos;
     }
@@ -244,7 +244,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         if (artifactoryServer == null) {
             return Lists.newArrayList(UserPluginInfo.NO_PLUGIN);
         }
-        return artifactoryServer.getPromotionsUserPluginInfo(configurator);
+        return artifactoryServer.getPromotionsUserPluginInfo(configurator, build.getProject());
     }
 
     @Override
@@ -279,7 +279,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                 long started = System.currentTimeMillis();
                 listener.getLogger().println("Promoting build ....");
 
-                client = artifactoryServer.createArtifactoryClient(deployerConfig.provideUsername(), deployerConfig.providePassword(),
+                client = artifactoryServer.createArtifactoryClient(deployerConfig.provideUsername(build.getProject()), deployerConfig.providePassword(build.getProject()),
                         artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
                 if ((promotionPlugin != null) &&

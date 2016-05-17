@@ -296,7 +296,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(ArtifactoryGenericConfigurator.this,
                 server);
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredResolver.provideUsername(), preferredResolver.providePassword(), proxyConfiguration,
+                preferredResolver.provideUsername(build.getProject()), preferredResolver.providePassword(build.getProject()), proxyConfiguration,
                 listener);
         try {
             GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener,
@@ -326,8 +326,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
                 ArtifactoryServer server = getArtifactoryServer();
                 CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(ArtifactoryGenericConfigurator.this, server);
-                ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(),
-                        preferredDeployer.providePassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
+                ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(build.getProject()),
+                        preferredDeployer.providePassword(build.getProject()), server.createProxyConfiguration(Jenkins.getInstance().proxy));
                 try {
                     boolean isFiltered = false;
                     if (isMultiConfProject(build)) {
@@ -439,7 +439,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
             try {
                 List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
-                        artifactoryServer);
+                        artifactoryServer, item);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);

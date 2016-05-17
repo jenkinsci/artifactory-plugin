@@ -142,7 +142,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
     public List<String> getRepositoryKeys() {
         ArtifactoryServer server = getArtifactoryServer();
         if (server != null) {
-            return getArtifactoryServer().getReleaseRepositoryKeysFirst(getWrapper());
+            return getArtifactoryServer().getReleaseRepositoryKeysFirst(getWrapper(), project);
         } else {
             return Collections.emptyList();
         }
@@ -150,7 +150,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
 
     @Override
     public boolean isArtifactoryPro() {
-        return getArtifactoryServer().isArtifactoryPro(getWrapper());
+        return getArtifactoryServer().isArtifactoryPro(getWrapper(), project);
     }
 
     @Override

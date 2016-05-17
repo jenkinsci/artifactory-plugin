@@ -1,5 +1,6 @@
 package org.jfrog.hudson;
 
+import hudson.model.Item;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
@@ -63,21 +64,20 @@ public class CredentialsConfig implements Serializable {
      *
      * @return the username that should be apply in this configuration
      */
-    public String provideUsername() {
-        return !PluginsUtils.isCredentialsPluginEnabled() ? credentials.getUsername() : PluginsUtils.credentialsLookup(credentialsId).getUsername();
+    public String provideUsername(Item item) {
+        return !PluginsUtils.isCredentialsPluginEnabled() ? credentials.getUsername() : PluginsUtils.credentialsLookup(credentialsId, item).getUsername();
     }
-
     /**
      * Not like getPassword this will return the username of the current Credentials mode of the system (legacy/credentials plugin)
      *
      * @return the password that should be apply in this configuration
      */
-    public String providePassword() {
-        return !PluginsUtils.isCredentialsPluginEnabled() ? credentials.getPassword() : PluginsUtils.credentialsLookup(credentialsId).getPassword();
+    public String providePassword(Item item) {
+        return !PluginsUtils.isCredentialsPluginEnabled() ? credentials.getPassword() : PluginsUtils.credentialsLookup(credentialsId, item).getPassword();
     }
 
-    public Credentials getCredentials() {
-        return !PluginsUtils.isCredentialsPluginEnabled()? credentials : PluginsUtils.credentialsLookup(credentialsId) ;
+    public Credentials getCredentials(Item item) {
+        return !PluginsUtils.isCredentialsPluginEnabled()? credentials : PluginsUtils.credentialsLookup(credentialsId, item) ;
     }
 
     // NOTE: These getters are not part of the API, but used by Jenkins Jelly for displaying values on user interface

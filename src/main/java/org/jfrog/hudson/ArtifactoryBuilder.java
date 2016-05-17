@@ -103,7 +103,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 return FormValidation.error("Please set a valid Artifactory URL");
             }
 
-            Credentials credentials = PluginsUtils.credentialsLookup(deployerCredentialsId);
+            Credentials credentials = PluginsUtils.credentialsLookup(deployerCredentialsId, null);
             String username = useLegacyCredentials ? credentials.getUsername() : deployerCredentialsUsername;
             String password = useLegacyCredentials ? credentials.getPassword() : deployerCredentialsPassword;
 
