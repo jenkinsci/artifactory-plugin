@@ -355,9 +355,9 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
      * @return The release repository configured in Artifactory publisher.
      */
     private String getDefaultReleaseStagingRepository() {
-        //Get default staging repo from configuration.
+        // Get default staging repo from configuration.
         String defaultStagingRepo = getReleaseWrapper().getDefaultReleaseStagingRepository();
-        if ( defaultStagingRepo != null && !defaultStagingRepo.isEmpty() && getRepositoryKeys().contains(defaultStagingRepo)) {
+        if (defaultStagingRepo != null && getRepositoryKeys().contains(defaultStagingRepo)) {
             return defaultStagingRepo;
         }
 
