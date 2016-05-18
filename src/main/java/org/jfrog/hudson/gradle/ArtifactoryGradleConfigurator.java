@@ -537,7 +537,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                     CredentialsConfig resolverCredentials = CredentialManager.getPreferredResolver(
                             ArtifactoryGradleConfigurator.this, getArtifactoryServer());
                     resolverContext = new ResolverContext(getArtifactoryResolverServer(), resolverServerDetails,
-                            resolverCredentials.getCredentials(), ArtifactoryGradleConfigurator.this);
+                            resolverCredentials.getCredentials(build.getProject()), ArtifactoryGradleConfigurator.this);
                 }
 
                 try {
@@ -715,7 +715,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public List<UserPluginInfo> getStagingUserPluginInfo() {
         ArtifactoryServer artifactoryServer = getArtifactoryServer();
-        return artifactoryServer.getStagingUserPluginInfo(this);
+        return artifactoryServer.getStagingUserPluginInfo(this, null);
     }
 
     public PluginSettings getSelectedStagingPlugin() throws Exception {
@@ -759,7 +759,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         private void refreshRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
             List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(),
-                    credentialsConfig, artifactoryServer);
+                    credentialsConfig, artifactoryServer, item);
             Collections.sort(releaseRepositoryKeysFirst);
             releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
         }
@@ -767,7 +767,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer,
                                                 CredentialsConfig credentialsConfig) throws IOException {
             virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
-                    credentialsConfig, artifactoryServer);
+                    credentialsConfig, artifactoryServer, item);
             Collections.sort(virtualRepositories);
         }
 
@@ -784,7 +784,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 public CredentialsConfig getDeployerCredentialsConfig() {
                     return credentialsConfigs;
                 }
-            });
+            }, item);
 
             ArrayList<PluginSettings> list = new ArrayList<PluginSettings>(pluginInfoList.size());
             for (UserPluginInfo p : pluginInfoList) {

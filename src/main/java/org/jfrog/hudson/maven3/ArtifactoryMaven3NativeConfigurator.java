@@ -149,6 +149,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     @Extension
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<VirtualRepository> virtualRepositoryKeys;
+        private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
             super(ArtifactoryMaven3NativeConfigurator.class);
@@ -157,13 +158,14 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
+            this.item = item;
             return MavenModuleSet.class.equals(item.getClass());
         }
 
         private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
             virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
-                    credentialsConfig, artifactoryServer);
+                    credentialsConfig, artifactoryServer, item);
             Collections.sort(virtualRepositoryKeys);
         }
 

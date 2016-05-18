@@ -67,7 +67,7 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
     public List<String> getRepositoryKeys() {
         ArtifactoryRedeployPublisher artifactoryPublisher = getPublisher();
         if (artifactoryPublisher != null) {
-            return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst(getPublisher());
+            return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst(getPublisher(), project);
         } else {
             return Collections.emptyList();
         }
@@ -75,7 +75,7 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
 
     @Override
     public boolean isArtifactoryPro() {
-        return getArtifactoryServer().isArtifactoryPro(getPublisher());
+        return getArtifactoryServer().isArtifactoryPro(getPublisher(), project);
     }
 
     @Override

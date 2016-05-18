@@ -2,10 +2,7 @@ package org.jfrog.hudson.util;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.NullLog;
@@ -26,7 +23,7 @@ public abstract class RepositoriesUtils {
             return Lists.newArrayList();
         }
 
-        return server.getReleaseRepositoryKeysFirst(deployer);
+        return server.getReleaseRepositoryKeysFirst(deployer, null);
     }
 
     public static List<String> getSnapshotRepositoryKeysFirst(DeployerOverrider deployer, ArtifactoryServer server) {
@@ -34,7 +31,7 @@ public abstract class RepositoriesUtils {
             return Lists.newArrayList();
         }
 
-        return server.getSnapshotRepositoryKeysFirst(deployer);
+        return server.getSnapshotRepositoryKeysFirst(deployer, null);
     }
 
     public static List<VirtualRepository> getVirtualRepositoryKeys(ResolverOverrider resolverOverrider,
@@ -44,7 +41,7 @@ public abstract class RepositoriesUtils {
             return Lists.newArrayList();
         }
 
-        return server.getVirtualRepositoryKeys(resolverOverrider);
+        return server.getVirtualRepositoryKeys(resolverOverrider, null);
     }
 
     public static List<VirtualRepository> generateVirtualRepos(ArtifactoryBuildInfoClient client) throws IOException {
@@ -61,15 +58,15 @@ public abstract class RepositoriesUtils {
     }
 
     public static List<VirtualRepository> getVirtualRepositoryKeys(String url, CredentialsConfig credentialsConfig,
-                                                                   ArtifactoryServer artifactoryServer)
+                                                                   ArtifactoryServer artifactoryServer, Item item)
             throws IOException {
         List<VirtualRepository> virtualRepositories;
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(credentialsConfig, artifactoryServer);
 
         ArtifactoryBuildInfoClient client;
-        if (StringUtils.isNotBlank(preferredResolver.provideUsername())) {
-            client = new ArtifactoryBuildInfoClient(url, preferredResolver.provideUsername(),
-                    preferredResolver.providePassword(), new NullLog());
+        if (StringUtils.isNotBlank(preferredResolver.provideUsername(item))) {
+            client = new ArtifactoryBuildInfoClient(url, preferredResolver.provideUsername(item),
+                    preferredResolver.providePassword(item), new NullLog());
         } else {
             client = new ArtifactoryBuildInfoClient(url, new NullLog());
         }
@@ -84,14 +81,14 @@ public abstract class RepositoriesUtils {
     }
 
     public static List<String> getLocalRepositories(String url, CredentialsConfig credentialsConfig,
-                                                    ArtifactoryServer artifactoryServer) throws IOException {
+                                                    ArtifactoryServer artifactoryServer, Item item) throws IOException {
         List<String> localRepository;
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(credentialsConfig, artifactoryServer);
 
         ArtifactoryBuildInfoClient client;
-        if (StringUtils.isNotBlank(preferredDeployer.provideUsername())) {
-            client = new ArtifactoryBuildInfoClient(url, preferredDeployer.provideUsername(),
-                    preferredDeployer.providePassword(), new NullLog());
+        if (StringUtils.isNotBlank(preferredDeployer.provideUsername(item))) {
+            client = new ArtifactoryBuildInfoClient(url, preferredDeployer.provideUsername(item),
+                    preferredDeployer.providePassword(item), new NullLog());
         } else {
             client = new ArtifactoryBuildInfoClient(url, new NullLog());
         }

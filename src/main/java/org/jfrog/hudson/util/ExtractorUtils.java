@@ -182,9 +182,9 @@ public class ExtractorUtils {
         replaceRepositoryInputForValues(configuration, build, inputDownloadReleaseKey, inputDownloadSnapshotKey, env);
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(context.getResolverOverrider(),
                 context.getServer());
-        if (StringUtils.isNotBlank(preferredResolver.provideUsername())) {
-            configuration.resolver.setUsername(preferredResolver.provideUsername());
-            configuration.resolver.setPassword(preferredResolver.providePassword());
+        if (StringUtils.isNotBlank(preferredResolver.provideUsername(build.getProject()))) {
+            configuration.resolver.setUsername(preferredResolver.provideUsername(build.getProject()));
+            configuration.resolver.setPassword(preferredResolver.providePassword(build.getProject()));
         }
     }
 
@@ -272,9 +272,9 @@ public class ExtractorUtils {
         ArtifactoryServer artifactoryServer = context.getArtifactoryServer();
         CredentialsConfig preferredDeployer =
                 CredentialManager.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
-        if (StringUtils.isNotBlank(preferredDeployer.provideUsername())) {
-            configuration.publisher.setUsername(preferredDeployer.provideUsername());
-            configuration.publisher.setPassword(preferredDeployer.providePassword());
+        if (StringUtils.isNotBlank(preferredDeployer.provideUsername(build.getProject()))) {
+            configuration.publisher.setUsername(preferredDeployer.provideUsername(build.getProject()));
+            configuration.publisher.setPassword(preferredDeployer.providePassword(build.getProject()));
         }
         configuration.setTimeout(artifactoryServer.getTimeout());
         configuration.publisher.setContextUrl(artifactoryServer.getUrl());
