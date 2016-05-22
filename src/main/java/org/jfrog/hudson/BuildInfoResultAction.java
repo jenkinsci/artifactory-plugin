@@ -19,6 +19,9 @@ package org.jfrog.hudson;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildBadgeAction;
+import hudson.model.Run;
+import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.Build;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 
 /**
@@ -41,8 +44,12 @@ public class BuildInfoResultAction implements BuildBadgeAction {
     @Deprecated
     private transient AbstractBuild build;
 
-    public BuildInfoResultAction(String artifactoryRootUrl, AbstractBuild build) {
+    public BuildInfoResultAction(String artifactoryRootUrl, Run build) {
         url = generateUrl(artifactoryRootUrl, build);
+    }
+
+    public BuildInfoResultAction(String artifactoryRootUrl, Run build, Build buildInfo) {
+        url = generateUrl(artifactoryRootUrl, build, buildInfo);
     }
 
     public String getIconFileName() {
@@ -62,8 +69,24 @@ public class BuildInfoResultAction implements BuildBadgeAction {
         }
     }
 
-    private String generateUrl(String artifactoryRootUrl, AbstractBuild build) {
+    private String generateUrl(String artifactoryRootUrl, Run build) {
         return artifactoryRootUrl + "/webapp/builds/" + Util.rawEncode(BuildUniqueIdentifierHelper.getBuildName(build)) + "/"
                 + Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
+    }
+
+    private String generateUrl(String artifactoryRootUrl, Run build, Build buildInfo) {
+        String buildName;
+        String buildNumber;
+        if (StringUtils.isNotEmpty(buildInfo.getName())) {
+            buildName = Util.rawEncode(buildInfo.getName());
+        } else {
+            buildName = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildName(build));
+        }
+        if (StringUtils.isNotEmpty(buildInfo.getNumber())) {
+            buildNumber = Util.rawEncode(buildInfo.getNumber());
+        } else {
+            buildNumber = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
+        }
+        return artifactoryRootUrl + "/webapp/builds/" + buildName + "/" + buildNumber;
     }
 }

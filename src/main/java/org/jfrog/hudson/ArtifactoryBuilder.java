@@ -39,7 +39,9 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Yossi Shaul
@@ -84,6 +86,33 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             }
             if (value.length() < 4) {
                 return FormValidation.warning("Isn't the name too short?");
+            }
+            return FormValidation.ok();
+        }
+
+        /**
+         * Performs on-the-fly validation of the form field 'ServerId'.
+         *
+         * @param value          This parameter receives the value that the user has typed.
+         * @param artifactoryUrl This parameter receives the value that the user has typed as artifactory Url.
+         * @return Indicates the outcome of the validation. This is sent to the browser.
+         */
+        public FormValidation doCheckServerId(@QueryParameter String value, @QueryParameter String artifactoryUrl, @QueryParameter String username, @QueryParameter String password, @QueryParameter String credentialsId) throws IOException, ServletException {
+            if (value.length() == 0) {
+                return FormValidation.error("Please set server ID");
+            }
+            List<ArtifactoryServer> artifactoryServers = RepositoriesUtils.getArtifactoryServers();
+            if (artifactoryServers == null) {
+                return FormValidation.ok();
+            }
+            int countServersByValueAsName = 0;
+            for (ArtifactoryServer server : artifactoryServers) {
+                if (server.getName().equals(value)) {
+                    countServersByValueAsName++;
+                    if (countServersByValueAsName > 1) {
+                        return FormValidation.error("Duplicated server ID");
+                    }
+                }
             }
             return FormValidation.ok();
         }
@@ -153,7 +182,22 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 artifactoryServers = null;
             }
             save();
-            return super.configure(req, o);
+            return super.configure(req, o) && !isServerConfigurationError();
+        }
+
+        private boolean isServerConfigurationError() {
+            Map<String, String> serversName = new HashMap<String, String>();
+            if (artifactoryServers == null) {
+                return false;
+            }
+            for (ArtifactoryServer server : artifactoryServers) {
+                String name = server.getName();
+                if (name == null || name == "" || serversName.get(name) != null) {
+                    return true;
+                }
+                serversName.put(name, name);
+            }
+            return false;
         }
 
         public List<ArtifactoryServer> getArtifactoryServers() {

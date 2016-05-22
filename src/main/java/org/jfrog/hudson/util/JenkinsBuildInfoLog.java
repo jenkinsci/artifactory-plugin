@@ -1,6 +1,6 @@
 package org.jfrog.hudson.util;
 
-import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 import org.jfrog.build.api.util.Log;
 
 import java.util.logging.Level;
@@ -14,9 +14,9 @@ import java.util.logging.Logger;
 public class JenkinsBuildInfoLog implements Log {
     private static final Logger logger = Logger.getLogger(JenkinsBuildInfoLog.class.getName());
 
-    private BuildListener listener;
+    private TaskListener listener;
 
-    public JenkinsBuildInfoLog(BuildListener listener) {
+    public JenkinsBuildInfoLog(TaskListener listener) {
         this.listener = listener;
     }
 

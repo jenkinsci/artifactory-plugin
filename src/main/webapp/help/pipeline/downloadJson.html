@@ -1,0 +1,37 @@
+<div>
+    Provide Json format download string.<br/>
+    Example:<br/><br/>
+
+<pre>
+{
+  "files": [
+    {
+      "pattern": "RepoName/path/to/*.txt",
+      "target": "target/local/path/"
+    },
+    {
+      "aql": {
+        "items.find": {
+          "repo": "RepoName",
+          "$or": [
+            {
+              "$and": [
+                {
+                  "path": {
+                    "$match": "*"
+                  },
+                  "name": {
+                    "$match": "*.txt"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "target": "target/local/path/"
+    }
+  ]
+}
+</pre>
+</div>

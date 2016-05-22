@@ -1,8 +1,7 @@
 package org.jfrog.hudson.util;
 
 import com.google.common.collect.Sets;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.plugins.jira.JiraIssue;
 import hudson.plugins.jira.JiraSite;
@@ -32,11 +31,11 @@ public class IssuesTrackerHelper {
     private String affectedIssues;
     private String matrixParams;
 
-    public IssuesTrackerHelper(AbstractBuild build, BuildListener listener, boolean aggregateBuildIssues,
-            String aggregationBuildStatus) {
+    public IssuesTrackerHelper(Run build, TaskListener listener, boolean aggregateBuildIssues,
+                               String aggregationBuildStatus) {
         this.aggregateBuildIssues = aggregateBuildIssues;
         this.aggregationBuildStatus = aggregationBuildStatus;
-        JiraSite site = JiraSite.get(build.getProject());
+        JiraSite site = JiraSite.get(build.getParent());
         if (site == null) {
                 return;
         }
@@ -76,7 +75,7 @@ public class IssuesTrackerHelper {
     }
 
 
-    private Set<String> manuallyCollectIssues(AbstractBuild build, JiraSite site, TaskListener listener)
+    private Set<String> manuallyCollectIssues(Run build, JiraSite site, TaskListener listener)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         AbstractIssueSelector issueSelector = new DefaultIssueSelector();
         return issueSelector.findIssueIds(build, site, listener);

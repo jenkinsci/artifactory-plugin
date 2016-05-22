@@ -89,7 +89,7 @@ public class ArtifactoryServer implements Serializable {
         this.resolverCredentialsConfig = resolverCredentialsConfig;
         this.timeout = timeout > 0 ? timeout : DEFAULT_CONNECTION_TIMEOUT;
         this.bypassProxy = bypassProxy;
-        this.id = serverId == null || serverId.isEmpty() ? artifactoryUrl.hashCode() + "@" + System.currentTimeMillis() : serverId;
+        this.id = serverId;
     }
 
     public String getName() {

@@ -17,8 +17,8 @@
 package org.jfrog.hudson.generic;
 
 import com.google.common.collect.Lists;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildType;
@@ -40,13 +40,13 @@ import java.util.List;
  */
 public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
 
-    private final AbstractBuild build;
+    private final Run build;
     private ArtifactoryGenericConfigurator configurator;
     private Build buildInfo;
 
     public GenericBuildInfoDeployer(ArtifactoryGenericConfigurator configurator, ArtifactoryBuildInfoClient client,
-            AbstractBuild build, BuildListener listener, List<Artifact> deployedArtifacts,
-            List<BuildDependency> buildDependencies, List<Dependency> publishedDependencies)
+                                    Run build, TaskListener listener, List<Artifact> deployedArtifacts,
+                                    List<BuildDependency> buildDependencies, List<Dependency> publishedDependencies)
             throws IOException, NoSuchAlgorithmException, InterruptedException {
         super(configurator, build, listener, client);
         this.configurator = configurator;
@@ -63,7 +63,7 @@ public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
     }
 
     private void createDeployDetailsAndAddToBuildInfo(List<Artifact> deployedArtifacts,
-            List<Dependency> publishedDependencies) throws IOException, NoSuchAlgorithmException {
+                                                      List<Dependency> publishedDependencies) throws IOException, NoSuchAlgorithmException {
         ModuleBuilder moduleBuilder =
                 new ModuleBuilder().id(
                         ExtractorUtils.sanitizeBuildName(build.getParent().getDisplayName()) + ":" + build.getNumber())

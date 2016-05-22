@@ -23,8 +23,8 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
-import hudson.model.BuildListener;
 import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.tasks.Fingerprinter;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
@@ -56,7 +56,7 @@ public class MavenBuildInfoDeployer extends AbstractBuildInfoDeployer {
     private BuildInfoAwareConfigurator configurator;
 
     public MavenBuildInfoDeployer(BuildInfoAwareConfigurator configurator, ArtifactoryBuildInfoClient client,
-            MavenModuleSetBuild build, BuildListener listener) throws IOException, InterruptedException {
+            MavenModuleSetBuild build, TaskListener listener) throws IOException, InterruptedException {
         super(configurator, build, listener, client);
         this.configurator = configurator;
         buildInfo = createBuildInfo("Maven", build.getParent().getMaven().getName(), BuildType.MAVEN);

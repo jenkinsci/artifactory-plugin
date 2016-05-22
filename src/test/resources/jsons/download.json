@@ -1,0 +1,30 @@
+{
+  "files": [
+    {
+      "pattern": "my-repo/resolved.my",
+      "target": "my-repo/by-pattern/"
+    },
+    {
+      "aql": {
+        "items.find": {
+          "repo": "my-repo",
+          "$or": [
+            {
+              "$and": [
+                {
+                  "path": {
+                    "$match": "*"
+                  },
+                  "name": {
+                    "$match": "*.zip"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "target": "my-repo/by-pattern"
+    }
+  ]
+}

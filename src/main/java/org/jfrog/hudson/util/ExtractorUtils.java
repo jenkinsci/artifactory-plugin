@@ -382,9 +382,9 @@ public class ExtractorUtils {
     /**
      * Get the list of build numbers that are to be kept forever.
      */
-    public static List<String> getBuildNumbersNotToBeDeleted(AbstractBuild build) {
+    public static List<String> getBuildNumbersNotToBeDeleted(Run build) {
         List<String> notToDelete = Lists.newArrayList();
-        List<? extends Run<?, ?>> builds = build.getProject().getBuilds();
+        List<? extends Run<?, ?>> builds = build.getParent().getBuilds();
         for (Run<?, ?> run : builds) {
             if (run.isKeepLog()) {
                 notToDelete.add(String.valueOf(run.getNumber()));
