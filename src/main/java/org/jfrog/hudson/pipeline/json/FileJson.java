@@ -10,6 +10,7 @@ public class FileJson {
     private String props;
     private String recursive;
     private String flat;
+    private String regexp;
 
 
     public String getAql() {
@@ -53,6 +54,14 @@ public class FileJson {
 
     public void setRecursive(String recursive) {
         this.recursive = recursive;
+    }
+
+    public String getRegexp() {
+        return regexp;
+    }
+
+    public void setRegexp(String regexp) {
+        this.regexp = regexp;
     }
 
     public String getFlat() {

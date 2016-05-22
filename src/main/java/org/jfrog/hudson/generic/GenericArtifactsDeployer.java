@@ -130,6 +130,7 @@ public class GenericArtifactsDeployer {
         private ProxyConfiguration proxyConfiguration;
         private boolean recursive;
         private boolean flat;
+        private boolean regexp;
         private PatternType patternType = PatternType.ANT;
 
         public enum PatternType {
@@ -154,6 +155,10 @@ public class GenericArtifactsDeployer {
 
         public void setFlat(boolean flat) {
             this.flat = flat;
+        }
+
+        public void setRegexp(boolean regexp){
+            this.regexp = regexp;
         }
 
         public void setPatternType(PatternType patternType) {
@@ -212,7 +217,7 @@ public class GenericArtifactsDeployer {
                 if (patternType == PatternType.ANT) {
                     publishingData = PublishedItemsHelper.buildPublishingData(workspace, pattern, targetPath);
                 } else {
-                    publishingData = PublishedItemsHelper.wildCardBuildPublishingData(workspace, pattern, targetPath, flat, recursive);
+                    publishingData = PublishedItemsHelper.wildCardBuildPublishingData(workspace, pattern, targetPath, flat, recursive, regexp);
                 }
 
                 if (publishingData != null) {

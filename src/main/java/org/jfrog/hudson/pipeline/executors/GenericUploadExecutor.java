@@ -9,6 +9,7 @@ import hudson.model.Cause;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -64,8 +65,9 @@ public class GenericUploadExecutor {
             String repoKey = getRepositoryKey(file.getTarget());
             pairs.put(file.getPattern(), getLocalPath(file.getTarget()));
 
-            boolean isFlat = file.getFlat() == null || org.eclipse.jgit.util.StringUtils.toBoolean(file.getFlat());
-            boolean isRecursive = file.getRecursive() == null || org.eclipse.jgit.util.StringUtils.toBoolean(file.getRecursive());
+            boolean isFlat = file.getFlat() == null || BooleanUtils.toBoolean(file.getFlat());
+            boolean isRecursive = file.getRecursive() == null || BooleanUtils.toBoolean(file.getRecursive());
+            boolean isRegexp = BooleanUtils.toBoolean(file.getRegexp());
 
             GenericArtifactsDeployer.FilesDeployerCallable deployer = new GenericArtifactsDeployer.FilesDeployerCallable(listener, pairs, server,
                     server.getDeployerCredentialsConfig().getCredentials(build.getParent()), repoKey, propertiesToAdd,
@@ -73,6 +75,7 @@ public class GenericUploadExecutor {
             deployer.setPatternType(GenericArtifactsDeployer.FilesDeployerCallable.PatternType.WILDCARD);
             deployer.setRecursive(isRecursive);
             deployer.setFlat(isFlat);
+            deployer.setRegexp(isRegexp);
             List<Artifact> artifactsToDeploy = ws.act(deployer);
             new PipelineBuildInfoAccessor(buildinfo).appendDeployedArtifacts(artifactsToDeploy);
         }
