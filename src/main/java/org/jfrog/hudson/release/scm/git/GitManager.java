@@ -18,6 +18,7 @@ package org.jfrog.hudson.release.scm.git;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import hudson.EnvVars;
@@ -48,9 +49,14 @@ import java.util.regex.Pattern;
  */
 public class GitManager extends AbstractScmManager<GitSCM> {
     private static Logger debuggingLogger = Logger.getLogger(GitManager.class.getName());
+    private StandardCredentials credentials;
 
     public GitManager(AbstractBuild<?, ?> build, TaskListener buildListener) {
         super(build, buildListener);
+    }
+
+    public void setGitCredentials(StandardCredentials credentials) {
+        this.credentials = credentials;
     }
 
     public void checkoutBranch(final String branch, final boolean create) throws IOException, InterruptedException {
@@ -218,8 +224,10 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     private void addCredentialsToGitClient(GitClient client) {
         GitSCM gitScm = getJenkinsScm();
         for (UserRemoteConfig uc : gitScm.getUserRemoteConfigs()) {
-            if (uc.getCredentialsId() != null) {
-                String url = uc.getUrl();
+            String url = uc.getUrl();
+            if (this.credentials != null) {
+                client.addCredentials(url, this.credentials);
+            } else if (uc.getCredentialsId() != null) {
                 StandardUsernameCredentials credentials = CredentialsMatchers
                         .firstOrNull(
                                 CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,

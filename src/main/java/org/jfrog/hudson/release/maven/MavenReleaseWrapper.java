@@ -253,7 +253,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject job) {
-        MavenModuleSet moduleSet = (MavenModuleSet)job;
+        MavenModuleSet moduleSet = (MavenModuleSet) job;
         return Arrays.asList(
                 new MavenReleaseAction(moduleSet),
                 new MavenReleaseApiAction(moduleSet)

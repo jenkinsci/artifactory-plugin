@@ -22,6 +22,7 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
+import hudson.model.Run;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -231,7 +232,15 @@ public class GradleReleaseWrapper {
         log(listener,
                 "Changing gradle.properties at " + gradlePropertiesFilePath.getRemote() + " for " + next + " version");
         scmCoordinator.edit(gradlePropertiesFilePath);
-        return gradlePropertiesFilePath.act(new GradlePropertiesTransformer(modulesByName));
+
+        boolean modified = gradlePropertiesFilePath.act(new GradlePropertiesTransformer(modulesByName));
+
+        if (!modified && !modulesByName.isEmpty() && releaseVersion) {
+            build.setResult(Result.FAILURE);
+            listener.fatalError("Could not find the defined release properties in this build's gradle.properties . Please check the release properties defined in the job configuration.\n");
+            throw new Run.RunnerAbortedException();
+        }
+        return modified;
     }
 
     private void log(BuildListener listener, String message) {

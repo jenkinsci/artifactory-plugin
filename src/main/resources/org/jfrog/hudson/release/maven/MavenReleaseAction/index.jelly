@@ -86,6 +86,20 @@
                             <f:textarea rows="3" name="nextDevelCommitComment"
                                         default="${it.defaultVcsConfig.nextDevelopmentVersionComment}"/>
                         </f:entry>
+                        <j:if test="${it.isGit()}">
+                            <f:optionalBlock field="overrideCredentials" name="overrideCredentials"
+                                     title="Override Git credentials"
+                                     checked="${it.defaultVcsConfig.overrideCredentials}"
+                                     inline="true">
+                                <f:entry title="Username" help="/plugin/artifactory/help/common/help-VCSUserName.html" field="username">
+                                    <f:textbox name="username" value="${it.defaultVcsConfig.username}"/>
+                                </f:entry>
+                                <f:entry title="Password" field="password"
+                                    help="/plugin/artifactory/help/common/help-VCSPassword.html">
+                                    <f:password name="password" value="${it.defaultVcsConfig.password}"/>
+                                </f:entry>
+                            </f:optionalBlock>
+                        </j:if>
                     </f:section>
                     <f:block>
                         <hr/>
