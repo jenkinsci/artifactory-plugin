@@ -283,9 +283,9 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
     protected void prepareBuilderSpecificDefaultVcsConfig() {
         String defaultReleaseBranch = getDefaultReleaseBranch();
         String defaultTagUrl = getDefaultTagUrl();
-        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch), defaultReleaseBranch,
-                StringUtils.isNotBlank(defaultTagUrl), defaultTagUrl, getDefaultTagComment(),
-                getDefaultNextDevelCommitMessage());
+        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch) && getReleaseWrapper().isUseReleaseBranch(),
+                defaultReleaseBranch, StringUtils.isNotBlank(defaultTagUrl), defaultTagUrl,
+                getDefaultTagComment(), getDefaultNextDevelCommitMessage());
     }
 
     @Override

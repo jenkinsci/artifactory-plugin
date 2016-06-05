@@ -64,16 +64,18 @@ public class MavenReleaseWrapper extends BuildWrapper {
     private String defaultReleaseStagingRepository;
 
     private transient ScmCoordinator scmCoordinator;
+    private boolean useReleaseBranch;
 
     @DataBoundConstructor
     public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String targetRemoteName, String alternativeGoals,
-                               String defaultVersioning, String defaultReleaseStagingRepository) {
+                               String defaultVersioning, String defaultReleaseStagingRepository, boolean useReleaseBranch) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.targetRemoteName = targetRemoteName;
         this.alternativeGoals = alternativeGoals;
         this.defaultVersioning = defaultVersioning;
         this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
+        this.useReleaseBranch = useReleaseBranch;
     }
 
     public String getTagPrefix() {
@@ -132,6 +134,16 @@ public class MavenReleaseWrapper extends BuildWrapper {
         this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
+    public boolean isUseReleaseBranch() {
+        return this.useReleaseBranch;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void setUseReleaseBranch(boolean useReleaseBranch) {
+        this.useReleaseBranch = useReleaseBranch;
+    }
+    
     @Override
     public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {

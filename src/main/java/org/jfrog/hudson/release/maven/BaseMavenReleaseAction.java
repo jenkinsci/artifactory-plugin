@@ -189,7 +189,7 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
     protected void prepareBuilderSpecificDefaultVcsConfig() {
         String defaultReleaseBranch = getDefaultReleaseBranch();
         String defaultTagUrl = getDefaultTagUrl();
-        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch), defaultReleaseBranch,
+        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch) && getWrapper().isUseReleaseBranch(), defaultReleaseBranch,
                 StringUtils.isNotBlank(defaultTagUrl), defaultTagUrl, getDefaultTagComment(),
                 getDefaultNextDevelCommitMessage());
     }

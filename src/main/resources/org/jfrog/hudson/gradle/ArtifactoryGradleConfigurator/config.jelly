@@ -420,6 +420,10 @@
                                     help="/plugin/artifactory/help/release/common/help-defaultReleaseStagingRepository.html">
                                     <f:textbox name="defaultReleaseStagingRepository" value="${releaseWrapper.defaultReleaseStagingRepository}" />
                             </f:entry>
+                            <f:entry field="useReleaseBranch" title="${%Use release branch}"
+                                    help="/plugin/artifactory/help/release/common/help-useReleaseBranch.html">
+                                    <f:checkbox default="true" checked="${releaseWrapper.useReleaseBranch}"/>
+                            </f:entry>
                         </f:optionalBlock>
                     </j:if>
                 </table>

@@ -26,4 +26,8 @@
         help="/plugin/artifactory/help/release/common/help-defaultReleaseStagingRepository.html">
         <f:textbox name="defaultReleaseStagingRepository" value="${instance.defaultReleaseStagingRepository}" />
     </f:entry>
+    <f:entry field="useReleaseBranch" title="${%Use release branch}"
+        help="/plugin/artifactory/help/release/common/help-useReleaseBranch.html">
+        <f:checkbox default="true" name="useReleaseBranch" checked="${instance.useReleaseBranch}"/>
+    </f:entry>
 </j:jelly>

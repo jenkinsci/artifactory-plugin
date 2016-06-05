@@ -52,10 +52,11 @@ public class GradleReleaseWrapper {
     private String defaultReleaseStagingRepository;
 
     private transient ScmCoordinator scmCoordinator;
+    private boolean useReleaseBranch;
 
     @DataBoundConstructor
     public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String targetRemoteName, String alternativeTasks,
-                                String releasePropsKeys, String nextIntegPropsKeys, String defaultReleaseStagingRepository) {
+                                String releasePropsKeys, String nextIntegPropsKeys, String defaultReleaseStagingRepository, boolean useReleaseBranch) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.targetRemoteName = targetRemoteName;
@@ -63,6 +64,7 @@ public class GradleReleaseWrapper {
         this.releasePropsKeys = releasePropsKeys;
         this.nextIntegPropsKeys = nextIntegPropsKeys;
         this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
+        this.useReleaseBranch = useReleaseBranch;
     }
 
     public ScmCoordinator getScmCoordinator() {
@@ -132,6 +134,16 @@ public class GradleReleaseWrapper {
     @SuppressWarnings({"UnusedDeclaration"})
     public void setDefaultReleaseStagingRepository(String defaultReleaseStagingRepository) {
         this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public boolean isUseReleaseBranch() {
+        return this.useReleaseBranch;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void setUseReleaseBranch(boolean useReleaseBranch) {
+        this.useReleaseBranch = useReleaseBranch;
     }
 
     public String[] getReleasePropsKeysList() {
