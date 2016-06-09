@@ -22,6 +22,7 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
+import hudson.model.Run;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -49,18 +50,22 @@ public class GradleReleaseWrapper {
     private String alternativeTasks;
     private String releasePropsKeys;
     private String nextIntegPropsKeys;
+    private String defaultReleaseStagingRepository;
 
     private transient ScmCoordinator scmCoordinator;
+    private boolean useReleaseBranch;
 
     @DataBoundConstructor
     public GradleReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String targetRemoteName, String alternativeTasks,
-                                String releasePropsKeys, String nextIntegPropsKeys) {
+                                String releasePropsKeys, String nextIntegPropsKeys, String defaultReleaseStagingRepository, boolean useReleaseBranch) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.targetRemoteName = targetRemoteName;
         this.alternativeTasks = alternativeTasks;
         this.releasePropsKeys = releasePropsKeys;
         this.nextIntegPropsKeys = nextIntegPropsKeys;
+        this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
+        this.useReleaseBranch = useReleaseBranch;
     }
 
     public ScmCoordinator getScmCoordinator() {
@@ -120,6 +125,26 @@ public class GradleReleaseWrapper {
     @SuppressWarnings({"UnusedDeclaration"})
     public void setAlternativeTasks(String alternativeTasks) {
         this.alternativeTasks = alternativeTasks;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public String getDefaultReleaseStagingRepository() {
+        return defaultReleaseStagingRepository;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void setDefaultReleaseStagingRepository(String defaultReleaseStagingRepository) {
+        this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public boolean isUseReleaseBranch() {
+        return this.useReleaseBranch;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void setUseReleaseBranch(boolean useReleaseBranch) {
+        this.useReleaseBranch = useReleaseBranch;
     }
 
     public String[] getReleasePropsKeysList() {
@@ -207,7 +232,15 @@ public class GradleReleaseWrapper {
         log(listener,
                 "Changing gradle.properties at " + gradlePropertiesFilePath.getRemote() + " for " + next + " version");
         scmCoordinator.edit(gradlePropertiesFilePath);
-        return gradlePropertiesFilePath.act(new GradlePropertiesTransformer(modulesByName));
+
+        boolean modified = gradlePropertiesFilePath.act(new GradlePropertiesTransformer(modulesByName));
+
+        if (!modified && !modulesByName.isEmpty() && releaseVersion) {
+            build.setResult(Result.FAILURE);
+            listener.fatalError("Could not find the defined release properties in this build's gradle.properties . Please check the release properties defined in the job configuration.\n");
+            throw new Run.RunnerAbortedException();
+        }
+        return modified;
     }
 
     private void log(BuildListener listener, String message) {

@@ -100,6 +100,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean allowBintrayPushOfNonStageBuilds;
     private final boolean filterExcludedArtifactsFromBuild;
     private final boolean recordAllDependencies;
+    private String defaultPromotionTargetRepository;
     private boolean deployBuildInfo;
     private String aggregationBuildStatus;
     private boolean aggregateBuildIssues;
@@ -133,6 +134,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                                         boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
                                         boolean aggregateBuildIssues, String aggregationBuildStatus,
                                         boolean recordAllDependencies, boolean allowPromotionOfNonStagedBuilds,
+                                        String defaultPromotionTargetRepository,
                                         boolean allowBintrayPushOfNonStageBuilds,
                                         boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
                                         String blackDuckReportRecipients, String blackDuckScopes,
@@ -162,6 +164,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.aggregateBuildIssues = aggregateBuildIssues;
         this.recordAllDependencies = recordAllDependencies;
         this.allowPromotionOfNonStagedBuilds = allowPromotionOfNonStagedBuilds;
+        this.defaultPromotionTargetRepository = defaultPromotionTargetRepository;
         this.blackDuckRunChecks = blackDuckRunChecks;
         this.blackDuckAppName = blackDuckAppName;
         this.blackDuckAppVersion = blackDuckAppVersion;
@@ -262,7 +265,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     /**
@@ -299,6 +303,14 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isAllowPromotionOfNonStagedBuilds() {
         return allowPromotionOfNonStagedBuilds;
+    }
+
+    public String getDefaultPromotionTargetRepository() {
+        return defaultPromotionTargetRepository;
+    }
+
+    public void setDefaultPromotionTargetRepository(String defaultPromotionTargetRepository) {
+        this.defaultPromotionTargetRepository = defaultPromotionTargetRepository;
     }
 
     public boolean isAllowBintrayPushOfNonStageBuilds() {
@@ -351,7 +363,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     @Override
     public Action getProjectAction(AbstractProject<?, ?> project) {
-        return details != null ? new ArtifactoryProjectAction(details.getArtifactoryUrl(), project) : null;
+        return details != null ? new ArtifactoryProjectAction(details.getArtifactoryName(), project) : null;
     }
 
     @Override
@@ -382,8 +394,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
-                if (isAllowBintrayPushOfNonStageBuilds()) {
-                    build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
+                // Checks if Push to Bintray is disabled.
+                if (PluginsUtils.isPushToBintrayEnabled()) {
+                    if (isAllowBintrayPushOfNonStageBuilds()) {
+                        build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
+                    }
                 }
             }
             return true;
@@ -412,8 +427,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         ArtifactoryServer server = getArtifactoryServer();
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(this, server);
-        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(),
-                preferredDeployer.providePassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
+        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(((MavenModuleSetBuild) build).getProject()),
+                preferredDeployer.providePassword(((MavenModuleSetBuild) build).getProject()), server.createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             verifySupportedArtifactoryVersion(client);
             if (deployArtifacts) {
@@ -426,8 +441,11 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 if (isAllowPromotionOfNonStagedBuilds()) {
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
                 }
-                if (isAllowBintrayPushOfNonStageBuilds()) {
-                    build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
+                // Checks if Push to Bintray is disabled.
+                if (PluginsUtils.isPushToBintrayEnabled()) {
+                    if (isAllowBintrayPushOfNonStageBuilds()) {
+                        build.getActions().add(new BintrayPublishAction<ArtifactoryRedeployPublisher>(build, this));
+                    }
                 }
             }
             return true;
@@ -486,16 +504,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     public ArtifactoryServer getArtifactoryServer() {
-        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        if (servers != null) {
-            for (ArtifactoryServer server : servers) {
-                //support legacy code when artifactoryName was the url
-                if (server.getName().equals(getArtifactoryName()) || server.getUrl().equals(getArtifactoryName())) {
-                    return server;
-                }
-            }
-        }
-        return null;
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
     private Result getTreshold() {
@@ -529,6 +538,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         private List<Repository> releaseRepositories;
         private List<Repository> deploySnapshotRepositories;
         private List<PluginSettings> userPluginKeys = Collections.emptyList();
+        private Item item;
 
         public DescriptorImpl() {
             super(ArtifactoryRedeployPublisher.class);
@@ -538,7 +548,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         private void refreshRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
             List<String> repositoriesKeys = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(),
-                    credentialsConfig, artifactoryServer);
+                    credentialsConfig, artifactoryServer, item);
             releaseRepositories = RepositoriesUtils.createRepositoriesList(repositoriesKeys);
             Collections.sort(releaseRepositories);
             deploySnapshotRepositories = releaseRepositories;
@@ -551,13 +561,13 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 }
 
                 public Credentials getOverridingDeployerCredentials() {
-                    return credentialsConfig.getCredentials();
+                    return credentialsConfig.getCredentials(item);
                 }
 
                 public CredentialsConfig getDeployerCredentialsConfig() {
                     return credentialsConfig;
                 }
-            });
+            }, item);
 
             ArrayList<PluginSettings> list = new ArrayList<PluginSettings>(pluginInfoList.size());
             for (UserPluginInfo p : pluginInfoList) {
@@ -575,6 +585,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         @SuppressWarnings("unused")
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
+            this.item = project;
             return PluginsUtils.fillPluginCredentials(project);
         }
 
@@ -587,14 +598,17 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url the artifactory url
-         *            //         * @param credentialsId           credential id from the "Credential" plugin
+         * @param url                 Artifactory url
+         * @param credentialsId       credentials Id if using Credentials plugin
+         * @param username            credentials legacy mode username
+         * @param password            credentials legacy mode password
+         * @param overrideCredentials credentials legacy mode overridden
          * @return {@link RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password, boolean overrideCredentials) {
             RefreshServerResponse response = new RefreshServerResponse();
-            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId, overrideCredentials);
 
             try {
                 ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
@@ -644,6 +658,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
         public boolean isUseCredentialsPlugin() {
             return PluginsUtils.isUseCredentialsPlugin();
+        }
+        public boolean isPushToBintrayEnabled() {
+            return PluginsUtils.isPushToBintrayEnabled();
         }
     }
 

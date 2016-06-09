@@ -2,12 +2,11 @@ package org.jfrog.hudson;
 
 import hudson.EnvVars;
 import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
-import hudson.model.Cause;
+import hudson.model.*;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.*;
+import org.jfrog.build.api.Build;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.PromotionStatusBuilder;
 import org.jfrog.build.api.release.Promotion;
@@ -30,14 +29,14 @@ import java.util.Properties;
  * @author Shay Yaakov
  */
 public class AbstractBuildInfoDeployer {
-    protected AbstractBuild build;
-    protected BuildListener listener;
+    protected Run build;
+    protected TaskListener listener;
     protected ArtifactoryBuildInfoClient client;
     private BuildInfoAwareConfigurator configurator;
     private EnvVars env;
 
-    public AbstractBuildInfoDeployer(BuildInfoAwareConfigurator configurator, AbstractBuild build,
-            BuildListener listener, ArtifactoryBuildInfoClient client) throws IOException, InterruptedException {
+    public AbstractBuildInfoDeployer(BuildInfoAwareConfigurator configurator, Run build,
+                                     TaskListener listener, ArtifactoryBuildInfoClient client) throws IOException, InterruptedException {
         this.configurator = configurator;
         this.build = build;
         this.listener = listener;
@@ -51,7 +50,7 @@ public class AbstractBuildInfoDeployer {
                 .number(BuildUniqueIdentifierHelper.getBuildNumber(build)).type(buildType)
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
                 .buildAgent(new BuildAgent(buildAgentName, buildAgentVersion))
-                .agent(new Agent("hudson", build.getHudsonVersion()));
+                .agent(new Agent("hudson", Jenkins.VERSION));
         String buildUrl = ActionableHelper.getBuildUrl(build);
         if (StringUtils.isNotBlank(buildUrl)) {
             builder.url(buildUrl);
@@ -63,7 +62,7 @@ public class AbstractBuildInfoDeployer {
         long duration = System.currentTimeMillis() - startedTimestamp.getTimeInMillis();
         builder.durationMillis(duration);
 
-        String artifactoryPrincipal = configurator.getArtifactoryServer().getResolvingCredentialsConfig().provideUsername();
+        String artifactoryPrincipal = configurator.getArtifactoryServer().getResolvingCredentialsConfig().provideUsername(build.getParent());
         if (StringUtils.isBlank(artifactoryPrincipal)) {
             artifactoryPrincipal = "";
         }
@@ -165,14 +164,13 @@ public class AbstractBuildInfoDeployer {
         return buildInfo;
     }
 
-    private void addBuildInfoProperties(BuildInfoBuilder builder) {
+    protected void addBuildInfoProperties(BuildInfoBuilder builder) {
         if (configurator.isIncludeEnvVars()) {
             IncludesExcludes envVarsPatterns = configurator.getEnvVarsPatterns();
             if (envVarsPatterns != null) {
                 IncludeExcludePatterns patterns = new IncludeExcludePatterns(
                         Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env),
-                        Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env)
-                        );
+                        Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env));
                 // First add all build related variables
                 addBuildVariables(builder, patterns);
 
@@ -186,7 +184,11 @@ public class AbstractBuildInfoDeployer {
     }
 
     private void addBuildVariables(BuildInfoBuilder builder, IncludeExcludePatterns patterns) {
-        Map<String, String> buildVariables = build.getBuildVariables();
+        if (!(build instanceof AbstractBuild)) {
+            return;
+        }
+
+        Map<String, String> buildVariables = ((AbstractBuild) build).getBuildVariables();
         for (Map.Entry<String, String> entry : buildVariables.entrySet()) {
             String varKey = entry.getKey();
             if (PatternMatcher.pathConflicts(varKey, patterns)) {

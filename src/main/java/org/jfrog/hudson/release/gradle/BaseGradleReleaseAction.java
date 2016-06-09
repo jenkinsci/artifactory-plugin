@@ -142,7 +142,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
     public List<String> getRepositoryKeys() {
         ArtifactoryServer server = getArtifactoryServer();
         if (server != null) {
-            return getArtifactoryServer().getReleaseRepositoryKeysFirst(getWrapper());
+            return getArtifactoryServer().getReleaseRepositoryKeysFirst(getWrapper(), project);
         } else {
             return Collections.emptyList();
         }
@@ -150,7 +150,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
 
     @Override
     public boolean isArtifactoryPro() {
-        return getArtifactoryServer().isArtifactoryPro(getWrapper());
+        return getArtifactoryServer().isArtifactoryPro(getWrapper(), project);
     }
 
     @Override
@@ -283,14 +283,14 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
     protected void prepareBuilderSpecificDefaultVcsConfig() {
         String defaultReleaseBranch = getDefaultReleaseBranch();
         String defaultTagUrl = getDefaultTagUrl();
-        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch), defaultReleaseBranch,
-                StringUtils.isNotBlank(defaultTagUrl), defaultTagUrl, getDefaultTagComment(),
-                getDefaultNextDevelCommitMessage());
+        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch) && getReleaseWrapper().isUseReleaseBranch(),
+                defaultReleaseBranch, StringUtils.isNotBlank(defaultTagUrl), defaultTagUrl,
+                getDefaultTagComment(), getDefaultNextDevelCommitMessage());
     }
 
     @Override
     protected void prepareBuilderSpecificDefaultPromotionConfig() {
-        defaultPromotionConfig = new PromotionConfig(getDefaultStagingRepository(), null);
+        defaultPromotionConfig = new PromotionConfig(getDefaultReleaseStagingRepository(), null);
     }
 
     private GradleReleaseWrapper getReleaseWrapper() {
@@ -354,7 +354,13 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
     /**
      * @return The release repository configured in Artifactory publisher.
      */
-    private String getDefaultStagingRepository() {
+    private String getDefaultReleaseStagingRepository() {
+        // Get default staging repo from configuration.
+        String defaultStagingRepo = getReleaseWrapper().getDefaultReleaseStagingRepository();
+        if (defaultStagingRepo != null && getRepositoryKeys().contains(defaultStagingRepo)) {
+            return defaultStagingRepo;
+        }
+
         ArtifactoryGradleConfigurator publisher = getWrapper();
         if (publisher == null) {
             return null;

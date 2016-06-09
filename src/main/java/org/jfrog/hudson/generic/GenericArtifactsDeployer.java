@@ -4,9 +4,10 @@ import com.google.common.collect.*;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Util;
-import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FilenameUtils;
@@ -42,14 +43,14 @@ public class GenericArtifactsDeployer {
     private static final String SHA1 = "SHA1";
     private static final String MD5 = "MD5";
 
-    private AbstractBuild build;
+    private Run build;
     private ArtifactoryGenericConfigurator configurator;
     private BuildListener listener;
     private CredentialsConfig credentialsConfig;
     private EnvVars env;
     private List<Artifact> artifactsToDeploy = Lists.newArrayList();
 
-    public GenericArtifactsDeployer(AbstractBuild build, ArtifactoryGenericConfigurator configurator,
+    public GenericArtifactsDeployer(Run build, ArtifactoryGenericConfigurator configurator,
                                     BuildListener listener, CredentialsConfig credentialsConfig)
             throws IOException, InterruptedException, NoSuchAlgorithmException {
         this.build = build;
@@ -73,12 +74,12 @@ public class GenericArtifactsDeployer {
             return;
         }
 
-        FilePath workingDir = build.getWorkspace();
+        FilePath workingDir = build.getExecutor().getCurrentWorkspace();
         ArrayListMultimap<String, String> propertiesToAdd = getbuildPropertiesMap();
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
         String repositoryKey = Util.replaceMacro(configurator.getRepositoryKey(), env);
         artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer,
-                credentialsConfig.getCredentials(), repositoryKey, propertiesToAdd,
+                credentialsConfig.getCredentials(build.getParent()), repositoryKey, propertiesToAdd,
                 artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
     }
 
@@ -118,17 +119,25 @@ public class GenericArtifactsDeployer {
         }
     }
 
-    private static class FilesDeployerCallable implements FilePath.FileCallable<List<Artifact>> {
+    public static class FilesDeployerCallable implements FilePath.FileCallable<List<Artifact>> {
 
         private final String repositoryKey;
-        private BuildListener listener;
+        private TaskListener listener;
         private Multimap<String, String> patternPairs;
         private ArtifactoryServer server;
         private Credentials credentials;
         private ArrayListMultimap<String, String> buildProperties;
         private ProxyConfiguration proxyConfiguration;
+        private boolean recursive;
+        private boolean flat;
+        private boolean regexp;
+        private PatternType patternType = PatternType.ANT;
 
-        public FilesDeployerCallable(BuildListener listener, Multimap<String, String> patternPairs,
+        public enum PatternType {
+            ANT, WILDCARD
+        }
+
+        public FilesDeployerCallable(TaskListener listener, Multimap<String, String> patternPairs,
                                      ArtifactoryServer server, Credentials credentials, String repositoryKey,
                                      ArrayListMultimap<String, String> buildProperties, ProxyConfiguration proxyConfiguration) {
             this.listener = listener;
@@ -138,6 +147,22 @@ public class GenericArtifactsDeployer {
             this.repositoryKey = repositoryKey;
             this.buildProperties = buildProperties;
             this.proxyConfiguration = proxyConfiguration;
+        }
+
+        public void setRecursive(boolean recursive) {
+            this.recursive = recursive;
+        }
+
+        public void setFlat(boolean flat) {
+            this.flat = flat;
+        }
+
+        public void setRegexp(boolean regexp){
+            this.regexp = regexp;
+        }
+
+        public void setPatternType(PatternType patternType) {
+            this.patternType = patternType;
         }
 
         public List<Artifact> invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
@@ -187,8 +212,14 @@ public class GenericArtifactsDeployer {
             for (Map.Entry<String, String> entry : patternPairs.entries()) {
                 String pattern = entry.getKey();
                 String targetPath = entry.getValue();
-                Multimap<String, File> publishingData = PublishedItemsHelper.buildPublishingData(workspace, pattern,
-                        targetPath);
+                Multimap<String, File> publishingData = null;
+
+                if (patternType == PatternType.ANT) {
+                    publishingData = PublishedItemsHelper.buildPublishingData(workspace, pattern, targetPath);
+                } else {
+                    publishingData = PublishedItemsHelper.wildCardBuildPublishingData(workspace, pattern, targetPath, flat, recursive, regexp);
+                }
+
                 if (publishingData != null) {
                     listener.getLogger().println(
                             "For pattern: " + pattern + " " + publishingData.size() + " artifacts were found");
@@ -206,7 +237,12 @@ public class GenericArtifactsDeployer {
             Set<DeployDetails> result = Sets.newHashSet();
             String targetPath = fileEntry.getKey();
             File artifactFile = fileEntry.getValue();
-            String path = PublishedItemsHelper.calculateTargetPath(targetPath, artifactFile);
+            String path;
+            if (patternType == PatternType.ANT) {
+                path = PublishedItemsHelper.calculateTargetPath(targetPath, artifactFile);
+            } else {
+                path = PublishedItemsHelper.wildcardCalculateTargetPath(targetPath, artifactFile);
+            }
             path = StringUtils.replace(path, "//", "/");
 
             // calculate the sha1 checksum that is not given by Jenkins and add it to the deploy artifactsToDeploy

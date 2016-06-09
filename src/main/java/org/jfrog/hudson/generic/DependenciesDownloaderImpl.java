@@ -33,6 +33,7 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
     private ArtifactoryDependenciesClient client;
     private FilePath workspace;
     private Log log;
+    private boolean flatDownload = false;
 
     public DependenciesDownloaderImpl(ArtifactoryDependenciesClient client, FilePath workspace, Log log) {
         this.client = client;
@@ -51,7 +52,8 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
 
     public String getTargetDir(String targetDir, String relativeDir) throws IOException {
         try {
-            FilePath targetDirFile = new FilePath(workspace, targetDir).child(relativeDir);
+            String downloadFileRelativePath = this.flatDownload ? StringUtils.substringAfterLast(relativeDir, "/") : relativeDir;
+            FilePath targetDirFile = new FilePath(workspace, targetDir).child(downloadFileRelativePath);
             return targetDirFile.absolutize().getRemote();
         } catch (InterruptedException e) {
             log.warn("Caught interrupted exception: " + e.getLocalizedMessage());
@@ -123,6 +125,15 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
             log.warn("Caught interrupted exception: " + e.getLocalizedMessage());
         }
     }
+
+    public void setFlatDownload(boolean flat){
+        this.flatDownload = flat;
+    }
+
+    public boolean getFlatDownload(){
+        return this.flatDownload;
+    }
+
 
     private boolean isResolvedOrParentOfResolvedFile(Set<String> resolvedFiles, final String path) {
         return Iterables.any(resolvedFiles, new Predicate<String>() {

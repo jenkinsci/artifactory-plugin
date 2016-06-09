@@ -20,6 +20,7 @@ import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.ProminentProjectAction;
 import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.RepositoriesUtils;
 
 /**
  * {@link hudson.model.ProminentProjectAction} that links to the latest build in Artifactory.
@@ -27,14 +28,12 @@ import org.jfrog.hudson.util.ExtractorUtils;
  * @author Yossi Shaul
  */
 public class ArtifactoryProjectAction implements ProminentProjectAction {
-    private final String url;
+    private final String urlSuffix;
+    private final String artifactoryServerName;
 
-    public ArtifactoryProjectAction(String artifactoryRootUrl, AbstractProject<?, ?> project) {
-        if (artifactoryRootUrl != null) {
-            url = generateUrl(artifactoryRootUrl, project);
-        } else {
-            url = "";
-        }
+    public ArtifactoryProjectAction(String artifactoryServerName, AbstractProject<?, ?> project) {
+        urlSuffix = generateUrlSuffix(project);
+        this.artifactoryServerName = artifactoryServerName;
     }
 
     public String getIconFileName() {
@@ -46,11 +45,11 @@ public class ArtifactoryProjectAction implements ProminentProjectAction {
     }
 
     public String getUrlName() {
-        return url;
+        return RepositoriesUtils.getArtifactoryServer(artifactoryServerName, RepositoriesUtils.getArtifactoryServers()).getUrl() + urlSuffix;
     }
 
-    private String generateUrl(String artifactoryRootUrl, AbstractProject<?, ?> project) {
-        return artifactoryRootUrl + "/webapp/builds/" +
+    private String generateUrlSuffix(AbstractProject<?, ?> project) {
+        return "/webapp/builds/" +
                 Util.rawEncode(ExtractorUtils.sanitizeBuildName(project.getFullName()));
     }
 }

@@ -19,11 +19,11 @@ package org.jfrog.hudson.util;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.common.io.Closeables;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.*;
 import hudson.slaves.SlaveComputer;
+import hudson.util.IOUtils;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
@@ -182,9 +182,9 @@ public class ExtractorUtils {
         replaceRepositoryInputForValues(configuration, build, inputDownloadReleaseKey, inputDownloadSnapshotKey, env);
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(context.getResolverOverrider(),
                 context.getServer());
-        if (StringUtils.isNotBlank(preferredResolver.provideUsername())) {
-            configuration.resolver.setUsername(preferredResolver.provideUsername());
-            configuration.resolver.setPassword(preferredResolver.providePassword());
+        if (StringUtils.isNotBlank(preferredResolver.provideUsername(build.getProject()))) {
+            configuration.resolver.setUsername(preferredResolver.provideUsername(build.getProject()));
+            configuration.resolver.setPassword(preferredResolver.providePassword(build.getProject()));
         }
     }
 
@@ -272,12 +272,12 @@ public class ExtractorUtils {
         ArtifactoryServer artifactoryServer = context.getArtifactoryServer();
         CredentialsConfig preferredDeployer =
                 CredentialManager.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
-        if (StringUtils.isNotBlank(preferredDeployer.provideUsername())) {
-            configuration.publisher.setUsername(preferredDeployer.provideUsername());
-            configuration.publisher.setPassword(preferredDeployer.providePassword());
+        if (StringUtils.isNotBlank(preferredDeployer.provideUsername(build.getProject()))) {
+            configuration.publisher.setUsername(preferredDeployer.provideUsername(build.getProject()));
+            configuration.publisher.setPassword(preferredDeployer.providePassword(build.getProject()));
         }
         configuration.setTimeout(artifactoryServer.getTimeout());
-        configuration.publisher.setContextUrl(context.getServerDetails().getArtifactoryUrl());
+        configuration.publisher.setContextUrl(artifactoryServer.getUrl());
 
         ServerDetails serverDetails = context.getServerDetails();
         if (serverDetails != null) {
@@ -382,9 +382,9 @@ public class ExtractorUtils {
     /**
      * Get the list of build numbers that are to be kept forever.
      */
-    public static List<String> getBuildNumbersNotToBeDeleted(AbstractBuild build) {
+    public static List<String> getBuildNumbersNotToBeDeleted(Run build) {
         List<String> notToDelete = Lists.newArrayList();
-        List<? extends Run<?, ?>> builds = build.getProject().getBuilds();
+        List<? extends Run<?, ?>> builds = build.getParent().getBuilds();
         for (Run<?, ?> run : builds) {
             if (run.isKeepLog()) {
                 notToDelete.add(String.valueOf(run.getNumber()));
@@ -431,7 +431,7 @@ public class ExtractorUtils {
                 try {
                     properties.store(stream, "");
                 } finally {
-                    Closeables.closeQuietly(stream);
+                    IOUtils.closeQuietly(stream);
                 }
                 propertiesFile.copyFrom(tempFile.toURI().toURL());
             } catch (Exception e) {

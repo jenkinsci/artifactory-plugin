@@ -1,6 +1,6 @@
 package org.jfrog.hudson.util;
 
-import hudson.model.AbstractBuild;
+import hudson.model.Run;
 import hudson.tasks.LogRotator;
 import jenkins.model.BuildDiscarder;
 import org.jfrog.build.api.BuildRetention;
@@ -21,10 +21,10 @@ public class BuildRetentionFactory {
      * @param discardOldArtifacts Flag whether to discard artifacts of those builds that are to be discarded.
      * @return a new Build retention
      */
-    public static BuildRetention createBuildRetention(AbstractBuild build, boolean discardOldArtifacts) {
+    public static BuildRetention createBuildRetention(Run build, boolean discardOldArtifacts) {
         BuildRetention buildRetention = new BuildRetention(discardOldArtifacts);
         LogRotator rotator = null;
-        BuildDiscarder buildDiscarder = build.getProject().getBuildDiscarder();
+        BuildDiscarder buildDiscarder = build.getParent().getBuildDiscarder();
         if (buildDiscarder != null && buildDiscarder instanceof LogRotator) {
             rotator = (LogRotator)  buildDiscarder;
         }

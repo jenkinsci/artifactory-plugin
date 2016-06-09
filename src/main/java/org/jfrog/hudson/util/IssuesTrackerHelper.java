@@ -1,14 +1,12 @@
 package org.jfrog.hudson.util;
 
 import com.google.common.collect.Sets;
-import com.google.common.io.NullOutputStream;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
-import hudson.model.StreamBuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.plugins.jira.JiraIssue;
-import hudson.plugins.jira.JiraSession;
 import hudson.plugins.jira.JiraSite;
-import hudson.plugins.jira.soap.RemoteServerInfo;
+import hudson.plugins.jira.selector.AbstractIssueSelector;
+import hudson.plugins.jira.selector.DefaultIssueSelector;
 import org.jfrog.build.api.Issue;
 import org.jfrog.build.api.IssueTracker;
 import org.jfrog.build.api.Issues;
@@ -16,12 +14,11 @@ import org.jfrog.build.api.IssuesTrackerFields;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.util.IssuesTrackerUtils;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * @author Noam Y. Tenne
@@ -34,22 +31,20 @@ public class IssuesTrackerHelper {
     private String affectedIssues;
     private String matrixParams;
 
-    public IssuesTrackerHelper(AbstractBuild build, BuildListener listener, boolean aggregateBuildIssues,
-            String aggregationBuildStatus) {
+    public IssuesTrackerHelper(Run build, TaskListener listener, boolean aggregateBuildIssues,
+                               String aggregationBuildStatus) {
         this.aggregateBuildIssues = aggregateBuildIssues;
         this.aggregationBuildStatus = aggregationBuildStatus;
-        JiraSite site = JiraSite.get(build.getProject());
+        JiraSite site = JiraSite.get(build.getParent());
         if (site == null) {
-            return;
+                return;
         }
 
         try {
-            JiraSession session = site.createSession();
-            RemoteServerInfo info = session.service.getServerInfo(session.token);
-            issueTrackerVersion = info.getVersion();
+            issueTrackerVersion = getJiraVersion(site);
             StringBuilder affectedIssuesBuilder = new StringBuilder();
             StringBuilder matrixParamsBuilder = new StringBuilder();
-            Set<String> issueIds = Sets.newHashSet(manuallyCollectIssues(build, site.getIssuePattern()));
+            Set<String> issueIds = Sets.newHashSet(manuallyCollectIssues(build, site, listener));
             for (String issueId : issueIds) {
                 if (!site.existsIssue(issueId)) {
                     continue;
@@ -75,14 +70,15 @@ public class IssuesTrackerHelper {
         }
     }
 
-    private Set<String> manuallyCollectIssues(AbstractBuild build, Pattern issuePattern)
+    private String getJiraVersion(JiraSite site) {
+        return PluginsUtils.getJiraVersion(site.url);
+    }
+
+
+    private Set<String> manuallyCollectIssues(Run build, JiraSite site, TaskListener listener)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Class<?> jiraUpdaterClass = Class.forName("hudson.plugins.jira.Updater");
-        Method findIssueIdsRecursive = jiraUpdaterClass.getDeclaredMethod("findIssueIdsRecursive", AbstractBuild.class,
-                Pattern.class, BuildListener.class);
-        findIssueIdsRecursive.setAccessible(true);
-        return (Set<String>) findIssueIdsRecursive.invoke(null, build, issuePattern,
-                new StreamBuildListener(new NullOutputStream()));
+        AbstractIssueSelector issueSelector = new DefaultIssueSelector();
+        return issueSelector.findIssueIds(build, site, listener);
     }
 
     /**

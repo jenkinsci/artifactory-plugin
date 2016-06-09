@@ -248,18 +248,17 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public ArtifactoryServer getArtifactoryServer() {
-        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        for (ArtifactoryServer server : servers) {
-            if (server.getName().equals(getArtifactoryName())) {
-                return server;
-            }
-        }
-        return null;
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
     public String getRepositoryKey() {
         return details != null ? details.getDeployReleaseRepositoryKey() : null;
+    }
+
+    public String getDefaultPromotionTargetRepository() {
+        //Not implemented
+        return null;
     }
 
     public boolean isIncludePublishArtifacts() {
@@ -290,7 +289,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     public String getScopes() {
@@ -400,7 +400,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
+        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryName(), project);
     }
 
     @Override
@@ -425,7 +425,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .violationRecipients(getViolationRecipients()).scopes(getScopes())
                 .licenseAutoDiscovery(isLicenseAutoDiscovery()).discardOldBuilds(isDiscardOldBuilds())
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
-                .skipBuildInfoDeploy(skipBuildInfoDeploy).recordAllDependencies(isRecordAllDependencies())
+                .skipBuildInfoDeploy(!deployBuildInfo).recordAllDependencies(isRecordAllDependencies())
                 .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
                 .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
                 .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
@@ -453,7 +453,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         if (isEnableResolveArtifacts()) {
             CredentialsConfig credentialResolver = CredentialManager.getPreferredResolver(
                     ArtifactoryMaven3Configurator.this, getArtifactoryServer());
-            resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(), credentialResolver.getCredentials(),
+            resolver = new ResolverContext(getArtifactoryServer(), getResolverDetails(), credentialResolver.getCredentials(build.getProject()),
                     ArtifactoryMaven3Configurator.this);
         }
         final ResolverContext resolverContext = resolver;
@@ -476,7 +476,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     build.getActions().add(new BuildInfoResultAction(getArtifactoryUrl(), build));
                     build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryMaven3Configurator>(build, ArtifactoryMaven3Configurator.this));
-                    build.getActions().add(new BintrayPublishAction<ArtifactoryMaven3Configurator>(build, ArtifactoryMaven3Configurator.this));
+                    // Checks if Push to Bintray is disabled.
+                    if (PluginsUtils.isPushToBintrayEnabled()) {
+                        build.getActions().add(new BintrayPublishAction<ArtifactoryMaven3Configurator>(build, ArtifactoryMaven3Configurator.this));
+                    }
                 }
                 return true;
             }
@@ -513,10 +516,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                             item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
+        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig, Item item)
                 throws IOException {
             virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
-                    credentialsConfig, artifactoryServer);
+                    credentialsConfig, artifactoryServer, item);
             Collections.sort(virtualRepositoryList);
         }
 
@@ -524,21 +527,22 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url           Artifactory url
-         * @param credentialsId credentials Id if using Credentials plugin
-         * @param username      credentials legacy mode username
-         * @param password      credentials legacy mode password
+         * @param url                 Artifactory url
+         * @param credentialsId       credentials Id if using Credentials plugin
+         * @param username            credentials legacy mode username
+         * @param password            credentials legacy mode password
+         * @param overrideCredentials credentials legacy mode overridden
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password, boolean overrideCredentials) {
             RefreshServerResponse response = new RefreshServerResponse();
-            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId, overrideCredentials);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
                 List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
-                        artifactoryServer);
+                        artifactoryServer, item);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
@@ -571,13 +575,13 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
          */
         @SuppressWarnings("unused")
         @JavaScriptMethod
-        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password) {
+        public RefreshServerResponse refreshResolversFromArtifactory(String url, String credentialsId, String username, String password, boolean overrideCredentials) {
             RefreshServerResponse response = new RefreshServerResponse();
-            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId, overrideCredentials);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsConfig);
+                refreshVirtualRepositories(artifactoryServer, credentialsConfig, item);
                 response.setVirtualRepositories(virtualRepositoryList);
                 response.setSuccess(true);
             } catch (Exception e) {

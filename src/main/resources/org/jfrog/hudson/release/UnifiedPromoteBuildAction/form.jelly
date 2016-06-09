@@ -31,7 +31,7 @@
                                                      help="/plugin/artifactory/help/release/PromoteBuildAction/help-promotionRepository.html">
                                                 <select class="setting-input" name="repositoryKey">
                                                     <j:forEach var="r" items="${it.repositoryKeys}">
-                                                        <f:option selected="${r==it.lastPromotionRepository}"
+                                                        <f:option selected="${r==it.defaultPromotionTargetRepository}"
                                                                   value="${r}">${r}
                                                         </f:option>
                                                     </j:forEach>
@@ -41,7 +41,7 @@
                                                      help="/plugin/artifactory/help/release/PromoteBuildAction/help-promotionSourceRepository.html">
                                                 <select class="setting-input" name="sourceRepositoryKey">
                                                     <j:forEach var="r" items="${it.repositoryKeys}">
-                                                        <f:option selected="${r==it.lastPromotionRepository}"
+                                                        <f:option selected="${r==it.sourceRepositoryKey}"
                                                                   value="${r}">${r}
                                                         </f:option>
                                                     </j:forEach>
@@ -77,7 +77,7 @@
                     </f:dropdownList>
                     <tr>
                         <td colspan="3">
-                            <f:submit value="${%Update}"/>
+                            <f:submit value="${%Promote build}"/>
                         </td>
                     </tr>
                 </f:section>

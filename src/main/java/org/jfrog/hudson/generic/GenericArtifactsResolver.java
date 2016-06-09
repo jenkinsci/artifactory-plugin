@@ -23,6 +23,7 @@ import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
+import org.jfrog.build.extractor.clientConfiguration.util.AntDependenciesHelper;
 import org.jfrog.build.extractor.clientConfiguration.util.BuildDependenciesHelper;
 import org.jfrog.build.extractor.clientConfiguration.util.DependenciesDownloader;
 import org.jfrog.build.extractor.clientConfiguration.util.DependenciesHelper;
@@ -52,7 +53,7 @@ public class GenericArtifactsResolver {
     }
 
     public List<Dependency> retrievePublishedDependencies() throws IOException, InterruptedException {
-        DependenciesHelper helper = new DependenciesHelper(createDependenciesDownloader(), log);
+        DependenciesHelper helper = new AntDependenciesHelper(createDependenciesDownloader(), log);
         return helper.retrievePublishedDependencies(resolvePattern);
     }
 

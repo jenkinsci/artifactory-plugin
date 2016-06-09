@@ -24,6 +24,8 @@ import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.scm.git.GitCoordinator;
+import org.jfrog.hudson.release.scm.perforce.LegacyPerforceManager;
+import org.jfrog.hudson.release.scm.perforce.P4Manager;
 import org.jfrog.hudson.release.scm.perforce.PerforceCoordinator;
 import org.jfrog.hudson.release.scm.svn.SubversionCoordinator;
 
@@ -58,10 +60,18 @@ public abstract class AbstractScmCoordinator implements ScmCoordinator {
         }
         // Perforce is optional SCM so we cannot use the class here
         if (isPerforceScm(build.getProject())) {
-            return new PerforceCoordinator(build, listener, releaseAction);
+            return new PerforceCoordinator(build, listener, releaseAction, new LegacyPerforceManager(build, listener));
+        }
+        if (isP4SCM(build.getProject())){
+            return new PerforceCoordinator(build, listener, releaseAction, new P4Manager(build, listener));
         }
         throw new UnsupportedOperationException(
                 "Scm of type: " + projectScm.getClass().getName() + " is not supported");
+    }
+
+    private static boolean isP4SCM(AbstractProject project) {
+        SCM projectSCM = project.getScm();
+        return projectSCM != null && projectSCM.getClass().getName().equals("org.jenkinsci.plugins.p4.PerforceScm");
     }
 
     public static boolean isSvn(AbstractProject project) {

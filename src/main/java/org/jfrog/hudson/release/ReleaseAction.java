@@ -16,6 +16,8 @@
 
 package org.jfrog.hudson.release;
 
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.collect.Maps;
 import hudson.Util;
 import hudson.matrix.MatrixConfiguration;
@@ -84,6 +86,9 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
     boolean createReleaseBranch;
     String releaseBranch;
     private Class<W> wrapperClass;
+    boolean overrideCredentials;
+    String username;
+    String password;
 
     public ReleaseAction(P project, Class<W> wrapperClass) {
         this.project = project;
@@ -102,7 +107,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
         if (!UserPluginInfo.NO_PLUGIN_KEY.equals(getSelectedStagingPluginName())) {
             PluginSettings selectedStagingPluginSettings = getSelectedStagingPlugin();
             try {
-                stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings, Util.rawEncode(project.getName()));
+                stagingStrategy = getArtifactoryServer().getStagingStrategy(selectedStagingPluginSettings, Util.rawEncode(project.getName()), project);
             } catch (Exception e) {
                 log.log(Level.WARNING, "Failed to obtain staging strategy: " + e.getMessage(), e);
                 strategyRequestFailed = true;
@@ -186,6 +191,18 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
 
     public String getTagComment() {
         return StringUtils.isNotBlank(tagComment) ? tagComment : getDefaultVcsConfig().getTagComment();
+    }
+
+    public boolean isOverrideCredentials(){
+        return overrideCredentials;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
     }
 
     public String getNextDevelCommitComment() {
@@ -331,6 +348,17 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
         if (req.getParameter("stagingComment") != null) {
             stagingComment = req.getParameter("stagingComment");
         }
+        if (req.getParameter("overrideCredentials") != null) {
+            overrideCredentials = Boolean.valueOf(req.getParameter("overrideCredentials"));
+        }
+        if (req.getParameter("username") != null) {
+            username = req.getParameter("username");
+        }
+        if (req.getParameter("password") != null) {
+            password = req.getParameter("password");
+        }
+
+
     }
 
     private void readRequestParams(StaplerRequest req, boolean api) {
@@ -351,6 +379,13 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
             tagUrl = req.getParameter("tagUrl");
             tagComment = req.getParameter("tagComment");
         }
+
+        overrideCredentials = req.getParameter("overrideCredentials") != null;
+        if (overrideCredentials) {
+            username = req.getParameter("username");
+            password = req.getParameter("password");
+        }
+
         nextDevelCommitComment = req.getParameter("nextDevelCommitComment");
         createReleaseBranch = req.getParameter("createReleaseBranch") != null;
         if (createReleaseBranch) {
@@ -477,6 +512,9 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
         versioning = VERSIONING.valueOf(defaultVersioning);
 
         createVcsTag = defaultVcsConfig.isCreateTag();
+        overrideCredentials = defaultVcsConfig.isOverrideCredentials();
+        username = defaultVcsConfig.getUsername();
+        password = defaultVcsConfig.getPassword();
         tagUrl = defaultVcsConfig.getTagUrlOrName();
         tagComment = defaultVcsConfig.getTagComment();
         nextDevelCommitComment = defaultVcsConfig.getNextDevelopmentVersionComment();
@@ -590,6 +628,13 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
             return ((MatrixConfiguration) project).getBuilders();
 
         return ((FreeStyleProject) project).getBuilders();
+    }
+
+    public StandardCredentials getGitCredentials() {
+        if (overrideCredentials) {
+            return new UsernamePasswordCredentialsImpl(null, null, "release staging Git credentials", username, password);
+        }
+        return null;
     }
 
     public enum VERSIONING {

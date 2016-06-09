@@ -39,7 +39,9 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Yossi Shaul
@@ -60,6 +62,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
 
         private boolean useCredentialsPlugin;
         private List<ArtifactoryServer> artifactoryServers;
+        private boolean pushToBintrayEnabled = true;
 
         public DescriptorImpl() {
             super(ArtifactoryBuilder.class);
@@ -87,6 +90,33 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             return FormValidation.ok();
         }
 
+        /**
+         * Performs on-the-fly validation of the form field 'ServerId'.
+         *
+         * @param value          This parameter receives the value that the user has typed.
+         * @param artifactoryUrl This parameter receives the value that the user has typed as artifactory Url.
+         * @return Indicates the outcome of the validation. This is sent to the browser.
+         */
+        public FormValidation doCheckServerId(@QueryParameter String value, @QueryParameter String artifactoryUrl, @QueryParameter String username, @QueryParameter String password, @QueryParameter String credentialsId) throws IOException, ServletException {
+            if (value.length() == 0) {
+                return FormValidation.error("Please set server ID");
+            }
+            List<ArtifactoryServer> artifactoryServers = RepositoriesUtils.getArtifactoryServers();
+            if (artifactoryServers == null) {
+                return FormValidation.ok();
+            }
+            int countServersByValueAsName = 0;
+            for (ArtifactoryServer server : artifactoryServers) {
+                if (server.getName().equals(value)) {
+                    countServersByValueAsName++;
+                    if (countServersByValueAsName > 1) {
+                        return FormValidation.error("Duplicated server ID");
+                    }
+                }
+            }
+            return FormValidation.ok();
+        }
+
         public FormValidation doTestConnection(
                 @QueryParameter("artifactoryUrl") final String url,
                 @QueryParameter("artifactory.timeout") final String timeout,
@@ -102,7 +132,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 return FormValidation.error("Please set a valid Artifactory URL");
             }
 
-            Credentials credentials = PluginsUtils.credentialsLookup(deployerCredentialsId);
+            Credentials credentials = PluginsUtils.credentialsLookup(deployerCredentialsId, null);
             String username = useLegacyCredentials ? credentials.getUsername() : deployerCredentialsUsername;
             String password = useLegacyCredentials ? credentials.getPassword() : deployerCredentialsPassword;
 
@@ -143,6 +173,8 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         @Override
         public boolean configure(StaplerRequest req, JSONObject o) throws FormException {
             useCredentialsPlugin = (Boolean) o.get("useCredentialsPlugin");
+            pushToBintrayEnabled = (Boolean) o.get("pushToBintrayEnabled");
+
             Object servers = o.get("artifactoryServer");    // an array or single object
             if (!JSONNull.getInstance().equals(servers)) {
                 artifactoryServers = req.bindJSONToList(ArtifactoryServer.class, servers);
@@ -150,7 +182,22 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 artifactoryServers = null;
             }
             save();
-            return super.configure(req, o);
+            return super.configure(req, o) && !isServerConfigurationError();
+        }
+
+        private boolean isServerConfigurationError() {
+            Map<String, String> serversName = new HashMap<String, String>();
+            if (artifactoryServers == null) {
+                return false;
+            }
+            for (ArtifactoryServer server : artifactoryServers) {
+                String name = server.getName();
+                if (name == null || name == "" || serversName.get(name) != null) {
+                    return true;
+                }
+                serversName.put(name, name);
+            }
+            return false;
         }
 
         public List<ArtifactoryServer> getArtifactoryServers() {
@@ -170,6 +217,11 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         @SuppressWarnings({"UnusedDeclaration"})
         public void setUseCredentialsPlugin(boolean useCredentialsPlugin) {
             this.useCredentialsPlugin = useCredentialsPlugin;
+        }
+
+        // global.jelly uses this method to retrieve the value of pushToBintrayEnabled to determine if the checkbox should be checked.
+        public boolean isPushToBintrayEnabled() {
+            return pushToBintrayEnabled;
         }
     }
 }

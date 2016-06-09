@@ -266,8 +266,14 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         return details != null ? details.getDeployReleaseRepository().getRepoKey() : null;
     }
 
+    public String getDefaultPromotionTargetRepository() {
+        //Not implemented
+        return null;
+    }
+
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     public String getViolationRecipients() {
@@ -352,7 +358,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
+        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryName(), project);
     }
 
     @Override
@@ -422,7 +428,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     public static class DescriptorImpl extends BuildWrapperDescriptor {
 
         private List<Repository> releaseRepositoryList;
-
+        private AbstractProject<?, ?> item;
         public DescriptorImpl() {
             super(ArtifactoryIvyConfigurator.class);
             load();
@@ -430,6 +436,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
+            this.item = item;
             return "hudson.ivy.IvyModuleSet".equals(item.getClass().getName());
         }
 
@@ -437,21 +444,22 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url Artifactory url
-         * @param credentialsId credentials Id if using Credentials plugin
-         * @param username credentials legacy mode username
-         * @param password credentials legacy mode password
+         * @param url                 Artifactory url
+         * @param credentialsId       credentials Id if using Credentials plugin
+         * @param username            credentials legacy mode username
+         * @param password            credentials legacy mode password
+         * @param overrideCredentials credentials legacy mode overridden
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
-            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password, boolean overrideCredentials) {
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId, overrideCredentials);
             RefreshServerResponse response = new RefreshServerResponse();
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
 
             try {
                 List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
-                        artifactoryServer);
+                        artifactoryServer, item);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);

@@ -13,6 +13,8 @@ public interface BuildInfoAwareConfigurator {
 
     String getRepositoryKey();
 
+    String getDefaultPromotionTargetRepository();
+
     boolean isIncludeEnvVars();
 
     IncludesExcludes getEnvVarsPatterns();

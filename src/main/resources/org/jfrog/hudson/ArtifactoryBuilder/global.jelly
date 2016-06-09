@@ -4,21 +4,36 @@
          xmlns:c="/lib/credentials">
     <st:adjunct includes="lib.jfrog.repos.credentials"/>
     <f:section title="Artifactory">
+
+        <f:entry
+            help="/plugin/artifactory/help/ArtifactoryBuilder/help-pushToBintrayEnabled.html"  >
+                <input id="pushToBintrayEnabled" type="checkbox"
+                    name="pushToBintrayEnabled" value="${descriptor.pushToBintrayEnabled}"
+                        field="pushToBintrayEnabled">Enable Push to Bintray
+                </input>
+        </f:entry>
+        <f:entry
+            help="/plugin/artifactory/help/ArtifactoryBuilder/help-useCredentialsPlugin.html">
+                <input id="useCredentialsPlugin" type="checkbox" onclick="updateViewForCredentialsMethod(this.checked)"
+                   name="useCredentialsPlugin" value="${descriptor.useCredentialsPlugin}"
+                        field="useCredentialsPlugin">Use the Credentials Plugin
+                </input>
+        </f:entry>
         <f:entry title="Artifactory servers"
                  description="List of Artifactory servers that projects will want to deploy artifacts and build info to">
 
-            <input id="useCredentialsPlugin" type="checkbox" onclick="updateViewForCredentialsMethod(this.checked)"
-                   name="useCredentialsPlugin" value="${descriptor.useCredentialsPlugin}"
-                   field="useCredentialsPlugin">Use the Credentials Plugin
-            </input>
+
             <f:repeatable name="artifactoryServer" var="server" items="${descriptor.artifactoryServers}"
                           header="Artifactory">
                 <input type="hidden" name="stapler-class" value="org.jfrog.hudson.ArtifactoryServer"/>
-                <input type="hidden" name="serverId" value="${server.name}"/>
 
                 <table width="100%">
+                    <f:entry title="Server ID" help="/plugin/artifactory/help/ArtifactoryBuilder/help-serverId.html">
+                        <f:textbox field="serverId" value="${server.name}"/>
+                    </f:entry>
+
                     <f:entry title="URL" help="/plugin/artifactory/help/ArtifactoryBuilder/help-url.html">
-                        <f:textbox field="artifactoryUrl" value="${server.url}"/>
+                        <f:textbox field="artifactoryUrl" value="${server.url}" use="required"/>
                     </f:entry>
 
                     <f:section title="Default Deployer Credentials" field="deployerCredentialsConfig"
@@ -45,6 +60,17 @@
                             </table>
                         </f:block>
                     </f:section>
+                    <f:advanced>
+                        <f:entry title="Connection Timeout" field="artifactory.timeout"
+                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-timeout.html">
+                            <f:textbox clazz="number" value="${server.timeout}"/>
+                        </f:entry>
+                        <f:entry name="artifactory.bypassProxy" field="artifactory.bypassProxy"
+                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-bypassproxy.html">
+                            <f:checkbox checked="${server.bypassProxy}"/>
+                            <label class="attach-previous">${%Bypass HTTP Proxy}</label>
+                        </f:entry>
+                    </f:advanced>
                     <f:validateButton
                             title="${%Test Connection}" progress="${%Testing...}"
                             method="testConnection"
@@ -80,22 +106,12 @@
                             </f:nested>
                         </f:block>
                     </f:optionalBlock>
-                    <f:entry title="">
+
+                     <f:entry title="">
                         <div align="right">
                             <f:repeatableDeleteButton/>
                         </div>
                     </f:entry>
-                    <f:advanced>
-                        <f:entry title="Connection Timeout" field="artifactory.timeout"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-timeout.html">
-                            <f:textbox clazz="number" value="${server.timeout}"/>
-                        </f:entry>
-                        <f:entry name="artifactory.bypassProxy" field="artifactory.bypassProxy"
-                                 help="/plugin/artifactory/help/ArtifactoryBuilder/help-bypassproxy.html">
-                            <f:checkbox checked="${server.bypassProxy}"/>
-                            <label class="attach-previous">${%Bypass HTTP Proxy}</label>
-                        </f:entry>
-                    </f:advanced>
 
                 </table>
             </f:repeatable>

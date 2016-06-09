@@ -38,6 +38,7 @@ import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -60,17 +61,21 @@ public class MavenReleaseWrapper extends BuildWrapper {
     private String targetRemoteName;
     private String alternativeGoals;
     private String defaultVersioning;
+    private String defaultReleaseStagingRepository;
 
     private transient ScmCoordinator scmCoordinator;
+    private boolean useReleaseBranch;
 
     @DataBoundConstructor
     public MavenReleaseWrapper(String releaseBranchPrefix, String tagPrefix, String targetRemoteName, String alternativeGoals,
-                               String defaultVersioning) {
+                               String defaultVersioning, String defaultReleaseStagingRepository, boolean useReleaseBranch) {
         this.releaseBranchPrefix = releaseBranchPrefix;
         this.tagPrefix = tagPrefix;
         this.targetRemoteName = targetRemoteName;
         this.alternativeGoals = alternativeGoals;
         this.defaultVersioning = defaultVersioning;
+        this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
+        this.useReleaseBranch = useReleaseBranch;
     }
 
     public String getTagPrefix() {
@@ -119,6 +124,26 @@ public class MavenReleaseWrapper extends BuildWrapper {
         this.defaultVersioning = defaultVersioning;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
+    public String getDefaultReleaseStagingRepository() {
+        return defaultReleaseStagingRepository;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void setDefaultReleaseStagingRepository(String defaultReleaseStagingRepository) {
+        this.defaultReleaseStagingRepository = defaultReleaseStagingRepository;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public boolean isUseReleaseBranch() {
+        return this.useReleaseBranch;
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public void setUseReleaseBranch(boolean useReleaseBranch) {
+        this.useReleaseBranch = useReleaseBranch;
+    }
+    
     @Override
     public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
@@ -228,7 +253,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject job) {
-        MavenModuleSet moduleSet = (MavenModuleSet)job;
+        MavenModuleSet moduleSet = (MavenModuleSet) job;
         return Arrays.asList(
                 new MavenReleaseAction(moduleSet),
                 new MavenReleaseApiAction(moduleSet)
@@ -312,8 +337,11 @@ public class MavenReleaseWrapper extends BuildWrapper {
                     // add a stage action
                     run.addAction(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
                 }
-                if (!redeployPublisher.isAllowBintrayPushOfNonStageBuilds()) {
-                    run.addAction(new BintrayPublishAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
+                // Checks if Push to Bintray is disabled.
+                if (PluginsUtils.isPushToBintrayEnabled()) {
+                    if (!redeployPublisher.isAllowBintrayPushOfNonStageBuilds()) {
+                        run.addAction(new BintrayPublishAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
+                    }
                 }
             }
 

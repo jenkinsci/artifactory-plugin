@@ -113,7 +113,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public String getArtifactoryUrl() {
-        return details != null ? details.getArtifactoryUrl() : null;
+        ArtifactoryServer server = getArtifactoryServer();
+        return server != null ? server.getUrl() : null;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -122,6 +123,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     public String getRepositoryKey() {
         return details.getDeployReleaseRepository().getRepoKey();
+    }
+
+    public String getDefaultPromotionTargetRepository() {
+        //Not implemented
+        return null;
     }
 
     public ServerDetails getDetails() {
@@ -261,7 +267,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
-        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryUrl(), project);
+        return ActionableHelper.getArtifactoryProjectAction(getArtifactoryName(), project);
     }
 
     @Override
@@ -290,7 +296,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(ArtifactoryGenericConfigurator.this,
                 server);
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredResolver.provideUsername(), preferredResolver.providePassword(), proxyConfiguration,
+                preferredResolver.provideUsername(build.getProject()), preferredResolver.providePassword(build.getProject()), proxyConfiguration,
                 listener);
         try {
             GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener,
@@ -320,8 +326,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
                 ArtifactoryServer server = getArtifactoryServer();
                 CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(ArtifactoryGenericConfigurator.this, server);
-                ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(),
-                        preferredDeployer.providePassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
+                ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(build.getProject()),
+                        preferredDeployer.providePassword(build.getProject()), server.createProxyConfiguration(Jenkins.getInstance().proxy));
                 try {
                     boolean isFiltered = false;
                     if (isMultiConfProject(build)) {
@@ -347,8 +353,12 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                             build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build));
                             build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryGenericConfigurator>(build,
                                     ArtifactoryGenericConfigurator.this));
-                            build.getActions().add(new BintrayPublishAction<ArtifactoryGenericConfigurator>(build,
-                                    ArtifactoryGenericConfigurator.this));
+                            // Checks if Push to Bintray is disabled.
+                            if (PluginsUtils.isPushToBintrayEnabled()){
+                                build.getActions().add(new BintrayPublishAction<ArtifactoryGenericConfigurator>(build,
+                                        ArtifactoryGenericConfigurator.this));
+                            }
+
                         }
                     }
 
@@ -412,23 +422,24 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
          * This method triggered from the client side by Ajax call.
          * The Element that trig is the "Refresh Repositories" button.
          *
-         * @param url           Artifactory url
-         * @param credentialsId credentials Id if using Credentials plugin
-         * @param username      credentials legacy mode username
-         * @param password      credentials legacy mode password
+         * @param url                 Artifactory url
+         * @param credentialsId       credentials Id if using Credentials plugin
+         * @param username            credentials legacy mode username
+         * @param password            credentials legacy mode password
+         * @param overrideCredentials credentials legacy mode overridden
          * @return {@link org.jfrog.hudson.util.RefreshServerResponse} object that represents the response of the repositories
          */
         @JavaScriptMethod
-        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password) {
+        public RefreshServerResponse refreshFromArtifactory(String url, String credentialsId, String username, String password, boolean overrideCredentials) {
             RefreshServerResponse response = new RefreshServerResponse();
-            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
+            CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId, overrideCredentials);
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
                     url, RepositoriesUtils.getArtifactoryServers()
             );
 
             try {
                 List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
-                        artifactoryServer);
+                        artifactoryServer, item);
 
                 Collections.sort(releaseRepositoryKeysFirst);
                 releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);

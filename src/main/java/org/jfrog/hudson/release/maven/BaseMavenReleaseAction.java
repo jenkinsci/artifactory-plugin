@@ -67,7 +67,7 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
     public List<String> getRepositoryKeys() {
         ArtifactoryRedeployPublisher artifactoryPublisher = getPublisher();
         if (artifactoryPublisher != null) {
-            return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst(getPublisher());
+            return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst(getPublisher(), project);
         } else {
             return Collections.emptyList();
         }
@@ -75,7 +75,7 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
 
     @Override
     public boolean isArtifactoryPro() {
-        return getArtifactoryServer().isArtifactoryPro(getPublisher());
+        return getArtifactoryServer().isArtifactoryPro(getPublisher(), project);
     }
 
     @Override
@@ -189,14 +189,14 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
     protected void prepareBuilderSpecificDefaultVcsConfig() {
         String defaultReleaseBranch = getDefaultReleaseBranch();
         String defaultTagUrl = getDefaultTagUrl();
-        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch), defaultReleaseBranch,
+        defaultVcsConfig = new VcsConfig(StringUtils.isNotBlank(defaultReleaseBranch) && getWrapper().isUseReleaseBranch(), defaultReleaseBranch,
                 StringUtils.isNotBlank(defaultTagUrl), defaultTagUrl, getDefaultTagComment(),
                 getDefaultNextDevelCommitMessage());
     }
 
     @Override
     protected void prepareBuilderSpecificDefaultPromotionConfig() {
-        defaultPromotionConfig = new PromotionConfig(getDefaultStagingRepository(), null);
+        defaultPromotionConfig = new PromotionConfig(getDefaultReleaseStagingRepository(), null);
     }
 
     private MavenModule getRootModule() {
@@ -248,7 +248,13 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
         return "";
     }
 
-    private String getDefaultStagingRepository() {
+    private String getDefaultReleaseStagingRepository() {
+        //Get default staging repo from configuration.
+        String defaultStagingRepo = getWrapper().getDefaultReleaseStagingRepository();
+        if (!defaultStagingRepo.isEmpty() && getRepositoryKeys().contains(defaultStagingRepo)) {
+            return defaultStagingRepo;
+        }
+
         ArtifactoryRedeployPublisher publisher = getPublisher();
         if (publisher == null) {
             return null;

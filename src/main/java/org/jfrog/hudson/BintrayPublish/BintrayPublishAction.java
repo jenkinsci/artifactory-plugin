@@ -15,6 +15,7 @@ import org.jfrog.hudson.*;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -29,12 +30,9 @@ import java.util.List;
  * @author Aviad Shikloshi
  */
 public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & DeployerOverrider> extends TaskAction implements BuildBadgeAction {
-
     private final static String MINIMAL_SUPPORTED_VERSION = "3.5.3";
-
     private final AbstractBuild build;
     private final C configurator;
-
     private boolean override;
     private String subject;
     private String repoName;
@@ -59,7 +57,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
             resetOverrideFields();
         }
         CredentialsConfig credentialsConfig = CredentialManager.getPreferredDeployer(configurator, configurator.getArtifactoryServer());
-        new PushToBintrayWorker(artifactory, credentialsConfig.getCredentials()).start();
+        new PushToBintrayWorker(artifactory, credentialsConfig.getCredentials(build.getProject())).start();
         resp.sendRedirect(".");
     }
 
@@ -97,7 +95,7 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
     }
 
     public boolean hasPushToBintrayPermission() {
-        return getACL().hasPermission(getPermission());
+         return getACL().hasPermission(getPermission()) && PluginsUtils.isPushToBintrayEnabled();
     }
 
     public synchronized String getCurrentAction() {
@@ -209,10 +207,6 @@ public class BintrayPublishAction<C extends BuildInfoAwareConfigurator & Deploye
 
     public String getIconFileName() {
         return "/plugin/artifactory/images/bintray.png";
-    }
-
-    public String getBadgeFileName() {
-        return "/plugin/artifactory/images/bintray-badge.png";
     }
 
     public String getDisplayName() {

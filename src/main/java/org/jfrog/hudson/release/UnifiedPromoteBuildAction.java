@@ -60,6 +60,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
     private boolean useCopy;
     private boolean includeDependencies;
     private PluginSettings promotionPlugin;
+    private String defaultPromotionRepositoryKey;
 
     public UnifiedPromoteBuildAction(AbstractBuild build, C configurator) {
         this.build = build;
@@ -103,6 +104,10 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         this.repositoryKey = repositoryKey;
     }
 
+    public String getSourceRepositoryKey() {
+        return sourceRepositoryKey;
+    }
+
     public void setSourceRepositoryKey(String sourceRepositoryKey) {
         this.sourceRepositoryKey = sourceRepositoryKey;
     }
@@ -139,7 +144,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         if (artifactoryServer == null) {
             return Lists.newArrayList();
         }
-        List<String> repos = artifactoryServer.getReleaseRepositoryKeysFirst(configurator);
+        List<String> repos = artifactoryServer.getReleaseRepositoryKeysFirst(configurator, build.getProject());
         repos.add(0, "");  // option not to move
         return repos;
     }
@@ -149,12 +154,18 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         return Lists.newArrayList(/*"Staged", */"Released", "Rolled-back");
     }
 
+    public String getDefaultPromotionTargetRepository() {
+        if (repositoryKey == null) {
+            return configurator.getDefaultPromotionTargetRepository();
+        }
+        return repositoryKey;
+    }
+
     /**
      * @return The repository selected by the latest promotion (to be selected by default).
      */
-    public String lastPromotionRepository() {
-        // TODO: implement
-        return null;
+    public String lastPromotionSourceRepository() {
+        return sourceRepositoryKey;
     }
 
     /**
@@ -233,7 +244,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         if (artifactoryServer == null) {
             return Lists.newArrayList(UserPluginInfo.NO_PLUGIN);
         }
-        return artifactoryServer.getPromotionsUserPluginInfo(configurator);
+        return artifactoryServer.getPromotionsUserPluginInfo(configurator, build.getProject());
     }
 
     @Override
@@ -268,7 +279,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                 long started = System.currentTimeMillis();
                 listener.getLogger().println("Promoting build ....");
 
-                client = artifactoryServer.createArtifactoryClient(deployerConfig.provideUsername(), deployerConfig.providePassword(),
+                client = artifactoryServer.createArtifactoryClient(deployerConfig.provideUsername(build.getProject()), deployerConfig.providePassword(build.getProject()),
                         artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
                 if ((promotionPlugin != null) &&

@@ -168,7 +168,7 @@
                                          field="excludePatterns"
                                          help="/plugin/artifactory/help/common/help-envVarsExcludePatterns.html">
                                     <f:textbox value="${envVarsPatterns.excludePatterns}"
-                                               default="*password*,*secret*"/>
+                                               default="*password*,*secret*,*key*"/>
                                 </f:entry>
                             </f:section>
                         </table>
@@ -190,14 +190,13 @@
                                          title="Allow promotion of non-staged builds"
                                          inline="true">
                         </f:optionalBlock>
+                        <f:entry title="Default promotion target repository" field="defaultPromotionTargetRepository"
+                                 help="/plugin/artifactory/help/release/PromoteBuildAction/help-defaultPromotionTargetRepository.html">
+                            <f:textbox value="${instance.defaultPromotionTargetRepository}"/>
+                        </f:entry>
                     </table>
-                    <table style="width: 100%">
-                        <f:optionalBlock field="allowBintrayPushOfNonStageBuilds"
-                                         help="/plugin/artifactory/help/common/help-allowPushToBintrayOfNonStagedBuilds.html"
-                                         title="Allow push to Bintray for non-staged builds"
-                                         inline="true">
-                        </f:optionalBlock>
-                    </table>
+                     <r:bintray configurationFieldName="pushToBintrayEnabledConfig"
+                        elementId="pushToBintrayEnabled"/>
                 </f:block>
                 <f:block>
                     <table style="width:100%">
@@ -348,6 +347,17 @@
             }
         }
 
+         function updateViewPushToBintrayCheckBox() {
+            try {
+                var pushToBintrayEnabledFlag = JSON.parse(document.getElementById('pushToBintrayEnabled').value);
+                var pushToBintrayEnabledCheckBox = document.getElementById('pushToBintrayTable');
+                pushToBintrayEnabledCheckBox.style.display = pushToBintrayEnabledFlag ? '' : 'none';
+            } catch (exception) {
+                setTimeout(updateViewPushToBintrayCheckBox, 0);
+            }
+         }
+
+        updateViewPushToBintrayCheckBox();
         updateViewWithCredentials();
     </script>
 </j:jelly>

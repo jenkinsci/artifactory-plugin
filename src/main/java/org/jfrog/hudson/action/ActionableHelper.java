@@ -51,7 +51,7 @@ public abstract class ActionableHelper {
      * @param actionClass The type of the action
      * @return Latest action of the given type or null if not found
      */
-    public static <T extends Action> T getLatestAction(AbstractBuild build, Class<T> actionClass) {
+    public static <T extends Action> T getLatestAction(Run build, Class<T> actionClass) {
         List<T> records = build.getActions(actionClass);
         if (records == null || records.isEmpty()) {
             return null;
@@ -111,7 +111,7 @@ public abstract class ActionableHelper {
         return result;
     }
 
-    public static Cause.UpstreamCause getUpstreamCause(AbstractBuild build) {
+    public static Cause.UpstreamCause getUpstreamCause(Run build) {
         CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
         if (action != null) {
             for (Cause cause : action.getCauses()) {
@@ -127,7 +127,7 @@ public abstract class ActionableHelper {
      * @param build The build
      * @return The user id caused triggered the build. "anonymous" if not started by a user
      */
-    public static String getUserCausePrincipal(AbstractBuild build) {
+    public static String getUserCausePrincipal(Run build) {
         return getUserCausePrincipal(build, "anonymous");
     }
 
@@ -136,7 +136,7 @@ public abstract class ActionableHelper {
      * @param defaultPrincipal Principal to return if the user who caused the id is not found
      * @return The user id caused triggered the build of default principal if not found
      */
-    public static String getUserCausePrincipal(AbstractBuild build, String defaultPrincipal) {
+    public static String getUserCausePrincipal(Run build, String defaultPrincipal) {
         Cause.UserIdCause userCause = getUserCause(build);
         String principal = defaultPrincipal;
         if (userCause != null && userCause.getUserId() != null) {
@@ -145,7 +145,7 @@ public abstract class ActionableHelper {
         return principal;
     }
 
-    private static Cause.UserIdCause getUserCause(AbstractBuild build) {
+    private static Cause.UserIdCause getUserCause(Run build) {
         CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
         if (action != null) {
             for (Cause cause : action.getCauses()) {
@@ -157,7 +157,7 @@ public abstract class ActionableHelper {
         return null;
     }
 
-    public static String getBuildUrl(AbstractBuild build) {
+    public static String getBuildUrl(Run build) {
         String root = Hudson.getInstance().getRootUrl();
         if (StringUtils.isBlank(root)) {
             return "";
@@ -168,13 +168,13 @@ public abstract class ActionableHelper {
     /**
      * Return list with {@link ArtifactoryProjectAction} if not already exists in project actions.
      *
-     * @param artifactoryRootUrl The root URL of Artifactory server
-     * @param project            The hudson project
+     * @param artifactoryServerName The name of Artifactory server
+     * @param project               The hudson project
      * @return Empty list or list with one {@link ArtifactoryProjectAction}
      */
     public static List<ArtifactoryProjectAction> getArtifactoryProjectAction(
-            String artifactoryRootUrl, AbstractProject project) {
-        if (artifactoryRootUrl == null) {
+            String artifactoryServerName, AbstractProject project) {
+        if (artifactoryServerName == null) {
             return Collections.emptyList();
         }
         if (project.getAction(ArtifactoryProjectAction.class) != null) {
@@ -184,7 +184,7 @@ public abstract class ActionableHelper {
         if (project instanceof MatrixConfiguration)
             return Collections.emptyList();
 
-        return Lists.newArrayList(new ArtifactoryProjectAction(artifactoryRootUrl, project));
+        return Lists.newArrayList(new ArtifactoryProjectAction(artifactoryServerName, project));
     }
 
     /**

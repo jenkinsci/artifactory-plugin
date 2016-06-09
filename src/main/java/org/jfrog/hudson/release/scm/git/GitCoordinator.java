@@ -56,6 +56,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
         checkoutBranch = StringUtils.substringAfter(gitBranchName, "/");
 
         scmManager = new GitManager(build, listener);
+        scmManager.setGitCredentials(releaseAction.getGitCredentials());
     }
 
     public void beforeReleaseVersionChange() throws IOException, InterruptedException {
@@ -84,7 +85,7 @@ public class GitCoordinator extends AbstractScmCoordinator {
             state.tagCreated = true;
         }
 
-        if (modifiedFilesForReleaseVersion) {
+        if (modifiedFilesForReleaseVersion || releaseAction.isCreateReleaseBranch() || releaseAction.isCreateVcsTag()) {
             // push the current branch
             scmManager.push(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), state.currentWorkingBranch);
             state.releaseBranchPushed = true;
