@@ -5,8 +5,6 @@ import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
-import org.jfrog.hudson.pipeline.PipelineBuildInfoDeployer;
-import org.jfrog.hudson.pipeline.PipelineUtils;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -61,7 +59,10 @@ public class ArtifactoryServer implements Serializable {
         stepVariables.put("json", json);
         stepVariables.put("providedBuildInfo", providedBuildInfo);
         stepVariables.put("server", this);
-        return (BuildInfo) cpsScript.invokeMethod("artifactoryDownload", stepVariables);
+
+        BuildInfo buildInfo = (BuildInfo) cpsScript.invokeMethod("artifactoryDownload", stepVariables);
+        buildInfo.setCpsScript(cpsScript);
+        return buildInfo;
     }
 
     @Whitelisted
@@ -75,14 +76,37 @@ public class ArtifactoryServer implements Serializable {
         stepVariables.put("json", json);
         stepVariables.put("providedBuildInfo", providedBuildInfo);
         stepVariables.put("server", this);
-        return (BuildInfo) cpsScript.invokeMethod("artifactoryUpload", stepVariables);
+
+        BuildInfo buildInfo = (BuildInfo) cpsScript.invokeMethod("artifactoryUpload", stepVariables);
+        buildInfo.setCpsScript(cpsScript);
+        return buildInfo;
     }
 
     @Whitelisted
     public void publishBuildInfo(BuildInfo buildInfo) throws Exception {
-        TaskListener listener = getBuildListener();
-        PipelineBuildInfoDeployer deployer = buildInfo.createDeployer(build, listener, PipelineUtils.prepareArtifactoryServer(null, this));
-        deployer.deploy();
+        Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
+        stepVariables.put("buildInfo", buildInfo);
+        stepVariables.put("server", this);
+
+        cpsScript.invokeMethod("publishBuildInfo", stepVariables);
+    }
+
+    @Whitelisted
+    public void promote(PromotionConfig promotionConfig) throws Exception {
+        Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
+        stepVariables.put("promotionConfig", promotionConfig);
+        stepVariables.put("server", this);
+
+        cpsScript.invokeMethod("artifactoryPromoteBuild", stepVariables);
+    }
+
+    @Whitelisted
+    public void promote(String buildName, String buildNumber, String targetRepository) throws Exception {
+        Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
+        stepVariables.put("promotionConfig", new PromotionConfig(buildName, buildNumber, targetRepository));
+        stepVariables.put("server", this);
+
+        cpsScript.invokeMethod("artifactoryPromoteBuild", stepVariables);
     }
 
     private TaskListener getBuildListener() {

@@ -57,9 +57,9 @@ public class PipelineUtils {
         return r;
     }
 
-    public static BuildInfo prepareBuildinfo(Run run, BuildInfo buildinfo) {
+    public static BuildInfo prepareBuildinfo(Run build, BuildInfo buildinfo) {
         if (buildinfo == null) {
-            return new BuildInfo();
+            return new BuildInfo(build);
         }
         return buildinfo;
     }

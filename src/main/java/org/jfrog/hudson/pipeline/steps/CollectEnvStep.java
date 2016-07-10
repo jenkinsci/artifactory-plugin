@@ -2,35 +2,38 @@ package org.jfrog.hudson.pipeline.steps;
 
 import com.google.inject.Inject;
 import hudson.Extension;
-import hudson.model.Run;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
-import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
-import org.jfrog.hudson.pipeline.types.BuildInfo;
+import org.jfrog.hudson.pipeline.types.PipelineEnv;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Created by romang on 5/2/16.
  */
-public class CreateBuildInfoStep extends AbstractStepImpl {
+public class CollectEnvStep extends AbstractStepImpl {
+
+    private PipelineEnv env;
 
     @DataBoundConstructor
-    public CreateBuildInfoStep() {
+    public CollectEnvStep(PipelineEnv env) {
+        this.env = env;
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<BuildInfo> {
+    public PipelineEnv getEnv() {
+        return env;
+    }
+
+    public static class Execution extends AbstractSynchronousStepExecution<Boolean> {
         private static final long serialVersionUID = 1L;
 
-        @StepContextParameter
-        private transient Run build;
-
         @Inject(optional = true)
-        private transient CreateBuildInfoStep step;
+        private transient CollectEnvStep step;
 
         @Override
-        protected BuildInfo run() throws Exception {
-            return new BuildInfo(build);
+        protected Boolean run() throws Exception {
+            step.getEnv().collectVariables(getContext());
+            return true;
         }
     }
 
@@ -38,17 +41,17 @@ public class CreateBuildInfoStep extends AbstractStepImpl {
     public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
 
         public DescriptorImpl() {
-            super(CreateBuildInfoStep.Execution.class);
+            super(CollectEnvStep.Execution.class);
         }
 
         @Override
         public String getFunctionName() {
-            return "newBuildInfo";
+            return "collectEnv";
         }
 
         @Override
         public String getDisplayName() {
-            return "New buildInfo";
+            return "Collect environment variables and system properties";
         }
     }
 

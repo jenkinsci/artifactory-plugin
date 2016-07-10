@@ -4,6 +4,7 @@ import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
+import org.jfrog.hudson.pipeline.types.PromotionConfig;
 
 import java.io.Serializable;
 import java.util.LinkedHashMap;
@@ -42,6 +43,12 @@ public class ArtifactoryPipelineGlobal implements Serializable {
     @Whitelisted
     public BuildInfo newBuildInfo() {
         BuildInfo buildInfo = (BuildInfo) this.script.invokeMethod("newBuildInfo", new LinkedHashMap<String, Object>());
+        buildInfo.setCpsScript(this.script);
         return buildInfo;
+    }
+
+    @Whitelisted
+    public PromotionConfig newPromotionConfig(String buildName, String buildNumber, String targetRepository) {
+        return new PromotionConfig(buildName, buildNumber, targetRepository);
     }
 }

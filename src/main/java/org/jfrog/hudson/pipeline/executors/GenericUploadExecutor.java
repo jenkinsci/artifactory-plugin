@@ -84,13 +84,13 @@ public class GenericUploadExecutor {
     private ArrayListMultimap<String, String> getPropertiesMap(String props) throws IOException, InterruptedException {
         ArrayListMultimap<String, String> properties = ArrayListMultimap.create();
 
-        if (buildinfo.getBuildName() != null) {
-            properties.put("build.name", buildinfo.getBuildName());
+        if (buildinfo.getName() != null) {
+            properties.put("build.name", buildinfo.getName());
         } else {
             properties.put("build.name", BuildUniqueIdentifierHelper.getBuildName(build));
         }
-        if (buildinfo.getBuildNumber() != null) {
-            properties.put("build.number", buildinfo.getBuildNumber());
+        if (buildinfo.getNumber() != null) {
+            properties.put("build.number", buildinfo.getNumber());
         } else {
             properties.put("build.number", BuildUniqueIdentifierHelper.getBuildNumber(build));
         }

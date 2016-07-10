@@ -6,8 +6,8 @@ import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.*;
+import org.jfrog.hudson.pipeline.PipelineBuildInfoDeployer;
 import org.jfrog.hudson.pipeline.PipelineUtils;
-import org.jfrog.hudson.pipeline.executors.GenericDownloadExecutor;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
 import org.jfrog.hudson.pipeline.types.PipelineBuildInfoAccessor;
@@ -16,16 +16,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DownloadStep extends AbstractStepImpl {
+public class PublishBuildInfoStep extends AbstractStepImpl {
 
     private BuildInfo buildInfo;
-    private String json;
     private ArtifactoryServer server;
 
     @DataBoundConstructor
-    public DownloadStep(String json, BuildInfo providedBuildInfo, ArtifactoryServer server) {
-        this.json = json;
-        this.buildInfo = providedBuildInfo;
+    public PublishBuildInfoStep(BuildInfo buildInfo, ArtifactoryServer server) {
+        this.buildInfo = buildInfo;
         this.server = server;
     }
 
@@ -33,15 +31,11 @@ public class DownloadStep extends AbstractStepImpl {
         return buildInfo;
     }
 
-    public String getJson() {
-        return json;
-    }
-
     public ArtifactoryServer getServer() {
         return server;
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<BuildInfo> {
+    public static class Execution extends AbstractSynchronousStepExecution<Boolean> {
         private static final long serialVersionUID = 1L;
         @StepContextParameter
         private transient FilePath ws;
@@ -53,13 +47,14 @@ public class DownloadStep extends AbstractStepImpl {
         private transient TaskListener listener;
 
         @Inject(optional = true)
-        private transient DownloadStep step;
+        private transient PublishBuildInfoStep step;
 
         @Override
-        protected BuildInfo run() throws Exception {
-            BuildInfo build = new GenericDownloadExecutor(PipelineUtils.prepareArtifactoryServer(null, step.getServer()), this.listener, this.build, this.ws, step.getBuildInfo()).execution(step.getJson());
-            new PipelineBuildInfoAccessor(build).captureVariables(getContext());
-            return build;
+        protected Boolean run() throws Exception {
+            PipelineBuildInfoAccessor buildInfo = new PipelineBuildInfoAccessor(step.getBuildInfo());
+            PipelineBuildInfoDeployer deployer = buildInfo.createDeployer(build, listener, PipelineUtils.prepareArtifactoryServer(null, step.getServer()));
+            deployer.deploy();
+            return true;
         }
     }
 
@@ -67,18 +62,18 @@ public class DownloadStep extends AbstractStepImpl {
     public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
 
         public DescriptorImpl() {
-            super(DownloadStep.Execution.class);
+            super(PublishBuildInfoStep.Execution.class);
         }
 
         @Override
         // The step is invoked by ArtifactoryServer by the step name
         public String getFunctionName() {
-            return "artifactoryDownload";
+            return "publishBuildInfo";
         }
 
         @Override
         public String getDisplayName() {
-            return "Download artifacts";
+            return "Publish build Info to Artifactory";
         }
 
         @Override

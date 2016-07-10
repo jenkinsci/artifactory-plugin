@@ -55,7 +55,7 @@ public class CreateArtifactoryServerStep extends AbstractStepImpl {
         @Override
         protected ArtifactoryServer run() throws Exception {
             String artifactoryUrl = step.getUrl();
-            if (artifactoryUrl == null || artifactoryUrl == "") {
+            if (StringUtils.isEmpty(artifactoryUrl)) {
                 getContext().onFailure(new MissingArgumentException("Artifactory server URL is mandatory"));
             }
             return new ArtifactoryServer(artifactoryUrl, step.getUserName(), step.getPassword(), build, listener/*, step.getCredentialsId()*/);

@@ -8,6 +8,7 @@ import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import org.acegisecurity.acls.NotFoundException;
 import org.apache.commons.cli.MissingArgumentException;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
@@ -52,7 +53,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
         @Override
         protected org.jfrog.hudson.pipeline.types.ArtifactoryServer run() throws Exception {
             String artifactoryServerID = step.getArtifactoryServerID();
-            if (artifactoryServerID == null || artifactoryServerID == "") {
+            if (StringUtils.isEmpty(artifactoryServerID)) {
                 getContext().onFailure(new MissingArgumentException("Artifactory server name is mandatory"));
             }
 
