@@ -66,8 +66,8 @@ public class GenericDownloadExecutor {
 
         CredentialsConfig preferredResolver = server.getDeployerCredentialsConfig();
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredResolver.provideUsername(build.getParent()), preferredResolver.providePassword(build.getParent()),
-                proxyConfiguration, null);
+            preferredResolver.getUsername(), preferredResolver.getPassword(),
+            proxyConfiguration, null);
 
         DependenciesDownloaderImpl dependancyDownloader = new DependenciesDownloaderImpl(dependenciesClient, ws, log);
         AqlDependenciesHelper aqlHelper = new AqlDependenciesHelper(dependancyDownloader, server.getUrl(), "", log);

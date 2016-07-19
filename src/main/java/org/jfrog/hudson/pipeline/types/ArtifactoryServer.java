@@ -5,6 +5,7 @@ import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
+import org.jfrog.hudson.CredentialsConfig;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -24,6 +25,7 @@ public class ArtifactoryServer implements Serializable {
     private boolean bypassProxy;
     private transient Run build;
     private transient TaskListener listener;
+    private CredentialsConfig credentials;
 
     private CpsScript cpsScript;
 
@@ -34,6 +36,7 @@ public class ArtifactoryServer implements Serializable {
         this.password = password;
         this.build = build;
         this.listener = listener;
+        createNewCredentialsConfig(username, password);
     }
 
     public ArtifactoryServer(String url, String username, String password, Run build, TaskListener listener) {
@@ -42,10 +45,27 @@ public class ArtifactoryServer implements Serializable {
         this.password = password;
         this.build = build;
         this.listener = listener;
+        createNewCredentialsConfig(username, password);
+    }
+
+    private void createNewCredentialsConfig(String username, String password) {
+        this.credentials = new CredentialsConfig(username, password, null, null);
     }
 
     public void setCpsScript(CpsScript cpsScript) {
         this.cpsScript = cpsScript;
+    }
+
+    @Whitelisted
+    public void setUser(String user){
+        this.username = user;
+        createNewCredentialsConfig(this.username, this.password);
+    }
+
+    @Whitelisted
+    public void setPassword(String password){
+        this.password = password;
+        createNewCredentialsConfig(this.username, this.password);
     }
 
     @Whitelisted
@@ -125,6 +145,10 @@ public class ArtifactoryServer implements Serializable {
         return listener;
     }
 
+    public CredentialsConfig getCredentials() {
+        return credentials;
+    }
+
     public String getServerName() {
         return serverName;
     }
@@ -147,10 +171,6 @@ public class ArtifactoryServer implements Serializable {
 
     public String getPassword() {
         return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public void setBypassProxy(boolean bypassProxy) {
