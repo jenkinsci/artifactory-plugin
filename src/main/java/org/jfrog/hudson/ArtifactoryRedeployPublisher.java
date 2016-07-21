@@ -515,16 +515,12 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
     }
 
-    public List<PluginSettings> getUserPluginKeys() {
-        return getDescriptor().userPluginKeys;
-    }
-
     public List<Repository> getReleaseRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeployReleaseRepositoryKey());
+        return RepositoriesUtils.collectRepositories(details.getDeployReleaseRepositoryKey());
     }
 
     public List<Repository> getSnapshotRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().deploySnapshotRepositories, details.getDeploySnapshotRepositoryKey());
+        return RepositoriesUtils.collectRepositories(details.getDeploySnapshotRepositoryKey());
     }
 
     public PluginSettings getSelectedStagingPlugin() throws Exception {
@@ -534,10 +530,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
-
-        private List<Repository> releaseRepositories;
-        private List<Repository> deploySnapshotRepositories;
-        private List<PluginSettings> userPluginKeys = Collections.emptyList();
         private Item item;
 
         public DescriptorImpl() {
@@ -545,16 +537,16 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
             load();
         }
 
-        private void refreshRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
+        private List<Repository> refreshRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
             List<String> repositoriesKeys = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(),
                     credentialsConfig, artifactoryServer, item);
-            releaseRepositories = RepositoriesUtils.createRepositoriesList(repositoriesKeys);
+            List<Repository> releaseRepositories = RepositoriesUtils.createRepositoriesList(repositoriesKeys);
             Collections.sort(releaseRepositories);
-            deploySnapshotRepositories = releaseRepositories;
+            return releaseRepositories;
         }
 
-        private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final CredentialsConfig credentialsConfig) {
+        private List<PluginSettings> refreshUserPlugins(ArtifactoryServer artifactoryServer, final CredentialsConfig credentialsConfig) {
             List<UserPluginInfo> pluginInfoList = artifactoryServer.getStagingUserPluginInfo(new DeployerOverrider() {
                 public boolean isOverridingDefaultDeployer() {
                     return credentialsConfig != null && credentialsConfig.isCredentialsProvided();
@@ -580,7 +572,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 list.add(plugin);
             }
 
-            userPluginKeys = list;
+            return list;
         }
 
         @SuppressWarnings("unused")
@@ -614,8 +606,8 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
                         url, getArtifactoryServers()
                 );
-                refreshRepositories(artifactoryServer, credentialsConfig);
-                refreshUserPlugins(artifactoryServer, credentialsConfig);
+                List<Repository> releaseRepositories = refreshRepositories(artifactoryServer, credentialsConfig);
+                List<PluginSettings> userPluginKeys = refreshUserPlugins(artifactoryServer, credentialsConfig);
 
                 response.setRepositories(releaseRepositories);
                 response.setUserPlugins(userPluginKeys);

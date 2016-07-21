@@ -129,12 +129,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         String snapshotRepoKey = details.getResolveSnapshotRepository().getKeyFromSelect();
 
         // Add the releases repo to the reposities list, in case it is not there:
-        List<VirtualRepository> repos = RepositoriesUtils.collectVirtualRepositories(
-            getDescriptor().virtualRepositoryKeys, releaseRepoKey);
+        List<VirtualRepository> repos = RepositoriesUtils.collectVirtualRepositories(null, releaseRepoKey);
 
         // Add the snapshots repo to the reposities list, in case it is not there:
-        return RepositoriesUtils.collectVirtualRepositories(
-                repos, snapshotRepoKey);
+        return RepositoriesUtils.collectVirtualRepositories(repos, snapshotRepoKey);
     }
 
     @Override
@@ -148,7 +146,6 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
 
     @Extension
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private List<VirtualRepository> virtualRepositoryKeys;
         private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
@@ -162,11 +159,12 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             return MavenModuleSet.class.equals(item.getClass());
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
+        private List<VirtualRepository> refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
-            virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
+            List<VirtualRepository> virtualRepositoryKeys = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
                     credentialsConfig, artifactoryServer, item);
             Collections.sort(virtualRepositoryKeys);
+            return virtualRepositoryKeys;
         }
 
         /**
@@ -187,7 +185,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsConfig);
+                List<VirtualRepository> virtualRepositoryKeys = refreshVirtualRepositories(artifactoryServer, credentialsConfig);
                 response.setVirtualRepositories(virtualRepositoryKeys);
                 response.setSuccess(true);
                 return response;

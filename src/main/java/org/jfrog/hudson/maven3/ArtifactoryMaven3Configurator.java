@@ -378,23 +378,19 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public List<Repository> getReleaseRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositoryList,
-                details.getDeployReleaseRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(details.getDeployReleaseRepository().getKeyFromSelect());
     }
 
     public List<Repository> getSnapshotRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().snapshotRepositoryList,
-                details.getDeploySnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(details.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
     public List<VirtualRepository> getResolveReleaseRepositoryList() {
-        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryList,
-                resolverDetails.getResolveReleaseRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectVirtualRepositories(null, resolverDetails.getResolveReleaseRepository().getKeyFromSelect());
     }
 
     public List<VirtualRepository> getResolveSnapshotRepositoryList() {
-        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositoryList,
-                resolverDetails.getResolveSnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectVirtualRepositories(null, resolverDetails.getResolveSnapshotRepository().getKeyFromSelect());
     }
 
 
@@ -497,9 +493,6 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private List<Repository> releaseRepositoryList;
-        private List<Repository> snapshotRepositoryList;
-        private List<VirtualRepository> virtualRepositoryList;
         private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
@@ -516,11 +509,12 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                             item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig, Item item)
+        private List<VirtualRepository> refreshVirtualRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig, Item item)
                 throws IOException {
-            virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
+            List<VirtualRepository> virtualRepositoryList = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
                     credentialsConfig, artifactoryServer, item);
             Collections.sort(virtualRepositoryList);
+            return virtualRepositoryList;
         }
 
         /**
@@ -545,9 +539,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                         artifactoryServer, item);
 
                 Collections.sort(releaseRepositoryKeysFirst);
-                releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
-                snapshotRepositoryList = releaseRepositoryList;
-                response.setRepositories(snapshotRepositoryList);
+                List<Repository> releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
+                response.setRepositories(releaseRepositoryList);
                 response.setSuccess(true);
 
                 return response;
@@ -581,7 +574,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsConfig, item);
+                List<VirtualRepository> virtualRepositoryList = refreshVirtualRepositories(artifactoryServer, credentialsConfig, item);
                 response.setVirtualRepositories(virtualRepositoryList);
                 response.setSuccess(true);
             } catch (Exception e) {
