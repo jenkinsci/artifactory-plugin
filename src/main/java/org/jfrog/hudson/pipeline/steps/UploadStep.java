@@ -10,7 +10,7 @@ import org.jfrog.hudson.pipeline.PipelineUtils;
 import org.jfrog.hudson.pipeline.executors.GenericUploadExecutor;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.PipelineBuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.HashMap;
@@ -19,13 +19,13 @@ import java.util.Map;
 public class UploadStep extends AbstractStepImpl {
 
     private BuildInfo buildInfo;
-    private String json;
+    private String spec;
     private ArtifactoryServer server;
 
     @DataBoundConstructor
-    public UploadStep(String json, BuildInfo providedBuildInfo, ArtifactoryServer server) {
-        this.json = json;
-        this.buildInfo = providedBuildInfo;
+    public UploadStep(String spec, BuildInfo buildInfo, ArtifactoryServer server) {
+        this.spec = spec;
+        this.buildInfo = buildInfo;
         this.server = server;
     }
 
@@ -33,8 +33,8 @@ public class UploadStep extends AbstractStepImpl {
         return buildInfo;
     }
 
-    public String getJson() {
-        return json;
+    public String getSpec() {
+        return spec;
     }
 
     public ArtifactoryServer getServer() {
@@ -58,8 +58,8 @@ public class UploadStep extends AbstractStepImpl {
 
         @Override
         protected BuildInfo run() throws Exception {
-            BuildInfo buildInfo = new GenericUploadExecutor(PipelineUtils.prepareArtifactoryServer(null, step.getServer()), listener, build, ws, step.getBuildInfo(), getContext()).execution(step.getJson());
-            new PipelineBuildInfoAccessor(buildInfo).captureVariables(getContext());
+            BuildInfo buildInfo = new GenericUploadExecutor(PipelineUtils.prepareArtifactoryServer(null, step.getServer()), listener, build, ws, step.getBuildInfo(), getContext()).execution(step.getSpec());
+            new BuildInfoAccessor(buildInfo).captureVariables(getContext());
             return buildInfo;
         }
     }

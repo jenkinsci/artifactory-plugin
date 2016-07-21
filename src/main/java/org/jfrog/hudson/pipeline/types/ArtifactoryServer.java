@@ -1,55 +1,42 @@
 package org.jfrog.hudson.pipeline.types;
 
-import hudson.model.Run;
-import hudson.model.TaskListener;
-import hudson.util.StreamTaskListener;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.CredentialsConfig;
 
 import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.*;
 
 /**
  * Created by romang on 4/21/16.
  */
 public class ArtifactoryServer implements Serializable {
+    public static final String BUILD_INFO = "buildInfo";
+    public static final String SPEC = "spec";
+    public static final String SERVER = "server";
     private String serverName;
     private String url;
-    private String username;
+    private String userName;
     private String password;
     private boolean bypassProxy;
-    private transient Run build;
-    private transient TaskListener listener;
-    private CredentialsConfig credentials;
-
     private CpsScript cpsScript;
 
-    public ArtifactoryServer(String artifactoryServerName, String url, String username, String password, Run build, TaskListener listener) {
+    public ArtifactoryServer(String artifactoryServerName, String url, String userName, String password) {
         serverName = artifactoryServerName;
         this.url = url;
-        this.username = username;
+        this.userName = userName;
         this.password = password;
-        this.build = build;
-        this.listener = listener;
-        createNewCredentialsConfig(username, password);
     }
 
-    public ArtifactoryServer(String url, String username, String password, Run build, TaskListener listener) {
+    public ArtifactoryServer(String url, String userName, String password) {
         this.url = url;
-        this.username = username;
+        this.userName = userName;
         this.password = password;
-        this.build = build;
-        this.listener = listener;
-        createNewCredentialsConfig(username, password);
     }
 
-    private void createNewCredentialsConfig(String username, String password) {
-        this.credentials = new CredentialsConfig(username, password, null, null);
+    public CredentialsConfig createCredentialsConfig() {
+        return new CredentialsConfig(this.userName, this.password, null, null);
     }
 
     public void setCpsScript(CpsScript cpsScript) {
@@ -57,28 +44,32 @@ public class ArtifactoryServer implements Serializable {
     }
 
     @Whitelisted
-    public void setUser(String user){
-        this.username = user;
-        createNewCredentialsConfig(this.username, this.password);
+    public BuildInfo download(String spec) throws Exception {
+        return download(spec, null);
     }
 
-    @Whitelisted
-    public void setPassword(String password){
-        this.password = password;
-        createNewCredentialsConfig(this.username, this.password);
-    }
+    private Map<String, Object> getDownloadUploadObjectMap(Map<String, Object> arguments) {
+        if (!arguments.containsKey(SPEC)) {
+            throw new IllegalArgumentException(SPEC + " is a mandatory field");
+        }
 
-    @Whitelisted
-    public BuildInfo download(String json) throws Exception {
-        return download(json, null);
-    }
+        List<String> keysAsList = Arrays.asList(new String[] {SPEC, BUILD_INFO});
+        if (!keysAsList.containsAll(arguments.keySet())) {
+            throw new IllegalArgumentException("Only the following arguments are allowed, " + keysAsList.toString());
+        }
 
-    @Whitelisted
-    public BuildInfo download(String json, BuildInfo providedBuildInfo) throws Exception {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
-        stepVariables.put("json", json);
-        stepVariables.put("providedBuildInfo", providedBuildInfo);
-        stepVariables.put("server", this);
+        stepVariables.putAll(arguments);
+        stepVariables.put(SERVER, this);
+        return stepVariables;
+    }
+
+    @Whitelisted
+    public BuildInfo download(String spec, BuildInfo providedBuildInfo) throws Exception {
+        Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
+        stepVariables.put(SPEC, spec);
+        stepVariables.put(BUILD_INFO, providedBuildInfo);
+        stepVariables.put(SERVER, this);
 
         BuildInfo buildInfo = (BuildInfo) cpsScript.invokeMethod("artifactoryDownload", stepVariables);
         buildInfo.setCpsScript(cpsScript);
@@ -86,16 +77,32 @@ public class ArtifactoryServer implements Serializable {
     }
 
     @Whitelisted
-    public BuildInfo upload(String json) throws Exception {
-        return upload(json, null);
+    public BuildInfo download(Map<String, Object> downloadArguments) throws Exception {
+        Map<String, Object> stepVariables = getDownloadUploadObjectMap(downloadArguments);
+        BuildInfo buildInfo = (BuildInfo) cpsScript.invokeMethod("artifactoryDownload", stepVariables);
+        buildInfo.setCpsScript(cpsScript);
+        return buildInfo;
     }
 
     @Whitelisted
-    public BuildInfo upload(String json, BuildInfo providedBuildInfo) throws Exception {
+    public BuildInfo upload(String spec) throws Exception {
+        return upload(spec, null);
+    }
+
+    @Whitelisted
+    public BuildInfo upload(Map<String, Object> uploadArguments) throws Exception {
+        Map<String, Object> stepVariables = getDownloadUploadObjectMap(uploadArguments);
+        BuildInfo buildInfo = (BuildInfo) cpsScript.invokeMethod("artifactoryUpload", stepVariables);
+        buildInfo.setCpsScript(cpsScript);
+        return buildInfo;
+    }
+
+    @Whitelisted
+    public BuildInfo upload(String spec, BuildInfo providedBuildInfo) throws Exception {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
-        stepVariables.put("json", json);
-        stepVariables.put("providedBuildInfo", providedBuildInfo);
-        stepVariables.put("server", this);
+        stepVariables.put(SPEC, spec);
+        stepVariables.put(BUILD_INFO, providedBuildInfo);
+        stepVariables.put(SERVER, this);
 
         BuildInfo buildInfo = (BuildInfo) cpsScript.invokeMethod("artifactoryUpload", stepVariables);
         buildInfo.setCpsScript(cpsScript);
@@ -105,78 +112,82 @@ public class ArtifactoryServer implements Serializable {
     @Whitelisted
     public void publishBuildInfo(BuildInfo buildInfo) throws Exception {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
-        stepVariables.put("buildInfo", buildInfo);
-        stepVariables.put("server", this);
+        stepVariables.put(BUILD_INFO, buildInfo);
+        stepVariables.put(SERVER, this);
 
         cpsScript.invokeMethod("publishBuildInfo", stepVariables);
     }
 
     @Whitelisted
-    public void promote(PromotionConfig promotionConfig) throws Exception {
+    public void promote(Map<String, Object> promotionParams) throws Exception {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
-        stepVariables.put("promotionConfig", promotionConfig);
-        stepVariables.put("server", this);
+        stepVariables.put("promotionConfig", createPromotionConfig(promotionParams));
+        stepVariables.put(SERVER, this);
 
         cpsScript.invokeMethod("artifactoryPromoteBuild", stepVariables);
     }
 
-    @Whitelisted
-    public void promote(String buildName, String buildNumber, String targetRepository) throws Exception {
-        Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
-        stepVariables.put("promotionConfig", new PromotionConfig(buildName, buildNumber, targetRepository));
-        stepVariables.put("server", this);
-
-        cpsScript.invokeMethod("artifactoryPromoteBuild", stepVariables);
-    }
-
-    private TaskListener getBuildListener() {
-        TaskListener listener;
-        try {
-            Field listenerField = build.getClass().getDeclaredField("listener");
-            listenerField.setAccessible(true);
-            listener = (StreamTaskListener) listenerField.get(build);
-        } catch (NoSuchFieldException e) {
-            Logger.getLogger(ArtifactoryServer.class.getName()).log(Level.FINE, "couldn't create listener");
-            listener = this.listener;
-        } catch (IllegalAccessException e) {
-            Logger.getLogger(ArtifactoryServer.class.getName()).log(Level.FINE, "couldn't create listener");
-            listener = this.listener;
+    private PromotionConfig createPromotionConfig(Map<String, Object> promotionParams) {
+        final String buildName = "buildName";
+        final String buildNumber = "buildNumber";
+        final String targetRepository = "targetRepo";
+        List<String> mandatoryArgumentsAsList = Arrays.asList(new String[] {buildName, buildNumber, targetRepository});
+        if (!promotionParams.keySet().containsAll(mandatoryArgumentsAsList)) {
+            throw new IllegalArgumentException(mandatoryArgumentsAsList.toString() +" are mandatory fields");
         }
-        return listener;
-    }
 
-    public CredentialsConfig getCredentials() {
-        return credentials;
+        Set<String> promotionParamsSet = promotionParams.keySet();
+        List<String> keysAsList = Arrays.asList(new String[] {buildName, buildNumber, targetRepository, "srcRepo", "status", "comment", "includeDependencies", "copy"});
+        if (!keysAsList.containsAll(promotionParamsSet)) {
+            throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
+        }
+
+        final ObjectMapper mapper = new ObjectMapper();
+        PromotionConfig config = mapper.convertValue(promotionParams, PromotionConfig.class);
+
+        return config;
     }
 
     public String getServerName() {
         return serverName;
     }
 
+    @Whitelisted
     public String getUrl() {
         return url;
     }
 
+    @Whitelisted
     public void setUrl(String url) {
         this.url = url;
     }
 
-    public String getUsername() {
-        return username;
+    @Whitelisted
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    @Whitelisted
+    public void setUserName(String username) {
+        this.userName = username;
     }
 
+    @Whitelisted
     public String getPassword() {
         return password;
     }
 
+    @Whitelisted
+    public void setPassword(String password){
+        this.password = password;
+    }
+
+    @Whitelisted
     public void setBypassProxy(boolean bypassProxy) {
         this.bypassProxy = bypassProxy;
     }
 
+    @Whitelisted
     public boolean isBypassProxy() {
         return bypassProxy;
     }

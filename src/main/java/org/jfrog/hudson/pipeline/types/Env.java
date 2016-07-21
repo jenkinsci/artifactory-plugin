@@ -13,15 +13,15 @@ import java.util.*;
 /**
  * Created by romang on 6/22/16.
  */
-public class PipelineEnv implements Serializable {
+public class Env implements Serializable {
     private Map<String, String> envVars = new HashMap<String, String>();
     private Map<String, String> sysVars = new HashMap<String, String>();
-    private PipelineEnvFilter filter = new PipelineEnvFilter();
+    private EnvFilter filter = new EnvFilter();
     private boolean capture = false; //By default don't collect
 
     private CpsScript cpsScript;
 
-    public PipelineEnv() {
+    public Env() {
     }
 
 
@@ -51,7 +51,7 @@ public class PipelineEnv implements Serializable {
      *
      * @param env
      */
-    protected void append(PipelineEnv env) {
+    protected void append(Env env) {
         addAllWithFilter(this.envVars, env.envVars, filter.getPatternFilter());
         addAllWithFilter(this.envVars, env.sysVars, filter.getPatternFilter());
     }
@@ -101,7 +101,7 @@ public class PipelineEnv implements Serializable {
     }
 
     @Whitelisted
-    public PipelineEnvFilter getFilter() {
+    public EnvFilter getFilter() {
         return filter;
     }
 

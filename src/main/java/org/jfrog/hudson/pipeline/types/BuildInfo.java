@@ -3,6 +3,7 @@ package org.jfrog.hudson.pipeline.types;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.build.api.Artifact;
@@ -29,15 +30,17 @@ public class BuildInfo implements Serializable {
     private String buildName;
     private String buildNumber;
     private Date startDate;
+    private BuildRetention retention;
 
     private Map<Artifact, Artifact> deployedArtifacts = new HashMap<Artifact, Artifact>();
     private List<BuildDependency> buildDependencies = new ArrayList<BuildDependency>();
     private Map<Dependency, Dependency> publishedDependencies = new HashMap<Dependency, Dependency>();
-    private PipelineEnv env = new PipelineEnv();
+    private Env env = new Env();
 
     public BuildInfo(Run build) {
         this.buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         this.buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
+        this.retention = new BuildRetention();
     }
 
     @Whitelisted
@@ -79,8 +82,25 @@ public class BuildInfo implements Serializable {
     }
 
     @Whitelisted
-    public PipelineEnv getEnv() {
+    public Env getEnv() {
         return env;
+    }
+
+    @Whitelisted
+    public BuildRetention getRetention() {
+        return retention;
+    }
+
+    @Whitelisted
+    public void retention(Map<String, Object> retentionArguments) throws Exception {
+        Set<String> retentionArgumentsSet = retentionArguments.keySet();
+        List<String> keysAsList = Arrays.asList(new String [] {"maxDays", "maxBuilds", "deleteBuildArtifacts", "doNotDiscardBuilds"});
+        if (!keysAsList.containsAll(retentionArgumentsSet)) {
+            throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
+        }
+
+        final ObjectMapper mapper = new ObjectMapper();
+        this.retention = mapper.convertValue(retentionArguments, BuildRetention.class);
     }
 
     protected void appendDeployedArtifacts(List<Artifact> artifacts) {
@@ -136,7 +156,7 @@ public class BuildInfo implements Serializable {
         ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
             preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
 
-        return new PipelineBuildInfoDeployer(config, client, build, listener, new PipelineBuildInfoAccessor(this));
+        return new PipelineBuildInfoDeployer(config, client, build, listener, new BuildInfoAccessor(this));
     }
 
     public void setCpsScript(CpsScript cpsScript) {

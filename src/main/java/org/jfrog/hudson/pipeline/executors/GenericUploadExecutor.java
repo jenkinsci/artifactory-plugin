@@ -22,7 +22,7 @@ import org.jfrog.hudson.pipeline.PipelineUtils;
 import org.jfrog.hudson.pipeline.json.DownloadUploadJson;
 import org.jfrog.hudson.pipeline.json.FileJson;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.PipelineBuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -78,7 +78,7 @@ public class GenericUploadExecutor {
             deployer.setFlat(isFlat);
             deployer.setRegexp( isRegexp);
             List<Artifact> artifactsToDeploy = ws.act(deployer);
-            new PipelineBuildInfoAccessor(buildinfo).appendDeployedArtifacts(artifactsToDeploy);
+            new BuildInfoAccessor(buildinfo).appendDeployedArtifacts(artifactsToDeploy);
         }
     }
 

@@ -34,7 +34,7 @@ public class PipelineUtils {
             return null;
         }
         if (pipelineServer != null) {
-            CredentialsConfig credentials = pipelineServer.getCredentials();
+            CredentialsConfig credentials = pipelineServer.createCredentialsConfig();
 
             return new org.jfrog.hudson.ArtifactoryServer(null, pipelineServer.getUrl(), credentials,
                 credentials, 0, pipelineServer.isBypassProxy());

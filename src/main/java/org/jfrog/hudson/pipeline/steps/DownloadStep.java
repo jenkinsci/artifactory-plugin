@@ -10,7 +10,7 @@ import org.jfrog.hudson.pipeline.PipelineUtils;
 import org.jfrog.hudson.pipeline.executors.GenericDownloadExecutor;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.PipelineBuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.HashMap;
@@ -19,13 +19,13 @@ import java.util.Map;
 public class DownloadStep extends AbstractStepImpl {
 
     private BuildInfo buildInfo;
-    private String json;
+    private String spec;
     private ArtifactoryServer server;
 
     @DataBoundConstructor
-    public DownloadStep(String json, BuildInfo providedBuildInfo, ArtifactoryServer server) {
-        this.json = json;
-        this.buildInfo = providedBuildInfo;
+    public DownloadStep(String spec, BuildInfo buildInfo, ArtifactoryServer server) {
+        this.spec = spec;
+        this.buildInfo = buildInfo;
         this.server = server;
     }
 
@@ -33,8 +33,8 @@ public class DownloadStep extends AbstractStepImpl {
         return buildInfo;
     }
 
-    public String getJson() {
-        return json;
+    public String getSpec() {
+        return spec;
     }
 
     public ArtifactoryServer getServer() {
@@ -57,8 +57,8 @@ public class DownloadStep extends AbstractStepImpl {
 
         @Override
         protected BuildInfo run() throws Exception {
-            BuildInfo build = new GenericDownloadExecutor(PipelineUtils.prepareArtifactoryServer(null, step.getServer()), this.listener, this.build, this.ws, step.getBuildInfo()).execution(step.getJson());
-            new PipelineBuildInfoAccessor(build).captureVariables(getContext());
+            BuildInfo build = new GenericDownloadExecutor(PipelineUtils.prepareArtifactoryServer(null, step.getServer()), this.listener, this.build, this.ws, step.getBuildInfo()).execution(step.getSpec());
+            new BuildInfoAccessor(build).captureVariables(getContext());
             return build;
         }
     }

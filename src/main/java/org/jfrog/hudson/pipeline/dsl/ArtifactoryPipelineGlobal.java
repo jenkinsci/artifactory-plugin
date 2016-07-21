@@ -4,10 +4,11 @@ import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.PromotionConfig;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,14 +42,21 @@ public class ArtifactoryPipelineGlobal implements Serializable {
     }
 
     @Whitelisted
+    public ArtifactoryServer newServer(Map<String, Object> serverArguments) {
+        List<String> keysAsList = Arrays.asList(new String[] {"url", "userName", "password"});
+        if (!keysAsList.containsAll(serverArguments.keySet())) {
+            throw new IllegalArgumentException("create new server allows only the following arguments, " + keysAsList);
+        }
+
+        ArtifactoryServer server = (ArtifactoryServer) this.script.invokeMethod("newArtifactoryServer", serverArguments);
+        server.setCpsScript(this.script);
+        return server;
+    }
+
+    @Whitelisted
     public BuildInfo newBuildInfo() {
         BuildInfo buildInfo = (BuildInfo) this.script.invokeMethod("newBuildInfo", new LinkedHashMap<String, Object>());
         buildInfo.setCpsScript(this.script);
         return buildInfo;
-    }
-
-    @Whitelisted
-    public PromotionConfig newPromotionConfig(String buildName, String buildNumber, String targetRepository) {
-        return new PromotionConfig(buildName, buildNumber, targetRepository);
     }
 }

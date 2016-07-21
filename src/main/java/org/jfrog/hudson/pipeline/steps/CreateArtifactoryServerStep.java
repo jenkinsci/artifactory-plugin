@@ -43,12 +43,6 @@ public class CreateArtifactoryServerStep extends AbstractStepImpl {
     public static class Execution extends AbstractSynchronousStepExecution<ArtifactoryServer> {
         private static final long serialVersionUID = 1L;
 
-        @StepContextParameter
-        private transient Run build;
-
-        @StepContextParameter
-        private transient TaskListener listener;
-
         @Inject(optional = true)
         private transient CreateArtifactoryServerStep step;
 
@@ -58,7 +52,7 @@ public class CreateArtifactoryServerStep extends AbstractStepImpl {
             if (StringUtils.isEmpty(artifactoryUrl)) {
                 getContext().onFailure(new MissingArgumentException("Artifactory server URL is mandatory"));
             }
-            return new ArtifactoryServer(artifactoryUrl, step.getUserName(), step.getPassword(), build, listener/*, step.getCredentialsId()*/);
+            return new ArtifactoryServer(artifactoryUrl, step.getUserName(), step.getPassword());
         }
     }
 

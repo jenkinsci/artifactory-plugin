@@ -10,7 +10,7 @@ import org.jfrog.hudson.pipeline.PipelineBuildInfoDeployer;
 import org.jfrog.hudson.pipeline.PipelineUtils;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.PipelineBuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.HashMap;
@@ -51,7 +51,7 @@ public class PublishBuildInfoStep extends AbstractStepImpl {
 
         @Override
         protected Boolean run() throws Exception {
-            PipelineBuildInfoAccessor buildInfo = new PipelineBuildInfoAccessor(step.getBuildInfo());
+            BuildInfoAccessor buildInfo = new BuildInfoAccessor(step.getBuildInfo());
             PipelineBuildInfoDeployer deployer = buildInfo.createDeployer(build, listener, PipelineUtils.prepareArtifactoryServer(null, step.getServer()));
             deployer.deploy();
             return true;

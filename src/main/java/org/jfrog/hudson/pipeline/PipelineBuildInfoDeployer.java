@@ -10,7 +10,7 @@ import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
 import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.pipeline.types.PipelineBuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
 import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
@@ -29,30 +29,30 @@ public class PipelineBuildInfoDeployer extends AbstractBuildInfoDeployer {
     private final Map<String, String> envVars;
     private ArtifactoryPipelineConfigurator configurator;
     private Build buildInfo;
-    private PipelineBuildInfoAccessor accessor;
 
-    public PipelineBuildInfoDeployer(ArtifactoryPipelineConfigurator configurator, ArtifactoryBuildInfoClient client
-            , Run build, TaskListener listener, PipelineBuildInfoAccessor pipelineBuildinfoAccessor) throws IOException, InterruptedException, NoSuchAlgorithmException {
+    public PipelineBuildInfoDeployer(ArtifactoryPipelineConfigurator configurator, ArtifactoryBuildInfoClient client,
+            Run build, TaskListener listener, BuildInfoAccessor buildinfoAccessor) throws IOException, InterruptedException, NoSuchAlgorithmException {
         super(configurator, build, listener, client);
         this.configurator = configurator;
         this.build = build;
-        this.envVars = pipelineBuildinfoAccessor.getEnvVars();
-        this.sysVars = pipelineBuildinfoAccessor.getSysVars();
+        this.envVars = buildinfoAccessor.getEnvVars();
+        this.sysVars = buildinfoAccessor.getSysVars();
         this.buildInfo = createBuildInfo("Pipeline", "Pipeline", BuildType.GENERIC);
+        this.buildInfo.setBuildRetention(buildinfoAccessor.getRetention().build());
 
-        if(pipelineBuildinfoAccessor.getStartDate() != null) {
-            this.buildInfo.setStartedDate(pipelineBuildinfoAccessor.getStartDate());
+        if (buildinfoAccessor.getStartDate() != null) {
+            this.buildInfo.setStartedDate(buildinfoAccessor.getStartDate());
         }
 
-        createDeployDetailsAndAddToBuildInfo(new ArrayList<Artifact>(pipelineBuildinfoAccessor.getDeployedArtifacts().values()), new ArrayList<Dependency>(pipelineBuildinfoAccessor.getPublishedDependencies().values()));
-        buildInfo.setBuildDependencies(pipelineBuildinfoAccessor.getBuildDependencies());
+        createDeployDetailsAndAddToBuildInfo(new ArrayList<Artifact>(buildinfoAccessor.getDeployedArtifacts().values()), new ArrayList<Dependency>(buildinfoAccessor.getPublishedDependencies().values()));
+        this.buildInfo.setBuildDependencies(buildinfoAccessor.getBuildDependencies());
 
-        if (StringUtils.isNotEmpty(pipelineBuildinfoAccessor.getBuildName())) {
-            buildInfo.setName(pipelineBuildinfoAccessor.getBuildName());
+        if (StringUtils.isNotEmpty(buildinfoAccessor.getBuildName())) {
+            this.buildInfo.setName(buildinfoAccessor.getBuildName());
         }
 
-        if (StringUtils.isNotEmpty(pipelineBuildinfoAccessor.getBuildNumber())) {
-            buildInfo.setNumber(pipelineBuildinfoAccessor.getBuildNumber());
+        if (StringUtils.isNotEmpty(buildinfoAccessor.getBuildNumber())) {
+            this.buildInfo.setNumber(buildinfoAccessor.getBuildNumber());
         }
     }
 

@@ -45,8 +45,8 @@ public class PromotionExecutor {
         PromotionBuilder promotionBuilder = new PromotionBuilder()
                 .status(promotionConfig.getTargetStatus())
                 .comment(promotionConfig.getComment())
-                .targetRepo(promotionConfig.getTargetRepository())
-                .sourceRepo(promotionConfig.getSourceRepository())
+                .targetRepo(promotionConfig.getTargetRepo())
+                .sourceRepo(promotionConfig.getSourceRepo())
                 .dependencies(promotionConfig.isIncludeDependencies())
                 .copy(promotionConfig.isUseCopy());
 
@@ -64,10 +64,10 @@ public class PromotionExecutor {
         StringBuilder strBuilder = new StringBuilder();
         strBuilder.append("Promoting '").append(promotionConfig.getBuildName()).append("' ");
         strBuilder.append("#").append(promotionConfig.getBuildNumber());
-        strBuilder.append(" to '").append(promotionConfig.getTargetRepository()).append("'");
+        strBuilder.append(" to '").append(promotionConfig.getTargetRepo()).append("'");
 
-        if (StringUtils.isNotEmpty(promotionConfig.getSourceRepository())) {
-            strBuilder.append(" from '").append(promotionConfig.getSourceRepository()).append("'");
+        if (StringUtils.isNotEmpty(promotionConfig.getSourceRepo())) {
+            strBuilder.append(" from '").append(promotionConfig.getSourceRepo()).append("'");
         }
 
         if (StringUtils.isNotEmpty(promotionConfig.getTargetStatus())) {

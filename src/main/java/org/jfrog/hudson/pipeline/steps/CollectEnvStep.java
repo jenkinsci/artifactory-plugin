@@ -5,7 +5,7 @@ import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
-import org.jfrog.hudson.pipeline.types.PipelineEnv;
+import org.jfrog.hudson.pipeline.types.Env;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -13,14 +13,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public class CollectEnvStep extends AbstractStepImpl {
 
-    private PipelineEnv env;
+    private Env env;
 
     @DataBoundConstructor
-    public CollectEnvStep(PipelineEnv env) {
+    public CollectEnvStep(Env env) {
         this.env = env;
     }
 
-    public PipelineEnv getEnv() {
+    public Env getEnv() {
         return env;
     }
 

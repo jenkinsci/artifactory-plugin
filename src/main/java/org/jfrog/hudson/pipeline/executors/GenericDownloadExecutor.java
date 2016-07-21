@@ -20,7 +20,7 @@ import org.jfrog.hudson.pipeline.PipelineUtils;
 import org.jfrog.hudson.pipeline.json.DownloadUploadJson;
 import org.jfrog.hudson.pipeline.json.FileJson;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.PipelineBuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
 import javax.annotation.Nonnull;
@@ -93,7 +93,7 @@ public class GenericDownloadExecutor {
 
     private void download(String downloadStr, DependenciesHelper helper) throws IOException, InterruptedException {
         List<Dependency> resolvedDependencies = helper.retrievePublishedDependencies(downloadStr);
-        new PipelineBuildInfoAccessor(this.buildInfo).appendPublishedDependencies(resolvedDependencies);
+        new BuildInfoAccessor(this.buildInfo).appendPublishedDependencies(resolvedDependencies);
     }
 
     public void stop(@Nonnull Throwable throwable) throws Exception {

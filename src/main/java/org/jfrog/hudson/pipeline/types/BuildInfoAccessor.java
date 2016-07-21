@@ -17,10 +17,10 @@ import java.util.Map;
 /**
  * Created by Tamirh on 16/05/2016.
  */
-public class PipelineBuildInfoAccessor {
+public class BuildInfoAccessor {
     BuildInfo buildInfo;
 
-    public PipelineBuildInfoAccessor(BuildInfo buildInfo) {
+    public BuildInfoAccessor(BuildInfo buildInfo) {
         this.buildInfo = buildInfo;
     }
 
@@ -56,12 +56,16 @@ public class PipelineBuildInfoAccessor {
         return this.buildInfo.getNumber();
     }
 
+    public BuildRetention getRetention() {
+        return this.buildInfo.getRetention();
+    }
+
     public Map<Dependency, Dependency> getPublishedDependencies() {
         return this.buildInfo.getPublishedDependencies();
     }
 
     public void captureVariables(StepContext context) throws Exception {
-        PipelineEnv env = this.buildInfo.getEnv();
+        Env env = this.buildInfo.getEnv();
         if (env.isCapture()) {
             env.collectVariables(context);
         }

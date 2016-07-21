@@ -8,35 +8,35 @@ import java.io.Serializable;
 /**
  * Created by romang on 6/22/16.
  */
-public class PipelineEnvFilter implements Serializable {
+public class EnvFilter implements Serializable {
 
     private IncludeExcludePatterns patternFilter;
     private final String DEFAULT_EXCLUDE_PATTERN = "*password*,*secret*,*key*";
 
-    public PipelineEnvFilter() {
+    public EnvFilter() {
         this.patternFilter = new IncludeExcludePatterns("", DEFAULT_EXCLUDE_PATTERN);
     }
 
     @Whitelisted
-    public PipelineEnvFilter addInclude(String includePattern) {
+    public EnvFilter addInclude(String includePattern) {
         patternFilter.addIncludePatterns(includePattern);
         return this;
     }
 
     @Whitelisted
-    public PipelineEnvFilter addExclude(String excludePattern) {
+    public EnvFilter addExclude(String excludePattern) {
         patternFilter.addExcludePatterns(excludePattern);
         return this;
     }
 
     @Whitelisted
-    public PipelineEnvFilter clear() {
+    public EnvFilter clear() {
         patternFilter = new IncludeExcludePatterns("", "");
         return this;
     }
 
     @Whitelisted
-    public PipelineEnvFilter reset() {
+    public EnvFilter reset() {
         patternFilter = new IncludeExcludePatterns("", DEFAULT_EXCLUDE_PATTERN);
         return this;
     }

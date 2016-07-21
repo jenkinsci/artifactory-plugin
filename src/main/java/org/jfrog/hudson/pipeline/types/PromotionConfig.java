@@ -11,21 +11,12 @@ public class PromotionConfig implements Serializable {
 
     private String buildName;
     private String buildNumber;
-    private String targetRepository;
-    private String sourceRepository;
+    private String targetRepo;
+    private String sourceRepo;
     private String targetStatus;
     private String comment;
     private boolean includeDependencies;
     private boolean useCopy;
-
-    public PromotionConfig(String buildName, String buildNumber, String targetRepository) {
-        this.buildName = buildName;
-        this.buildNumber = buildNumber;
-        this.targetRepository = targetRepository;
-    }
-
-    public PromotionConfig() {
-    }
 
     @Whitelisted
     public String getBuildName() {
@@ -48,23 +39,23 @@ public class PromotionConfig implements Serializable {
     }
 
     @Whitelisted
-    public String getTargetRepository() {
-        return targetRepository;
+    public String getTargetRepo() {
+        return targetRepo;
     }
 
     @Whitelisted
-    public void setTargetRepository(String targetRepository) {
-        this.targetRepository = targetRepository;
+    public void setTargetRepo(String targetRepo) {
+        this.targetRepo = targetRepo;
     }
 
     @Whitelisted
-    public String getSourceRepository() {
-        return sourceRepository;
+    public String getSourceRepo() {
+        return sourceRepo;
     }
 
     @Whitelisted
-    public void setSourceRepository(String sourceRepository) {
-        this.sourceRepository = sourceRepository;
+    public void setSourceRepo(String sourceRepo) {
+        this.sourceRepo = sourceRepo;
     }
 
     @Whitelisted

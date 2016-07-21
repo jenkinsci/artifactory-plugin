@@ -39,13 +39,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
     public static class Execution extends AbstractSynchronousStepExecution<org.jfrog.hudson.pipeline.types.ArtifactoryServer> {
 
         @StepContextParameter
-        private transient FilePath ws;
-
-        @StepContextParameter
         private transient Run build;
-
-        @StepContextParameter
-        private transient TaskListener listener;
 
         @Inject(optional = true)
         private transient GetArtifactoryServerStep step;
@@ -75,8 +69,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
             }
             ArtifactoryServer server = artifactoryServers.get(0);
             org.jfrog.hudson.pipeline.types.ArtifactoryServer artifactoryPipelineServer = new org.jfrog.hudson.pipeline.types.ArtifactoryServer(artifactoryServerID, server.getUrl(),
-                server.getResolvingCredentialsConfig().provideUsername(build.getParent()), server.getResolvingCredentialsConfig().providePassword(build.getParent()),
-                build, listener);
+                server.getResolvingCredentialsConfig().provideUsername(build.getParent()), server.getResolvingCredentialsConfig().providePassword(build.getParent()));
             return artifactoryPipelineServer;
         }
 
