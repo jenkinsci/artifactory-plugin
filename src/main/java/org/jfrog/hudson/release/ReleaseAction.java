@@ -56,6 +56,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
         W extends BuildWrapper> implements Action {
 
     private static final Logger log = Logger.getLogger(ReleaseAction.class.getName());
+    public static final String RT_RELEASE_STAGING = "RT_RELEASE_STAGING_";
 
     protected final transient P project;
     protected VERSIONING versioning;
@@ -659,9 +660,17 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
     public void addVars(Map<String, String> env) {
         if (tagUrl != null) {
             env.put("RELEASE_SCM_TAG", tagUrl);
+            env.put(RT_RELEASE_STAGING + "SCM_TAG", tagUrl);
         }
         if (releaseBranch != null) {
             env.put("RELEASE_SCM_BRANCH", releaseBranch);
+            env.put(RT_RELEASE_STAGING + "SCM_BRANCH", releaseBranch);
+        }
+        if (releaseVersion != null) {
+            env.put(RT_RELEASE_STAGING + "VERSION", releaseVersion);
+        }
+        if (nextVersion != null) {
+            env.put(RT_RELEASE_STAGING + "NEXT_VERSION", nextVersion);
         }
     }
 }
