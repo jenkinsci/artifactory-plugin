@@ -173,11 +173,6 @@ public class ArtifactoryServer implements Serializable {
     }
 
     @Whitelisted
-    public String getPassword() {
-        return password;
-    }
-
-    @Whitelisted
     public void setPassword(String password){
         this.password = password;
     }
