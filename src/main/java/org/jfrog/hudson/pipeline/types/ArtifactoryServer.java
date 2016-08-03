@@ -17,26 +17,26 @@ public class ArtifactoryServer implements Serializable {
     public static final String SERVER = "server";
     private String serverName;
     private String url;
-    private String userName;
+    private String username;
     private String password;
     private boolean bypassProxy;
     private CpsScript cpsScript;
 
-    public ArtifactoryServer(String artifactoryServerName, String url, String userName, String password) {
+    public ArtifactoryServer(String artifactoryServerName, String url, String username, String password) {
         serverName = artifactoryServerName;
         this.url = url;
-        this.userName = userName;
+        this.username = username;
         this.password = password;
     }
 
-    public ArtifactoryServer(String url, String userName, String password) {
+    public ArtifactoryServer(String url, String username, String password) {
         this.url = url;
-        this.userName = userName;
+        this.username = username;
         this.password = password;
     }
 
     public CredentialsConfig createCredentialsConfig() {
-        return new CredentialsConfig(this.userName, this.password, null, null);
+        return new CredentialsConfig(this.username, this.password, null, null);
     }
 
     public void setCpsScript(CpsScript cpsScript) {
@@ -163,13 +163,13 @@ public class ArtifactoryServer implements Serializable {
     }
 
     @Whitelisted
-    public String getUserName() {
-        return userName;
+    public String getUsername() {
+        return username;
     }
 
     @Whitelisted
-    public void setUserName(String username) {
-        this.userName = username;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     @Whitelisted
