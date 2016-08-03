@@ -137,7 +137,7 @@ public class ArtifactoryServer implements Serializable {
         }
 
         Set<String> promotionParamsSet = promotionParams.keySet();
-        List<String> keysAsList = Arrays.asList(new String[] {buildName, buildNumber, targetRepository, "srcRepo", "status", "comment", "includeDependencies", "copy"});
+        List<String> keysAsList = Arrays.asList(new String[] {buildName, buildNumber, targetRepository, "sourceRepo", "status", "comment", "includeDependencies", "copy"});
         if (!keysAsList.containsAll(promotionParamsSet)) {
             throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
         }
