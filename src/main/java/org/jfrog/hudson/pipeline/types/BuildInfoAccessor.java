@@ -1,10 +1,15 @@
 package org.jfrog.hudson.pipeline.types;
 
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.dependency.BuildDependency;
+import org.jfrog.hudson.pipeline.PipelineBuildInfoDeployer;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -12,9 +17,10 @@ import java.util.Map;
 /**
  * Created by Tamirh on 16/05/2016.
  */
-public class PipelineBuildInfoAccessor {
+public class BuildInfoAccessor {
     BuildInfo buildInfo;
-    public PipelineBuildInfoAccessor (BuildInfo buildInfo) {
+
+    public BuildInfoAccessor(BuildInfo buildInfo) {
         this.buildInfo = buildInfo;
     }
 
@@ -43,11 +49,15 @@ public class PipelineBuildInfoAccessor {
     }
 
     public String getBuildName() {
-        return this.buildInfo.getBuildName();
+        return this.buildInfo.getName();
     }
 
     public String getBuildNumber() {
-        return this.buildInfo.getBuildNumber();
+        return this.buildInfo.getNumber();
+    }
+
+    public BuildRetention getRetention() {
+        return this.buildInfo.getRetention();
     }
 
     public Map<Dependency, Dependency> getPublishedDependencies() {
@@ -55,10 +65,19 @@ public class PipelineBuildInfoAccessor {
     }
 
     public void captureVariables(StepContext context) throws Exception {
-        this.buildInfo.captureVariables(context);
+        Env env = this.buildInfo.getEnv();
+        if (env.isCapture()) {
+            env.collectVariables(context);
+        }
     }
 
     public void appendDeployedArtifacts(List<Artifact> artifacts) {
         this.buildInfo.appendDeployedArtifacts(artifacts);
     }
+
+    public PipelineBuildInfoDeployer createDeployer(Run build, TaskListener listener, org.jfrog.hudson.ArtifactoryServer server)
+            throws InterruptedException, NoSuchAlgorithmException, IOException {
+        return this.buildInfo.createDeployer(build, listener, server);
+    }
+
 }

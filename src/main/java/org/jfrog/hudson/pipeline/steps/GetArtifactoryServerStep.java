@@ -8,6 +8,7 @@ import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import org.acegisecurity.acls.NotFoundException;
 import org.apache.commons.cli.MissingArgumentException;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
@@ -38,13 +39,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
     public static class Execution extends AbstractSynchronousStepExecution<org.jfrog.hudson.pipeline.types.ArtifactoryServer> {
 
         @StepContextParameter
-        private transient FilePath ws;
-
-        @StepContextParameter
         private transient Run build;
-
-        @StepContextParameter
-        private transient TaskListener listener;
 
         @Inject(optional = true)
         private transient GetArtifactoryServerStep step;
@@ -52,7 +47,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
         @Override
         protected org.jfrog.hudson.pipeline.types.ArtifactoryServer run() throws Exception {
             String artifactoryServerID = step.getArtifactoryServerID();
-            if (artifactoryServerID == null || artifactoryServerID == "") {
+            if (StringUtils.isEmpty(artifactoryServerID)) {
                 getContext().onFailure(new MissingArgumentException("Artifactory server name is mandatory"));
             }
 
@@ -74,8 +69,8 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
             }
             ArtifactoryServer server = artifactoryServers.get(0);
             org.jfrog.hudson.pipeline.types.ArtifactoryServer artifactoryPipelineServer = new org.jfrog.hudson.pipeline.types.ArtifactoryServer(artifactoryServerID, server.getUrl(),
-                    server.getResolvingCredentialsConfig().getUsername(), server.getResolvingCredentialsConfig().getPassword(),
-                    build, listener);
+                server.getResolvingCredentialsConfig().provideUsername(build.getParent()), server.getResolvingCredentialsConfig().providePassword(build.getParent()));
+            artifactoryPipelineServer.setBypassProxy(server.isBypassProxy());
             return artifactoryPipelineServer;
         }
 

@@ -22,13 +22,9 @@ import hudson.model.*;
 import hudson.security.ACL;
 import hudson.security.Permission;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
 import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.*;
@@ -39,7 +35,6 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -286,8 +281,18 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                         !UserPluginInfo.NO_PLUGIN_KEY.equals(promotionPlugin.getPluginName())) {
                     handlePluginPromotion(listener, client);
                 } else {
-                    handleStandardPromotion(listener, client);
+                    PromotionBuilder promotionBuilder = new PromotionBuilder()
+                            .status(targetStatus)
+                            .comment(comment)
+                            .ciUser(ciUser)
+                            .targetRepo(repositoryKey)
+                            .sourceRepo(sourceRepositoryKey)
+                            .dependencies(includeDependencies)
+                            .copy(useCopy);
 
+                    String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
+                    String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
+                    PromotionUtils.promoteAndCheckResponse(promotionBuilder, client, listener, buildName, buildNumber);
                 }
 
                 build.save();
@@ -313,95 +318,9 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
             String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
             HttpResponse pluginPromotionResponse = client.executePromotionUserPlugin(
                     promotionPlugin.getPluginName(), buildName, buildNumber, promotionPlugin.getParamMap());
-            if (checkSuccess(pluginPromotionResponse, false, false, listener)) {
+            if (PromotionUtils.checkSuccess(pluginPromotionResponse, false, false, listener)) {
                 listener.getLogger().println("Promotion completed successfully!");
             }
-        }
-
-        private void handleStandardPromotion(TaskListener listener, ArtifactoryBuildInfoClient client)
-                throws IOException {
-            // do a dry run first
-            PromotionBuilder promotionBuilder = new PromotionBuilder()
-                    .status(targetStatus)
-                    .comment(comment)
-                    .ciUser(ciUser)
-                    .targetRepo(repositoryKey)
-                    .sourceRepo(sourceRepositoryKey)
-                    .dependencies(includeDependencies)
-                    .copy(useCopy)
-                    .dryRun(true);
-            listener.getLogger()
-                    .println("Performing dry run promotion (no changes are made during dry run) ...");
-            String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
-            String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
-            HttpResponse dryResponse = client.stageBuild(buildName, buildNumber, promotionBuilder.build());
-            if (checkSuccess(dryResponse, true, true, listener)) {
-                listener.getLogger().println("Dry run finished successfully.\nPerforming promotion ...");
-                HttpResponse wetResponse = client.stageBuild(buildName,
-                        buildNumber, promotionBuilder.dryRun(false).build());
-                if (checkSuccess(wetResponse, false, true, listener)) {
-                    listener.getLogger().println("Promotion completed successfully!");
-                }
-            }
-        }
-
-        /**
-         * Checks the status and return true on success
-         *
-         * @param response
-         * @param dryRun
-         * @param parseMessages
-         * @param listener
-         * @return
-         */
-        private boolean checkSuccess(HttpResponse response, boolean dryRun, boolean parseMessages,
-                TaskListener listener) {
-            StatusLine status = response.getStatusLine();
-            try {
-                String content = entityToString(response);
-                if (assertResponseStatus(dryRun, listener, status, content)) {
-                    if (parseMessages) {
-                        JSONObject json = JSONObject.fromObject(content);
-                        JSONArray messages = json.getJSONArray("messages");
-                        for (Object messageObj : messages) {
-                            JSONObject messageJson = (JSONObject) messageObj;
-                            String level = messageJson.getString("level");
-                            String message = messageJson.getString("message");
-                            // TODO: we don't want to fail if no items were moved/copied. find a way to support it
-                            if ((level.equals("WARNING") || level.equals("ERROR")) &&
-                                    !message.startsWith("No items were")) {
-                                listener.error("Received " + level + ": " + message);
-                                return false;
-                            }
-                        }
-                    }
-                    return true;
-                }
-            } catch (IOException e) {
-                e.printStackTrace(listener.error("Failed parsing promotion response:"));
-            }
-            return false;
-        }
-
-        private boolean assertResponseStatus(boolean dryRun, TaskListener listener, StatusLine status, String content) {
-            if (status.getStatusCode() != 200) {
-                if (dryRun) {
-                    listener.error(
-                            "Promotion failed during dry run (no change in Artifactory was done): " + status +
-                                    "\n" + content);
-                } else {
-                    listener.error(
-                            "Promotion failed. View Artifactory logs for more details: " + status + "\n" + content);
-                }
-                return false;
-            }
-            return true;
-        }
-
-        private String entityToString(HttpResponse response) throws IOException {
-            HttpEntity entity = response.getEntity();
-            InputStream is = entity.getContent();
-            return IOUtils.toString(is, "UTF-8");
         }
     }
 }

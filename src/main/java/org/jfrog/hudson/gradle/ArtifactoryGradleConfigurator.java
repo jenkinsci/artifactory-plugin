@@ -689,16 +689,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 getDescriptor().getArtifactoryServers());
     }
 
-    public List<PluginSettings> getUserPluginKeys() {
-        return getDescriptor().userPluginKeys;
-    }
-
     public List<Repository> getReleaseRepositories() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories, details.getDeployReleaseRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(details.getDeployReleaseRepository().getKeyFromSelect());
     }
 
     public List<VirtualRepository> getVirtualRepositories() {
-        return RepositoriesUtils.collectVirtualRepositories(getDescriptor().virtualRepositories, resolverDetails.getResolveSnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectVirtualRepositories(null, resolverDetails.getResolveSnapshotRepository().getKeyFromSelect());
     }
 
     public boolean isOverridingDefaultResolver() {
@@ -733,9 +729,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private List<Repository> releaseRepositories;
-        private List<VirtualRepository> virtualRepositories;
-        private List<PluginSettings> userPluginKeys = Collections.emptyList();
         private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
@@ -756,22 +749,24 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             item.getClass().isAssignableFrom(MultiJobProject.class));
         }
 
-        private void refreshRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
+        private List<Repository> refreshRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
                 throws IOException {
             List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(),
                     credentialsConfig, artifactoryServer, item);
             Collections.sort(releaseRepositoryKeysFirst);
-            releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
+            List<Repository> releaseRepositories = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
+            return releaseRepositories;
         }
 
-        private void refreshVirtualRepositories(ArtifactoryServer artifactoryServer,
+        private List<VirtualRepository> refreshVirtualRepositories(ArtifactoryServer artifactoryServer,
                                                 CredentialsConfig credentialsConfig) throws IOException {
-            virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
+            List<VirtualRepository> virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
                     credentialsConfig, artifactoryServer, item);
             Collections.sort(virtualRepositories);
+            return virtualRepositories;
         }
 
-        private void refreshUserPlugins(ArtifactoryServer artifactoryServer, final CredentialsConfig credentialsConfigs) {
+        private List<PluginSettings> refreshUserPlugins(ArtifactoryServer artifactoryServer, final CredentialsConfig credentialsConfigs) {
             List<UserPluginInfo> pluginInfoList = artifactoryServer.getStagingUserPluginInfo(new DeployerOverrider() {
                 public boolean isOverridingDefaultDeployer() {
                     return credentialsConfigs != null && credentialsConfigs.isCredentialsProvided();
@@ -798,7 +793,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 list.add(plugin);
             }
 
-            userPluginKeys = list;
+           return list;
         }
 
         /**
@@ -820,8 +815,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             try {
                 ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(
                         url, getArtifactoryServers());
-                refreshRepositories(artifactoryServer, credentialsConfig);
-                refreshUserPlugins(artifactoryServer, credentialsConfig);
+                List<Repository> releaseRepositories = refreshRepositories(artifactoryServer, credentialsConfig);
+                List<PluginSettings> userPluginKeys = refreshUserPlugins(artifactoryServer, credentialsConfig);
 
                 response.setRepositories(releaseRepositories);
                 response.setUserPlugins(userPluginKeys);
@@ -853,7 +848,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(url, RepositoriesUtils.getArtifactoryServers());
 
             try {
-                refreshVirtualRepositories(artifactoryServer, credentialsConfig);
+                List<VirtualRepository> virtualRepositories = refreshVirtualRepositories(artifactoryServer, credentialsConfig);
                 response.setVirtualRepositories(virtualRepositories);
                 response.setSuccess(true);
             } catch (Exception e) {

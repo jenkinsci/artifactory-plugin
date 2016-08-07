@@ -22,8 +22,9 @@ import org.jfrog.hudson.pipeline.PipelineUtils;
 import org.jfrog.hudson.pipeline.json.DownloadUploadJson;
 import org.jfrog.hudson.pipeline.json.FileJson;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.PipelineBuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
@@ -70,27 +71,27 @@ public class GenericUploadExecutor {
             boolean isRegexp = BooleanUtils.toBoolean(file.getRegexp());
 
             GenericArtifactsDeployer.FilesDeployerCallable deployer = new GenericArtifactsDeployer.FilesDeployerCallable(listener, pairs, server,
-                    server.getDeployerCredentialsConfig().getCredentials(build.getParent()), repoKey, propertiesToAdd,
-                    server.createProxyConfiguration(Jenkins.getInstance().proxy));
+                new Credentials(server.getResolvingCredentialsConfig().getUsername(), server.getResolvingCredentialsConfig().getPassword()), repoKey, propertiesToAdd,
+                server.createProxyConfiguration(Jenkins.getInstance().proxy));
             deployer.setPatternType(GenericArtifactsDeployer.FilesDeployerCallable.PatternType.WILDCARD);
             deployer.setRecursive(isRecursive);
             deployer.setFlat(isFlat);
-            deployer.setRegexp(isRegexp);
+            deployer.setRegexp( isRegexp);
             List<Artifact> artifactsToDeploy = ws.act(deployer);
-            new PipelineBuildInfoAccessor(buildinfo).appendDeployedArtifacts(artifactsToDeploy);
+            new BuildInfoAccessor(buildinfo).appendDeployedArtifacts(artifactsToDeploy);
         }
     }
 
     private ArrayListMultimap<String, String> getPropertiesMap(String props) throws IOException, InterruptedException {
         ArrayListMultimap<String, String> properties = ArrayListMultimap.create();
 
-        if (buildinfo.getBuildName() != null) {
-            properties.put("build.name", buildinfo.getBuildName());
+        if (buildinfo.getName() != null) {
+            properties.put("build.name", buildinfo.getName());
         } else {
             properties.put("build.name", BuildUniqueIdentifierHelper.getBuildName(build));
         }
-        if (buildinfo.getBuildNumber() != null) {
-            properties.put("build.number", buildinfo.getBuildNumber());
+        if (buildinfo.getNumber() != null) {
+            properties.put("build.number", buildinfo.getNumber());
         } else {
             properties.put("build.number", BuildUniqueIdentifierHelper.getBuildNumber(build));
         }

@@ -261,8 +261,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public List<Repository> getReleaseRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositories,
-                details.getDeploySnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(details.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
     @Override
@@ -401,7 +400,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private List<Repository> releaseRepositories;
-        private List<VirtualRepository> virtualRepositoryList;
         private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {

@@ -32,20 +32,10 @@
                             <j:choose>
                                 <j:when test="${s.name==instance.artifactoryName}">
                                     <j:choose>
-                                        <j:when test="${instance.details.stagingPlugin != null}">
-                                            <f:option selected="${instance.details.stagingPlugin.pluginName}"
-                                                      value="${instance.details.stagingPlugin.pluginName}">
-                                                ${instance.details.stagingPlugin.pluginName}
-                                            </f:option>
-                                        </j:when>
-                                        <j:otherwise>
-                                            <j:forEach var="r" items="${instance.userPluginKeys}">
-                                                <f:option
-                                                        selected="${r.pluginName==instance.details.stagingPlugin.pluginName}"
-                                                        value="${r.pluginName}">${r.pluginName}
-                                                </f:option>
-                                            </j:forEach>
-                                        </j:otherwise>
+                                        <f:option selected="${instance.details.stagingPlugin.pluginName}"
+                                                  value="${instance.details.stagingPlugin.pluginName}">
+                                            ${instance.details.stagingPlugin.pluginName}
+                                        </f:option>
                                     </j:choose>
                                 </j:when>
                             </j:choose>

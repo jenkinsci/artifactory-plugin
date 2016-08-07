@@ -416,7 +416,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     }
 
     public List<Repository> getReleaseRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositoryList, details.getDeployReleaseRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(details.getDeployReleaseRepository().getKeyFromSelect());
     }
 
     @Override
@@ -427,7 +427,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
 
-        private List<Repository> releaseRepositoryList;
         private AbstractProject<?, ?> item;
         public DescriptorImpl() {
             super(ArtifactoryIvyConfigurator.class);
@@ -462,7 +461,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                         artifactoryServer, item);
 
                 Collections.sort(releaseRepositoryKeysFirst);
-                releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
+                List<Repository> releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
                 response.setRepositories(releaseRepositoryList);
                 response.setSuccess(true);
 

@@ -502,8 +502,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public List<Repository> getReleaseRepositoryList() {
-        return RepositoriesUtils.collectRepositories(getDescriptor().releaseRepositoryList,
-                details.getDeploySnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(details.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
     private boolean isMultiConfProject(AbstractBuild build) {
@@ -518,7 +517,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     @Extension(optional = true)
     public static class DescriptorImpl extends BuildWrapperDescriptor {
 
-        private List<Repository> releaseRepositoryList;
         private AbstractProject<?, ?> item;
 
         public DescriptorImpl() {
@@ -557,7 +555,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(url, credentialsConfig,
                         artifactoryServer, item);
                 Collections.sort(releaseRepositoryKeysFirst);
-                releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
+                List<Repository> releaseRepositoryList = RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);
                 response.setRepositories(releaseRepositoryList);
                 response.setSuccess(true);
 

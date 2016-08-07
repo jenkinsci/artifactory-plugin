@@ -1,0 +1,91 @@
+package org.jfrog.hudson.pipeline.executors;
+
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.build.api.builder.PromotionBuilder;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.CredentialsConfig;
+import org.jfrog.hudson.pipeline.ArtifactoryPipelineConfigurator;
+import org.jfrog.hudson.pipeline.types.PromotionConfig;
+import org.jfrog.hudson.release.PromotionUtils;
+import org.jfrog.hudson.util.CredentialManager;
+
+import java.io.IOException;
+
+/**
+ * Created by romang on 6/21/16.
+ */
+public class PromotionExecutor {
+
+    private final ArtifactoryServer server;
+    private final TaskListener listener;
+    private final PromotionConfig promotionConfig;
+    private final StepContext context;
+    private Run build;
+
+    public PromotionExecutor(ArtifactoryServer server, Run build, TaskListener listener, StepContext context,
+                             PromotionConfig promotionConfig) {
+        this.server = server;
+        this.build = build;
+        this.listener = listener;
+        this.context = context;
+        this.promotionConfig = promotionConfig;
+    }
+
+    public void execution() throws IOException {
+        ArtifactoryPipelineConfigurator configurator = new ArtifactoryPipelineConfigurator(server);
+        CredentialsConfig deployerConfig = CredentialManager.getPreferredDeployer(configurator, server);
+        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(deployerConfig.provideUsername(build.getParent()), deployerConfig.providePassword(build.getParent()),
+                server.createProxyConfiguration(Jenkins.getInstance().proxy));
+
+        PromotionBuilder promotionBuilder = new PromotionBuilder()
+                .status(promotionConfig.getStatus())
+                .comment(promotionConfig.getComment())
+                .targetRepo(promotionConfig.getTargetRepo())
+                .sourceRepo(promotionConfig.getSourceRepo())
+                .dependencies(promotionConfig.isIncludeDependencies())
+                .copy(promotionConfig.isCopy());
+
+        logInfo();
+
+        boolean status = PromotionUtils.promoteAndCheckResponse(promotionBuilder, client, listener,
+                promotionConfig.getBuildName(), promotionConfig.getBuildNumber());
+        if (!status) {
+            context.onFailure(new Exception("Build promotion failed"));
+        }
+    }
+
+    private void logInfo() {
+
+        StringBuilder strBuilder = new StringBuilder();
+        strBuilder.append("Promoting '").append(promotionConfig.getBuildName()).append("' ");
+        strBuilder.append("#").append(promotionConfig.getBuildNumber());
+        strBuilder.append(" to '").append(promotionConfig.getTargetRepo()).append("'");
+
+        if (StringUtils.isNotEmpty(promotionConfig.getSourceRepo())) {
+            strBuilder.append(" from '").append(promotionConfig.getSourceRepo()).append("'");
+        }
+
+        if (StringUtils.isNotEmpty(promotionConfig.getStatus())) {
+            strBuilder.append(", with status: '").append(promotionConfig.getStatus()).append("'");
+        }
+
+        if (StringUtils.isNotEmpty(promotionConfig.getComment())) {
+            strBuilder.append(", with comment: '").append(promotionConfig.getComment()).append("'");
+        }
+
+        if (promotionConfig.isIncludeDependencies()) {
+            strBuilder.append(", including dependencies");
+        }
+
+        if (promotionConfig.isCopy()) {
+            strBuilder.append(", using copy");
+        }
+
+        listener.getLogger().println(strBuilder.append(".").toString());
+    }
+}

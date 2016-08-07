@@ -163,12 +163,11 @@ public abstract class RepositoriesUtils {
         return repositories;
     }
 
-    public static List<Repository> collectRepositories(List<Repository> repositories, String repoKey) {
-        if (repositories == null) {
-            if (StringUtils.isNotBlank(repoKey)) {
-                Repository r = new Repository(repoKey);
-                repositories = Lists.newArrayList(r);
-            }
+    public static List<Repository> collectRepositories(String repoKey) {
+        List<Repository> repositories = Lists.newArrayList();
+        if (StringUtils.isNotBlank(repoKey)) {
+            Repository r = new Repository(repoKey);
+            repositories.add(r);
         }
         return repositories;
     }

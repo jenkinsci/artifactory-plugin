@@ -34,11 +34,10 @@ public class PipelineUtils {
             return null;
         }
         if (pipelineServer != null) {
-            CredentialsConfig credentials = new CredentialsConfig(pipelineServer.getUsername(),
-                    pipelineServer.getPassword(), null, null);
+            CredentialsConfig credentials = pipelineServer.createCredentialsConfig();
 
             return new org.jfrog.hudson.ArtifactoryServer(null, pipelineServer.getUrl(), credentials,
-                    credentials, 0, pipelineServer.isBypassProxy());
+                credentials, 0, pipelineServer.isBypassProxy());
         }
         org.jfrog.hudson.ArtifactoryServer server = RepositoriesUtils.getArtifactoryServer(artifactoryServerID, RepositoriesUtils.getArtifactoryServers());
         if (server == null) {
@@ -57,9 +56,9 @@ public class PipelineUtils {
         return r;
     }
 
-    public static BuildInfo prepareBuildinfo(Run run, BuildInfo buildinfo) {
+    public static BuildInfo prepareBuildinfo(Run build, BuildInfo buildinfo) {
         if (buildinfo == null) {
-            return new BuildInfo();
+            return new BuildInfo(build);
         }
         return buildinfo;
     }

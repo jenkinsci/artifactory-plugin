@@ -20,7 +20,7 @@ import org.jfrog.hudson.pipeline.PipelineUtils;
 import org.jfrog.hudson.pipeline.json.DownloadUploadJson;
 import org.jfrog.hudson.pipeline.json.FileJson;
 import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.PipelineBuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
 import javax.annotation.Nonnull;
@@ -66,8 +66,8 @@ public class GenericDownloadExecutor {
 
         CredentialsConfig preferredResolver = server.getDeployerCredentialsConfig();
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredResolver.provideUsername(build.getParent()), preferredResolver.providePassword(build.getParent()),
-                proxyConfiguration, null);
+            preferredResolver.getUsername(), preferredResolver.getPassword(),
+            proxyConfiguration, null);
 
         DependenciesDownloaderImpl dependancyDownloader = new DependenciesDownloaderImpl(dependenciesClient, ws, log);
         AqlDependenciesHelper aqlHelper = new AqlDependenciesHelper(dependancyDownloader, server.getUrl(), "", log);
@@ -93,7 +93,7 @@ public class GenericDownloadExecutor {
 
     private void download(String downloadStr, DependenciesHelper helper) throws IOException, InterruptedException {
         List<Dependency> resolvedDependencies = helper.retrievePublishedDependencies(downloadStr);
-        new PipelineBuildInfoAccessor(this.buildInfo).appendPublishedDependencies(resolvedDependencies);
+        new BuildInfoAccessor(this.buildInfo).appendPublishedDependencies(resolvedDependencies);
     }
 
     public void stop(@Nonnull Throwable throwable) throws Exception {
