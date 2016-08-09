@@ -8,6 +8,8 @@ import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
+import org.jfrog.build.api.Module;
+import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -16,6 +18,7 @@ import org.jfrog.hudson.pipeline.ArtifactoryPipelineConfigurator;
 import org.jfrog.hudson.pipeline.PipelineBuildInfoDeployer;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
+import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -31,10 +34,11 @@ public class BuildInfo implements Serializable {
     private String buildNumber;
     private Date startDate;
     private BuildRetention retention;
-
-    private Map<Artifact, Artifact> deployedArtifacts = new HashMap<Artifact, Artifact>();
     private List<BuildDependency> buildDependencies = new ArrayList<BuildDependency>();
-    private Map<Dependency, Dependency> publishedDependencies = new HashMap<Dependency, Dependency>();
+    private List<Artifact> deployedArtifacts = new ArrayList<Artifact>();
+    private List<Dependency> publishedDependencies = new ArrayList<Dependency>();
+
+    private List<Module> modules = new ArrayList<Module>();
     private Env env = new Env();
 
     public BuildInfo(Run build) {
@@ -75,8 +79,9 @@ public class BuildInfo implements Serializable {
 
     @Whitelisted
     public void append(BuildInfo other) {
-        this.deployedArtifacts.putAll(other.deployedArtifacts);
-        this.publishedDependencies.putAll(other.publishedDependencies);
+        this.modules.addAll(other.modules);
+        this.deployedArtifacts.addAll(other.deployedArtifacts);
+        this.publishedDependencies.addAll(other.publishedDependencies);
         this.buildDependencies.addAll(other.buildDependencies);
         this.env.append(other.getEnv());
     }
@@ -94,7 +99,7 @@ public class BuildInfo implements Serializable {
     @Whitelisted
     public void retention(Map<String, Object> retentionArguments) throws Exception {
         Set<String> retentionArgumentsSet = retentionArguments.keySet();
-        List<String> keysAsList = Arrays.asList(new String [] {"maxDays", "maxBuilds", "deleteBuildArtifacts", "doNotDiscardBuilds"});
+        List<String> keysAsList = Arrays.asList(new String[]{"maxDays", "maxBuilds", "deleteBuildArtifacts", "doNotDiscardBuilds"});
         if (!keysAsList.containsAll(retentionArgumentsSet)) {
             throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
         }
@@ -107,9 +112,7 @@ public class BuildInfo implements Serializable {
         if (artifacts == null) {
             return;
         }
-        for (Artifact artifact : artifacts) {
-            deployedArtifacts.put(artifact, artifact);
-        }
+        deployedArtifacts.addAll(artifacts);
     }
 
     protected void appendBuildDependencies(List<BuildDependency> dependencies) {
@@ -123,12 +126,10 @@ public class BuildInfo implements Serializable {
         if (dependencies == null) {
             return;
         }
-        for (Dependency dependency : dependencies) {
-            publishedDependencies.put(dependency, dependency);
-        }
+        publishedDependencies.addAll(dependencies);
     }
 
-    protected Map<Artifact, Artifact> getDeployedArtifacts() {
+    protected List<Artifact> getDeployedArtifacts() {
         return deployedArtifacts;
     }
 
@@ -136,7 +137,7 @@ public class BuildInfo implements Serializable {
         return buildDependencies;
     }
 
-    protected Map<Dependency, Dependency> getPublishedDependencies() {
+    protected List<Dependency> getPublishedDependencies() {
         return publishedDependencies;
     }
 
@@ -154,12 +155,25 @@ public class BuildInfo implements Serializable {
         ArtifactoryPipelineConfigurator config = new ArtifactoryPipelineConfigurator(server);
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(config, server);
         ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
-            preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
+                preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
 
+        addDefaultModuleToModules(ExtractorUtils.sanitizeBuildName(build.getParent().getDisplayName()));
         return new PipelineBuildInfoDeployer(config, client, build, listener, new BuildInfoAccessor(this));
+    }
+
+    private void addDefaultModuleToModules(String moduleId) {
+        ModuleBuilder moduleBuilder = new ModuleBuilder()
+                .id(moduleId)
+                .artifacts(deployedArtifacts)
+                .dependencies(publishedDependencies);
+        modules.add(moduleBuilder.build());
     }
 
     public void setCpsScript(CpsScript cpsScript) {
         this.env.setCpsScript(cpsScript);
+    }
+
+    public List<Module> getModules() {
+        return modules;
     }
 }

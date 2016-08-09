@@ -5,6 +5,7 @@ import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
+import org.jfrog.build.api.Module;
 import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.hudson.pipeline.PipelineBuildInfoDeployer;
 
@@ -44,10 +45,6 @@ public class BuildInfoAccessor {
         return this.buildInfo.getStartDate();
     }
 
-    public Map<Artifact, Artifact> getDeployedArtifacts() {
-        return this.buildInfo.getDeployedArtifacts();
-    }
-
     public String getBuildName() {
         return this.buildInfo.getName();
     }
@@ -58,10 +55,6 @@ public class BuildInfoAccessor {
 
     public BuildRetention getRetention() {
         return this.buildInfo.getRetention();
-    }
-
-    public Map<Dependency, Dependency> getPublishedDependencies() {
-        return this.buildInfo.getPublishedDependencies();
     }
 
     public void captureVariables(StepContext context) throws Exception {
@@ -80,4 +73,7 @@ public class BuildInfoAccessor {
         return this.buildInfo.createDeployer(build, listener, server);
     }
 
+    public List<Module> getModules() {
+        return this.buildInfo.getModules();
+    }
 }
