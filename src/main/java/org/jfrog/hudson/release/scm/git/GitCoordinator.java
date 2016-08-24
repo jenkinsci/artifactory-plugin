@@ -51,12 +51,12 @@ public class GitCoordinator extends AbstractScmCoordinator {
     public void prepare() throws IOException, InterruptedException {
         releaseBranch = releaseAction.getReleaseBranch();
 
-        // find the current local built branch
-        String gitBranchName = build.getEnvironment(listener).get("GIT_BRANCH");
-        checkoutBranch = StringUtils.substringAfter(gitBranchName, "/");
-
         scmManager = new GitManager(build, listener);
         scmManager.setGitCredentials(releaseAction.getGitCredentials());
+
+        // find the current local built branch
+        String gitBranchName = build.getEnvironment(listener).get("GIT_BRANCH");
+        checkoutBranch = scmManager.getBranchNameWithoutRemote(gitBranchName);
     }
 
     public void beforeReleaseVersionChange() throws IOException, InterruptedException {
