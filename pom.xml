@@ -30,10 +30,10 @@
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
     <properties>
-        <buildinfo.version>2.6.1</buildinfo.version>
+        <buildinfo.version>2.6.x-SNAPSHOT</buildinfo.version>
         <buildinfo.maven3.version>2.6.x-SNAPSHOT</buildinfo.maven3.version>
-        <buildinfo.gradle.version>4.4.2</buildinfo.gradle.version>
-        <buildinfo.ivy.version>2.6.0</buildinfo.ivy.version>
+        <buildinfo.gradle.version>4.4.x-SNAPSHOT</buildinfo.gradle.version>
+        <buildinfo.ivy.version>2.6.x-SNAPSHOT</buildinfo.ivy.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
     </properties>
 
@@ -219,6 +219,7 @@
                 </exclusion>
                 <exclusion>
                     <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

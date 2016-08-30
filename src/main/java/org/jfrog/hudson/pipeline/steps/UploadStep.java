@@ -1,6 +1,7 @@
 package org.jfrog.hudson.pipeline.steps;
 
 import com.google.inject.Inject;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Run;
@@ -9,8 +10,8 @@ import org.jenkinsci.plugins.workflow.steps.*;
 import org.jfrog.hudson.pipeline.PipelineUtils;
 import org.jfrog.hudson.pipeline.executors.GenericUploadExecutor;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
-import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfoAccessor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.HashMap;
@@ -53,13 +54,16 @@ public class UploadStep extends AbstractStepImpl {
         @StepContextParameter
         private transient TaskListener listener;
 
+        @StepContextParameter
+        private transient EnvVars env;
+
         @Inject(optional = true)
         private transient UploadStep step;
 
         @Override
         protected BuildInfo run() throws Exception {
             BuildInfo buildInfo = new GenericUploadExecutor(PipelineUtils.prepareArtifactoryServer(null, step.getServer()), listener, build, ws, step.getBuildInfo(), getContext()).execution(step.getSpec());
-            new BuildInfoAccessor(buildInfo).captureVariables(getContext());
+            new BuildInfoAccessor(buildInfo).captureVariables(env, build, listener);
             return buildInfo;
         }
     }
@@ -85,6 +89,11 @@ public class UploadStep extends AbstractStepImpl {
         @Override
         public Map<String, Object> defineArguments(Step step) throws UnsupportedOperationException {
             return new HashMap<String, Object>();
+        }
+
+        @Override
+        public boolean isAdvanced() {
+            return true;
         }
     }
 

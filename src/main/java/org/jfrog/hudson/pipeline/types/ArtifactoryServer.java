@@ -1,9 +1,11 @@
 package org.jfrog.hudson.pipeline.types;
 
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.CredentialsConfig;
+import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 
 import java.io.Serializable;
 import java.util.*;
@@ -19,8 +21,13 @@ public class ArtifactoryServer implements Serializable {
     private String url;
     private String username;
     private String password;
+    private String credentialsId;
     private boolean bypassProxy;
     private CpsScript cpsScript;
+    private boolean usesCredetialsId;
+
+    public ArtifactoryServer() {
+    }
 
     public ArtifactoryServer(String artifactoryServerName, String url, String username, String password) {
         serverName = artifactoryServerName;
@@ -35,8 +42,16 @@ public class ArtifactoryServer implements Serializable {
         this.password = password;
     }
 
+    public ArtifactoryServer(String url, String credentialsId) {
+        this.url = url;
+        this.credentialsId = credentialsId;
+        this.usesCredetialsId = true;
+    }
+
     public CredentialsConfig createCredentialsConfig() {
-        return new CredentialsConfig(this.username, this.password, null, null);
+        CredentialsConfig credentialsConfig = new CredentialsConfig(this.username, this.password, this.credentialsId, null);
+        credentialsConfig.setIgnoreCredentialPluginDisabled(usesCredetialsId);
+        return credentialsConfig;
     }
 
     public void setCpsScript(CpsScript cpsScript) {
@@ -170,11 +185,19 @@ public class ArtifactoryServer implements Serializable {
     @Whitelisted
     public void setUsername(String username) {
         this.username = username;
+        this.setCredentialsId("");
+        this.usesCredetialsId = false;
     }
 
     @Whitelisted
-    public void setPassword(String password){
+    public void setPassword(String password) {
         this.password = password;
+        this.setCredentialsId("");
+        this.usesCredetialsId = false;
+    }
+
+    public String getPassword() {
+        return this.password;
     }
 
     @Whitelisted
@@ -187,4 +210,16 @@ public class ArtifactoryServer implements Serializable {
         return bypassProxy;
     }
 
+    @Whitelisted
+    public String getCredentialsId() {
+        return credentialsId;
+    }
+
+    @Whitelisted
+    public void setCredentialsId(String credentialsId) {
+        this.credentialsId = credentialsId;
+        this.setPassword("");
+        this.setUsername("");
+        this.usesCredetialsId = true;
+    }
 }

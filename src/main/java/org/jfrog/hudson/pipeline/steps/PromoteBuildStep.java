@@ -93,6 +93,11 @@ public class PromoteBuildStep extends AbstractStepImpl {
         public Map<String, Object> defineArguments(Step step) throws UnsupportedOperationException {
             return new HashMap<String, Object>();
         }
+
+        @Override
+        public boolean isAdvanced() {
+            return true;
+        }
     }
 
 }

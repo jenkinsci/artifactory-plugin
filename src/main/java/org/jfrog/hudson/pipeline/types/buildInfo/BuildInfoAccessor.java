@@ -1,8 +1,8 @@
-package org.jfrog.hudson.pipeline.types;
+package org.jfrog.hudson.pipeline.types.buildInfo;
 
+import hudson.EnvVars;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.Module;
@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by Tamirh on 16/05/2016.
@@ -37,7 +38,7 @@ public class BuildInfoAccessor {
         return this.buildInfo.getSysVars();
     }
 
-    public List<BuildDependency> getBuildDependencies() {
+    public Set<BuildDependency> getBuildDependencies() {
         return this.buildInfo.getBuildDependencies();
     }
 
@@ -57,10 +58,10 @@ public class BuildInfoAccessor {
         return this.buildInfo.getRetention();
     }
 
-    public void captureVariables(StepContext context) throws Exception {
+    public void captureVariables(EnvVars envVars, Run build, TaskListener listener) throws Exception {
         Env env = this.buildInfo.getEnv();
         if (env.isCapture()) {
-            env.collectVariables(context);
+            env.collectVariables(envVars, build, listener);
         }
     }
 
@@ -73,7 +74,7 @@ public class BuildInfoAccessor {
         return this.buildInfo.createDeployer(build, listener, server);
     }
 
-    public List<Module> getModules() {
+    public Set<Module> getModules() {
         return this.buildInfo.getModules();
     }
 }

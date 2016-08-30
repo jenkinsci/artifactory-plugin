@@ -1,14 +1,13 @@
-package org.jfrog.hudson.pipeline.types;
+package org.jfrog.hudson.pipeline.types.buildInfo;
 
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
-import org.jfrog.build.api.Artifact;
-import org.jfrog.build.api.Dependency;
-import org.jfrog.build.api.Module;
+import org.jfrog.build.api.*;
 import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
@@ -34,11 +33,10 @@ public class BuildInfo implements Serializable {
     private String buildNumber;
     private Date startDate;
     private BuildRetention retention;
-    private List<BuildDependency> buildDependencies = new ArrayList<BuildDependency>();
-    private List<Artifact> deployedArtifacts = new ArrayList<Artifact>();
-    private List<Dependency> publishedDependencies = new ArrayList<Dependency>();
-
-    private List<Module> modules = new ArrayList<Module>();
+    private Set<BuildDependency> buildDependencies = new HashSet<BuildDependency>();
+    private Set<Artifact> deployedArtifacts = new HashSet<Artifact>();
+    private Set<Dependency> publishedDependencies = new HashSet<Dependency>();
+    private Set<Module> modules = new HashSet<Module>();
     private Env env = new Env();
 
     public BuildInfo(Run build) {
@@ -86,6 +84,28 @@ public class BuildInfo implements Serializable {
         this.env.append(other.getEnv());
     }
 
+    public void append(Build other) {
+        Properties properties = other.getProperties();
+        Env otherEnv = new Env();
+        if (properties != null) {
+            for (String key : properties.stringPropertyNames()) {
+                boolean isEnvVar = StringUtils.startsWith(key, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX);
+                if (isEnvVar) {
+                    otherEnv.getEnvVars().put(StringUtils.substringAfter(key, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX), properties.getProperty(key));
+                } else {
+                    otherEnv.getSysVars().put(key, properties.getProperty(key));
+                }
+            }
+            this.env.append(otherEnv);
+        }
+        if (other.getModules() != null) {
+            this.modules.addAll(other.getModules());
+        }
+        if (other.getBuildDependencies() != null) {
+            this.buildDependencies.addAll(other.getBuildDependencies());
+        }
+    }
+
     @Whitelisted
     public Env getEnv() {
         return env;
@@ -129,15 +149,15 @@ public class BuildInfo implements Serializable {
         publishedDependencies.addAll(dependencies);
     }
 
-    protected List<Artifact> getDeployedArtifacts() {
+    protected Set<Artifact> getDeployedArtifacts() {
         return deployedArtifacts;
     }
 
-    protected List<BuildDependency> getBuildDependencies() {
+    protected Set<BuildDependency> getBuildDependencies() {
         return buildDependencies;
     }
 
-    protected List<Dependency> getPublishedDependencies() {
+    protected Set<Dependency> getPublishedDependencies() {
         return publishedDependencies;
     }
 
@@ -154,18 +174,21 @@ public class BuildInfo implements Serializable {
 
         ArtifactoryPipelineConfigurator config = new ArtifactoryPipelineConfigurator(server);
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(config, server);
-        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.getUsername(),
-                preferredDeployer.getPassword(), server.createProxyConfiguration(Jenkins.getInstance().proxy));
+        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(build.getParent()),
+                preferredDeployer.providePassword(build.getParent()), server.createProxyConfiguration(Jenkins.getInstance().proxy));
 
         addDefaultModuleToModules(ExtractorUtils.sanitizeBuildName(build.getParent().getDisplayName()));
         return new PipelineBuildInfoDeployer(config, client, build, listener, new BuildInfoAccessor(this));
     }
 
     private void addDefaultModuleToModules(String moduleId) {
+        if (deployedArtifacts.isEmpty() && publishedDependencies.isEmpty()) {
+            return;
+        }
         ModuleBuilder moduleBuilder = new ModuleBuilder()
                 .id(moduleId)
-                .artifacts(deployedArtifacts)
-                .dependencies(publishedDependencies);
+                .artifacts(new ArrayList<Artifact>(deployedArtifacts))
+                .dependencies(new ArrayList<Dependency>(publishedDependencies));
         modules.add(moduleBuilder.build());
     }
 
@@ -173,7 +196,7 @@ public class BuildInfo implements Serializable {
         this.env.setCpsScript(cpsScript);
     }
 
-    public List<Module> getModules() {
+    public Set<Module> getModules() {
         return modules;
     }
 }

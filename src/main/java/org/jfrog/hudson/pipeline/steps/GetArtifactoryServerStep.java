@@ -20,6 +20,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by romang on 4/21/16.
@@ -96,6 +97,11 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
 
         public ListBoxModel doFillArtifactoryServerIDItems() {
             return PipelineUtils.getServerListBox();
+        }
+
+        @Override
+        public boolean isAdvanced() {
+            return true;
         }
     }
 }
