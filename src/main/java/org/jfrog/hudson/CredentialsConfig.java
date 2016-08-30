@@ -22,6 +22,7 @@ public class CredentialsConfig implements Serializable {
     private Credentials credentials;
     private String credentialsId;
     private Boolean overridingCredentials = false;
+    private boolean ignoreCredentialPluginDisabled; //We need this for the pipeline flow we can set credentials although the credentials plugin is disabled
 
     /**
      * Constructed from the build configuration (Maven, Gradle, Ivy, Freestyle, etc)
@@ -53,7 +54,7 @@ public class CredentialsConfig implements Serializable {
      * In Credentials plugin mode this will return true if a credentials id was selected in the job configuration
      */
     public boolean isCredentialsProvided() {
-        if (PluginsUtils.isCredentialsPluginEnabled()) {
+        if (PluginsUtils.isCredentialsPluginEnabled() || ignoreCredentialPluginDisabled) {
             return StringUtils.isNotBlank(credentialsId);
         }
         return overridingCredentials;
@@ -65,7 +66,7 @@ public class CredentialsConfig implements Serializable {
      * @return the username that should be apply in this configuration
      */
     public String provideUsername(Item item) {
-        return !PluginsUtils.isCredentialsPluginEnabled() || credentialsId == null ? credentials.getUsername() : PluginsUtils.credentialsLookup(credentialsId, item).getUsername();
+        return isUsingCredentialsPlugin() ? PluginsUtils.credentialsLookup(credentialsId, item).getUsername() :  credentials.getUsername();
     }
     /**
      * Not like getPassword this will return the username of the current Credentials mode of the system (legacy/credentials plugin)
@@ -73,11 +74,11 @@ public class CredentialsConfig implements Serializable {
      * @return the password that should be apply in this configuration
      */
     public String providePassword(Item item) {
-        return !PluginsUtils.isCredentialsPluginEnabled() || credentialsId == null ? credentials.getPassword() : PluginsUtils.credentialsLookup(credentialsId, item).getPassword();
+        return isUsingCredentialsPlugin() ? PluginsUtils.credentialsLookup(credentialsId, item).getPassword() : credentials.getPassword();
     }
 
     public Credentials getCredentials(Item item) {
-        return !PluginsUtils.isCredentialsPluginEnabled() || credentialsId == null ? credentials : PluginsUtils.credentialsLookup(credentialsId, item) ;
+        return isUsingCredentialsPlugin() ? PluginsUtils.credentialsLookup(credentialsId, item) : credentials;
     }
 
     // NOTE: These getters are not part of the API, but used by Jenkins Jelly for displaying values on user interface
@@ -103,5 +104,17 @@ public class CredentialsConfig implements Serializable {
 
     public boolean isOverridingCredentials() {
         return overridingCredentials;
+    }
+
+    public boolean isIgnoreCredentialPluginDisabled() {
+        return ignoreCredentialPluginDisabled;
+    }
+
+    public void setIgnoreCredentialPluginDisabled(boolean ignoreCredentialPluginDisabled) {
+        this.ignoreCredentialPluginDisabled = ignoreCredentialPluginDisabled;
+    }
+
+    public boolean isUsingCredentialsPlugin() {
+        return PluginsUtils.isCredentialsPluginEnabled() && credentialsId != null || ignoreCredentialPluginDisabled;
     }
 }
