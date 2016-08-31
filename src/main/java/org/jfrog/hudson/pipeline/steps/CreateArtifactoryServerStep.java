@@ -117,5 +117,10 @@ public class CreateArtifactoryServerStep extends AbstractStepImpl {
             }
             return args;
         }
+
+        @Override
+        public boolean isAdvanced() {
+            return true;
+        }
     }
 }
