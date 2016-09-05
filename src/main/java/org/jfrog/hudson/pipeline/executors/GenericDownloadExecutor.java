@@ -12,7 +12,7 @@ import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.extractor.clientConfiguration.util.AqlDependenciesHelper;
 import org.jfrog.build.extractor.clientConfiguration.util.DependenciesHelper;
-import org.jfrog.build.extractor.clientConfiguration.util.WildcardDependenciesHelper;
+import org.jfrog.build.extractor.clientConfiguration.util.WildcardsDependenciesHelper;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.generic.DependenciesDownloaderImpl;
@@ -71,7 +71,7 @@ public class GenericDownloadExecutor {
 
         DependenciesDownloaderImpl dependancyDownloader = new DependenciesDownloaderImpl(dependenciesClient, ws, log);
         AqlDependenciesHelper aqlHelper = new AqlDependenciesHelper(dependancyDownloader, server.getUrl(), "", log);
-        WildcardDependenciesHelper wildcardHelper = new WildcardDependenciesHelper(dependancyDownloader, server.getUrl(), "", log);
+        WildcardsDependenciesHelper wildcardHelper = new WildcardsDependenciesHelper(dependancyDownloader, server.getUrl(), "", log);
 
         for (FileJson file : downloadJson.getFiles()) {
             if (file.getPattern() != null) {
