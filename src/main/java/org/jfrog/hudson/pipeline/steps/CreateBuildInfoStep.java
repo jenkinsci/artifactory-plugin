@@ -3,10 +3,7 @@ package org.jfrog.hudson.pipeline.steps;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.model.Run;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
-import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
+import org.jenkinsci.plugins.workflow.steps.*;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -19,7 +16,7 @@ public class CreateBuildInfoStep extends AbstractStepImpl {
     public CreateBuildInfoStep() {
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<BuildInfo> {
+    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
         private static final long serialVersionUID = 1L;
 
         @StepContextParameter

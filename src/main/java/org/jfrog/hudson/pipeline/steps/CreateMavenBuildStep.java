@@ -3,7 +3,7 @@ package org.jfrog.hudson.pipeline.steps;
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.types.MavenBuild;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -13,7 +13,7 @@ public class CreateMavenBuildStep extends AbstractStepImpl {
     public CreateMavenBuildStep() {
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<MavenBuild> {
+    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<MavenBuild> {
         private static final long serialVersionUID = 1L;
 
         @Override

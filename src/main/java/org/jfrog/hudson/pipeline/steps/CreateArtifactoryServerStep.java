@@ -50,7 +50,7 @@ public class CreateArtifactoryServerStep extends AbstractStepImpl {
         return credentialsId;
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<ArtifactoryServer> {
+    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<ArtifactoryServer> {
         private static final long serialVersionUID = 1L;
 
         @Inject(optional = true)

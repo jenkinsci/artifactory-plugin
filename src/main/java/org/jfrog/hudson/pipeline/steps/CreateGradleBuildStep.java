@@ -3,7 +3,7 @@ package org.jfrog.hudson.pipeline.steps;
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.types.GradleBuild;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -13,7 +13,7 @@ public class CreateGradleBuildStep extends AbstractStepImpl {
     public CreateGradleBuildStep() {
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<GradleBuild> {
+    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<GradleBuild> {
         private static final long serialVersionUID = 1L;
 
         @Override
