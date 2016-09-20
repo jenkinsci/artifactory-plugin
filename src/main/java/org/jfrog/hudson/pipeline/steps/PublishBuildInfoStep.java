@@ -36,7 +36,7 @@ public class PublishBuildInfoStep extends AbstractStepImpl {
         return server;
     }
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Boolean> {
+    public static class Execution extends AbstractSynchronousStepExecution<Boolean> {
         private static final long serialVersionUID = 1L;
         @StepContextParameter
         private transient FilePath ws;
@@ -78,11 +78,6 @@ public class PublishBuildInfoStep extends AbstractStepImpl {
         @Override
         public String getDisplayName() {
             return "Publish build Info to Artifactory";
-        }
-
-        @Override
-        public Map<String, Object> defineArguments(Step step) throws UnsupportedOperationException {
-            return new HashMap<String, Object>();
         }
 
         @Override

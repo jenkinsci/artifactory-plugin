@@ -42,7 +42,7 @@ public class DownloadStep extends AbstractStepImpl {
         return server;
     }
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
+    public static class Execution extends AbstractSynchronousStepExecution<BuildInfo> {
         private static final long serialVersionUID = 1L;
         @StepContextParameter
         private transient FilePath ws;
@@ -83,11 +83,6 @@ public class DownloadStep extends AbstractStepImpl {
         @Override
         public String getDisplayName() {
             return "Download artifacts";
-        }
-
-        @Override
-        public Map<String, Object> defineArguments(Step step) throws UnsupportedOperationException {
-            return new HashMap<String, Object>();
         }
 
         @Override

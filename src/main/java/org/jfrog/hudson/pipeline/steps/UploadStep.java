@@ -6,16 +6,16 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.executors.GenericUploadExecutor;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfoAccessor;
 import org.kohsuke.stapler.DataBoundConstructor;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class UploadStep extends AbstractStepImpl {
 
@@ -43,7 +43,7 @@ public class UploadStep extends AbstractStepImpl {
     }
 
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
+    public static class Execution extends AbstractSynchronousStepExecution<BuildInfo> {
         private static final long serialVersionUID = 1L;
         @StepContextParameter
         private transient FilePath ws;
@@ -84,11 +84,6 @@ public class UploadStep extends AbstractStepImpl {
         @Override
         public String getDisplayName() {
             return "Upload artifacts";
-        }
-
-        @Override
-        public Map<String, Object> defineArguments(Step step) throws UnsupportedOperationException {
-            return new HashMap<String, Object>();
         }
 
         @Override

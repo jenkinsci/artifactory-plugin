@@ -35,7 +35,7 @@ public class PromoteBuildStep extends AbstractStepImpl {
         return promotionConfig;
     }
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Boolean> {
+    public static class Execution extends AbstractSynchronousStepExecution<Boolean> {
         private static final long serialVersionUID = 1L;
 
         @StepContextParameter

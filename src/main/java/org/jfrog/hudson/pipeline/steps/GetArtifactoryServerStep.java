@@ -7,7 +7,10 @@ import hudson.util.ListBoxModel;
 import org.acegisecurity.acls.NotFoundException;
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.util.RepositoriesUtils;
@@ -31,7 +34,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
         return artifactoryServerID;
     }
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<org.jfrog.hudson.pipeline.types.ArtifactoryServer> {
+    public static class Execution extends AbstractSynchronousStepExecution<org.jfrog.hudson.pipeline.types.ArtifactoryServer> {
 
         @StepContextParameter
         private transient Run build;

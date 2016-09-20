@@ -14,7 +14,10 @@ import hudson.plugins.gradle.GradleInstallation;
 import hudson.util.ArgumentListBuilder;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.build.api.Build;
 import org.jfrog.hudson.gradle.GradleInitScriptWriter;
 import org.jfrog.hudson.pipeline.Utils;
@@ -89,7 +92,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
         return useWrapper;
     }
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
+    public static class Execution extends AbstractSynchronousStepExecution<BuildInfo> {
         private static final long serialVersionUID = 1L;
 
         @StepContextParameter

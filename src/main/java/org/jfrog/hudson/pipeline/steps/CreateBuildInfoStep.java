@@ -16,7 +16,7 @@ public class CreateBuildInfoStep extends AbstractStepImpl {
     public CreateBuildInfoStep() {
     }
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
+    public static class Execution extends AbstractSynchronousStepExecution<BuildInfo> {
         private static final long serialVersionUID = 1L;
 
         @StepContextParameter

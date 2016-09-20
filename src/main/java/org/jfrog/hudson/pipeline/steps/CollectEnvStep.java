@@ -5,7 +5,10 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.hudson.pipeline.types.buildInfo.Env;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -25,7 +28,7 @@ public class CollectEnvStep extends AbstractStepImpl {
         return env;
     }
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Boolean> {
+    public static class Execution extends AbstractSynchronousStepExecution<Boolean> {
         private static final long serialVersionUID = 1L;
 
         @Inject(optional = true)

@@ -49,7 +49,7 @@ public class CreateArtifactoryServerStep extends AbstractStepImpl {
         return credentialsId;
     }
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<ArtifactoryServer> {
+    public static class Execution extends AbstractSynchronousStepExecution<ArtifactoryServer> {
         private static final long serialVersionUID = 1L;
 
         @Inject(optional = true)
@@ -98,23 +98,6 @@ public class CreateArtifactoryServerStep extends AbstractStepImpl {
         @Override
         public String getDisplayName() {
             return "Returns new Artifactory server";
-        }
-
-        @Override
-        public Map<String, Object> defineArguments(Step step) throws UnsupportedOperationException {
-            Map<String, Object> args = new HashMap<String, Object>();
-            CreateArtifactoryServerStep cStep = (CreateArtifactoryServerStep) step;
-
-            if (StringUtils.isNotEmpty(cStep.getUrl())) {
-                args.put("url", cStep.getUrl());
-            }
-            if (StringUtils.isNotEmpty(cStep.getUsername())) {
-                args.put("username", cStep.getUsername());
-            }
-            if (StringUtils.isNotEmpty(cStep.getPassword())) {
-                args.put("password", cStep.getPassword());
-            }
-            return args;
         }
 
         @Override
