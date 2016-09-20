@@ -1,7 +1,6 @@
 package org.jfrog.hudson.pipeline.types;
 
-import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.CredentialsConfig;
@@ -68,7 +67,7 @@ public class ArtifactoryServer implements Serializable {
             throw new IllegalArgumentException(SPEC + " is a mandatory field");
         }
 
-        List<String> keysAsList = Arrays.asList(new String[] {SPEC, BUILD_INFO});
+        List<String> keysAsList = Arrays.asList(new String[]{SPEC, BUILD_INFO});
         if (!keysAsList.containsAll(arguments.keySet())) {
             throw new IllegalArgumentException("Only the following arguments are allowed, " + keysAsList.toString());
         }
@@ -146,13 +145,13 @@ public class ArtifactoryServer implements Serializable {
         final String buildName = "buildName";
         final String buildNumber = "buildNumber";
         final String targetRepository = "targetRepo";
-        List<String> mandatoryArgumentsAsList = Arrays.asList(new String[] {buildName, buildNumber, targetRepository});
+        List<String> mandatoryArgumentsAsList = Arrays.asList(new String[]{buildName, buildNumber, targetRepository});
         if (!promotionParams.keySet().containsAll(mandatoryArgumentsAsList)) {
-            throw new IllegalArgumentException(mandatoryArgumentsAsList.toString() +" are mandatory fields");
+            throw new IllegalArgumentException(mandatoryArgumentsAsList.toString() + " are mandatory fields");
         }
 
         Set<String> promotionParamsSet = promotionParams.keySet();
-        List<String> keysAsList = Arrays.asList(new String[] {buildName, buildNumber, targetRepository, "sourceRepo", "status", "comment", "includeDependencies", "copy"});
+        List<String> keysAsList = Arrays.asList(new String[]{buildName, buildNumber, targetRepository, "sourceRepo", "status", "comment", "includeDependencies", "copy"});
         if (!keysAsList.containsAll(promotionParamsSet)) {
             throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
         }

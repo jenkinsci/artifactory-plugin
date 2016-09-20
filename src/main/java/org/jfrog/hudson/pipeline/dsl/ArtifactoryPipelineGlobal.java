@@ -1,8 +1,10 @@
 package org.jfrog.hudson.pipeline.dsl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
+import org.jfrog.hudson.pipeline.types.Docker;
 import org.jfrog.hudson.pipeline.types.GradleBuild;
 import org.jfrog.hudson.pipeline.types.MavenBuild;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
@@ -31,6 +33,25 @@ public class ArtifactoryPipelineGlobal implements Serializable {
         server.setCpsScript(this.script);
         return server;
     }
+
+    @Whitelisted
+    public Docker docker(String username, String password) {
+        return new Docker(script, username, password);
+    }
+
+    @Whitelisted
+    public Docker docker(Map<String, Object> dockerArguments) {
+        List<String> keysAsList = Arrays.asList(new String[]{"username", "password"});
+        if (!keysAsList.containsAll(dockerArguments.keySet())) {
+            throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList);
+        }
+
+        final ObjectMapper mapper = new ObjectMapper();
+        Docker docker = mapper.convertValue(dockerArguments, Docker.class);
+        docker.setCpsScript(script);
+        return docker;
+    }
+
 
     @Whitelisted
     public ArtifactoryServer newServer(String url, String username, String password) {

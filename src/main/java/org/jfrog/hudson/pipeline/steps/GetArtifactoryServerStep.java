@@ -2,22 +2,19 @@ package org.jfrog.hudson.pipeline.steps;
 
 import com.google.inject.Inject;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.model.Run;
-import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import org.acegisecurity.acls.NotFoundException;
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.util.RepositoriesUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created by romang on 4/21/16.
@@ -52,7 +49,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
             List<ArtifactoryServer> artifactoryServers = new ArrayList<ArtifactoryServer>();
             List<ArtifactoryServer> artifactoryConfiguredServers = RepositoriesUtils.getArtifactoryServers();
             if (artifactoryConfiguredServers == null) {
-                getContext().onFailure(new NotFoundException("None Artifactory servers were configured"));
+                getContext().onFailure(new NotFoundException("No Artifactory servers were configured"));
             }
             for (ArtifactoryServer server : artifactoryConfiguredServers) {
                 if (server.getName().equals(artifactoryServerID)) {
@@ -67,7 +64,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
             }
             ArtifactoryServer server = artifactoryServers.get(0);
             org.jfrog.hudson.pipeline.types.ArtifactoryServer artifactoryPipelineServer = new org.jfrog.hudson.pipeline.types.ArtifactoryServer(artifactoryServerID, server.getUrl(),
-                server.getResolvingCredentialsConfig().provideUsername(build.getParent()), server.getResolvingCredentialsConfig().providePassword(build.getParent()));
+                    server.getResolvingCredentialsConfig().provideUsername(build.getParent()), server.getResolvingCredentialsConfig().providePassword(build.getParent()));
             artifactoryPipelineServer.setBypassProxy(server.isBypassProxy());
             return artifactoryPipelineServer;
         }
@@ -93,7 +90,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
         }
 
         public ListBoxModel doFillArtifactoryServerIDItems() {
-            return PipelineUtils.getServerListBox();
+            return Utils.getServerListBox();
         }
 
         @Override

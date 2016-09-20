@@ -7,7 +7,7 @@ import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 
 import java.io.Serializable;
 import java.util.*;
@@ -31,10 +31,12 @@ public class Env implements Serializable {
      * Collect environment variables and system properties under with filter constrains
      *
      * @param env
+     * @param build
+     * @param listener
      * @throws Exception
      */
     public void collectVariables(EnvVars env, Run build, TaskListener listener) throws Exception {
-        env.putAll(PipelineUtils.extractBuildParameters(build, listener));
+        env.putAll(Utils.extractBuildParameters(build, listener));
         addAllWithFilter(envVars, env, filter.getPatternFilter());
 
         Map<String, String> sysEnv = new HashMap<String, String>();

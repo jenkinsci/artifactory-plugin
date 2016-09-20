@@ -1,7 +1,7 @@
 package org.jfrog.hudson.pipeline.json;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import net.sf.json.JSONObject;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * Created by romang on 4/26/16.

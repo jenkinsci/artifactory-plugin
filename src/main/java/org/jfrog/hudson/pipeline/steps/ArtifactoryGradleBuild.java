@@ -17,7 +17,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.jfrog.build.api.Build;
 import org.jfrog.hudson.gradle.GradleInitScriptWriter;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.executors.MavenGradleEnvExtractor;
 import org.jfrog.hudson.pipeline.types.GradleBuild;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
@@ -119,7 +119,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             ArgumentListBuilder args = getGradleExecutor();
             envExtractor.buildEnvVars(ws, env);
             exe(args);
-            Build regularBuildInfo = PipelineUtils.getGeneratedBuildInfo(build, env, listener, ws, launcher);
+            Build regularBuildInfo = Utils.getGeneratedBuildInfo(build, env, listener, ws, launcher);
             buildInfo.append(regularBuildInfo);
             return buildInfo;
         }
@@ -130,8 +130,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
                 String execName = !launcher.isUnix() ? GradleInstallation.WINDOWS_GRADLE_WRAPPER_COMMAND : GradleInstallation.UNIX_GRADLE_WRAPPER_COMMAND;
                 FilePath gradleWrapperFile = new FilePath(new FilePath(ws, step.getRooBuildScriptDir()), execName);
                 args.add(gradleWrapperFile.getRemote());
-            }
-            else {
+            } else {
                 try {
                     getGradleHome(args);
                 } catch (IOException e) {
@@ -215,7 +214,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
                     build.setResult(Result.FAILURE);
                     throw new Run.RunnerAbortedException();
                 } else {
-                    Node node = PipelineUtils.getNode(launcher);
+                    Node node = Utils.getNode(launcher);
                     gi = gi.forNode(node, listener);
                     gi = gi.forEnvironment(env);
                 }

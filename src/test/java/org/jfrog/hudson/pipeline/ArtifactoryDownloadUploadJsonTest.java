@@ -1,7 +1,7 @@
 package org.jfrog.hudson.pipeline;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.jfrog.hudson.pipeline.json.DownloadUploadJson;
 import org.junit.Test;
 

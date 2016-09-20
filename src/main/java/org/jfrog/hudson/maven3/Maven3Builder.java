@@ -29,7 +29,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.extractor.maven.Maven3BuildInfoLogger;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.util.PluginDependencyHelper;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -47,7 +47,7 @@ import java.net.URL;
 public class Maven3Builder extends Builder {
 
     public static final String CLASSWORLDS_LAUNCHER = "org.codehaus.plexus.classworlds.launcher.Launcher";
-    public static final String MAVEN_HOME = "M2_HOME";
+    public static final String MAVEN_HOME = "MAVEN_HOME";
 
     private final String mavenName;
     private final String rootPom;
@@ -168,7 +168,7 @@ public class Maven3Builder extends Builder {
             // use the classworlds conf packaged with this plugin and resolve the extractor libs
             File maven3ExtractorJar = Which.jarFile(Maven3BuildInfoLogger.class);
             FilePath actualDependencyDirectory =
-                    PluginDependencyHelper.getActualDependencyDirectory(maven3ExtractorJar, PipelineUtils.getNode(launcher).getRootPath());
+                    PluginDependencyHelper.getActualDependencyDirectory(maven3ExtractorJar, Utils.getNode(launcher).getRootPath());
 
             if (getMavenOpts() == null || !getMavenOpts().contains("-Dm3plugin.lib")) {
                 args.addKeyValuePair("-D", "m3plugin.lib", actualDependencyDirectory.getRemote(), false);
@@ -218,7 +218,7 @@ public class Maven3Builder extends Builder {
                 listener.error("Couldn't find Maven executable.");
                 throw new Run.RunnerAbortedException();
             } else {
-                Node node = PipelineUtils.getNode(launcher);
+                Node node = Utils.getNode(launcher);
                 mi = mi.forNode(node, listener);
                 mi = mi.forEnvironment(env);
             }
@@ -227,7 +227,7 @@ public class Maven3Builder extends Builder {
         }
 
         if (env.get(MAVEN_HOME) != null) {
-            return new FilePath(new File(env.get(MAVEN_HOME)));
+            return new FilePath(launcher.getChannel(), env.get(MAVEN_HOME));
         }
 
         throw new RuntimeException("Couldn't find maven installation");
@@ -282,8 +282,8 @@ public class Maven3Builder extends Builder {
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return hudson.model.FreeStyleProject.class.isAssignableFrom(jobType) ||
                     hudson.matrix.MatrixProject.class.isAssignableFrom(jobType) ||
-                        (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
-                                com.tikal.jenkins.plugins.multijob.MultiJobProject.class.isAssignableFrom(jobType));
+                    (Jenkins.getInstance().getPlugin(PluginsUtils.MULTIJOB_PLUGIN_ID) != null &&
+                            com.tikal.jenkins.plugins.multijob.MultiJobProject.class.isAssignableFrom(jobType));
         }
 
         @Override

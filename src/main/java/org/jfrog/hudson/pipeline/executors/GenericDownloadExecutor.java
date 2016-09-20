@@ -1,10 +1,10 @@
 package org.jfrog.hudson.pipeline.executors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.eclipse.jgit.util.StringUtils;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.util.Log;
@@ -16,7 +16,7 @@ import org.jfrog.build.extractor.clientConfiguration.util.WildcardsDependenciesH
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.generic.DependenciesDownloaderImpl;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.json.DownloadUploadJson;
 import org.jfrog.hudson.pipeline.json.FileJson;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
@@ -36,14 +36,15 @@ public class GenericDownloadExecutor {
     private BuildInfo buildInfo;
     private ArtifactoryServer server;
     private Log log;
+    private TaskListener listener;
 
     public GenericDownloadExecutor(ArtifactoryServer server, TaskListener listener, Run build, FilePath ws, BuildInfo buildInfo) {
         this.server = server;
+        this.listener = listener;
         this.log = new JenkinsBuildInfoLog(listener);
         this.build = build;
-        this.buildInfo = PipelineUtils.prepareBuildinfo(build, buildInfo);
+        this.buildInfo = Utils.prepareBuildinfo(build, buildInfo);
         this.ws = ws;
-
     }
 
     public BuildInfo execution(String json) throws IOException, InterruptedException {
@@ -67,7 +68,7 @@ public class GenericDownloadExecutor {
         CredentialsConfig preferredResolver = server.getDeployerCredentialsConfig();
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
             preferredResolver.getUsername(), preferredResolver.getPassword(),
-            proxyConfiguration, null);
+            proxyConfiguration, listener);
 
         DependenciesDownloaderImpl dependancyDownloader = new DependenciesDownloaderImpl(dependenciesClient, ws, log);
         AqlDependenciesHelper aqlHelper = new AqlDependenciesHelper(dependancyDownloader, server.getUrl(), "", log);

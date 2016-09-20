@@ -4,7 +4,7 @@ import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
 /**
@@ -16,6 +16,8 @@ public class GradleDeployer extends Deployer {
     private boolean deployIvy;
     private String ivyPattern;
     private String artifactPattern;
+    private boolean mavenCompatible = true;
+
 
     public GradleDeployer() {
         super();
@@ -81,15 +83,26 @@ public class GradleDeployer extends Deployer {
         this.artifactPattern = artifactPattern;
     }
 
+    @Whitelisted
+    public boolean getMavenCompatible() {
+        return mavenCompatible;
+    }
+
+    @Whitelisted
+    public void setMavenCompatible(boolean mavenCompatible) {
+        this.mavenCompatible = mavenCompatible;
+    }
+
     public PublisherContext.Builder getContextBuilder() {
         return new PublisherContext.Builder()
                 .artifactoryServer(getArtifactoryServer())
                 .serverDetails(getDetails())
-                .deployArtifacts(isDeployArtifacts()).includesExcludes(PipelineUtils.getArtifactsIncludeExcludeForDeyployment(getArtifactDeploymentPatterns().getPatternFilter()))
+                .deployArtifacts(isDeployArtifacts()).includesExcludes(Utils.getArtifactsIncludeExcludeForDeyployment(getArtifactDeploymentPatterns().getPatternFilter()))
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
                 .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
                 .deployIvy(isDeployIvy()).deployMaven(isDeployMaven())
                 .deployerOverrider(this)
+                .maven2Compatible(getMavenCompatible())
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
     }
 }

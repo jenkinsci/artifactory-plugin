@@ -32,7 +32,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
@@ -366,10 +366,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     public Environment setUp(final AbstractBuild build, final Launcher launcher, final BuildListener listener)
             throws IOException, InterruptedException {
         String artifactoryPluginVersion = ActionableHelper.getArtifactoryPluginVersion();
-        listener.getLogger().println( "Jenkins Artifactory Plugin version: " + artifactoryPluginVersion);
+        listener.getLogger().println("Jenkins Artifactory Plugin version: " + artifactoryPluginVersion);
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         final FilePath actualDependencyDir =
-                PluginDependencyHelper.getActualDependencyDirectory(localDependencyFile, PipelineUtils.getNode(launcher).getRootPath());
+                PluginDependencyHelper.getActualDependencyDirectory(localDependencyFile, Utils.getNode(launcher).getRootPath());
         final PublisherContext context = new PublisherContext.Builder().artifactoryServer(getArtifactoryServer())
                 .serverDetails(getDetails()).deployerOverrider(ArtifactoryIvyConfigurator.this).runChecks(isRunChecks())
                 .includePublishArtifacts(isIncludePublishArtifacts()).violationRecipients(getViolationRecipients())
@@ -514,7 +514,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
             return RepositoriesUtils.getArtifactoryServers();
         }
 
-        public boolean isUseCredentialsPlugin(){
+        public boolean isUseCredentialsPlugin() {
             return PluginsUtils.isUseCredentialsPlugin();
         }
 

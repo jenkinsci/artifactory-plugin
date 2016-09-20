@@ -38,7 +38,7 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
@@ -217,7 +217,7 @@ public class ExtractorUtils {
      * Set all the parameters relevant for publishing artifacts and build info
      */
     private static void setPublisherInfo(Map<String, String> env, Run build,
-                                         PublisherContext context, ArtifactoryClientConfiguration configuration,TaskListener listerner, FilePath ws) {
+                                         PublisherContext context, ArtifactoryClientConfiguration configuration, TaskListener listerner, FilePath ws) {
         configuration.setActivateRecorder(Boolean.TRUE);
 
         FilePath tempFile;
@@ -463,7 +463,7 @@ public class ExtractorUtils {
         if (computer != null) {
             return computer;
         } else {
-            return PipelineUtils.getCurrentComputer(launcher);
+            return Utils.getCurrentComputer(launcher);
         }
     }
 
@@ -524,7 +524,7 @@ public class ExtractorUtils {
             buildVariables = new EnvVars();
             buildVariables.putAll(((AbstractBuild) build).getBuildVariables());
         } else {
-            buildVariables = PipelineUtils.extractBuildParameters(build, listener);
+            buildVariables = Utils.extractBuildParameters(build, listener);
         }
         return buildVariables;
     }

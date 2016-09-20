@@ -1,12 +1,10 @@
 package org.jfrog.hudson.pipeline.types.deployers;
 
-import org.apache.commons.cli.MissingArgumentException;
-import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.Filter;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
@@ -49,7 +47,7 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
     }
 
     public org.jfrog.hudson.ArtifactoryServer getArtifactoryServer() {
-        return PipelineUtils.prepareArtifactoryServer(null, this.server);
+        return Utils.prepareArtifactoryServer(null, this.server);
     }
 
     @Whitelisted
@@ -101,7 +99,7 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
     }
 
     public IncludesExcludes getArtifactsIncludeExcludeForDeyployment() {
-        return PipelineUtils.getArtifactsIncludeExcludeForDeyployment(artifactDeploymentPatterns.getPatternFilter());
+        return Utils.getArtifactsIncludeExcludeForDeyployment(artifactDeploymentPatterns.getPatternFilter());
     }
 
     public void createPublisherBuildInfoDetails(BuildInfo buildInfo) {

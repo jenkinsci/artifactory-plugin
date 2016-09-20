@@ -1,5 +1,7 @@
 package org.jfrog.hudson.pipeline;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -8,24 +10,27 @@ import hudson.plugins.git.util.BuildData;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.Vcs;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.CredentialsConfig;
+import org.jfrog.hudson.pipeline.docker.proxy.CertManager;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.RepositoriesUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by romang on 4/24/16.
  */
-public class PipelineUtils {
+public class Utils {
 
     public static final String BUILD_INFO_DELIMITER = ".";
 
@@ -63,7 +68,7 @@ public class PipelineUtils {
         List<org.jfrog.hudson.ArtifactoryServer> servers = RepositoriesUtils.getArtifactoryServers();
         r.add("", "");
         for (org.jfrog.hudson.ArtifactoryServer server : servers) {
-            r.add(server.getName() + PipelineUtils.BUILD_INFO_DELIMITER + server.getUrl(), server.getName());
+            r.add(server.getName() + Utils.BUILD_INFO_DELIMITER + server.getUrl(), server.getName());
         }
         return r;
     }
@@ -73,6 +78,12 @@ public class PipelineUtils {
             return new BuildInfo(build);
         }
         return buildinfo;
+    }
+
+    public static ObjectMapper mapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return mapper;
     }
 
     public static EnvVars extractBuildParameters(Run build, TaskListener listener) {
@@ -175,4 +186,20 @@ public class PipelineUtils {
             throw new Run.RunnerAbortedException();
         }
     }
+
+    public static void copyCertsToAgent(Computer c) throws IOException, InterruptedException {
+        if (!(c instanceof Jenkins.MasterComputer)) {
+
+            String certPath = CertManager.DEFAULT_RELATIVE_CERT_PATH;
+            FilePath remotePublicKey = new FilePath(c.getChannel(), c.getNode().getRootPath() + "/" + certPath);
+            FilePath localPublicKey = new FilePath(Jenkins.getInstance().getRootPath(), certPath);
+            localPublicKey.copyTo(remotePublicKey);
+
+            String keyPath = CertManager.DEFAULT_RELATIVE_KEY_PATH;
+            FilePath remotePrivateKey = new FilePath(c.getChannel(), c.getNode().getRootPath() + "/" + keyPath);
+            FilePath localPrivateKey = new FilePath(Jenkins.getInstance().getRootPath(), keyPath);
+            localPrivateKey.copyTo(remotePrivateKey);
+        }
+    }
+
 }

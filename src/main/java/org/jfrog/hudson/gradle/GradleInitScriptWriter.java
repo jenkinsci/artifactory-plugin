@@ -22,7 +22,7 @@ import hudson.Launcher;
 import hudson.model.Run;
 import hudson.remoting.Which;
 import org.apache.commons.io.IOUtils;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.util.PluginDependencyHelper;
 
 import java.io.File;
@@ -60,7 +60,7 @@ public class GradleInitScriptWriter {
         InputStream templateStream = getClass().getResourceAsStream("/initscripttemplate.gradle");
         String templateAsString = IOUtils.toString(templateStream, Charsets.UTF_8.name());
         File localGradleExtractorJar = Which.jarFile(getClass().getResource("/initscripttemplate.gradle"));
-        FilePath dependencyDir = PluginDependencyHelper.getActualDependencyDirectory(localGradleExtractorJar, PipelineUtils.getNode(launcher).getRootPath());
+        FilePath dependencyDir = PluginDependencyHelper.getActualDependencyDirectory(localGradleExtractorJar, Utils.getNode(launcher).getRootPath());
         String absoluteDependencyDirPath = dependencyDir.getRemote();
         absoluteDependencyDirPath = absoluteDependencyDirPath.replace("\\", "/");
         String str = templateAsString.replace("${pluginLibDir}", absoluteDependencyDirPath);

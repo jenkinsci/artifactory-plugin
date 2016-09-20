@@ -1,6 +1,6 @@
 package org.jfrog.hudson.pipeline.types;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
@@ -15,8 +15,8 @@ import java.util.*;
  */
 public class GradleBuild implements Serializable {
     private CpsScript cpsScript;
-    private GradleDeployer deployer = new GradleDeployer();;
-    private GradleResolver resolver = new GradleResolver();;
+    private GradleDeployer deployer = new GradleDeployer();
+    private GradleResolver resolver = new GradleResolver();
     private String tool = "";
     private boolean useWrapper;
 
@@ -59,7 +59,7 @@ public class GradleBuild implements Serializable {
 
     @Whitelisted
     public BuildInfo run(Map<String, Object> args) {
-        if (!args.containsKey("tasks") || !args.containsKey("buildFile")|| !args.containsKey("rooBuildScriptDir")) {
+        if (!args.containsKey("tasks") || !args.containsKey("buildFile") || !args.containsKey("rooBuildScriptDir")) {
             throw new IllegalArgumentException("rooBuildScriptDir, buildFile and tasks are mandatory arguments.");
         }
         Map<String, Object> stepVariables = getRunArguments((String) args.get("buildFile"), (String) args.get("tasks"), (String) args.get("switches"), (String) args.get("rooBuildScriptDir"), (BuildInfo) args.get("buildInfo"));

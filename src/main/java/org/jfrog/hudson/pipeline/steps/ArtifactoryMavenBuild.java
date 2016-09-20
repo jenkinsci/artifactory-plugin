@@ -10,7 +10,7 @@ import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.jfrog.build.api.Build;
 import org.jfrog.hudson.maven3.Maven3Builder;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.executors.MavenGradleEnvExtractor;
 import org.jfrog.hudson.pipeline.types.MavenBuild;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
@@ -99,7 +99,7 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
             mavenOpts = mavenOpts.replaceAll("[\t\r\n]+", " ");
             Maven3Builder maven3Builder = new Maven3Builder(step.getTool(), step.getPom(), step.getGoal(), mavenOpts);
             maven3Builder.perform(build, launcher, listener, env, ws);
-            Build regularBuildInfo = PipelineUtils.getGeneratedBuildInfo(build, env, listener, ws, launcher);
+            Build regularBuildInfo = Utils.getGeneratedBuildInfo(build, env, listener, ws, launcher);
             buildInfo.append(regularBuildInfo);
             return buildInfo;
         }

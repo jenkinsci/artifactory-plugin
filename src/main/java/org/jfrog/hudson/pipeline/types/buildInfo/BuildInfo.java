@@ -1,10 +1,11 @@
 package org.jfrog.hudson.pipeline.types.buildInfo;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.build.api.*;
@@ -13,8 +14,8 @@ import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
-import org.jfrog.hudson.pipeline.ArtifactoryPipelineConfigurator;
-import org.jfrog.hudson.pipeline.PipelineBuildInfoDeployer;
+import org.jfrog.hudson.pipeline.ArtifactoryConfigurator;
+import org.jfrog.hudson.pipeline.BuildInfoDeployer;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -33,15 +34,19 @@ public class BuildInfo implements Serializable {
     private String buildNumber;
     private Date startDate;
     private BuildRetention retention;
-    private Set<BuildDependency> buildDependencies = new HashSet<BuildDependency>();
-    private Set<Artifact> deployedArtifacts = new HashSet<Artifact>();
-    private Set<Dependency> publishedDependencies = new HashSet<Dependency>();
-    private Set<Module> modules = new HashSet<Module>();
+    private List<BuildDependency> buildDependencies = new ArrayList<BuildDependency>();
+    private List<Artifact> deployedArtifacts = new ArrayList<Artifact>();
+    private List<Dependency> publishedDependencies = new ArrayList<Dependency>();
+
+    private List<Module> modules = new ArrayList<Module>();
     private Env env = new Env();
+
+    private DockerBuildInfoHelper dockerBuildInfoHelper = new DockerBuildInfoHelper(this);
 
     public BuildInfo(Run build) {
         this.buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         this.buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
+        this.startDate = new Date(build.getStartTimeInMillis());
         this.retention = new BuildRetention();
     }
 
@@ -81,7 +86,8 @@ public class BuildInfo implements Serializable {
         this.deployedArtifacts.addAll(other.deployedArtifacts);
         this.publishedDependencies.addAll(other.publishedDependencies);
         this.buildDependencies.addAll(other.buildDependencies);
-        this.env.append(other.getEnv());
+        this.dockerBuildInfoHelper.append(other.dockerBuildInfoHelper);
+        this.env.append(other.env);
     }
 
     public void append(Build other) {
@@ -149,16 +155,8 @@ public class BuildInfo implements Serializable {
         publishedDependencies.addAll(dependencies);
     }
 
-    protected Set<Artifact> getDeployedArtifacts() {
-        return deployedArtifacts;
-    }
-
-    protected Set<BuildDependency> getBuildDependencies() {
+    protected List<BuildDependency> getBuildDependencies() {
         return buildDependencies;
-    }
-
-    protected Set<Dependency> getPublishedDependencies() {
-        return publishedDependencies;
     }
 
     protected Map<String, String> getEnvVars() {
@@ -169,26 +167,34 @@ public class BuildInfo implements Serializable {
         return env.getSysVars();
     }
 
-    protected PipelineBuildInfoDeployer createDeployer(Run build, TaskListener listener, ArtifactoryServer server)
+    protected BuildInfoDeployer createDeployer(Run build, TaskListener listener, Launcher launcher, ArtifactoryServer server)
             throws InterruptedException, NoSuchAlgorithmException, IOException {
 
-        ArtifactoryPipelineConfigurator config = new ArtifactoryPipelineConfigurator(server);
+        ArtifactoryConfigurator config = new ArtifactoryConfigurator(server);
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(config, server);
         ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(build.getParent()),
                 preferredDeployer.providePassword(build.getParent()), server.createProxyConfiguration(Jenkins.getInstance().proxy));
 
+        List<Module> dockerModules = dockerBuildInfoHelper.generateBuildInfoModules(listener, config, launcher);
+
+        addDockerBuildInfoModules(dockerModules);
         addDefaultModuleToModules(ExtractorUtils.sanitizeBuildName(build.getParent().getDisplayName()));
-        return new PipelineBuildInfoDeployer(config, client, build, listener, new BuildInfoAccessor(this));
+        return new BuildInfoDeployer(config, client, build, listener, new BuildInfoAccessor(this));
+    }
+
+    private void addDockerBuildInfoModules(List<Module> dockerModules) {
+        modules.addAll(dockerModules);
     }
 
     private void addDefaultModuleToModules(String moduleId) {
         if (deployedArtifacts.isEmpty() && publishedDependencies.isEmpty()) {
             return;
         }
+
         ModuleBuilder moduleBuilder = new ModuleBuilder()
                 .id(moduleId)
-                .artifacts(new ArrayList<Artifact>(deployedArtifacts))
-                .dependencies(new ArrayList<Dependency>(publishedDependencies));
+                .artifacts(deployedArtifacts)
+                .dependencies(publishedDependencies);
         modules.add(moduleBuilder.build());
     }
 
@@ -196,7 +202,7 @@ public class BuildInfo implements Serializable {
         this.env.setCpsScript(cpsScript);
     }
 
-    public Set<Module> getModules() {
+    public List<Module> getModules() {
         return modules;
     }
 }

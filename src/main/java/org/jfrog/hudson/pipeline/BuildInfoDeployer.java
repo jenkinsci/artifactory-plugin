@@ -22,16 +22,16 @@ import static org.jfrog.build.client.ArtifactoryHttpClient.encodeUrl;
 /**
  * Created by romang on 4/25/16.
  */
-public class PipelineBuildInfoDeployer extends AbstractBuildInfoDeployer {
+public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
 
     private final Run build;
     private final Map<String, String> sysVars;
     private final Map<String, String> envVars;
-    private ArtifactoryPipelineConfigurator configurator;
+    private ArtifactoryConfigurator configurator;
     private Build buildInfo;
 
-    public PipelineBuildInfoDeployer(ArtifactoryPipelineConfigurator configurator, ArtifactoryBuildInfoClient client,
-                                     Run build, TaskListener listener, BuildInfoAccessor buildinfoAccessor) throws IOException, InterruptedException, NoSuchAlgorithmException {
+    public BuildInfoDeployer(ArtifactoryConfigurator configurator, ArtifactoryBuildInfoClient client,
+                             Run build, TaskListener listener, BuildInfoAccessor buildinfoAccessor) throws IOException, InterruptedException, NoSuchAlgorithmException {
         super(configurator, build, listener, client);
         this.configurator = configurator;
         this.build = build;
@@ -58,7 +58,7 @@ public class PipelineBuildInfoDeployer extends AbstractBuildInfoDeployer {
     }
 
     private void addVcsDataToBuild(Run build) {
-        List<Vcs> vcsList = PipelineUtils.extractVcsBuildData(build);
+        List<Vcs> vcsList = Utils.extractVcsBuildData(build);
         buildInfo.setVcs(vcsList);
     }
 
