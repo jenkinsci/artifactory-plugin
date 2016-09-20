@@ -40,6 +40,11 @@ public class ArtifactoryPipelineGlobal implements Serializable {
     }
 
     @Whitelisted
+    public Docker docker() {
+        return new Docker(script, null, null);
+    }
+
+    @Whitelisted
     public Docker docker(Map<String, Object> dockerArguments) {
         List<String> keysAsList = Arrays.asList(new String[]{"username", "password"});
         if (!keysAsList.containsAll(dockerArguments.keySet())) {

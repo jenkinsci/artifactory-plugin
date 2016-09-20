@@ -105,7 +105,7 @@ public class DockerPullStep extends AbstractStepImpl {
 
         @Override
         public String getDisplayName() {
-            return "Artifactory docker push";
+            return "Artifactory docker pull";
         }
 
         @Override
