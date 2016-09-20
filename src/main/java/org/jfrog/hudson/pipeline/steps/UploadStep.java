@@ -43,7 +43,7 @@ public class UploadStep extends AbstractStepImpl {
     }
 
 
-    public static class Execution extends AbstractSynchronousStepExecution<BuildInfo> {
+    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
         private static final long serialVersionUID = 1L;
         @StepContextParameter
         private transient FilePath ws;
