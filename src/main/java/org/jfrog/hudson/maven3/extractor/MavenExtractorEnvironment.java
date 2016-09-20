@@ -99,7 +99,12 @@ public class MavenExtractorEnvironment extends Environment {
         }
 
         // if not valid Maven version don't modify the environment
-        if (!isMavenVersionValid()) {
+        try {
+            if (!isMavenVersionValid()) {
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace(buildListener.error("Unable to determine Maven version"));
             return;
         }
 
@@ -162,12 +167,8 @@ public class MavenExtractorEnvironment extends Environment {
         return false;
     }
 
-    private boolean isMavenVersionValid() {
-        try {
+    private boolean isMavenVersionValid() throws Exception {
             return MavenVersionHelper.isAtLeastResolutionCapableVersion(build, envVars, buildListener);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to determine Maven version", e);
-        }
     }
 
     /**
