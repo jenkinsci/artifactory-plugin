@@ -83,9 +83,16 @@ public class DockerImage implements Serializable {
     private DockerLayers createLayers(ArtifactoryDependenciesClient dependenciesClient) throws IOException {
         String queryStr = getAqlQuery();
         AqlSearchResult result = dependenciesClient.searchArtifactsByAql(queryStr);
+        String imagePath = DockerUtils.getImagePath(imageTag);
 
         DockerLayers layers = new DockerLayers();
         for (AqlSearchResult.SearchEntry entry : result.getResults()) {
+            if (!StringUtils.equals(entry.getPath(), imagePath)) {
+                continue;
+            }
+            if (!StringUtils.equals(entry.getRepo(), targetRepo)) {
+                continue;
+            }
             DockerLayer layer = new DockerLayer(entry);
             layers.addLayer(layer);
         }
@@ -131,6 +138,7 @@ public class DockerImage implements Serializable {
     /**
      * Prepare AQL query to get all the manifest layers from Artifactory.
      * Needed for build-info sha1/md5 checksum for each artifact and dependency.
+     *
      * @return
      * @throws IOException
      */
@@ -144,12 +152,12 @@ public class DockerImage implements Serializable {
             String shaVersion = DockerUtils.getShaVersion(digest);
             String shaValue = DockerUtils.getShaValue(digest);
 
-            String singleFileQuery = String.format("{\"$and\": [{\"repo\": \"%s\", \"name\": \"%s\", \"path\": \"%s\"}]}",
-                    targetRepo, DockerUtils.digestToFileName(digest), imagePath);
+            String singleFileQuery = String.format("{\"name\": \"%s\"}",
+                    DockerUtils.digestToFileName(digest));
 
             if (StringUtils.equalsIgnoreCase(shaVersion, "sha1")) {
-                singleFileQuery = String.format("{\"$and\": [{\"repo\": \"%s\", \"actual_sha1\": \"%s\", \"path\": \"%s\"}]}",
-                        targetRepo, shaValue, imagePath);
+                singleFileQuery = String.format("{\"actual_sha1\": \"%s\"}",
+                        shaValue);
             }
             layersQuery.add(singleFileQuery);
         }
