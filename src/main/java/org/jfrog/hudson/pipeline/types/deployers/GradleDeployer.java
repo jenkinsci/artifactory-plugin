@@ -11,19 +11,15 @@ import org.jfrog.hudson.util.publisher.PublisherContext;
  * Created by Tamirh on 16/08/2016.
  */
 public class GradleDeployer extends Deployer {
-    private boolean usesPlugin;
+    private boolean usesPlugin = false;
     private boolean deployMaven;
     private boolean deployIvy;
-    private String ivyPattern;
-    private String artifactPattern;
+    private String ivyPattern = "[organisation]/[module]/ivy-[revision].xml";
+    private String artifactPattern = "[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]";
     private boolean mavenCompatible = true;
-
 
     public GradleDeployer() {
         super();
-        usesPlugin = false;
-        ivyPattern = "[organisation]/[module]/ivy-[revision].xml";
-        artifactPattern = "[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]";
     }
 
     @Override
@@ -99,7 +95,8 @@ public class GradleDeployer extends Deployer {
                 .serverDetails(getDetails())
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(Utils.getArtifactsIncludeExcludeForDeyployment(getArtifactDeploymentPatterns().getPatternFilter()))
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
-                .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
+                .artifactsPattern(getArtifactPattern())
+                .ivyPattern(getIvyPattern())
                 .deployIvy(isDeployIvy()).deployMaven(isDeployMaven())
                 .deployerOverrider(this)
                 .maven2Compatible(getMavenCompatible())
