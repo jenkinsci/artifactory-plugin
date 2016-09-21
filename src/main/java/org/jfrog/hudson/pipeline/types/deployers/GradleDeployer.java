@@ -100,6 +100,7 @@ public class GradleDeployer extends Deployer {
                 .deployIvy(isDeployIvyDescriptors())
                 .deployMaven(isDeployMavenDescriptors())
                 .deployerOverrider(this)
+                .includeEnvVars(isIncludeEnvVars())
                 .maven2Compatible(getMavenCompatible())
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
     }

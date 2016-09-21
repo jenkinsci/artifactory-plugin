@@ -37,12 +37,11 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
         return this;
     }
 
-    @Whitelisted
     public boolean isIncludeEnvVars() {
         return includeEnvVars;
     }
 
-    @Whitelisted
+    // Shouldn't be whitelisted, the includeEnvVars value is been taken from the buildInfo configurations.
     public Deployer setIncludeEnvVars(boolean includeEnvVars) {
         this.includeEnvVars = includeEnvVars;
         return this;
