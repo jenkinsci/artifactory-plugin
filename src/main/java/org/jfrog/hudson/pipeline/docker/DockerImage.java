@@ -86,9 +86,6 @@ public class DockerImage implements Serializable {
 
         DockerLayers layers = new DockerLayers();
         for (AqlSearchResult.SearchEntry entry : result.getResults()) {
-            if (!StringUtils.equals(entry.getRepo(), targetRepo)) {
-                continue;
-            }
             DockerLayer layer = new DockerLayer(entry);
             layers.addLayer(layer);
         }
@@ -147,11 +144,11 @@ public class DockerImage implements Serializable {
             String shaVersion = DockerUtils.getShaVersion(digest);
             String shaValue = DockerUtils.getShaValue(digest);
 
-            String singleFileQuery = String.format("{\"repo\": \"%s\", \"name\": \"%s\", \"path\": \"%s\"}",
+            String singleFileQuery = String.format("{\"$and\": [{\"repo\": \"%s\", \"name\": \"%s\", \"path\": \"%s\"}]}",
                     targetRepo, DockerUtils.digestToFileName(digest), imagePath);
 
             if (StringUtils.equalsIgnoreCase(shaVersion, "sha1")) {
-                singleFileQuery = String.format("{\"repo\": \"%s\", \"actual_sha1\": \"%s\", \"path\": \"%s\"}",
+                singleFileQuery = String.format("{\"$and\": [{\"repo\": \"%s\", \"actual_sha1\": \"%s\", \"path\": \"%s\"}]}",
                         targetRepo, shaValue, imagePath);
             }
             layersQuery.add(singleFileQuery);
