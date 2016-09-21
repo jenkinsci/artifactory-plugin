@@ -12,8 +12,8 @@ import org.jfrog.hudson.util.publisher.PublisherContext;
  */
 public class GradleDeployer extends Deployer {
     private boolean usesPlugin = false;
-    private boolean deployMaven;
-    private boolean deployIvy;
+    private boolean deployMavenDescriptors;
+    private boolean deployIvyDescriptors;
     private String ivyPattern = "[organisation]/[module]/ivy-[revision].xml";
     private String artifactPattern = "[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]";
     private boolean mavenCompatible = true;
@@ -40,23 +40,23 @@ public class GradleDeployer extends Deployer {
     }
 
     @Whitelisted
-    public boolean isDeployMaven() {
-        return deployMaven;
+    public boolean isDeployMavenDescriptors() {
+        return deployMavenDescriptors;
     }
 
     @Whitelisted
-    public void setDeployMaven(boolean deployMaven) {
-        this.deployMaven = deployMaven;
+    public void setDeployMavenDescriptors(boolean deployMavenDescriptors) {
+        this.deployMavenDescriptors = deployMavenDescriptors;
     }
 
     @Whitelisted
-    public boolean isDeployIvy() {
-        return deployIvy;
+    public boolean isDeployIvyDescriptors() {
+        return deployIvyDescriptors;
     }
 
     @Whitelisted
-    public void setDeployIvy(boolean deployIvy) {
-        this.deployIvy = deployIvy;
+    public void setDeployIvyDescriptors(boolean deployIvyDescriptors) {
+        this.deployIvyDescriptors = deployIvyDescriptors;
     }
 
     @Whitelisted
@@ -97,7 +97,8 @@ public class GradleDeployer extends Deployer {
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
                 .artifactsPattern(getArtifactPattern())
                 .ivyPattern(getIvyPattern())
-                .deployIvy(isDeployIvy()).deployMaven(isDeployMaven())
+                .deployIvy(isDeployIvyDescriptors())
+                .deployMaven(isDeployMavenDescriptors())
                 .deployerOverrider(this)
                 .maven2Compatible(getMavenCompatible())
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
