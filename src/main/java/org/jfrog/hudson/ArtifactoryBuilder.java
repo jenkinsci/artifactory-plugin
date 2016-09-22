@@ -223,7 +223,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
 
             int portFromForm = Integer.parseInt(proxyConfig.get("buildInfoProxyPort").toString());
             if (!buildInfoProxyEnabled || portFromForm != buildInfoProxyPort) {
-                BuildInfoProxyManager.startAll(buildInfoProxyPort);
+                BuildInfoProxyManager.startAll(portFromForm);
                 buildInfoProxyEnabled = true;
                 buildInfoProxyPort = portFromForm;
             }
@@ -288,19 +288,21 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         }
 
         @JavaScriptMethod
-        public Pair<String, String> generateCerts() {
+        public Pair<String, String> generateCerts(String buildInfoProxyPort) {
             if (isProxyCertExist()) {
                 return null;
             }
 
+            int port = Integer.parseInt(buildInfoProxyPort);
             CertManager.createCertificateSource(buildInfoProxyCertPublic, buildInfoProxyCertPrivate);
             try {
-                BuildInfoProxyManager.startAll(buildInfoProxyPort);
+                BuildInfoProxyManager.startAll(port);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            this.buildInfoProxyPort = port;
             return Pair.of(buildInfoProxyCertPublic, buildInfoProxyCertPrivate);
         }
 

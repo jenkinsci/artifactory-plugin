@@ -10,8 +10,9 @@ function certs(button, bind) {
     target.innerHTML = "";
     var warning = target.next();
     warning.innerHTML = "";
+    var port = document.getElementById("buildInfoProxyPort").value;
 
-    bind.generateCerts(spinner, function (t) {
+    bind.generateCerts(spinner, port, function (t) {
         var target = spinner.next();
 
         var response = t.responseObject();

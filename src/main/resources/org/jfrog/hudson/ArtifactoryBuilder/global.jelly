@@ -124,7 +124,7 @@
             checked="${descriptor.buildInfoProxyEnabled}">
 
             <f:entry title="Port" help="/plugin/artifactory/help/ArtifactoryBuilder/help-buildInfoProxyPort.html">
-                <f:textbox field="buildInfoProxyPort" value="${descriptor.buildInfoProxyPort}"/>
+                <f:textbox id="buildInfoProxyPort" field="buildInfoProxyPort" value="${descriptor.buildInfoProxyPort}"/>
             </f:entry>
             <f:entry title="PEM-encoded certificate file path on master" help="/plugin/artifactory/help/ArtifactoryBuilder/help-buildInfoProxyCertPublic.html">
                 <pre id="buildInfoProxyCertPublic">${descriptor.buildInfoProxyCertPublic}</pre>
