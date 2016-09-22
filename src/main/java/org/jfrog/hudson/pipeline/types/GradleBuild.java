@@ -59,10 +59,10 @@ public class GradleBuild implements Serializable {
 
     @Whitelisted
     public BuildInfo run(Map<String, Object> args) {
-        if (!args.containsKey("tasks") || !args.containsKey("buildFile") || !args.containsKey("rooBuildScriptDir")) {
-            throw new IllegalArgumentException("rooBuildScriptDir, buildFile and tasks are mandatory arguments.");
+        if (!args.containsKey("tasks")) {
+            throw new IllegalArgumentException("tasks is a mandatory argument.");
         }
-        Map<String, Object> stepVariables = getRunArguments((String) args.get("buildFile"), (String) args.get("tasks"), (String) args.get("switches"), (String) args.get("rooBuildScriptDir"), (BuildInfo) args.get("buildInfo"));
+        Map<String, Object> stepVariables = getRunArguments((String) args.get("buildFile"), (String) args.get("tasks"), (String) args.get("switches"), (String) args.get("rootDir"), (BuildInfo) args.get("buildInfo"));
         BuildInfo build = (BuildInfo) cpsScript.invokeMethod("ArtifactoryGradleBuild", stepVariables);
         return build;
     }
@@ -103,11 +103,11 @@ public class GradleBuild implements Serializable {
         }
     }
 
-    private Map<String, Object> getRunArguments(String buildFile, String tasks, String switches, String rooBuildScriptDir, BuildInfo buildInfo) {
+    private Map<String, Object> getRunArguments(String buildFile, String tasks, String switches, String rootBuildScriptDir, BuildInfo buildInfo) {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
         stepVariables.put("gradleBuild", this);
         stepVariables.put("tool", tool);
-        stepVariables.put("rooBuildScriptDir", rooBuildScriptDir);
+        stepVariables.put("rootBuildScriptDir", rootBuildScriptDir);
         stepVariables.put("buildFile", buildFile);
         stepVariables.put("tasks", tasks);
         stepVariables.put("switches", switches);

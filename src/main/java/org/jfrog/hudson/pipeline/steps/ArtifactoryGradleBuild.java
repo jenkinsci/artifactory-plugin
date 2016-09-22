@@ -38,18 +38,18 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
     private GradleBuild gradleBuild;
     private String tasks;
     private String buildFile;
-    private String rooBuildScriptDir;
+    private String rootDir;
     private String tool;
     private String switches;
     private BuildInfo buildInfo;
     private boolean useWrapper;
 
     @DataBoundConstructor
-    public ArtifactoryGradleBuild(GradleBuild gradleBuild, String tool, String rooBuildScriptDir, String buildFile, String tasks, String switches, boolean useWrapper, BuildInfo buildInfo) {
+    public ArtifactoryGradleBuild(GradleBuild gradleBuild, String tool, String rootBuildScriptDir, String buildFile, String tasks, String switches, boolean useWrapper, BuildInfo buildInfo) {
         this.gradleBuild = gradleBuild;
         this.tasks = tasks == null ? "artifactoryPublish" : tasks;
-        this.rooBuildScriptDir = rooBuildScriptDir;
-        this.buildFile = buildFile == null ? "build.gradle" : buildFile;
+        this.rootDir = rootBuildScriptDir == null ? "" : rootBuildScriptDir;
+        this.buildFile = StringUtils.isEmpty(buildFile) ? "build.gradle" : buildFile;
         this.tool = tool == null ? "" : tool;
         this.switches = switches == null ? "" : switches;
         this.buildInfo = buildInfo;
@@ -80,8 +80,8 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
         return buildInfo;
     }
 
-    public String getRooBuildScriptDir() {
-        return rooBuildScriptDir;
+    public String getRootDir() {
+        return rootDir;
     }
 
     public void setGradleBuild(GradleBuild gradleBuild) {
@@ -131,7 +131,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             ArgumentListBuilder args = new ArgumentListBuilder();
             if (step.isUseWrapper()) {
                 String execName = !launcher.isUnix() ? GradleInstallation.WINDOWS_GRADLE_WRAPPER_COMMAND : GradleInstallation.UNIX_GRADLE_WRAPPER_COMMAND;
-                FilePath gradleWrapperFile = new FilePath(new FilePath(ws, step.getRooBuildScriptDir()), execName);
+                FilePath gradleWrapperFile = new FilePath(new FilePath(ws, step.getRootDir()), execName);
                 args.add(gradleWrapperFile.getRemote());
             } else {
                 try {
@@ -181,7 +181,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
         private void exe(ArgumentListBuilder args) {
             StringBuilder pwd = new StringBuilder(ws.getRemote())
                     .append(launcher.isUnix() ? "/" : "\\")
-                    .append(step.getRooBuildScriptDir());
+                    .append(step.getRootDir());
             boolean failed;
             try {
                 int exitValue = launcher.launch().cmds(args).envs(env).stdout(listener).pwd(pwd.toString()).join();
