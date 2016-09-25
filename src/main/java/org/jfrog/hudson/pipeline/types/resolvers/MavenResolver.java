@@ -9,6 +9,7 @@ import org.jfrog.hudson.ServerDetails;
  */
 public class MavenResolver extends Resolver {
     private String snapshotRepo;
+    private String releaseRepo;
 
     @Whitelisted
     public String getSnapshotRepo() {
@@ -18,6 +19,16 @@ public class MavenResolver extends Resolver {
     @Whitelisted
     public void setSnapshotRepo(String snapshotRepo) {
         this.snapshotRepo = snapshotRepo;
+    }
+
+    @Whitelisted
+    public String getReleaseRepo() {
+        return releaseRepo;
+    }
+
+    @Whitelisted
+    public void setReleaseRepo(String releaseRepo) {
+        this.releaseRepo = releaseRepo;
     }
 
     public ServerDetails getResolverDetails() {

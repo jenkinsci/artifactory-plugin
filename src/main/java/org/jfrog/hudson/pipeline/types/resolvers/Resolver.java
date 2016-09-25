@@ -14,18 +14,8 @@ import java.io.Serializable;
  * Created by Tamirh on 16/08/2016.
  */
 public abstract class Resolver implements ResolverOverrider, Serializable {
-    protected String releaseRepo;
+
     protected ArtifactoryServer server;
-
-    @Whitelisted
-    public String getReleaseRepo() {
-        return releaseRepo;
-    }
-
-    @Whitelisted
-    public void setReleaseRepo(String releaseRepo) {
-        this.releaseRepo = releaseRepo;
-    }
 
     public org.jfrog.hudson.ArtifactoryServer getArtifactoryServer() {
         return Utils.prepareArtifactoryServer(null, this.server);

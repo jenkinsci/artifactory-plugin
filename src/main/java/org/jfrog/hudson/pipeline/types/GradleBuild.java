@@ -70,7 +70,7 @@ public class GradleBuild implements Serializable {
     @Whitelisted
     public void resolver(Map<String, Object> resolverArguments) throws Exception {
         Set<String> resolverArgumentsSet = resolverArguments.keySet();
-        List<String> keysAsList = Arrays.asList(new String[]{"releaseRepo", "server"});
+        List<String> keysAsList = Arrays.asList(new String[]{"repo", "server"});
         if (!keysAsList.containsAll(resolverArgumentsSet)) {
             throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
         }
@@ -88,7 +88,7 @@ public class GradleBuild implements Serializable {
     @Whitelisted
     public void deployer(Map<String, Object> deployerArguments) throws Exception {
         Set<String> resolverArgumentsSet = deployerArguments.keySet();
-        List<String> keysAsList = Arrays.asList(new String[]{"releaseRepo", "server", "deployArtifacts", "includeEnvVars", "usesPlugin", "deployMaven", "deployIvy", "ivyPattern", "artifactPattern"});
+        List<String> keysAsList = Arrays.asList(new String[]{"repo", "server", "deployArtifacts", "includeEnvVars", "usesPlugin", "deployMaven", "deployIvy", "ivyPattern", "artifactPattern"});
         if (!keysAsList.containsAll(resolverArgumentsSet)) {
             throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
         }
@@ -103,11 +103,11 @@ public class GradleBuild implements Serializable {
         }
     }
 
-    private Map<String, Object> getRunArguments(String buildFile, String tasks, String switches, String rootBuildScriptDir, BuildInfo buildInfo) {
+    private Map<String, Object> getRunArguments(String buildFile, String tasks, String switches, String rootDir, BuildInfo buildInfo) {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
         stepVariables.put("gradleBuild", this);
         stepVariables.put("tool", tool);
-        stepVariables.put("rootBuildScriptDir", rootBuildScriptDir);
+        stepVariables.put("rootDir", rootDir);
         stepVariables.put("buildFile", buildFile);
         stepVariables.put("tasks", tasks);
         stepVariables.put("switches", switches);

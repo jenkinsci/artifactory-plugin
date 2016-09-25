@@ -11,6 +11,7 @@ import org.jfrog.hudson.util.publisher.PublisherContext;
  */
 public class MavenDeployer extends Deployer {
     private String snapshotRepo;
+    private String releaseRepo;
     private boolean evenIfUnstable;
 
     @Whitelisted
@@ -21,6 +22,17 @@ public class MavenDeployer extends Deployer {
     @Whitelisted
     public Deployer setEvenIfUnstable(boolean evenIfUnstable) {
         this.evenIfUnstable = evenIfUnstable;
+        return this;
+    }
+
+    @Whitelisted
+    public String getReleaseRepo() {
+        return releaseRepo;
+    }
+
+    @Whitelisted
+    public Deployer setReleaseRepo(String releaseRepo) {
+        this.releaseRepo = releaseRepo;
         return this;
     }
 

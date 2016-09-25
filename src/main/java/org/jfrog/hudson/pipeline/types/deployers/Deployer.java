@@ -24,18 +24,6 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
     private Filter artifactDeploymentPatterns = new Filter();
 
     protected ArtifactoryServer server;
-    protected String releaseRepo;
-
-    @Whitelisted
-    public String getReleaseRepo() {
-        return releaseRepo;
-    }
-
-    @Whitelisted
-    public Deployer setReleaseRepo(String releaseRepo) {
-        this.releaseRepo = releaseRepo;
-        return this;
-    }
 
     public boolean isIncludeEnvVars() {
         return includeEnvVars;

@@ -17,6 +17,7 @@ public class GradleDeployer extends Deployer {
     private String ivyPattern = "[organisation]/[module]/ivy-[revision].xml";
     private String artifactPattern = "[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]";
     private boolean mavenCompatible = true;
+    private String repo;
 
     public GradleDeployer() {
         super();
@@ -25,7 +26,7 @@ public class GradleDeployer extends Deployer {
     @Override
     public ServerDetails getDetails() {
         RepositoryConf snapshotRepositoryConf = null;
-        RepositoryConf releaesRepositoryConf = new RepositoryConf(releaseRepo, releaseRepo, false);
+        RepositoryConf releaesRepositoryConf = new RepositoryConf(repo, repo, false);
         return new ServerDetails(this.server.getServerName(), this.server.getUrl(), releaesRepositoryConf, snapshotRepositoryConf, releaesRepositoryConf, snapshotRepositoryConf, "", "");
     }
 
@@ -87,6 +88,21 @@ public class GradleDeployer extends Deployer {
     @Whitelisted
     public void setMavenCompatible(boolean mavenCompatible) {
         this.mavenCompatible = mavenCompatible;
+    }
+
+    @Whitelisted
+    public boolean isMavenCompatible() {
+        return mavenCompatible;
+    }
+
+    @Whitelisted
+    public String getRepo() {
+        return repo;
+    }
+
+    @Whitelisted
+    public void setRepo(String repo) {
+        this.repo = repo;
     }
 
     public PublisherContext.Builder getContextBuilder() {

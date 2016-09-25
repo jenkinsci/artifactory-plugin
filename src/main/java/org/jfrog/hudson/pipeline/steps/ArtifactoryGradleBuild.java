@@ -45,10 +45,10 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
     private boolean useWrapper;
 
     @DataBoundConstructor
-    public ArtifactoryGradleBuild(GradleBuild gradleBuild, String tool, String rootBuildScriptDir, String buildFile, String tasks, String switches, boolean useWrapper, BuildInfo buildInfo) {
+    public ArtifactoryGradleBuild(GradleBuild gradleBuild, String tool, String rootDir, String buildFile, String tasks, String switches, boolean useWrapper, BuildInfo buildInfo) {
         this.gradleBuild = gradleBuild;
         this.tasks = tasks == null ? "artifactoryPublish" : tasks;
-        this.rootDir = rootBuildScriptDir == null ? "" : rootBuildScriptDir;
+        this.rootDir = rootDir == null ? "" : rootDir;
         this.buildFile = StringUtils.isEmpty(buildFile) ? "build.gradle" : buildFile;
         this.tool = tool == null ? "" : tool;
         this.switches = switches == null ? "" : switches;
