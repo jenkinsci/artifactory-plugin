@@ -184,14 +184,14 @@ public class ArtifactoryServer implements Serializable {
     @Whitelisted
     public void setUsername(String username) {
         this.username = username;
-        this.setCredentialsId("");
+        this.credentialsId = "";
         this.usesCredetialsId = false;
     }
 
     @Whitelisted
     public void setPassword(String password) {
         this.password = password;
-        this.setCredentialsId("");
+        this.credentialsId = "";
         this.usesCredetialsId = false;
     }
 
@@ -217,8 +217,8 @@ public class ArtifactoryServer implements Serializable {
     @Whitelisted
     public void setCredentialsId(String credentialsId) {
         this.credentialsId = credentialsId;
-        this.setPassword("");
-        this.setUsername("");
+        this.password = "";
+        this.username = "";
         this.usesCredetialsId = true;
     }
 }

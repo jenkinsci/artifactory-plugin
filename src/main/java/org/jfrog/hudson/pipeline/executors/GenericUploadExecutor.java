@@ -71,7 +71,7 @@ public class GenericUploadExecutor {
             boolean isRegexp = BooleanUtils.toBoolean(file.getRegexp());
 
             GenericArtifactsDeployer.FilesDeployerCallable deployer = new GenericArtifactsDeployer.FilesDeployerCallable(listener, pairs, server,
-                new Credentials(server.getResolvingCredentialsConfig().getUsername(), server.getResolvingCredentialsConfig().getPassword()), repoKey, propertiesToAdd,
+                new Credentials(server.getResolvingCredentialsConfig().provideUsername(build.getParent()), server.getResolvingCredentialsConfig().providePassword(build.getParent())), repoKey, propertiesToAdd,
                 server.createProxyConfiguration(Jenkins.getInstance().proxy));
             deployer.setPatternType(GenericArtifactsDeployer.FilesDeployerCallable.PatternType.WILDCARD);
             deployer.setRecursive(isRecursive);

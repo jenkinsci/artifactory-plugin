@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.docker;
 
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
@@ -47,7 +48,7 @@ public class DockerImage implements Serializable {
         this.properties.putAll(properties);
     }
 
-    public Module generateBuildInfoModule(TaskListener listener, ArtifactoryConfigurator config, String buildName, String buildNumber, String timestamp) throws IOException {
+    public Module generateBuildInfoModule(Run build, TaskListener listener, ArtifactoryConfigurator config, String buildName, String buildNumber, String timestamp) throws IOException {
         final String buildProperties = String.format("build.name=%s|build.number=%s|build.timestamp=%s", buildName, buildNumber, timestamp);
         Properties artifactProperties = new Properties();
         artifactProperties.setProperty("build.name", buildName);
@@ -57,7 +58,7 @@ public class DockerImage implements Serializable {
         ArtifactoryServer server = config.getArtifactoryServer();
         CredentialsConfig preferredResolver = server.getDeployerCredentialsConfig();
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredResolver.getUsername(), preferredResolver.getPassword(),
+                preferredResolver.provideUsername(build.getParent()), preferredResolver.providePassword(build.getParent()),
                 server.createProxyConfiguration(Jenkins.getInstance().proxy), listener);
 
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(config, server);
