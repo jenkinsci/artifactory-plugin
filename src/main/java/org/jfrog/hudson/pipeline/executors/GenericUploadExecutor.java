@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.executors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -11,18 +12,17 @@ import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.generic.GenericArtifactsDeployer;
-import org.jfrog.hudson.pipeline.PipelineUtils;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.json.DownloadUploadJson;
 import org.jfrog.hudson.pipeline.json.FileJson;
-import org.jfrog.hudson.pipeline.types.BuildInfo;
-import org.jfrog.hudson.pipeline.types.BuildInfoAccessor;
+import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfoAccessor;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.ExtractorUtils;
@@ -45,7 +45,7 @@ public class GenericUploadExecutor {
         this.server = server;
         this.listener = listener;
         this.build = build;
-        this.buildinfo = PipelineUtils.prepareBuildinfo(build, buildInfo);
+        this.buildinfo = Utils.prepareBuildinfo(build, buildInfo);
         this.ws = ws;
         this.context = context;
     }
@@ -71,7 +71,7 @@ public class GenericUploadExecutor {
             boolean isRegexp = BooleanUtils.toBoolean(file.getRegexp());
 
             GenericArtifactsDeployer.FilesDeployerCallable deployer = new GenericArtifactsDeployer.FilesDeployerCallable(listener, pairs, server,
-                new Credentials(server.getResolvingCredentialsConfig().getUsername(), server.getResolvingCredentialsConfig().getPassword()), repoKey, propertiesToAdd,
+                new Credentials(server.getResolvingCredentialsConfig().provideUsername(build.getParent()), server.getResolvingCredentialsConfig().providePassword(build.getParent())), repoKey, propertiesToAdd,
                 server.createProxyConfiguration(Jenkins.getInstance().proxy));
             deployer.setPatternType(GenericArtifactsDeployer.FilesDeployerCallable.PatternType.WILDCARD);
             deployer.setRecursive(isRecursive);

@@ -130,11 +130,6 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
         this.flatDownload = flat;
     }
 
-    public boolean getFlatDownload(){
-        return this.flatDownload;
-    }
-
-
     private boolean isResolvedOrParentOfResolvedFile(Set<String> resolvedFiles, final String path) {
         return Iterables.any(resolvedFiles, new Predicate<String>() {
             public boolean apply(String filePath) {
