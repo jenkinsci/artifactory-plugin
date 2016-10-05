@@ -83,15 +83,20 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
                 return false;
             }
 
-            // If it's a folder return true since we don't care about it, not going to download a folder anyway
             if (child.isDirectory()) {
-                return true;
+                return false;
             }
 
             Map<String, String> checksumsMap = child.act(new DownloadFileCallable(log));
-            return checksumsMap != null &&
+            boolean isExists =  checksumsMap != null &&
                     StringUtils.isNotBlank(md5) && StringUtils.equals(md5, checksumsMap.get("md5")) &&
                     StringUtils.isNotBlank(sha1) && StringUtils.equals(sha1, checksumsMap.get("sha1"));
+            if (isExists) {
+                return true;
+            } else {
+                log.info(String.format("Overriding existing in destination file: %s", child));
+                return false;
+            }
         } catch (InterruptedException e) {
             log.warn("Caught interrupted exception: " + e.getLocalizedMessage());
         }

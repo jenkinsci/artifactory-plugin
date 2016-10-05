@@ -1,29 +1,24 @@
 package org.jfrog.hudson.pipeline.executors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
-import org.eclipse.jgit.util.StringUtils;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
-import org.jfrog.build.extractor.clientConfiguration.util.AqlDependenciesHelper;
-import org.jfrog.build.extractor.clientConfiguration.util.DependenciesHelper;
-import org.jfrog.build.extractor.clientConfiguration.util.WildcardsDependenciesHelper;
+import org.jfrog.build.extractor.clientConfiguration.util.DependenciesDownloaderHelper;
+import org.jfrog.build.extractor.clientConfiguration.util.spec.Spec;
+import org.jfrog.build.extractor.clientConfiguration.util.spec.SpecsHelper;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.generic.DependenciesDownloaderImpl;
 import org.jfrog.hudson.pipeline.Utils;
-import org.jfrog.hudson.pipeline.json.DownloadUploadJson;
-import org.jfrog.hudson.pipeline.json.FileJson;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfoAccessor;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 
@@ -31,7 +26,6 @@ import java.util.List;
  * Created by romang on 4/19/16.
  */
 public class GenericDownloadExecutor {
-    private final Run build;
     private transient FilePath ws;
     private BuildInfo buildInfo;
     private ArtifactoryServer server;
@@ -42,19 +36,24 @@ public class GenericDownloadExecutor {
         this.server = server;
         this.listener = listener;
         this.log = new JenkinsBuildInfoLog(listener);
-        this.build = build;
         this.buildInfo = Utils.prepareBuildinfo(build, buildInfo);
         this.ws = ws;
     }
 
-    public BuildInfo execution(String json) throws IOException, InterruptedException {
-        ObjectMapper mapper = new ObjectMapper();
-        DownloadUploadJson downloadJson = mapper.readValue(json, DownloadUploadJson.class);
-        downloadArtifacts(downloadJson);
+    public BuildInfo execution(String spec) throws IOException, InterruptedException {
+        CredentialsConfig preferredResolver = server.getDeployerCredentialsConfig();
+        ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
+                preferredResolver.getUsername(), preferredResolver.getPassword(),
+                getProxyConfiguration(), listener);
+        DependenciesDownloaderImpl dependenciesDownloader = new DependenciesDownloaderImpl(dependenciesClient, ws, log);
+        DependenciesDownloaderHelper helper = new DependenciesDownloaderHelper(dependenciesDownloader, log);
+        Spec downloadSpec = new SpecsHelper(log).getDownloadUploadSpec(spec);
+        List<Dependency> resolvedDependencies = helper.downloadDependencies(server.getUrl(), downloadSpec);
+        new BuildInfoAccessor(this.buildInfo).appendPublishedDependencies(resolvedDependencies);
         return this.buildInfo;
     }
 
-    private void downloadArtifacts(DownloadUploadJson downloadJson) throws IOException, InterruptedException {
+    private ProxyConfiguration getProxyConfiguration() {
         hudson.ProxyConfiguration proxy = Jenkins.getInstance().proxy;
         ProxyConfiguration proxyConfiguration = null;
         if (proxy != null) {
@@ -64,40 +63,6 @@ public class GenericDownloadExecutor {
             proxyConfiguration.username = proxy.getUserName();
             proxyConfiguration.password = proxy.getPassword();
         }
-
-        CredentialsConfig preferredResolver = server.getDeployerCredentialsConfig();
-        ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-            preferredResolver.provideUsername(build.getParent()), preferredResolver.providePassword(build.getParent()),
-            proxyConfiguration, listener);
-
-        DependenciesDownloaderImpl dependancyDownloader = new DependenciesDownloaderImpl(dependenciesClient, ws, log);
-        AqlDependenciesHelper aqlHelper = new AqlDependenciesHelper(dependancyDownloader, server.getUrl(), "", log);
-        WildcardsDependenciesHelper wildcardHelper = new WildcardsDependenciesHelper(dependancyDownloader, server.getUrl(), "", log);
-
-        for (FileJson file : downloadJson.getFiles()) {
-            if (file.getPattern() != null) {
-                wildcardHelper.setTarget(file.getTarget());
-                boolean isFlat = file.getFlat() != null && StringUtils.toBoolean(file.getFlat());
-                wildcardHelper.setFlatDownload(isFlat);
-                boolean isRecursive = file.getRecursive() != null && StringUtils.toBoolean(file.getRecursive());
-                wildcardHelper.setRecursive(isRecursive);
-                String props = file.getProps() == null ? "" : file.getProps();
-                wildcardHelper.setProps(props);
-                download(file.getPattern(), wildcardHelper);
-            }
-            if (file.getAql() != null) {
-                aqlHelper.setTarget(file.getTarget());
-                download(file.getAql(), aqlHelper);
-            }
-        }
-    }
-
-    private void download(String downloadStr, DependenciesHelper helper) throws IOException, InterruptedException {
-        List<Dependency> resolvedDependencies = helper.retrievePublishedDependencies(downloadStr);
-        new BuildInfoAccessor(this.buildInfo).appendPublishedDependencies(resolvedDependencies);
-    }
-
-    public void stop(@Nonnull Throwable throwable) throws Exception {
-
+        return proxyConfiguration;
     }
 }

@@ -44,11 +44,11 @@
             <j:choose>
                 <j:when test="${s.name==instance.details.artifactoryName ||
                                 s.name==instance.resolverDetails.artifactoryName}">
-                    <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;"
+                    <input type="text" name="keyFromText" style="float: left; width: 85%; display: none;"
                            class="setting-input"
                            id="${id}"
                            value="${repositoryConf.keyFromText}"/>
-                    <select style="float: left; width: 80%" class="setting-input"
+                    <select style="float: left; width: 85%" class="setting-input"
                             id="select_${id}" name="keyFromSelect">
                         <j:forEach var="r" items="${repositories}">
                             <f:option selected="${r==repositoryConf.keyFromSelect}" value="${r.value}">
@@ -61,10 +61,10 @@
                             onclick="toggleTxtAndSelect('${id}', 'mode_${id}')"/>
                 </j:when>
                 <j:otherwise>
-                    <input type="text" name="keyFromText" style="float: left; width: 80%; display: none;"
+                    <input type="text" name="keyFromText" style="float: left; width: 85%; display: none;"
                            class="setting-input"
                            id="${id}"/>
-                    <select style="float: left; width: 80%" class="setting-input"
+                    <select style="float: left; width: 85%" class="setting-input"
                             id="select_${id}" name="keyFromSelect">
                     </select>
                     <input
