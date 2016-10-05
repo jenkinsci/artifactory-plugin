@@ -222,7 +222,7 @@ public class ExtractorUtils {
 
         FilePath tempFile;
         try {
-            tempFile = ws.createTempFile(BuildInfoFields.GENERATED_BUILD_INFO, ".json");
+            tempFile = ws.createTextTempFile(BuildInfoFields.GENERATED_BUILD_INFO, ".json", "", false);
         } catch (IOException e) {
             listerner.error("Failed while generating temp build info file.");
             build.setResult(Result.FAILURE);
