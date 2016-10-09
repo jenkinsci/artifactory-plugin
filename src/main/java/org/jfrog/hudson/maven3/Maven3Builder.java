@@ -206,7 +206,7 @@ public class Maven3Builder extends Builder {
         }
 
         // maven goals
-        args.addTokenized(getGoals());
+        args.addTokenized(Util.replaceMacro(getGoals(), env));
 
         return args;
     }
