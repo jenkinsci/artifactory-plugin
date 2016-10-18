@@ -56,12 +56,12 @@ public class GenericArtifactsResolver {
 
     public List<Dependency> retrievePublishedDependencies(String resolvePattern) throws IOException, InterruptedException {
         DependenciesHelper helper = new AntPatternsDependenciesHelper(createDependenciesDownloader(), log);
-        return helper.retrievePublishedDependencies(replaceVariables(resolvePattern));
+        return helper.retrievePublishedDependencies(Util.replaceMacro(resolvePattern, envVars));
     }
 
     public List<BuildDependency> retrieveBuildDependencies(String resolvePattern) throws IOException, InterruptedException {
         BuildDependenciesHelper helper = new BuildDependenciesHelper(createDependenciesDownloader(), log);
-        return helper.retrieveBuildDependencies(replaceVariables(resolvePattern));
+        return helper.retrieveBuildDependencies(Util.replaceMacro(resolvePattern, envVars));
     }
 
     public List<Dependency> retrieveDependenciesBySpec(String serverUrl, String downloadSpec) throws IOException {
@@ -70,16 +70,11 @@ public class GenericArtifactsResolver {
         }
         DependenciesDownloaderHelper helper = new DependenciesDownloaderHelper(createDependenciesDownloader(), log);
         SpecsHelper specsHelper = new SpecsHelper(log);
-        Spec spec = specsHelper.getDownloadUploadSpec(replaceVariables(downloadSpec));
+        Spec spec = specsHelper.getDownloadUploadSpec(Util.replaceMacro(downloadSpec, envVars));
         return helper.downloadDependencies(serverUrl, spec);
     }
 
     private DependenciesDownloader createDependenciesDownloader() {
         return new DependenciesDownloaderImpl(client, build.getWorkspace(), log);
-    }
-
-    private String replaceVariables(String subject) {
-        Util.replaceMacro(subject, envVars);
-        return subject;
     }
 }
