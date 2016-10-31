@@ -115,6 +115,6 @@ public class CredentialsConfig implements Serializable {
     }
 
     public boolean isUsingCredentialsPlugin() {
-        return PluginsUtils.isCredentialsPluginEnabled() && credentialsId != null || ignoreCredentialPluginDisabled;
+        return PluginsUtils.isCredentialsPluginEnabled() && StringUtils.isNotEmpty(credentialsId) || ignoreCredentialPluginDisabled;
     }
 }
