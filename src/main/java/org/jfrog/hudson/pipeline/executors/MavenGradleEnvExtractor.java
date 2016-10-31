@@ -3,9 +3,11 @@ package org.jfrog.hudson.pipeline.executors;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jfrog.build.api.BuildInfoConfigProperties;
+import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -52,25 +54,48 @@ public class MavenGradleEnvExtractor {
         }
         try {
             PublisherContext publisherContext = null;
-            if (publisher != null) {
-                publisherContext = createPublisherContext();
-            }
+            // publisher should never be null or empty
+            publisherContext = createPublisherContext();
             ResolverContext resolverContext = null;
-            if (resolver != null) {
+            if (resolver != null && !resolver.isEmpty()) {
                 CredentialsConfig resolverCredentials = CredentialManager.getPreferredResolver(resolver,
                         resolver.getArtifactoryServer());
                 resolverContext = new ResolverContext(resolver.getArtifactoryServer(), resolver.getResolverDetails(),
                         resolverCredentials.getCredentials(build.getParent()), resolver);
             }
 
-            ArtifactoryClientConfiguration configuration = ExtractorUtils.addBuilderInfoArguments(
-                    env, build, buildListener, publisherContext, resolverContext, ws, launcher);
+            ArtifactoryClientConfiguration configuration = ExtractorUtils.getArtifactoryClientConfiguration(
+                    env, build, buildListener, publisherContext, resolverContext, ws);
+            addPipelineInfoToConfiguration(ws, env, configuration);
+            ExtractorUtils.persistConfiguration(configuration, env, ws, launcher);
             propertiesFilePath = configuration.getPropertiesFile();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
+    }
+
+    private void addPipelineInfoToConfiguration(FilePath ws, EnvVars env, ArtifactoryClientConfiguration configuration) {
+        FilePath tempFile = getGeneratedBuildInfoPath(ws);
+        env.put(BuildInfoFields.GENERATED_BUILD_INFO, tempFile.getRemote());
+        configuration.info.setGeneratedBuildInfoFilePath(tempFile.getRemote());
+    }
+
+    private FilePath getGeneratedBuildInfoPath(FilePath ws) {
+        FilePath tempFile;
+        try {
+            tempFile = ws.createTextTempFile(BuildInfoFields.GENERATED_BUILD_INFO, ".json", "", false);
+        } catch (IOException e) {
+            buildListener.error("Failed while generating temp build info file.");
+            build.setResult(Result.FAILURE);
+            throw new Run.RunnerAbortedException();
+        } catch (InterruptedException e) {
+            buildListener.error("Failed while generating temp build info file.");
+            build.setResult(Result.FAILURE);
+            throw new Run.RunnerAbortedException();
+        }
+        return tempFile;
     }
 
 

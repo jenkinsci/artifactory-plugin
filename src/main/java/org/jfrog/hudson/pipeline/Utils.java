@@ -173,10 +173,12 @@ public class Utils {
 
     public static org.jfrog.build.api.Build getGeneratedBuildInfo(Run build, EnvVars env, TaskListener listener, FilePath ws, Launcher launcher) {
         ObjectMapper mapper = new ObjectMapper();
+        FilePath generatedBuildInfoFilePath = null;
+        InputStream inputStream = null;
         try {
             StringWriter writer = new StringWriter();
-            InputStream inputStream;
-            inputStream = new FilePath(launcher.getChannel(), env.get(BuildInfoFields.GENERATED_BUILD_INFO)).read();
+            generatedBuildInfoFilePath = new FilePath(launcher.getChannel(), env.get(BuildInfoFields.GENERATED_BUILD_INFO));
+            inputStream = generatedBuildInfoFilePath.read();
             IOUtils.copy(inputStream, writer, "UTF-8");
             String theString = writer.toString();
             return mapper.readValue(theString, org.jfrog.build.api.Build.class);
@@ -184,6 +186,21 @@ public class Utils {
             listener.error("Couldn't read generated build info at : " + env.get(BuildInfoFields.GENERATED_BUILD_INFO));
             build.setResult(Result.FAILURE);
             throw new Run.RunnerAbortedException();
+        } finally {
+            if (inputStream != null) {
+                IOUtils.closeQuietly(inputStream);
+            }
+            deleteFilePathQuietly(generatedBuildInfoFilePath);
+        }
+    }
+
+    private static void deleteFilePathQuietly(FilePath  filePath) {
+        try {
+          if (filePath != null && filePath.exists()) {
+              filePath.delete();
+          }
+        } catch (Exception e) {
+            // Ignore exceptions
         }
     }
 

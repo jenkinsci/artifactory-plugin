@@ -41,5 +41,9 @@ public class GradleResolver extends Resolver {
         }
         return resolverContext;
     }
+
+    public boolean isEmpty() {
+        return server == null || StringUtils.isEmpty(repo);
+    }
 }
 

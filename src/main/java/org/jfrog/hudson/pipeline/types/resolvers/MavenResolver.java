@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.types.resolvers;
 
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
@@ -35,5 +36,9 @@ public class MavenResolver extends Resolver {
         RepositoryConf snapshotRepositoryConf = new RepositoryConf(snapshotRepo, snapshotRepo, false);
         RepositoryConf releaesRepositoryConf = new RepositoryConf(releaseRepo, releaseRepo, false);
         return new ServerDetails(this.server.getServerName(), this.server.getUrl(), releaesRepositoryConf, snapshotRepositoryConf, releaesRepositoryConf, snapshotRepositoryConf, "", "");
+    }
+
+    public boolean isEmpty() {
+        return server == null || (StringUtils.isEmpty(releaseRepo) && StringUtils.isEmpty(snapshotRepo));
     }
 }

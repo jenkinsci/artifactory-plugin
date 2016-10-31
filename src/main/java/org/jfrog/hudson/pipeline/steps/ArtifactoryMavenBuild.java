@@ -18,6 +18,7 @@ import org.jfrog.hudson.pipeline.executors.MavenGradleEnvExtractor;
 import org.jfrog.hudson.pipeline.types.MavenBuild;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.types.deployers.Deployer;
+import org.jfrog.hudson.pipeline.types.deployers.MavenDeployer;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -94,7 +95,7 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
         @Override
         protected BuildInfo run() throws Exception {
             BuildInfo buildInfo = step.getBuildInfo() == null ? new BuildInfo(build) : step.getBuildInfo();
-            Deployer deployer = step.getMavenBuild().getDeployer();
+            Deployer deployer = getDeployer();
             deployer.createPublisherBuildInfoDetails(buildInfo);
             MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build, deployer, step.getMavenBuild().getResolver(), listener, launcher);
             envExtractor.buildEnvVars(ws, env);
@@ -105,6 +106,14 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
             Build regularBuildInfo = Utils.getGeneratedBuildInfo(build, env, listener, ws, launcher);
             buildInfo.append(regularBuildInfo);
             return buildInfo;
+        }
+
+        private Deployer getDeployer() {
+            Deployer deployer = step.getMavenBuild().getDeployer();
+            if (deployer == null || deployer.isEmpty()) {
+                deployer = MavenDeployer.EMPTY_DEPLOYER;
+            }
+            return deployer;
         }
     }
 

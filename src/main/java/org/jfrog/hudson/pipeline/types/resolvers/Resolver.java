@@ -48,4 +48,5 @@ public abstract class Resolver implements ResolverOverrider, Serializable {
     }
 
     public abstract ServerDetails getResolverDetails();
+    public abstract boolean isEmpty();
 }

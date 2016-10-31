@@ -99,6 +99,6 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
     }
 
     public abstract ServerDetails getDetails();
-
     public abstract PublisherContext.Builder getContextBuilder();
+    public abstract boolean isEmpty();
 }

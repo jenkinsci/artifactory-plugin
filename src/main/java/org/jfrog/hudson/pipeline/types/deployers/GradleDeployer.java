@@ -1,10 +1,12 @@
 package org.jfrog.hudson.pipeline.types.deployers;
 
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.pipeline.Utils;
+import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
 /**
@@ -18,6 +20,11 @@ public class GradleDeployer extends Deployer {
     private String artifactPattern = "[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]";
     private boolean mavenCompatible = true;
     private String repo;
+    public final static GradleDeployer EMPTY_DEPLOYER;
+
+    static {
+        EMPTY_DEPLOYER = createDummyDeployer();
+    }
 
     public GradleDeployer() {
         super();
@@ -105,6 +112,10 @@ public class GradleDeployer extends Deployer {
         this.repo = repo;
     }
 
+    public boolean isEmpty() {
+        return server == null || StringUtils.isEmpty(repo);
+    }
+
     public PublisherContext.Builder getContextBuilder() {
         return new PublisherContext.Builder()
                 .artifactoryServer(getArtifactoryServer())
@@ -119,5 +130,14 @@ public class GradleDeployer extends Deployer {
                 .includeEnvVars(isIncludeEnvVars())
                 .maven2Compatible(getMavenCompatible())
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
+    }
+
+    private static GradleDeployer createDummyDeployer() {
+        GradleDeployer dummy = new GradleDeployer();
+        ArtifactoryServer server = new ArtifactoryServer("http://empty_url", "user", "passwrod");
+        dummy.setServer(server);
+        dummy.setRepo("dummy_repo");
+        dummy.setDeployArtifacts(false);
+        return dummy;
     }
 }

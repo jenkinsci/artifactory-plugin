@@ -137,6 +137,12 @@ public class ExtractorUtils {
     public static ArtifactoryClientConfiguration addBuilderInfoArguments(Map<String, String> env, Run build,
                                                                          TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws, hudson.Launcher launcher)
             throws IOException, InterruptedException {
+        ArtifactoryClientConfiguration configuration = getArtifactoryClientConfiguration(env, build, listener, publisherContext, resolverContext, ws);
+        persistConfiguration(configuration, env, ws, launcher);
+        return configuration;
+    }
+
+    public static ArtifactoryClientConfiguration getArtifactoryClientConfiguration(Map<String, String> env, Run build, TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws) throws UnsupportedEncodingException {
         ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
         if (build instanceof AbstractBuild) {
             addBuildRootIfNeeded((AbstractBuild) build, configuration);
@@ -162,7 +168,6 @@ public class ExtractorUtils {
             envVarsPatterns = publisherContext.getEnvVarsPatterns();
         }
         addEnvVars(env, build, configuration, envVarsPatterns, listener);
-        persistConfiguration(configuration, env, ws, launcher);
         return configuration;
     }
 
@@ -219,21 +224,6 @@ public class ExtractorUtils {
     private static void setPublisherInfo(Map<String, String> env, Run build,
                                          PublisherContext context, ArtifactoryClientConfiguration configuration, TaskListener listerner, FilePath ws) {
         configuration.setActivateRecorder(Boolean.TRUE);
-
-        FilePath tempFile;
-        try {
-            tempFile = ws.createTextTempFile(BuildInfoFields.GENERATED_BUILD_INFO, ".json", "", false);
-        } catch (IOException e) {
-            listerner.error("Failed while generating temp build info file.");
-            build.setResult(Result.FAILURE);
-            throw new Run.RunnerAbortedException();
-        } catch (InterruptedException e) {
-            listerner.error("Failed while generating temp build info file.");
-            build.setResult(Result.FAILURE);
-            throw new Run.RunnerAbortedException();
-        }
-        env.put(BuildInfoFields.GENERATED_BUILD_INFO, tempFile.getRemote());
-        configuration.info.setGeneratedBuildInfoFilePath(tempFile.getRemote());
         String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         configuration.info.setBuildName(buildName);
         configuration.publisher.addMatrixParam("build.name", buildName);

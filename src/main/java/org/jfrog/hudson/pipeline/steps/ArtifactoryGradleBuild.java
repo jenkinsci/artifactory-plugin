@@ -25,6 +25,7 @@ import org.jfrog.hudson.pipeline.executors.MavenGradleEnvExtractor;
 import org.jfrog.hudson.pipeline.types.GradleBuild;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.types.deployers.Deployer;
+import org.jfrog.hudson.pipeline.types.deployers.GradleDeployer;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.File;
@@ -116,7 +117,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
         @Override
         protected BuildInfo run() throws Exception {
             BuildInfo buildInfo = step.getBuildInfo() == null ? new BuildInfo(build) : step.getBuildInfo();
-            Deployer deployer = step.getGradleBuild().getDeployer();
+            Deployer deployer = getDeployer();
             deployer.createPublisherBuildInfoDetails(buildInfo);
             MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build, deployer, step.getGradleBuild().getResolver(), listener, launcher);
             ArgumentListBuilder args = getGradleExecutor();
@@ -125,6 +126,14 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             Build regularBuildInfo = Utils.getGeneratedBuildInfo(build, env, listener, ws, launcher);
             buildInfo.append(regularBuildInfo);
             return buildInfo;
+        }
+
+        private Deployer getDeployer() {
+            Deployer deployer = step.getGradleBuild().getDeployer();
+            if (deployer == null || deployer.isEmpty()) {
+                deployer = GradleDeployer.EMPTY_DEPLOYER;
+            }
+            return deployer;
         }
 
         private ArgumentListBuilder getGradleExecutor() {
@@ -187,7 +196,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
                 int exitValue = launcher.launch().cmds(args).envs(env).stdout(listener).pwd(pwd.toString()).join();
                 failed = (exitValue != 0);
             } catch (Exception e) {
-                listener.error("Couldn't execute gradle task.");
+                listener.error("Couldn't execute gradle task. " + e.getMessage());
                 build.setResult(Result.FAILURE);
                 throw new Run.RunnerAbortedException();
             }
