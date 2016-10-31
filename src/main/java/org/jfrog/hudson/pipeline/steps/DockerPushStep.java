@@ -25,14 +25,16 @@ public class DockerPushStep extends AbstractStepImpl {
     private final String image;
     private String username;
     private String password;
+    private String host;
     private BuildInfo buildInfo;
     private String targetRepo;
 
     @DataBoundConstructor
-    public DockerPushStep(String image, String username, String password, String targetRepo, BuildInfo buildInfo) {
+    public DockerPushStep(String image, String username, String host, String password, String targetRepo, BuildInfo buildInfo) {
         this.image = image;
         this.username = username;
         this.password = password;
+        this.host = host;
         this.buildInfo = buildInfo;
         this.targetRepo = targetRepo;
     }
@@ -47,6 +49,10 @@ public class DockerPushStep extends AbstractStepImpl {
 
     public String getPassword() {
         return password;
+    }
+
+    public String getHost() {
+        return host;
     }
 
     public BuildInfo getBuildInfo() {
@@ -92,10 +98,17 @@ public class DockerPushStep extends AbstractStepImpl {
                 return null;
             }
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
-            DockerAgentUtils.registerImage(launcher, step.getImage(), step.getTargetRepo(), buildInfo.hashCode());
+            DockerAgentUtils.registerImage(launcher, step.getImage(), step.getHost(), step.getTargetRepo(), buildInfo.hashCode());
 
             JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
-            DockerAgentUtils.pushImage(launcher, step.getImage(), step.getUsername(), step.getPassword());
+            DockerAgentUtils.pushImage(launcher, step.getImage(), step.getUsername(), step.getPassword(), step.getHost());
+
+            if (!DockerAgentUtils.updateImageParent(launcher, step.getImage(), step.getHost(), buildInfo.hashCode())) {
+                getContext().onFailure(new IllegalStateException("Build info capturing failed for docker image: " +
+                        step.getImage() + " check build info proxy configuration."));
+                return null;
+            }
+
             log.info("Successfully pushed docker image: " + step.getImage());
             return buildInfo;
         }

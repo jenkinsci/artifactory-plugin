@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.AuthConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
+import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 import com.github.dockerjava.core.command.PushImageResultCallback;
 import com.google.common.base.Charsets;
@@ -27,8 +28,8 @@ public class DockerUtils implements Serializable {
      * @param imageTag
      * @return
      */
-    public static String getImageIdFromTag(String imageTag) {
-        DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+    public static String getImageIdFromTag(String imageTag, String host) {
+        DockerClient dockerClient = getDockerClient(host);
         return dockerClient.inspectImageCmd(imageTag).exec().getId();
     }
 
@@ -38,11 +39,11 @@ public class DockerUtils implements Serializable {
      * @param imageTag
      * @return
      */
-    public static void pushImage(String imageTag, String username, String password) {
+    public static void pushImage(String imageTag, String username, String password, String host) {
         AuthConfig config = new AuthConfig();
         config.withUsername(username);
         config.withPassword(password);
-        DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+        DockerClient dockerClient = getDockerClient(host);
         dockerClient.pushImageCmd(imageTag).withAuthConfig(config).exec(new PushImageResultCallback()).awaitSuccess();
     }
 
@@ -50,13 +51,14 @@ public class DockerUtils implements Serializable {
      * Pull docker image using the docker java client
      *
      * @param imageTag
+     * @param host
      * @return
      */
-    public static void pullImage(String imageTag, String username, String password) {
+    public static void pullImage(String imageTag, String username, String password, String host) {
         AuthConfig config = new AuthConfig();
         config.withUsername(username);
         config.withPassword(password);
-        DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+        DockerClient dockerClient = getDockerClient(host);
         dockerClient.pullImageCmd(imageTag).withAuthConfig(config).exec(new PullImageResultCallback()).awaitSuccess();
     }
 
@@ -64,10 +66,11 @@ public class DockerUtils implements Serializable {
      * Get parent digest of an image
      *
      * @param digest
+     * @param host
      * @return
      */
-    public static String getParentDigest(String digest) {
-        DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+    public static String getParentId(String digest, String host) {
+        DockerClient dockerClient = getDockerClient(host);
         return dockerClient.inspectImageCmd(digest).exec().getParent();
     }
 
@@ -278,4 +281,14 @@ public class DockerUtils implements Serializable {
         return layersNum;
     }
 
+    private static DockerClient getDockerClient(String host) {
+        if (StringUtils.isEmpty(host)) {
+            return DockerClientBuilder.getInstance().build();
+        }
+
+        DockerClientConfig config = DockerClientConfig.createDefaultConfigBuilder()
+                .withDockerHost(host)
+                .build();
+        return DockerClientBuilder.getInstance(config).build();
+    }
 }

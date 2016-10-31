@@ -5,8 +5,8 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jfrog.build.api.Module;
 import org.jfrog.hudson.pipeline.ArtifactoryConfigurator;
-import org.jfrog.hudson.pipeline.docker.utils.DockerAgentUtils;
 import org.jfrog.hudson.pipeline.docker.DockerImage;
+import org.jfrog.hudson.pipeline.docker.utils.DockerAgentUtils;
 
 import java.io.IOException;
 import java.io.Serializable;

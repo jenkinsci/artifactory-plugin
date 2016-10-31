@@ -26,13 +26,16 @@ public class DockerPullStep extends AbstractStepImpl {
     private final String image;
     private String username;
     private String password;
+    private String host;
     private final BuildInfo buildInfo;
 
+
     @DataBoundConstructor
-    public DockerPullStep(String image, String username, String password, BuildInfo buildInfo) {
+    public DockerPullStep(String image, String username, String password, String host, BuildInfo buildInfo) {
         this.image = image;
         this.username = username;
         this.password = password;
+        this.host = host;
         this.buildInfo = buildInfo;
     }
 
@@ -50,6 +53,10 @@ public class DockerPullStep extends AbstractStepImpl {
 
     public String getPassword() {
         return password;
+    }
+
+    public String getHost() {
+        return host;
     }
 
     public static class Execution extends AbstractSynchronousStepExecution<BuildInfo> {
@@ -85,7 +92,7 @@ public class DockerPullStep extends AbstractStepImpl {
                 imageTag += ":latest";
             }
 
-            DockerAgentUtils.pullImage(launcher, imageTag, step.getUsername(), step.getPassword());
+            DockerAgentUtils.pullImage(launcher, imageTag, step.getUsername(), step.getPassword(), step.getHost());
             log.info("Successfully pulled docker image: " + imageTag);
             return buildInfo;
         }

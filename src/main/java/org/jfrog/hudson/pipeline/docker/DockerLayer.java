@@ -19,7 +19,7 @@ public class DockerLayer implements Serializable {
         this.repo = entry.getRepo();
         this.path = entry.getPath();
         this.fileName = entry.getName();
-        this.sha1 = entry.getActual_sha1();
+        this.sha1 = entry.getActualSha1();
         if (!fileName.equals("manifest.json")) {
             this.digest = DockerUtils.fileNameToDigest(fileName);
         } else {

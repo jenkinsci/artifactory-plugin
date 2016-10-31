@@ -49,22 +49,22 @@ public class DockerAgentUtils implements Serializable {
         });
     }
 
-
     /**
      * Register image to be captured for building build-info.
      *
      * @param launcher
      * @param imageTag
+     * @param host
      * @param targetRepo
      * @param buildInfoId
-     * @return
+     * @return ImageId
      * @throws IOException
      * @throws InterruptedException
      */
-    public synchronized static String registerImage(Launcher launcher, final String imageTag, final String targetRepo, final int buildInfoId) throws IOException, InterruptedException {
+    public synchronized static String registerImage(Launcher launcher, final String imageTag, final String host, final String targetRepo, final int buildInfoId) throws IOException, InterruptedException {
         return launcher.getChannel().call(new Callable<String, IOException>() {
             public String call() throws IOException {
-                String imageId = DockerUtils.getImageIdFromTag(imageTag);
+                String imageId = DockerUtils.getImageIdFromTag(imageTag, host);
                 imageIdToBuildInfoId.put(imageId, buildInfoId);
                 imageIdToImageTag.put(imageId, imageTag);
                 imageTagToTargetRepo.put(imageTag, targetRepo);
@@ -85,10 +85,6 @@ public class DockerAgentUtils implements Serializable {
             for (Integer buildInfoId : imageIdToBuildInfoId.get(digest)) {
                 String imageTag = imageIdToImageTag.get(digest);
                 DockerImage dockerImage = new DockerImage(digest, imageTag, imageTagToTargetRepo.get(imageTag), content);
-                String parentId = DockerUtils.getParentDigest(digest);
-                if (StringUtils.isNotEmpty(parentId)) {
-                    properties.setProperty("docker.image.parent", DockerUtils.getShaValue(parentId));
-                }
                 dockerImage.addProperties(properties);
                 buildInfoIdToDockerImage.put(buildInfoId, dockerImage);
             }
@@ -125,15 +121,16 @@ public class DockerAgentUtils implements Serializable {
      * @param imageTag
      * @param username
      * @param password
+     * @param host
      * @return
      * @throws IOException
      * @throws InterruptedException
      */
-    public static boolean pushImage(Launcher launcher, final String imageTag, final String username, final String password)
+    public static boolean pushImage(Launcher launcher, final String imageTag, final String username, final String password, final String host)
             throws IOException, InterruptedException {
         return launcher.getChannel().call(new Callable<Boolean, IOException>() {
             public Boolean call() throws IOException {
-                DockerUtils.pushImage(imageTag, username, password);
+                DockerUtils.pushImage(imageTag, username, password, host);
                 return true;
             }
         });
@@ -150,13 +147,46 @@ public class DockerAgentUtils implements Serializable {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static boolean pullImage(Launcher launcher, final String imageTag, final String username, final String password)
+    public static boolean pullImage(Launcher launcher, final String imageTag, final String username, final String password, final String host)
             throws IOException, InterruptedException {
         return launcher.getChannel().call(new Callable<Boolean, IOException>() {
             public Boolean call() throws IOException {
-                DockerUtils.pullImage(imageTag, username, password);
+                DockerUtils.pullImage(imageTag, username, password, host);
                 return true;
             }
         });
     }
+
+    /**
+     * Updates property of parent id for the image provided.
+     * Returns false if image was not captured true otherwise.
+     *
+     * @param launcher
+     * @param imageTag
+     * @param host
+     * @param buildInfoId
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public static boolean updateImageParent(Launcher launcher, final String imageTag, final String host, final int buildInfoId) throws IOException, InterruptedException {
+        return launcher.getChannel().call(new Callable<Boolean, IOException>() {
+            public Boolean call() throws IOException {
+                for (DockerImage image : buildInfoIdToDockerImage.get(buildInfoId)) {
+                    if (image.getImageTag().equals(imageTag)) {
+                        String parentId = DockerUtils.getParentId(image.getImageId(), host);
+                        if (StringUtils.isNotEmpty(parentId)) {
+                            Properties properties = new Properties();
+                            properties.setProperty("docker.image.parent", DockerUtils.getShaValue(parentId));
+                            image.addProperties(properties);
+                        }
+
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+    }
 }
+

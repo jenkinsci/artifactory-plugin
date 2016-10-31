@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.docker;
 
+import com.google.common.collect.Sets;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
@@ -12,6 +13,7 @@ import org.jfrog.build.api.Module;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
 import org.jfrog.build.api.search.AqlSearchResult;
+import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -22,10 +24,7 @@ import org.jfrog.hudson.util.CredentialManager;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by romang on 8/9/16.
@@ -36,12 +35,21 @@ public class DockerImage implements Serializable {
     private final String manifest;
     private final String targetRepo;
     private Properties properties = new Properties();
+    private final ArtifactoryVersion VIRTUAL_REPOS_SUPPORTED_VERSION = new ArtifactoryVersion("4.8.1");
 
     public DockerImage(String imageId, String imageTag, String targetRepo, String manifest) {
         this.imageId = imageId;
         this.imageTag = imageTag;
         this.targetRepo = targetRepo;
         this.manifest = manifest;
+    }
+
+    public String getImageTag() {
+        return imageTag;
+    }
+
+    public String getImageId() {
+        return imageId;
     }
 
     public void addProperties(Properties properties) {
@@ -57,6 +65,7 @@ public class DockerImage implements Serializable {
 
         ArtifactoryServer server = config.getArtifactoryServer();
         CredentialsConfig preferredResolver = server.getDeployerCredentialsConfig();
+
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
                 preferredResolver.provideUsername(build.getParent()), preferredResolver.providePassword(build.getParent()),
                 server.createProxyConfiguration(Jenkins.getInstance().proxy), listener);
@@ -68,7 +77,10 @@ public class DockerImage implements Serializable {
 
         Module buildInfoModule = new Module();
         buildInfoModule.setId(imageTag.substring(imageTag.indexOf("/") + 1));
-        DockerLayers layers = createLayers(dependenciesClient);
+
+        boolean includeVirtualReposSupported = propertyChangeClient.getArtifactoryVersion().isAtLeast(VIRTUAL_REPOS_SUPPORTED_VERSION);
+        DockerLayers layers = createLayers(dependenciesClient, includeVirtualReposSupported);
+
         setDependenciesAndArtifacts(buildInfoModule, layers, buildProperties, artifactProperties,
                 dependenciesClient, propertyChangeClient, server);
         setProperties(buildInfoModule);
@@ -81,8 +93,8 @@ public class DockerImage implements Serializable {
         buildInfoModule.setProperties(properties);
     }
 
-    private DockerLayers createLayers(ArtifactoryDependenciesClient dependenciesClient) throws IOException {
-        String queryStr = getAqlQuery();
+    private DockerLayers createLayers(ArtifactoryDependenciesClient dependenciesClient, boolean includeVirtualReposSupported) throws IOException {
+        String queryStr = getAqlQuery(includeVirtualReposSupported);
         AqlSearchResult result = dependenciesClient.searchArtifactsByAql(queryStr);
         String imagePath = DockerUtils.getImagePath(imageTag);
 
@@ -91,9 +103,12 @@ public class DockerImage implements Serializable {
             if (!StringUtils.equals(entry.getPath(), imagePath)) {
                 continue;
             }
-            if (!StringUtils.equals(entry.getRepo(), targetRepo)) {
+
+            Set<String> virtual_repos = Sets.newHashSet(entry.getVirtualRepos());
+            if (!(StringUtils.equals(entry.getRepo(), targetRepo) || virtual_repos.contains(targetRepo))) {
                 continue;
             }
+
             DockerLayer layer = new DockerLayer(entry);
             layers.addLayer(layer);
         }
@@ -143,8 +158,7 @@ public class DockerImage implements Serializable {
      * @return
      * @throws IOException
      */
-    private String getAqlQuery() throws IOException {
-        final String imagePath = DockerUtils.getImagePath(imageTag);
+    private String getAqlQuery(boolean includeVirtualRepos) throws IOException {
         List<String> layersDigest = DockerUtils.getLayersDigests(manifest);
 
         StringBuilder aqlRequestForDockerSha = new StringBuilder("items.find({\"$or\":[ ");
@@ -153,18 +167,20 @@ public class DockerImage implements Serializable {
             String shaVersion = DockerUtils.getShaVersion(digest);
             String shaValue = DockerUtils.getShaValue(digest);
 
-            String singleFileQuery = String.format("{\"name\": \"%s\"}",
-                    DockerUtils.digestToFileName(digest));
+            String singleFileQuery = String.format("{\"name\": \"%s\"}", DockerUtils.digestToFileName(digest));
 
             if (StringUtils.equalsIgnoreCase(shaVersion, "sha1")) {
-                singleFileQuery = String.format("{\"actual_sha1\": \"%s\"}",
-                        shaValue);
+                singleFileQuery = String.format("{\"actual_sha1\": \"%s\"}", shaValue);
             }
             layersQuery.add(singleFileQuery);
         }
 
         aqlRequestForDockerSha.append(StringUtils.join(layersQuery, ","));
-        aqlRequestForDockerSha.append("]}).include(\"name\",\"repo\",\"path\",\"actual_sha1\")");
+        if (includeVirtualRepos) {
+            aqlRequestForDockerSha.append("]}).include(\"name\",\"repo\",\"path\",\"actual_sha1\",\"virtual_repos\")");
+        } else {
+            aqlRequestForDockerSha.append("]}).include(\"name\",\"repo\",\"path\",\"actual_sha1\")");
+        }
         return aqlRequestForDockerSha.toString();
     }
 }

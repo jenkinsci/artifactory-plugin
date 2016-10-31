@@ -15,14 +15,16 @@ public class Docker implements Serializable {
     private CpsScript script;
     private String username;
     private String password;
+    private String host;
 
     public Docker() {
     }
 
-    public Docker(CpsScript script, String username, String password) {
+    public Docker(CpsScript script, String username, String password, String host) {
         this.script = script;
         this.username = username;
         this.password = password;
+        this.host = host;
     }
 
     public void setCpsScript(CpsScript script) {
@@ -35,6 +37,10 @@ public class Docker implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
     }
 
     @Whitelisted
@@ -55,6 +61,7 @@ public class Docker implements Serializable {
     public BuildInfo push(Map<String, Object> dockerArguments) throws Exception {
         dockerArguments.put("username", username);
         dockerArguments.put("password", password);
+        dockerArguments.put("host", host);
 
         BuildInfo buildInfo = (BuildInfo) script.invokeMethod("dockerPushStep", dockerArguments);
         buildInfo.setCpsScript(script);
@@ -79,6 +86,8 @@ public class Docker implements Serializable {
     public BuildInfo pull(Map<String, Object> dockerArguments) throws Exception {
         dockerArguments.put("username", username);
         dockerArguments.put("password", password);
+        dockerArguments.put("host", host);
+
         return (BuildInfo) script.invokeMethod("dockerPullStep", dockerArguments);
     }
 }

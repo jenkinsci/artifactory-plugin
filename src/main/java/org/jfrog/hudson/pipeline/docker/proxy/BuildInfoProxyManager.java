@@ -34,6 +34,7 @@ public class BuildInfoProxyManager {
 
         server = DefaultHttpProxyServer.bootstrap()
                 .withPort(proxyPort)
+                .withAllowLocalOnly(false)
                 .withFiltersSource(new BuildInfoHttpFiltersSource())
                 .withManInTheMiddle(mitmManager)
                 .withConnectTimeout(0)
