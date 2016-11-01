@@ -23,7 +23,7 @@ public class GradleDeployer extends Deployer {
     public final static GradleDeployer EMPTY_DEPLOYER;
 
     static {
-        EMPTY_DEPLOYER = createDummyDeployer();
+        EMPTY_DEPLOYER = createEmptyDeployer();
     }
 
     public GradleDeployer() {
@@ -132,11 +132,11 @@ public class GradleDeployer extends Deployer {
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
     }
 
-    private static GradleDeployer createDummyDeployer() {
+    private static GradleDeployer createEmptyDeployer() {
         GradleDeployer dummy = new GradleDeployer();
         ArtifactoryServer server = new ArtifactoryServer("http://empty_url", "user", "passwrod");
         dummy.setServer(server);
-        dummy.setRepo("dummy_repo");
+        dummy.setRepo("empty_repo");
         dummy.setDeployArtifacts(false);
         return dummy;
     }

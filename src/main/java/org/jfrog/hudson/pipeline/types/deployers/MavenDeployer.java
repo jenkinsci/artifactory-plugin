@@ -18,7 +18,7 @@ public class MavenDeployer extends Deployer {
     public final static MavenDeployer EMPTY_DEPLOYER;
 
     static {
-        EMPTY_DEPLOYER = createDummyDeployer();
+        EMPTY_DEPLOYER = createEmptyDeployer();
     }
 
     @Whitelisted
@@ -77,12 +77,12 @@ public class MavenDeployer extends Deployer {
         return server == null || (StringUtils.isEmpty(releaseRepo) && StringUtils.isEmpty(snapshotRepo));
     }
 
-    private static MavenDeployer createDummyDeployer() {
+    private static MavenDeployer createEmptyDeployer() {
         MavenDeployer dummy = new MavenDeployer();
         ArtifactoryServer server = new ArtifactoryServer("http://empty_url", "user", "passwrod");
         dummy.setServer(server);
-        dummy.setReleaseRepo("dummy_repo");
-        dummy.setSnapshotRepo("dummy_repo");
+        dummy.setReleaseRepo("empty_repo");
+        dummy.setSnapshotRepo("empty_repo");
         dummy.setDeployArtifacts(false);
         return dummy;
     }
