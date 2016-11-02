@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.steps;
 
+import com.github.dockerjava.api.model.AuthConfig;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.FilePath;
@@ -11,6 +12,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.docker.utils.DockerAgentUtils;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
@@ -23,17 +25,15 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class DockerPushStep extends AbstractStepImpl {
 
     private final String image;
-    private String username;
-    private String password;
+    private CredentialsConfig credentialsConfig;
     private String host;
     private BuildInfo buildInfo;
     private String targetRepo;
 
     @DataBoundConstructor
-    public DockerPushStep(String image, String username, String host, String password, String targetRepo, BuildInfo buildInfo) {
+    public DockerPushStep(String image, CredentialsConfig credentialsConfig, String targetRepo, BuildInfo buildInfo) {
         this.image = image;
-        this.username = username;
-        this.password = password;
+        this.credentialsConfig = credentialsConfig;
         this.host = host;
         this.buildInfo = buildInfo;
         this.targetRepo = targetRepo;
@@ -43,12 +43,8 @@ public class DockerPushStep extends AbstractStepImpl {
         return image;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
+    public CredentialsConfig getCredentialsConfig() {
+        return credentialsConfig;
     }
 
     public String getHost() {
@@ -100,8 +96,10 @@ public class DockerPushStep extends AbstractStepImpl {
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
             DockerAgentUtils.registerImage(launcher, step.getImage(), step.getHost(), step.getTargetRepo(), buildInfo.hashCode());
 
-            JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
-            DockerAgentUtils.pushImage(launcher, step.getImage(), step.getUsername(), step.getPassword(), step.getHost());
+            final AuthConfig authConfig = new AuthConfig();
+            authConfig.withUsername(step.getCredentialsConfig().provideUsername(build.getParent()));
+            authConfig.withPassword(step.getCredentialsConfig().providePassword(build.getParent()));
+            DockerAgentUtils.pushImage(launcher, step.getImage(), authConfig, step.getHost());
 
             if (!DockerAgentUtils.updateImageParent(launcher, step.getImage(), step.getHost(), buildInfo.hashCode())) {
                 getContext().onFailure(new IllegalStateException("Build info capturing failed for docker image: " +
@@ -109,6 +107,7 @@ public class DockerPushStep extends AbstractStepImpl {
                 return null;
             }
 
+            JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
             log.info("Successfully pushed docker image: " + step.getImage());
             return buildInfo;
         }

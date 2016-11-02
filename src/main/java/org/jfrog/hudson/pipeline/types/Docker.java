@@ -2,6 +2,7 @@ package org.jfrog.hudson.pipeline.types;
 
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 
 import java.io.Serializable;
@@ -15,15 +16,17 @@ public class Docker implements Serializable {
     private CpsScript script;
     private String username;
     private String password;
+    private String credentialsId;
     private String host;
 
     public Docker() {
     }
 
-    public Docker(CpsScript script, String username, String password, String host) {
+    public Docker(CpsScript script, String username, String password, String credentialsId, String host) {
         this.script = script;
         this.username = username;
         this.password = password;
+        this.credentialsId = credentialsId;
         this.host = host;
     }
 
@@ -37,6 +40,10 @@ public class Docker implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setCredentialsId(String credentialsId) {
+        this.credentialsId = credentialsId;
     }
 
     public void setHost(String host) {
@@ -59,8 +66,8 @@ public class Docker implements Serializable {
 
     @Whitelisted
     public BuildInfo push(Map<String, Object> dockerArguments) throws Exception {
-        dockerArguments.put("username", username);
-        dockerArguments.put("password", password);
+        CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId, null);
+        dockerArguments.put("credentialsConfig", credentialsConfig);
         dockerArguments.put("host", host);
 
         BuildInfo buildInfo = (BuildInfo) script.invokeMethod("dockerPushStep", dockerArguments);
@@ -84,8 +91,8 @@ public class Docker implements Serializable {
 
     @Whitelisted
     public BuildInfo pull(Map<String, Object> dockerArguments) throws Exception {
-        dockerArguments.put("username", username);
-        dockerArguments.put("password", password);
+        CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId, null);
+        dockerArguments.put("credentialsConfig", credentialsConfig);
         dockerArguments.put("host", host);
 
         return (BuildInfo) script.invokeMethod("dockerPullStep", dockerArguments);

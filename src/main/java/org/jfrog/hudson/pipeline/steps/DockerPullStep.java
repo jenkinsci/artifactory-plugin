@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.steps;
 
+import com.github.dockerjava.api.model.AuthConfig;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.FilePath;
@@ -11,6 +12,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.docker.utils.DockerAgentUtils;
 import org.jfrog.hudson.pipeline.docker.utils.DockerUtils;
@@ -24,17 +26,15 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class DockerPullStep extends AbstractStepImpl {
 
     private final String image;
-    private String username;
-    private String password;
+    private CredentialsConfig credentialsConfig;
     private String host;
     private final BuildInfo buildInfo;
 
 
     @DataBoundConstructor
-    public DockerPullStep(String image, String username, String password, String host, BuildInfo buildInfo) {
+    public DockerPullStep(String image, CredentialsConfig credentialsConfig, String host, BuildInfo buildInfo) {
         this.image = image;
-        this.username = username;
-        this.password = password;
+        this.credentialsConfig = credentialsConfig;
         this.host = host;
         this.buildInfo = buildInfo;
     }
@@ -47,12 +47,8 @@ public class DockerPullStep extends AbstractStepImpl {
         return image;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
+    public CredentialsConfig getCredentialsConfig() {
+        return credentialsConfig;
     }
 
     public String getHost() {
@@ -79,20 +75,23 @@ public class DockerPullStep extends AbstractStepImpl {
 
         @Override
         protected BuildInfo run() throws Exception {
-            JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
-
             if (step.getImage() == null) {
                 getContext().onFailure(new MissingArgumentException("Missing 'image' parameter"));
                 return null;
             }
-            BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
 
+            BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
             String imageTag = step.getImage();
             if (!DockerUtils.isImageVersioned(imageTag)) {
                 imageTag += ":latest";
             }
 
-            DockerAgentUtils.pullImage(launcher, imageTag, step.getUsername(), step.getPassword(), step.getHost());
+            final AuthConfig authConfig = new AuthConfig();
+            authConfig.withUsername(step.getCredentialsConfig().provideUsername(build.getParent()));
+            authConfig.withPassword(step.getCredentialsConfig().providePassword(build.getParent()));
+            DockerAgentUtils.pullImage(launcher, imageTag, authConfig, step.getHost());
+
+            JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
             log.info("Successfully pulled docker image: " + imageTag);
             return buildInfo;
         }

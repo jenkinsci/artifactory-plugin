@@ -37,29 +37,24 @@ public class DockerUtils implements Serializable {
      * Push docker image using the docker java client
      *
      * @param imageTag
-     * @return
+     * @param authConfig
+     * @param host
      */
-    public static void pushImage(String imageTag, String username, String password, String host) {
-        AuthConfig config = new AuthConfig();
-        config.withUsername(username);
-        config.withPassword(password);
+    public static void pushImage(String imageTag, AuthConfig authConfig, String host) {
         DockerClient dockerClient = getDockerClient(host);
-        dockerClient.pushImageCmd(imageTag).withAuthConfig(config).exec(new PushImageResultCallback()).awaitSuccess();
+        dockerClient.pushImageCmd(imageTag).withAuthConfig(authConfig).exec(new PushImageResultCallback()).awaitSuccess();
     }
 
     /**
      * Pull docker image using the docker java client
      *
      * @param imageTag
+     * @param authConfig
      * @param host
-     * @return
      */
-    public static void pullImage(String imageTag, String username, String password, String host) {
-        AuthConfig config = new AuthConfig();
-        config.withUsername(username);
-        config.withPassword(password);
+    public static void pullImage(String imageTag, AuthConfig authConfig, String host) {
         DockerClient dockerClient = getDockerClient(host);
-        dockerClient.pullImageCmd(imageTag).withAuthConfig(config).exec(new PullImageResultCallback()).awaitSuccess();
+        dockerClient.pullImageCmd(imageTag).withAuthConfig(authConfig).exec(new PullImageResultCallback()).awaitSuccess();
     }
 
     /**

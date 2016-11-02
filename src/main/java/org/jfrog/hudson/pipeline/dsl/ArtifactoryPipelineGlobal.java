@@ -36,22 +36,22 @@ public class ArtifactoryPipelineGlobal implements Serializable {
 
     @Whitelisted
     public Docker docker(String username, String password) {
-        return new Docker(script, username, password, null);
+        return new Docker(script, username, password, null, null);
     }
 
     @Whitelisted
     public Docker docker(String username, String password, String host) {
-        return new Docker(script, username, password, host);
+        return new Docker(script, username, password, null, host);
     }
 
     @Whitelisted
     public Docker docker() {
-        return new Docker(script, null, null, null);
+        return new Docker(script, null, null, null, null);
     }
 
     @Whitelisted
     public Docker docker(Map<String, Object> dockerArguments) {
-        List<String> keysAsList = Arrays.asList(new String[]{"username", "password", "host"});
+        List<String> keysAsList = Arrays.asList(new String[]{"username", "password", "credentialsId", "host"});
         if (!keysAsList.containsAll(dockerArguments.keySet())) {
             throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList);
         }
