@@ -26,6 +26,7 @@ import java.util.List;
  * Created by romang on 4/19/16.
  */
 public class GenericDownloadExecutor {
+    private final Run build;
     private transient FilePath ws;
     private BuildInfo buildInfo;
     private ArtifactoryServer server;
@@ -33,6 +34,7 @@ public class GenericDownloadExecutor {
     private TaskListener listener;
 
     public GenericDownloadExecutor(ArtifactoryServer server, TaskListener listener, Run build, FilePath ws, BuildInfo buildInfo) {
+        this.build = build;
         this.server = server;
         this.listener = listener;
         this.log = new JenkinsBuildInfoLog(listener);
@@ -43,7 +45,7 @@ public class GenericDownloadExecutor {
     public BuildInfo execution(String spec) throws IOException, InterruptedException {
         CredentialsConfig preferredResolver = server.getDeployerCredentialsConfig();
         ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredResolver.getUsername(), preferredResolver.getPassword(),
+                preferredResolver.provideUsername(build.getParent()), preferredResolver.providePassword(build.getParent()),
                 getProxyConfiguration(), listener);
         DependenciesDownloaderImpl dependenciesDownloader = new DependenciesDownloaderImpl(dependenciesClient, ws, log);
         DependenciesDownloaderHelper helper = new DependenciesDownloaderHelper(dependenciesDownloader, log);

@@ -1,5 +1,6 @@
 package org.jfrog.hudson.generic;
 
+import com.google.common.collect.Lists;
 import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
 import hudson.Launcher;
@@ -52,8 +53,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final CredentialsConfig deployerCredentialsConfig;
     private final CredentialsConfig resolverCredentialsConfig;
     private final boolean useSpecs;
-    private final String uploadSpec;
-    private final String downloadSpec;
+    private final SpecConfiguration uploadSpec;
+    private final SpecConfiguration downloadSpec;
     private final String deployPattern;
     private final String resolvePattern;
     private final String matrixParams;
@@ -85,7 +86,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     public ArtifactoryGenericConfigurator(ServerDetails details, ServerDetails resolverDetails,
                                           CredentialsConfig deployerCredentialsConfig, CredentialsConfig resolverCredentialsConfig,
                                           String deployPattern, String resolvePattern, String matrixParams,
-                                          boolean useSpecs, String uploadSpec, String downloadSpec,
+                                          boolean useSpecs, SpecConfiguration uploadSpec, SpecConfiguration downloadSpec,
                                           boolean deployBuildInfo,
                                           boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                           boolean discardOldBuilds,
@@ -165,11 +166,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return useSpecs;
     }
 
-    public String getUploadSpec() {
+    public SpecConfiguration getUploadSpec() {
         return uploadSpec;
     }
 
-    public String getDownloadSpec() {
+    public SpecConfiguration getDownloadSpec() {
         return downloadSpec;
     }
 
@@ -280,6 +281,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public List<Repository> getReleaseRepositoryList() {
+        if (details.getDeploySnapshotRepository() == null) {
+            return Lists.newArrayList();
+        }
         return RepositoriesUtils.collectRepositories(details.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
@@ -320,7 +324,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener,
                     dependenciesClient);
             if (isUseSpecs()) {
-                publishedDependencies = artifactsResolver.retrieveDependenciesBySpec(getArtifactoryUrl(), downloadSpec);
+                String spec = SpecUtils.getSpecStringFromSpecConf(
+                        downloadSpec, build.getEnvironment(listener), build.getExecutor().getCurrentWorkspace(), listener.getLogger());
+                publishedDependencies = artifactsResolver.retrieveDependenciesBySpec(getArtifactoryUrl(), spec);
             } else {
                 publishedDependencies = artifactsResolver.retrievePublishedDependencies(resolvePattern);
                 buildDependencies = artifactsResolver.retrieveBuildDependencies(resolvePattern);

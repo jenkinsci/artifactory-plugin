@@ -19,6 +19,7 @@ function setSpecView(isUsesSpec, legacyDownloadPatternLength, legacyUploadPatter
 function updateViewBySpecsParam(isUsesSpec) {
     if (isUsesSpec === "true") {
         // Resolution section
+        // By changing the name the configuration will decide which server to use
         document.getElementById("artifactory-resolver-spec-dd").getElementsByTagName("table")[0].setAttribute("name", "resolverDetails");
         document.getElementById("artifactory-resolver-generic-dd").getElementsByTagName("table")[0].setAttribute("name", "artifactory-resolver-generic-dd");
         document.getElementById("artifactory-resolver-spec-dd").style.display = "";
@@ -28,6 +29,7 @@ function updateViewBySpecsParam(isUsesSpec) {
 
 
         // Deployment section
+        // By changing the name the configuration will decide which server to use
         document.getElementById("artifactory-deployer-spec-dd").getElementsByTagName("table")[0].setAttribute("name", "details");
         document.getElementById("artifactory-deployer-generic-dd").getElementsByTagName("table")[0].setAttribute("name", "artifactory-deployer-generic-dd");
         document.getElementById("artifactory-deployer-spec-dd").style.display = "";
@@ -37,6 +39,7 @@ function updateViewBySpecsParam(isUsesSpec) {
 
     } else {
         // Resolution section
+        // By changing the name the configuration will decide which server to use
         document.getElementById("artifactory-resolver-spec-dd").getElementsByTagName("table")[0].setAttribute("name", "artifactory-resolver-spec-dd");
         document.getElementById("artifactory-resolver-generic-dd").getElementsByTagName("table")[0].setAttribute("name", "resolverDetails");
         document.getElementById("artifactory-resolver-spec-dd").style.display = "none";
@@ -45,6 +48,7 @@ function updateViewBySpecsParam(isUsesSpec) {
         document.getElementById("resolvePatternArea").style.display = "";
 
         // Deployment section
+        // By changing the name the configuration will decide which server to use
         document.getElementById("artifactory-deployer-spec-dd").getElementsByTagName("table")[0].setAttribute("name", "artifactory-deployer-spec-dd");
         document.getElementById("artifactory-deployer-generic-dd").getElementsByTagName("table")[0].setAttribute("name", "details");
         document.getElementById("artifactory-deployer-spec-dd").style.display = "none";
@@ -63,6 +67,8 @@ function fixView(configurationSectionSize) {
                          "artifactory-resolver-spec-dd",
                          "resolvePatternArea",
                          "downloadSpecArea"];
+    var elementsToSkip = ["Spec",
+                          "File Path"];
     var numberOfElements = elementsToFix.length;
     var numberOfInnerElements = 0;
     // 161 is the length of the longest label element in pixels ("Artifactory resolver server")
@@ -73,11 +79,13 @@ function fixView(configurationSectionSize) {
     for (var i = 0; i < numberOfElements; i++) {
         numberOfInnerElements = document.getElementById(elementsToFix[i]).parentElement.getElementsByClassName("setting-name").length;
         for (var j = 0; j < numberOfInnerElements; j++) {
-            try {
-                document.getElementById(elementsToFix[i]).parentElement.getElementsByClassName("setting-name")[j].setAttribute("width", newLabelSize + "%");
-            } catch (e) {
-                console.log(e);
-                console.log(document.getElementById(elementsToFix[i]).parentElement.getElementsByClassName("setting-name")[j]);
+            if (elementsToSkip.indexOf(document.getElementById(elementsToFix[i]).parentElement.getElementsByClassName("setting-name")[j].textContent) == -1) {
+                try {
+                    document.getElementById(elementsToFix[i]).parentElement.getElementsByClassName("setting-name")[j].setAttribute("width", newLabelSize + "%");
+                } catch (e) {
+                    console.log(e);
+                    console.log(document.getElementById(elementsToFix[i]).parentElement.getElementsByClassName("setting-name")[j]);
+                }
             }
         }
     }

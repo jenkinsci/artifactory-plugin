@@ -25,10 +25,7 @@ import org.jfrog.build.extractor.clientConfiguration.util.spec.SpecsHelper;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
-import org.jfrog.hudson.util.Credentials;
-import org.jfrog.hudson.util.ExtractorUtils;
-import org.jfrog.hudson.util.JenkinsBuildInfoLog;
+import org.jfrog.hudson.util.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,7 +71,8 @@ public class GenericArtifactsDeployer {
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
 
         if (configurator.isUseSpecs()) {
-            String spec = Util.replaceMacro(configurator.getUploadSpec(), env);
+            String spec = Util.replaceMacro(SpecUtils.getSpecStringFromSpecConf(
+                            configurator.getUploadSpec(), env, workingDir, listener.getLogger()) , env);
             artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, spec, artifactoryServer,
                     credentialsConfig.getCredentials(build.getParent()), propertiesToAdd,
                     artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
@@ -138,9 +136,6 @@ public class GenericArtifactsDeployer {
         private Credentials credentials;
         private ArrayListMultimap<String, String> buildProperties;
         private ProxyConfiguration proxyConfiguration;
-        private boolean recursive;
-        private boolean flat;
-        private boolean regexp;
         private PatternType patternType = PatternType.ANT;
         private String spec;
 
@@ -179,7 +174,7 @@ public class GenericArtifactsDeployer {
                 try {
                     artifactsToDeploy = specsHelper.getDeployDetails(uploadSpec, workspace, buildProperties);
                 } catch (NoSuchAlgorithmException e) {
-                    throw new RuntimeException(String.format("Failed uploading artifacts by spec"), e);
+                    throw new RuntimeException("Failed uploading artifacts by spec", e);
                 }
             } else {
                 Multimap<String, File> targetPathToFilesMap = buildTargetPathToFiles(workspace);
@@ -231,13 +226,8 @@ public class GenericArtifactsDeployer {
             for (Map.Entry<String, String> entry : patternPairs.entries()) {
                 String pattern = entry.getKey();
                 String targetPath = entry.getValue();
-                Multimap<String, File> publishingData = null;
-
-                if (patternType == PatternType.ANT) {
-                    publishingData = PublishedItemsHelper.buildPublishingData(workspace, pattern, targetPath);
-                } else {
-                    publishingData = PublishedItemsHelper.wildCardBuildPublishingData(workspace, pattern, targetPath, flat, recursive, regexp);
-                }
+                Multimap<String, File> publishingData =
+                        PublishedItemsHelper.buildPublishingData(workspace, pattern, targetPath);
 
                 if (publishingData != null) {
                     listener.getLogger().println(
