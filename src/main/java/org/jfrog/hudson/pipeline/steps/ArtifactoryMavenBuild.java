@@ -97,7 +97,8 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
             BuildInfo buildInfo = step.getBuildInfo() == null ? new BuildInfo(build) : step.getBuildInfo();
             Deployer deployer = getDeployer();
             deployer.createPublisherBuildInfoDetails(buildInfo);
-            MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build, deployer, step.getMavenBuild().getResolver(), listener, launcher);
+            MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build,
+                    buildInfo, deployer, step.getMavenBuild().getResolver(), listener, launcher);
             envExtractor.buildEnvVars(ws, env);
             String mavenOpts = step.getOpts() + (env.get("MAVEN_OPTS") != null ? env.get("MAVEN_OPTS") : "");
             mavenOpts = mavenOpts.replaceAll("[\t\r\n]+", " ");

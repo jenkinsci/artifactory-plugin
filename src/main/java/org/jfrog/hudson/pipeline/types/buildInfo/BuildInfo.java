@@ -178,7 +178,7 @@ public class BuildInfo implements Serializable {
         List<Module> dockerModules = dockerBuildInfoHelper.generateBuildInfoModules(build, listener, config, launcher);
 
         addDockerBuildInfoModules(dockerModules);
-        addDefaultModuleToModules(ExtractorUtils.sanitizeBuildName(build.getParent().getDisplayName()));
+        addDefaultModuleToModules(buildName);
         return new BuildInfoDeployer(config, client, build, listener, new BuildInfoAccessor(this));
     }
 

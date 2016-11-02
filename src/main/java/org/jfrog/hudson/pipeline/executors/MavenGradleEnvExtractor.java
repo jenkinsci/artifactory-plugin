@@ -11,6 +11,7 @@ import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.types.deployers.Deployer;
 import org.jfrog.hudson.pipeline.types.resolvers.Resolver;
 import org.jfrog.hudson.release.ReleaseAction;
@@ -29,13 +30,15 @@ public class MavenGradleEnvExtractor {
     private Deployer publisher;
     private Resolver resolver;
     private Run build;
+    private BuildInfo buildInfo;
     private TaskListener buildListener;
     private String propertiesFilePath;
     private Launcher launcher;
 
-    public MavenGradleEnvExtractor(Run build, Deployer publisher, Resolver resolver, TaskListener buildListener, Launcher launcher)
+    public MavenGradleEnvExtractor(Run build, BuildInfo buildInfo, Deployer publisher, Resolver resolver, TaskListener buildListener, Launcher launcher)
             throws IOException, InterruptedException {
         this.build = build;
+        this.buildInfo = buildInfo;
         this.buildListener = buildListener;
         this.publisher = publisher;
         this.resolver = resolver;
@@ -65,7 +68,7 @@ public class MavenGradleEnvExtractor {
             }
 
             ArtifactoryClientConfiguration configuration = ExtractorUtils.getArtifactoryClientConfiguration(
-                    env, build, buildListener, publisherContext, resolverContext, ws);
+                    env, build, buildInfo, buildListener, publisherContext, resolverContext, ws);
             addPipelineInfoToConfiguration(ws, env, configuration);
             ExtractorUtils.persistConfiguration(configuration, env, ws, launcher);
             propertiesFilePath = configuration.getPropertiesFile();
@@ -97,6 +100,5 @@ public class MavenGradleEnvExtractor {
         }
         return tempFile;
     }
-
 
 }

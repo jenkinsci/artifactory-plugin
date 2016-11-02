@@ -39,6 +39,7 @@ import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.pipeline.Utils;
+import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
@@ -134,22 +135,24 @@ public class ExtractorUtils {
      * @param publisherContext A context for publisher settings
      * @param resolverContext  A context for resolver settings
      */
-    public static ArtifactoryClientConfiguration addBuilderInfoArguments(Map<String, String> env, Run build,
-                                                                         TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws, hudson.Launcher launcher)
+    public static ArtifactoryClientConfiguration addBuilderInfoArguments(Map<String, String> env, Run build, TaskListener listener,
+                PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws, hudson.Launcher launcher)
             throws IOException, InterruptedException {
-        ArtifactoryClientConfiguration configuration = getArtifactoryClientConfiguration(env, build, listener, publisherContext, resolverContext, ws);
+        ArtifactoryClientConfiguration configuration = getArtifactoryClientConfiguration(env, build,
+                null, listener, publisherContext, resolverContext, ws);
         persistConfiguration(configuration, env, ws, launcher);
         return configuration;
     }
 
-    public static ArtifactoryClientConfiguration getArtifactoryClientConfiguration(Map<String, String> env, Run build, TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws) throws UnsupportedEncodingException {
+    public static ArtifactoryClientConfiguration getArtifactoryClientConfiguration(Map<String, String> env, Run build,
+                BuildInfo pipelineBuildInfo, TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws) throws UnsupportedEncodingException {
         ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
         if (build instanceof AbstractBuild) {
             addBuildRootIfNeeded((AbstractBuild) build, configuration);
         }
 
         if (publisherContext != null) {
-            setPublisherInfo(env, build, publisherContext, configuration, listener, ws);
+            setPublisherInfo(env, build, pipelineBuildInfo, publisherContext, configuration, listener, ws);
             publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
         }
 
@@ -221,13 +224,21 @@ public class ExtractorUtils {
     /**
      * Set all the parameters relevant for publishing artifacts and build info
      */
-    private static void setPublisherInfo(Map<String, String> env, Run build,
-                                         PublisherContext context, ArtifactoryClientConfiguration configuration, TaskListener listerner, FilePath ws) {
+    private static void setPublisherInfo(Map<String, String> env, Run build, BuildInfo pipelineBuildInfo, PublisherContext context,
+                ArtifactoryClientConfiguration configuration, TaskListener listerner, FilePath ws) {
         configuration.setActivateRecorder(Boolean.TRUE);
-        String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
+        String buildName;
+        String buildNumber;
+        if (pipelineBuildInfo != null) {
+            buildName = pipelineBuildInfo.getName();
+            buildNumber = pipelineBuildInfo.getNumber();
+        } else {
+            buildName = BuildUniqueIdentifierHelper.getBuildName(build);
+            buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
+        }
+
         configuration.info.setBuildName(buildName);
         configuration.publisher.addMatrixParam("build.name", buildName);
-        String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
         configuration.info.setBuildNumber(buildNumber);
         configuration.publisher.addMatrixParam("build.number", buildNumber);
         configuration.info.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
@@ -419,8 +430,8 @@ public class ExtractorUtils {
         }
     }
 
-    public static void persistConfiguration(ArtifactoryClientConfiguration configuration,
-                                            Map<String, String> env, FilePath ws, hudson.Launcher launcher) throws IOException, InterruptedException {
+    public static void persistConfiguration(ArtifactoryClientConfiguration configuration, Map<String, String> env, FilePath ws,
+                hudson.Launcher launcher) throws IOException, InterruptedException {
         FilePath propertiesFile = ws.createTextTempFile("buildInfo", ".properties", "", false);
         configuration.setPropertiesFile(propertiesFile.getRemote());
         env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());
@@ -480,7 +491,7 @@ public class ExtractorUtils {
     }
 
     private static void addEnvVars(Map<String, String> env, Run<?, ?> build,
-                                   ArtifactoryClientConfiguration configuration, IncludesExcludes envVarsPatterns, TaskListener listener) {
+                ArtifactoryClientConfiguration configuration, IncludesExcludes envVarsPatterns, TaskListener listener) {
         IncludeExcludePatterns patterns = new IncludeExcludePatterns(
                 Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env),
                 Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env)

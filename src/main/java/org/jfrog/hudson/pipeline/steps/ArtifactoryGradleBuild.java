@@ -119,7 +119,8 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             BuildInfo buildInfo = step.getBuildInfo() == null ? new BuildInfo(build) : step.getBuildInfo();
             Deployer deployer = getDeployer();
             deployer.createPublisherBuildInfoDetails(buildInfo);
-            MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build, deployer, step.getGradleBuild().getResolver(), listener, launcher);
+            MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build,
+                    buildInfo, deployer, step.getGradleBuild().getResolver(), listener, launcher);
             ArgumentListBuilder args = getGradleExecutor();
             envExtractor.buildEnvVars(ws, env);
             exe(args);
