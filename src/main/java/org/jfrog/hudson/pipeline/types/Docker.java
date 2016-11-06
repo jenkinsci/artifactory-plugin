@@ -66,7 +66,7 @@ public class Docker implements Serializable {
 
     @Whitelisted
     public BuildInfo push(Map<String, Object> dockerArguments) throws Exception {
-        CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId, null);
+        CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
         dockerArguments.put("credentialsConfig", credentialsConfig);
         dockerArguments.put("host", host);
 
@@ -91,7 +91,7 @@ public class Docker implements Serializable {
 
     @Whitelisted
     public BuildInfo pull(Map<String, Object> dockerArguments) throws Exception {
-        CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId, null);
+        CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
         dockerArguments.put("credentialsConfig", credentialsConfig);
         dockerArguments.put("host", host);
 

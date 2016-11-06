@@ -30,7 +30,7 @@ public class DockerPushStep extends AbstractStepImpl {
     private String targetRepo;
 
     @DataBoundConstructor
-    public DockerPushStep(String image, CredentialsConfig credentialsConfig, String targetRepo, BuildInfo buildInfo) {
+    public DockerPushStep(String image, CredentialsConfig credentialsConfig, String host, String targetRepo, BuildInfo buildInfo) {
         this.image = image;
         this.credentialsConfig = credentialsConfig;
         this.host = host;

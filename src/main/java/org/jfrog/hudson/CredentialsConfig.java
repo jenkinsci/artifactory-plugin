@@ -40,6 +40,13 @@ public class CredentialsConfig implements Serializable {
         this.credentialsId = credentialsId;
     }
 
+    public CredentialsConfig(String username, String password, String credentialsId) {
+        this.overridingCredentials = false;
+        this.ignoreCredentialPluginDisabled = StringUtils.isNotEmpty(credentialsId);
+        this.credentials = new Credentials(username, password);
+        this.credentialsId = credentialsId;
+    }
+
     public CredentialsConfig(Credentials credentials, String credentialsId, boolean overridingCredentials) {
         this.credentials = credentials;
         this.credentialsId = credentialsId;
@@ -115,6 +122,6 @@ public class CredentialsConfig implements Serializable {
     }
 
     public boolean isUsingCredentialsPlugin() {
-        return PluginsUtils.isCredentialsPluginEnabled() && StringUtils.isNotEmpty(credentialsId) || ignoreCredentialPluginDisabled;
+        return (PluginsUtils.isCredentialsPluginEnabled() && StringUtils.isNotEmpty(credentialsId)) || ignoreCredentialPluginDisabled;
     }
 }
