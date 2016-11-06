@@ -40,7 +40,11 @@ public class DockerUtils implements Serializable {
      * @param authConfig
      * @param host
      */
-    public static void pushImage(String imageTag, AuthConfig authConfig, String host) {
+    public static void pushImage(String imageTag, String username, String password, String host) {
+        final AuthConfig authConfig = new AuthConfig();
+        authConfig.withUsername(username);
+        authConfig.withPassword(password);
+
         DockerClient dockerClient = getDockerClient(host);
         dockerClient.pushImageCmd(imageTag).withAuthConfig(authConfig).exec(new PushImageResultCallback()).awaitSuccess();
     }
@@ -52,7 +56,11 @@ public class DockerUtils implements Serializable {
      * @param authConfig
      * @param host
      */
-    public static void pullImage(String imageTag, AuthConfig authConfig, String host) {
+    public static void pullImage(String imageTag, String username, String password, String host) {
+        final AuthConfig authConfig = new AuthConfig();
+        authConfig.withUsername(username);
+        authConfig.withPassword(password);
+
         DockerClient dockerClient = getDockerClient(host);
         dockerClient.pullImageCmd(imageTag).withAuthConfig(authConfig).exec(new PullImageResultCallback()).awaitSuccess();
     }

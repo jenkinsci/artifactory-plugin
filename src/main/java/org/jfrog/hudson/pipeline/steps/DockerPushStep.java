@@ -95,7 +95,10 @@ public class DockerPushStep extends AbstractStepImpl {
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
             DockerAgentUtils.registerImage(launcher, step.getImage(), step.getHost(), step.getTargetRepo(), buildInfo.hashCode());
 
-            DockerAgentUtils.pushImage(launcher, build, step.getImage(), step.getCredentialsConfig(), step.getHost());
+            String username = step.getCredentialsConfig().provideUsername(build.getParent());
+            String password = step.getCredentialsConfig().providePassword(build.getParent());
+
+            DockerAgentUtils.pushImage(launcher, step.getImage(), username, password, step.getHost());
             if (!DockerAgentUtils.updateImageParent(launcher, step.getImage(), step.getHost(), buildInfo.hashCode())) {
                 getContext().onFailure(new IllegalStateException("Build info capturing failed for docker image: " +
                         step.getImage() + " check build info proxy configuration."));

@@ -1,6 +1,5 @@
 package org.jfrog.hudson.pipeline.steps;
 
-import com.github.dockerjava.api.model.AuthConfig;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.FilePath;
@@ -86,7 +85,10 @@ public class DockerPullStep extends AbstractStepImpl {
                 imageTag += ":latest";
             }
 
-            DockerAgentUtils.pullImage(launcher, build, imageTag, step.getCredentialsConfig(), step.getHost());
+            String username = step.getCredentialsConfig().provideUsername(build.getParent());
+            String password = step.getCredentialsConfig().providePassword(build.getParent());
+
+            DockerAgentUtils.pullImage(launcher, imageTag, username, password, step.getHost());
             JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
             log.info("Successfully pulled docker image: " + imageTag);
             return buildInfo;
