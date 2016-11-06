@@ -4,8 +4,10 @@ import com.github.dockerjava.api.model.AuthConfig;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import hudson.Launcher;
+import hudson.model.Run;
 import hudson.remoting.Callable;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.docker.DockerImage;
 import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxyManager;
 
@@ -119,18 +121,23 @@ public class DockerAgentUtils implements Serializable {
      * Execute push docker image on agent
      *
      * @param launcher
+     * @param build
      * @param imageTag
-     * @param authConfig
+     * @param credentialsConfig
      * @param host
      * @return
      * @throws IOException
      * @throws InterruptedException
      */
-    public static boolean pushImage(Launcher launcher, final String imageTag, final AuthConfig authConfig, final String host)
+    public static boolean pushImage(Launcher launcher, final Run build, final String imageTag, final CredentialsConfig credentialsConfig, final String host)
             throws IOException, InterruptedException {
 
         return launcher.getChannel().call(new Callable<Boolean, IOException>() {
             public Boolean call() throws IOException {
+                final AuthConfig authConfig = new AuthConfig();
+                authConfig.withUsername(credentialsConfig.provideUsername(build.getParent()));
+                authConfig.withPassword(credentialsConfig.providePassword(build.getParent()));
+
                 DockerUtils.pushImage(imageTag, authConfig, host);
                 return true;
             }
@@ -141,18 +148,23 @@ public class DockerAgentUtils implements Serializable {
      * Execute pull docker image on agent
      *
      * @param launcher
+     * @param build
      * @param imageTag
-     * @param authConfig
+     * @param credentialsConfig
      * @param host
      * @return
      * @throws IOException
      * @throws InterruptedException
      */
-    public static boolean pullImage(Launcher launcher, final String imageTag, final AuthConfig authConfig, final String host)
+    public static boolean pullImage(Launcher launcher, final Run build, final String imageTag, final CredentialsConfig credentialsConfig, final String host)
             throws IOException, InterruptedException {
 
         return launcher.getChannel().call(new Callable<Boolean, IOException>() {
             public Boolean call() throws IOException {
+                final AuthConfig authConfig = new AuthConfig();
+                authConfig.withUsername(credentialsConfig.provideUsername(build.getParent()));
+                authConfig.withPassword(credentialsConfig.providePassword(build.getParent()));
+
                 DockerUtils.pullImage(imageTag, authConfig, host);
                 return true;
             }

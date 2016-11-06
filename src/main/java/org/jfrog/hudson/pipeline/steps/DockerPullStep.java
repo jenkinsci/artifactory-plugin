@@ -86,11 +86,7 @@ public class DockerPullStep extends AbstractStepImpl {
                 imageTag += ":latest";
             }
 
-            final AuthConfig authConfig = new AuthConfig();
-            authConfig.withUsername(step.getCredentialsConfig().provideUsername(build.getParent()));
-            authConfig.withPassword(step.getCredentialsConfig().providePassword(build.getParent()));
-            DockerAgentUtils.pullImage(launcher, imageTag, authConfig, step.getHost());
-
+            DockerAgentUtils.pullImage(launcher, build, imageTag, step.getCredentialsConfig(), step.getHost());
             JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
             log.info("Successfully pulled docker image: " + imageTag);
             return buildInfo;

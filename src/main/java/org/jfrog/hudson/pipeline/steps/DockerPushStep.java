@@ -1,6 +1,5 @@
 package org.jfrog.hudson.pipeline.steps;
 
-import com.github.dockerjava.api.model.AuthConfig;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.FilePath;
@@ -96,11 +95,7 @@ public class DockerPushStep extends AbstractStepImpl {
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
             DockerAgentUtils.registerImage(launcher, step.getImage(), step.getHost(), step.getTargetRepo(), buildInfo.hashCode());
 
-            final AuthConfig authConfig = new AuthConfig();
-            authConfig.withUsername(step.getCredentialsConfig().provideUsername(build.getParent()));
-            authConfig.withPassword(step.getCredentialsConfig().providePassword(build.getParent()));
-            DockerAgentUtils.pushImage(launcher, step.getImage(), authConfig, step.getHost());
-
+            DockerAgentUtils.pushImage(launcher, build, step.getImage(), step.getCredentialsConfig(), step.getHost());
             if (!DockerAgentUtils.updateImageParent(launcher, step.getImage(), step.getHost(), buildInfo.hashCode())) {
                 getContext().onFailure(new IllegalStateException("Build info capturing failed for docker image: " +
                         step.getImage() + " check build info proxy configuration."));
