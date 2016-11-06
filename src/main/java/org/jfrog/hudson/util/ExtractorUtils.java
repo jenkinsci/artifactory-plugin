@@ -160,6 +160,10 @@ public class ExtractorUtils {
             setResolverInfo(configuration, build, resolverContext, env);
         }
 
+        if (!shouldBypassProxy(resolverContext, publisherContext)) {
+            setProxy(configuration);
+        }
+
         if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
                 publisherContext.isEnableIssueTrackerIntegration()) {
             new IssuesTrackerHelper(build, listener, publisherContext.isAggregateBuildIssues(),
@@ -174,13 +178,22 @@ public class ExtractorUtils {
         return configuration;
     }
 
-    private static void setProxy(ArtifactoryServer server, ArtifactoryClientConfiguration configuration) {
-        // TODO: distinguish between resolving bypass and deployment bypass
-        if (!server.isBypassProxy() && Jenkins.getInstance().proxy != null) {
-            configuration.proxy.setHost(Jenkins.getInstance().proxy.name);
-            configuration.proxy.setPort(Jenkins.getInstance().proxy.port);
-            configuration.proxy.setUsername(Jenkins.getInstance().proxy.getUserName());
-            configuration.proxy.setPassword(Jenkins.getInstance().proxy.getPassword());
+    private static boolean shouldBypassProxy(ResolverContext resolverContext, PublisherContext publisherContext) {
+        boolean bypass =
+                resolverContext != null && resolverContext.getServer() != null
+                        && resolverContext.getServer().isBypassProxy();
+        return bypass ||
+                publisherContext != null && publisherContext.getArtifactoryServer() != null
+                        && publisherContext.getArtifactoryServer().isBypassProxy();
+    }
+
+    private static void setProxy(ArtifactoryClientConfiguration configuration) {
+        Jenkins j = Jenkins.getInstance();
+        if (j.proxy != null) {
+            configuration.proxy.setHost(j.proxy.name);
+            configuration.proxy.setPort(j.proxy.port);
+            configuration.proxy.setUsername(j.proxy.getUserName());
+            configuration.proxy.setPassword(j.proxy.getPassword());
         }
     }
 
