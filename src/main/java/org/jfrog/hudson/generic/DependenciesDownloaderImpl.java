@@ -52,7 +52,8 @@ public class DependenciesDownloaderImpl implements DependenciesDownloader {
 
     public String getTargetDir(String targetDir, String relativeDir) throws IOException {
         try {
-            String downloadFileRelativePath = this.flatDownload ? StringUtils.substringAfterLast(relativeDir, "/") : relativeDir;
+            String downloadFileRelativePath = this.flatDownload && relativeDir.contains("/") ?
+                    StringUtils.substringAfterLast(relativeDir, "/") : relativeDir;
             FilePath targetDirFile = new FilePath(workspace, targetDir).child(downloadFileRelativePath);
             return targetDirFile.absolutize().getRemote();
         } catch (InterruptedException e) {

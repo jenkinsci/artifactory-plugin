@@ -19,7 +19,7 @@
         <f:block>
             <lable style="margin: 10px 0px 5px -10px; line-height: 3; font-size: 1.3em; padding: 10px 15px;
                               font-weight: bold; box-sizing: border-box;">
-                Deployment Details</lable>
+                Upload Details</lable>
 
             <table style="width:100%" id="artifactory-deployer-generic-dd">
 
@@ -84,7 +84,7 @@
                          help="/plugin/artifactory/help/common/help-deployPattern.html">
                     <f:textarea value="${instance.deployPattern}"/>
                 </f:entry>
-                <f:entry title="Deployment properties" field="matrixParams"
+                <f:entry title="Upload properties" field="matrixParams"
                          help="/plugin/artifactory/help/common/help-matrixParams.html">
                     <f:textbox value="${instance.matrixParams}"/>
                 </f:entry>
@@ -123,9 +123,9 @@
         <f:block >
             <lable style="margin: 10px 0px 5px -10px; line-height: 3; font-size: 1.3em; padding: 10px 15px;
                               font-weight: bold; box-sizing: border-box;">
-                Resolution Details</lable>
+                Download Details</lable>
             <table style="width:100%" id="artifactory-resolver-generic-dd">
-                <f:dropdownList name="artifactory-resolver-generic-dd" title="${%Artifactory resolver server}">
+                <f:dropdownList name="artifactory-resolver-generic-dd" title="${%Artifactory download server}">
                     <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
                         <f:dropdownListBlock value="${s.name}" title="${s.url}"
                                              selected="${s.name==instance.resolverDetails.artifactoryName}">
@@ -144,7 +144,7 @@
 
         <f:block>
             <table style="width:100%" id="artifactory-resolver-spec-dd">
-                <f:dropdownList name="artifactory-resolver-spec-dd" title="${%Artifactory resolver server}">
+                <f:dropdownList name="artifactory-resolver-spec-dd" title="${%Artifactory download server}">
                     <j:forEach var="s" items="${descriptor.artifactoryServers}" varStatus="loop">
                         <f:dropdownListBlock value="${s.name}" title="${s.url}"
                                              selected="${s.name==instance.resolverDetails.artifactoryName}">
@@ -163,12 +163,12 @@
 
         <r:credentials configurationFieldName="resolverCredentialsConfig"
                        configurationObject="${instance.resolverCredentialsConfig}"
-                       blockTitle="Override default resolver credentials"
+                       blockTitle="Override default download credentials"
                        elementId="overridingResolverCredentials-generic"/>
 
         <f:block>
             <table style="width:100%" id="resolvePatternArea">
-                <f:entry title="Resolved Artifacts" field="resolvePattern"
+                <f:entry title="Download Artifacts" field="resolvePattern"
                          help="/plugin/artifactory/help/common/help-resolvePattern.html">
                     <f:textarea value="${instance.resolvePattern}"/>
                 </f:entry>
@@ -260,7 +260,7 @@
                         <table style="width:100%">
                             <f:optionalBlock name="multiConfProject"
                                              checked="${instance.multiConfProject == null || instance.multiConfProject}"
-                                             title="${%Multi Configuration Deploy Matcher}"
+                                             title="${%Multi Configuration Upload Matcher}"
                                              inline="true">
                                 <f:entry field="artifactoryCombinationFilter" title="${%Combination Matches}"
                                          description="Groovy expression"
