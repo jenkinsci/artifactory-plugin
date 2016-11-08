@@ -14,6 +14,8 @@ import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Tamirh on 04/08/2016.
@@ -21,6 +23,7 @@ import java.io.Serializable;
 public abstract class Deployer implements DeployerOverrider, Serializable {
     private boolean deployArtifacts = true;
     private boolean includeEnvVars;
+    private List<String> properties = new ArrayList<String>();
     private Filter artifactDeploymentPatterns = new Filter();
 
     protected ArtifactoryServer server;
@@ -59,6 +62,31 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
     public Deployer setDeployArtifacts(boolean deployArtifacts) {
         this.deployArtifacts = deployArtifacts;
         return this;
+    }
+
+    @Whitelisted
+    public Deployer addProperty(String key, String... values) {
+        StringBuilder prop = new StringBuilder(key + "=");
+        for (int i = 0; i < values.length; i++) {
+            prop.append(values[i]);
+            if (i != values.length - 1) {
+                prop.append(",");
+            }
+        }
+        properties.add(prop.toString());
+        return this;
+    }
+
+    protected String buildPropertiesString() {
+        StringBuilder props = new StringBuilder();
+
+        for (int i = 0; i < properties.size(); i++) {
+            props.append(properties.get(i));
+            if (i != properties.size() - 1) {
+                props.append(";");
+            }
+        }
+        return props.toString();
     }
 
     public boolean isOverridingDefaultDeployer() {
