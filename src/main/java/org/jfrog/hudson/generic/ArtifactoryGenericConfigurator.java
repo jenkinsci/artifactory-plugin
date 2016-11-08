@@ -326,7 +326,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             if (isUseSpecs()) {
                 String spec = SpecUtils.getSpecStringFromSpecConf(
                         downloadSpec, build.getEnvironment(listener), build.getExecutor().getCurrentWorkspace(), listener.getLogger());
-                publishedDependencies = artifactsResolver.retrieveDependenciesBySpec(getArtifactoryUrl(), spec);
+                publishedDependencies = artifactsResolver.retrieveDependenciesBySpec(resolverDetails.getArtifactoryUrl(), spec);
             } else {
                 publishedDependencies = artifactsResolver.retrievePublishedDependencies(resolvePattern);
                 buildDependencies = artifactsResolver.retrieveBuildDependencies(resolvePattern);
