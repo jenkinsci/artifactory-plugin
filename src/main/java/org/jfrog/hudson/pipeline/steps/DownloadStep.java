@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.*;
@@ -61,7 +62,7 @@ public class DownloadStep extends AbstractStepImpl {
 
         @Override
         protected BuildInfo run() throws Exception {
-            BuildInfo buildInfo = new GenericDownloadExecutor(Utils.prepareArtifactoryServer(null, step.getServer()), this.listener, this.build, this.ws, step.getBuildInfo()).execution(step.getSpec());
+            BuildInfo buildInfo = new GenericDownloadExecutor(Utils.prepareArtifactoryServer(null, step.getServer()), this.listener, this.build, this.ws, step.getBuildInfo()).execution(Util.replaceMacro(step.getSpec(), env));
             new BuildInfoAccessor(buildInfo).captureVariables(env, build, listener);
             return buildInfo;
         }
