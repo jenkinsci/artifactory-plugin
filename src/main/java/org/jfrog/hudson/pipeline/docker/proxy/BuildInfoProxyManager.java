@@ -21,6 +21,7 @@ import java.util.logging.Logger;
  */
 public class BuildInfoProxyManager implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     static private HttpProxyServer server = null;
     private static final Logger logger = Logger.getLogger(BuildInfoProxyManager.class.getName());
 
