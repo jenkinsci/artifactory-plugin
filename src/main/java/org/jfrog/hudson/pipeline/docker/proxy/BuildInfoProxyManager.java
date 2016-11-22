@@ -12,13 +12,14 @@ import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
 import java.util.logging.Logger;
 
 /**
  * Created by romang on 7/10/16.
  */
-public class BuildInfoProxyManager {
+public class BuildInfoProxyManager implements Serializable {
 
     static private HttpProxyServer server = null;
     private static final Logger logger = Logger.getLogger(BuildInfoProxyManager.class.getName());
