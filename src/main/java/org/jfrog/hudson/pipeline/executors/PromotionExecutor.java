@@ -48,7 +48,8 @@ public class PromotionExecutor {
                 .targetRepo(promotionConfig.getTargetRepo())
                 .sourceRepo(promotionConfig.getSourceRepo())
                 .dependencies(promotionConfig.isIncludeDependencies())
-                .copy(promotionConfig.isCopy());
+                .copy(promotionConfig.isCopy())
+                .failFast(promotionConfig.isFailFast());
 
         logInfo();
 

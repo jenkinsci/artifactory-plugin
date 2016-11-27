@@ -57,6 +57,11 @@
                                                 <f:checkbox default="false" name="useCopy"/>
                                                 <label class="attach-previous">${%Use copy}</label>
                                             </f:entry>
+                                            <f:entry field="failFast"
+                                                    help="/plugin/artifactory/help/release/PromoteBuildAction/help-failFast.html">
+                                                <f:checkbox default="true" name="failFast"/>
+                                                <label class="attach-previous">${%Fail Fast}</label>
+                                            </f:entry>
                                         </j:when>
                                         <j:otherwise>
                                             <input type="hidden" name="pluginName"
