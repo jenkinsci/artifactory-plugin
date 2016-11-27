@@ -44,9 +44,7 @@ import org.kohsuke.stapler.bind.JavaScriptMethod;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Yossi Shaul
@@ -205,13 +203,23 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             }
 
             Object servers = o.get("artifactoryServer");    // an array or single object
+            List<ArtifactoryServer> artifactoryServers;
             if (!JSONNull.getInstance().equals(servers)) {
                 artifactoryServers = req.bindJSONToList(ArtifactoryServer.class, servers);
             } else {
                 artifactoryServers = null;
             }
+
+            if (!isServerIDConfigured(artifactoryServers)) {
+                throw new FormException("Please set the Artifactory server ID.", "ServerID");
+            }
+
+            if (isServerDuplicated(artifactoryServers)) {
+                throw new FormException("The Artifactory server ID you have entered is already configured", "Server ID");
+            }
+            setArtifactoryServers(artifactoryServers);
             save();
-            return super.configure(req, o) && !isServerConfigurationError();
+            return super.configure(req, o);
         }
 
         private synchronized void configureProxy(JSONObject proxyConfig) throws IOException, InterruptedException {
@@ -227,21 +235,6 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 buildInfoProxyEnabled = true;
                 buildInfoProxyPort = portFromForm;
             }
-        }
-
-        private boolean isServerConfigurationError() {
-            Map<String, String> serversName = new HashMap<String, String>();
-            if (artifactoryServers == null) {
-                return false;
-            }
-            for (ArtifactoryServer server : artifactoryServers) {
-                String name = server.getName();
-                if (name == null || name == "" || serversName.get(name) != null) {
-                    return true;
-                }
-                serversName.put(name, name);
-            }
-            return false;
         }
 
         public List<ArtifactoryServer> getArtifactoryServers() {
@@ -317,6 +310,34 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
 
         public int getBuildInfoProxyPort() {
             return buildInfoProxyPort;
+        }
+
+        private boolean isServerDuplicated(List<ArtifactoryServer> artifactoryServers) {
+            Set<String> serversNames = new HashSet<String>();
+            if (artifactoryServers == null) {
+                return false;
+            }
+            for (ArtifactoryServer server : artifactoryServers) {
+                String name = server.getName();
+                if (serversNames.contains(name)) {
+                    return true;
+                }
+                serversNames.add(name);
+            }
+            return false;
+        }
+
+        private boolean isServerIDConfigured(List<ArtifactoryServer> artifactoryServers) {
+            if (artifactoryServers == null) {
+                return true;
+            }
+            for (ArtifactoryServer server : artifactoryServers) {
+                String name = server.getName();
+                if (StringUtils.isBlank(name)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
