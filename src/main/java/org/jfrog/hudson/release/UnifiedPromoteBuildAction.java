@@ -53,6 +53,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
     private String sourceRepositoryKey;
     private String comment;
     private boolean useCopy;
+    private boolean failFast = true;
     private boolean includeDependencies;
     private PluginSettings promotionPlugin;
     private String defaultPromotionRepositoryKey;
@@ -113,6 +114,10 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
 
     public void setUseCopy(boolean useCopy) {
         this.useCopy = useCopy;
+    }
+
+    public void setFailFast(boolean failFast) {
+        this.failFast = failFast;
     }
 
     public void setIncludeDependencies(boolean includeDependencies) {
@@ -232,6 +237,10 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         if (pluginSettings.get("useCopy") != null) {
             this.setUseCopy(pluginSettings.getBoolean("useCopy"));
         }
+
+        if (pluginSettings.get("failFast") != null) {
+            this.setFailFast(pluginSettings.getBoolean("failFast"));
+        }
     }
 
     public List<UserPluginInfo> getPromotionsUserPluginInfo() {
@@ -288,7 +297,8 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                             .targetRepo(repositoryKey)
                             .sourceRepo(sourceRepositoryKey)
                             .dependencies(includeDependencies)
-                            .copy(useCopy);
+                            .copy(useCopy)
+                            .failFast(failFast);
 
                     String buildName = BuildUniqueIdentifierHelper.getBuildName(build);
                     String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
@@ -318,7 +328,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
             String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
             HttpResponse pluginPromotionResponse = client.executePromotionUserPlugin(
                     promotionPlugin.getPluginName(), buildName, buildNumber, promotionPlugin.getParamMap());
-            if (PromotionUtils.checkSuccess(pluginPromotionResponse, false, false, listener)) {
+            if (PromotionUtils.checkSuccess(pluginPromotionResponse, false, failFast, false, listener)) {
                 listener.getLogger().println("Promotion completed successfully!");
             }
         }

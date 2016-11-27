@@ -17,6 +17,7 @@ public class PromotionConfig implements Serializable {
     private String comment;
     private boolean includeDependencies;
     private boolean copy;
+    private boolean failFast = true;
 
     @Whitelisted
     public String getBuildName() {
@@ -96,5 +97,15 @@ public class PromotionConfig implements Serializable {
     @Whitelisted
     public void setCopy(boolean copy) {
         this.copy = copy;
+    }
+
+    @Whitelisted
+    public boolean isFailFast() {
+        return failFast;
+    }
+
+    @Whitelisted
+    public void setFailFast(boolean failFast) {
+        this.failFast = failFast;
     }
 }

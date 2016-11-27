@@ -29,17 +29,17 @@ public class PromotionUtils {
      * @throws IOException
      */
     public static boolean promoteAndCheckResponse(PromotionBuilder promotionBuilder, ArtifactoryBuildInfoClient client, TaskListener listener,
-             String buildName, String buildNumber) throws IOException {
+                                                  String buildName, String buildNumber) throws IOException {
         // do a dry run first
         promotionBuilder.dryRun(true);
         listener.getLogger().println("Performing dry run promotion (no changes are made during dry run) ...");
 
         HttpResponse dryResponse = client.stageBuild(buildName, buildNumber, promotionBuilder.build());
-        if (checkSuccess(dryResponse, true, true, listener)) {
+        if (checkSuccess(dryResponse, true, promotionBuilder.isFailFast(), true, listener)) {
             listener.getLogger().println("Dry run finished successfully.\nPerforming promotion ...");
             HttpResponse wetResponse = client.stageBuild(buildName,
                     buildNumber, promotionBuilder.dryRun(false).build());
-            if (checkSuccess(wetResponse, false, true, listener)) {
+            if (checkSuccess(wetResponse, false, promotionBuilder.isFailFast(), true, listener)) {
                 listener.getLogger().println("Promotion completed successfully!");
                 return true;
             }
@@ -56,12 +56,12 @@ public class PromotionUtils {
      * @param listener
      * @return
      */
-    public static boolean checkSuccess(HttpResponse response, boolean dryRun, boolean parseMessages,
-                                       TaskListener listener) {
+    public static boolean checkSuccess(HttpResponse response, boolean dryRun, boolean failFast,
+                                       boolean parseMessages, TaskListener listener) {
         StatusLine status = response.getStatusLine();
         try {
             String content = entityToString(response);
-            if (assertResponseStatus(dryRun, listener, status, content)) {
+            if (assertResponseStatus(dryRun, failFast, listener, status, content)) {
                 if (parseMessages) {
                     JSONObject json = JSONObject.fromObject(content);
                     JSONArray messages = json.getJSONArray("messages");
@@ -71,12 +71,13 @@ public class PromotionUtils {
                         String message = messageJson.getString("message");
                         // TODO: we don't want to fail if no items were moved/copied. find a way to support it
                         if ((level.equals("WARNING") || level.equals("ERROR")) &&
-                                !message.startsWith("No items were")) {
+                                !message.startsWith("No items were") && failFast) {
                             listener.error("Received " + level + ": " + message);
                             return false;
                         }
                     }
                 }
+                listener.getLogger().println(content);
                 return true;
             }
         } catch (IOException e) {
@@ -91,8 +92,8 @@ public class PromotionUtils {
         return IOUtils.toString(is, "UTF-8");
     }
 
-    private static boolean assertResponseStatus(boolean dryRun, TaskListener listener, StatusLine status, String content) {
-        if (status.getStatusCode() != 200) {
+    private static boolean assertResponseStatus(boolean dryRun, boolean failFast, TaskListener listener, StatusLine status, String content) {
+        if (status.getStatusCode() != 200 && failFast) {
             if (dryRun) {
                 listener.error(
                         "Promotion failed during dry run (no change in Artifactory was done): " + status +
