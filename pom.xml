@@ -31,8 +31,8 @@
 
     <properties>
         <buildinfo.version>2.6.x-SNAPSHOT</buildinfo.version>
-        <buildinfo.maven3.version>2.6.1</buildinfo.maven3.version>
-        <buildinfo.gradle.version>4.4.9</buildinfo.gradle.version>
+        <buildinfo.maven3.version>2.6.x-SNAPSHOT</buildinfo.maven3.version>
+        <buildinfo.gradle.version>4.4.x-SNAPSHOT</buildinfo.gradle.version>
         <buildinfo.ivy.version>2.6.1</buildinfo.ivy.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
     </properties>
