@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 /**
  * Created by romang on 7/10/16.
  */
-public class BuildInfoProxyManager implements Serializable {
+public class BuildInfoProxyManager {
     static private HttpProxyServer server = null;
     private static final Logger logger = Logger.getLogger(BuildInfoProxyManager.class.getName());
 
