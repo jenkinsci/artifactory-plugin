@@ -12,6 +12,7 @@ import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -19,7 +20,6 @@ import java.util.logging.Logger;
  * Created by romang on 7/10/16.
  */
 public class BuildInfoProxyManager {
-
     static private HttpProxyServer server = null;
     private static final Logger logger = Logger.getLogger(BuildInfoProxyManager.class.getName());
 
@@ -65,6 +65,7 @@ public class BuildInfoProxyManager {
                 continue;
             }
             node.getChannel().call(new Callable<Boolean, IOException>() {
+                private static final long serialVersionUID = 1L;
                 public Boolean call() throws IOException {
                     BuildInfoProxyManager.stop();
                     return true;
@@ -98,6 +99,7 @@ public class BuildInfoProxyManager {
             localKeyPath.copyTo(remoteKeyPath);
 
             node.getChannel().call(new Callable<Boolean, IOException>() {
+                private static final long serialVersionUID = 1L;
                 public Boolean call() throws IOException {
                     BuildInfoProxyManager.start(port, agentCertPath, agentKeyPath);
                     return true;
