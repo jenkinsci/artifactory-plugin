@@ -117,7 +117,7 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
          */
         private void convertJdkPath() {
             if (StringUtils.isNotEmpty(env.get("JAVA_HOME"))) {
-                env.put("PATH+JDK", env.get("JAVA_HOME"));
+                env.put("PATH+JDK", env.get("JAVA_HOME") + "/bin");
             }
         }
 
