@@ -116,8 +116,13 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
          * In The pipeline flow we need to convert the JAVA_HOME to PATH+JDK in order to reuse the code.
          */
         private void convertJdkPath() {
-            if (StringUtils.isNotEmpty(env.get("JAVA_HOME"))) {
-                env.put("PATH+JDK", env.get("JAVA_HOME") + "/bin");
+            String seperator = launcher.isUnix() ? "/" : "\\";
+            String java_home = env.get("JAVA_HOME");
+            if (StringUtils.isNotEmpty(java_home)) {
+                if (!StringUtils.endsWith(java_home, seperator)) {
+                    java_home += seperator;
+                }
+                env.put("PATH+JDK", java_home + "bin");
             }
         }
 
