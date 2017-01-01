@@ -82,7 +82,10 @@ public class XrayScanBuildStep extends AbstractStepImpl {
             } else {
                 log.info(xrayScanResult.getScanMassege());
             }
-            log.info("Xray scan details are available at: " + xrayScanResult.getScanUrl());
+
+            if (StringUtils.isNotEmpty(xrayScanResult.getScanUrl())) {
+                log.info("Xray scan details are available at: " + xrayScanResult.getScanUrl());
+            }
             return xrayScanResult;
         }
     }
