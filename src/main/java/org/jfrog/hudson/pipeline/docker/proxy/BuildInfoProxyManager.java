@@ -22,10 +22,11 @@ import java.util.logging.Logger;
 public class BuildInfoProxyManager implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    static private HttpProxyServer server = null;
     private static final Logger logger = Logger.getLogger(BuildInfoProxyManager.class.getName());
+    static private HttpProxyServer server = null;
+    private static String agentName;
 
-    public static void start(int proxyPort, String proxyPublicKey, String proxyPrivateKey) {
+    public static void start(int proxyPort, String proxyPublicKey, String proxyPrivateKey, String agentName) {
         stop();
         logger.info("Starting Build-Info proxy");
         PemFileCertificateSource fileCertificateSource = CertManager.getCertificateSource(proxyPublicKey, proxyPrivateKey);
@@ -43,6 +44,7 @@ public class BuildInfoProxyManager implements Serializable {
                 .start();
         logger.info("Build-Info proxy certificate public key path: " + proxyPublicKey);
         logger.info("Build-Info proxy certificate private key path: " + proxyPrivateKey);
+        BuildInfoProxyManager.agentName = agentName;
     }
 
     public static boolean isUp() {
@@ -57,6 +59,10 @@ public class BuildInfoProxyManager implements Serializable {
             server.stop();
             server = null;
         }
+    }
+
+    public static String getAgentName() {
+        return agentName;
     }
 
     public static void stopAll() throws IOException, InterruptedException {
@@ -82,7 +88,7 @@ public class BuildInfoProxyManager implements Serializable {
         File publicCert = new File(jenkinsHome, CertManager.DEFAULT_RELATIVE_CERT_PATH);
         File privateCert = new File(jenkinsHome, CertManager.DEFAULT_RELATIVE_KEY_PATH);
 
-        start(port, publicCert.getPath(), privateCert.getPath());
+        start(port, publicCert.getPath(), privateCert.getPath(), Jenkins.getInstance().getDisplayName());
         List<Node> nodes = Jenkins.getInstance().getNodes();
         for (Node node : nodes) {
             if (node == null || node.getChannel() == null) {
@@ -90,6 +96,7 @@ public class BuildInfoProxyManager implements Serializable {
             }
             final String agentCertPath = node.getRootPath() + "/" + CertManager.DEFAULT_RELATIVE_CERT_PATH;
             final String agentKeyPath = node.getRootPath() + "/" + CertManager.DEFAULT_RELATIVE_KEY_PATH;
+            final String agentName = node.getDisplayName();
 
             FilePath remoteCertPath = new FilePath(node.getChannel(), agentCertPath);
             FilePath localCertPath = new FilePath(publicCert);
@@ -101,7 +108,7 @@ public class BuildInfoProxyManager implements Serializable {
 
             node.getChannel().call(new Callable<Boolean, IOException>() {
                 public Boolean call() throws IOException {
-                    BuildInfoProxyManager.start(port, agentCertPath, agentKeyPath);
+                    BuildInfoProxyManager.start(port, agentCertPath, agentKeyPath, agentName);
                     return true;
                 }
             });
