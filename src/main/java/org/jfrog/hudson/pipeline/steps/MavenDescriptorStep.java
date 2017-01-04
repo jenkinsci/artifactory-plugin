@@ -8,10 +8,7 @@ import hudson.remoting.Callable;
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.model.Model;
-import org.apache.maven.model.building.DefaultModelBuilderFactory;
-import org.apache.maven.model.building.DefaultModelBuildingRequest;
-import org.apache.maven.model.building.ModelBuilder;
-import org.apache.maven.model.building.ModelBuildingException;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
@@ -20,7 +17,9 @@ import org.jfrog.build.extractor.maven.reader.ModuleName;
 import org.jfrog.build.extractor.maven.transformer.PomTransformer;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -132,19 +131,31 @@ public class MavenDescriptorStep extends AbstractStepImpl {
         }
 
         private void findPomModules(String filePath, String fileName, Map<ModuleName, String> result) {
-            final DefaultModelBuildingRequest request = new DefaultModelBuildingRequest().setPomFile(new File(filePath + fileName));
-            ModelBuilder builder = new DefaultModelBuilderFactory().newInstance();
-            try {
-                Model effectiveModel = builder.build(request).getEffectiveModel();
-                result.put(new ModuleName(effectiveModel.getGroupId(), effectiveModel.getArtifactId()), filePath + fileName);
+            findPomModules(filePath, fileName, result, null, null);
+        }
 
-                List<String> modules = effectiveModel.getModules();
-                for (String module : modules) {
-                    String tempFilePath = StringUtils.endsWith(filePath, File.separator) ? filePath + module + File.separator : filePath + File.separator + module + File.separator;
-                    findPomModules(tempFilePath, "pom.xml", result);
-                }
-            } catch (ModelBuildingException e) {
+        private void findPomModules(String filePath, String fileName, Map<ModuleName, String> result,
+            String parentGroupId, String parentArtifactId) {
+            Model model;
+            String pomPath = filePath + fileName;
+            try {
+                BufferedReader in = new BufferedReader(new FileReader(pomPath));
+                MavenXpp3Reader reader = new MavenXpp3Reader();
+                model = reader.read(in);
+            } catch (Exception e) {
                 throw new RuntimeException(e);
+            }
+            String groupId = model.getGroupId() != null ? model.getGroupId() : parentGroupId;
+            String artifactId = model.getArtifactId() != null ? model.getArtifactId() : parentArtifactId;
+            if (groupId == null || artifactId == null) {
+                throw new IllegalStateException("artifactId and/or groupId could not be found in POM file: ");
+            }
+
+            result.put(new ModuleName(groupId, artifactId), pomPath);
+            List<String> modules = model.getModules();
+            for (String module : modules) {
+                String tempFilePath = StringUtils.endsWith(filePath, File.separator) ? filePath + module + File.separator : filePath + File.separator + module + File.separator;
+                findPomModules(tempFilePath, "pom.xml", result, groupId, parentArtifactId);
             }
         }
 
