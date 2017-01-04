@@ -10,7 +10,7 @@ import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryXrayClient;
@@ -40,7 +40,7 @@ public class XrayScanBuildStep extends AbstractStepImpl {
         return xrayScanConfig;
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<XrayScanResult> {
+    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<XrayScanResult> {
         private static final long serialVersionUID = 1L;
 
         @StepContextParameter
