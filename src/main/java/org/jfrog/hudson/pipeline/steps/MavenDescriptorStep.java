@@ -131,31 +131,42 @@ public class MavenDescriptorStep extends AbstractStepImpl {
         }
 
         private void findPomModules(String filePath, String fileName, Map<ModuleName, String> result) {
-            findPomModules(filePath, fileName, result, null, null);
-        }
-
-        private void findPomModules(String filePath, String fileName, Map<ModuleName, String> result,
-            String parentGroupId, String parentArtifactId) {
             Model model;
             String pomPath = filePath + fileName;
+            BufferedReader in = null;
             try {
-                BufferedReader in = new BufferedReader(new FileReader(pomPath));
+                in = new BufferedReader(new FileReader(pomPath));
                 MavenXpp3Reader reader = new MavenXpp3Reader();
                 model = reader.read(in);
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            } finally {
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (Exception e) {
+                        // Ignored
+                    }
+                }
             }
+            String parentGroupId = null;
+            String parentArtifactId = null;
+            if (model.getParent() != null) {
+                parentArtifactId = model.getParent().getArtifactId();
+                parentGroupId = model.getParent().getGroupId();
+            }
+
             String groupId = model.getGroupId() != null ? model.getGroupId() : parentGroupId;
             String artifactId = model.getArtifactId() != null ? model.getArtifactId() : parentArtifactId;
             if (groupId == null || artifactId == null) {
-                throw new IllegalStateException("artifactId and/or groupId could not be found in POM file: ");
+                throw new IllegalStateException("artifactId and/or groupId could not be found in POM file: " + pomPath);
             }
 
             result.put(new ModuleName(groupId, artifactId), pomPath);
             List<String> modules = model.getModules();
             for (String module : modules) {
                 String tempFilePath = StringUtils.endsWith(filePath, File.separator) ? filePath + module + File.separator : filePath + File.separator + module + File.separator;
-                findPomModules(tempFilePath, "pom.xml", result, groupId, parentArtifactId);
+                findPomModules(tempFilePath, "pom.xml", result);
             }
         }
 
