@@ -1,9 +1,10 @@
 package org.jfrog.hudson.pipeline.types;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
+import org.jfrog.build.client.artifactoryXrayResponse.ArtifactoryXrayResponse;
+import org.jfrog.build.client.artifactoryXrayResponse.Summary;
 import org.jfrog.hudson.pipeline.Utils;
 
 import java.io.Serializable;
@@ -13,9 +14,12 @@ import java.util.Arrays;
  * Created by romang on 12/22/16.
  */
 public class XrayScanResult implements Serializable {
-    private JsonNode scanResult;
+    private ArtifactoryXrayResponse scanResult;
 
-    public XrayScanResult(JsonNode result) {
+    public XrayScanResult(ArtifactoryXrayResponse result) {
+        if (result == null) {
+            throw new IllegalStateException("Invalid Xray scan result");
+        }
         this.scanResult = result;
     }
 
@@ -29,14 +33,26 @@ public class XrayScanResult implements Serializable {
     }
 
     public String getScanMassege() {
-        return scanResult.get("summary").get("message").asText();
+        Summary summary = scanResult.getSummary();
+        if (summary != null) {
+            return summary.getMessage();
+        }
+        throw new IllegalStateException("Failed while processing the JSON result: 'summary' field is missing. \n" + toString());
     }
 
     public String getScanUrl() {
-        return scanResult.get("summary").get("more_details_url").asText();
+        Summary summary = scanResult.getSummary();
+        if (summary != null) {
+            return summary.getMoreDetailsUrl();
+        }
+        throw new IllegalStateException("Failed while processing the JSON result: 'more_details_url' field is missing. \n" + toString());
     }
 
     public boolean isFoundVulnerable() {
-        return scanResult.get("summary").get("fail_build").asBoolean();
+        Summary summary = scanResult.getSummary();
+        if (summary != null) {
+            return summary.isFailBuild();
+        }
+        throw new IllegalStateException("Failed while processing the JSON result: 'fail_build' field is missing. \n" + toString());
     }
 }

@@ -1,6 +1,5 @@
 package org.jfrog.hudson.pipeline.steps;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.model.Result;
@@ -13,6 +12,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.build.api.util.Log;
+import org.jfrog.build.client.artifactoryXrayResponse.ArtifactoryXrayResponse;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryXrayClient;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
@@ -70,12 +70,11 @@ public class XrayScanBuildStep extends AbstractStepImpl {
             ArtifactoryXrayClient client = new ArtifactoryXrayClient(server.getUrl(), credentialsConfig.provideUsername(build.getParent()),
                     credentialsConfig.providePassword(build.getParent()), log);
 
-            JsonNode buildScanResult = client.xrayScanBuild(xrayScanConfig.getBuildName(), xrayScanConfig.getBuildNumber(), "jenkins");
-            XrayScanConfig scanConfig = step.getXrayScanConfig();
+            ArtifactoryXrayResponse buildScanResult = client.xrayScanBuild(xrayScanConfig.getBuildName(), xrayScanConfig.getBuildNumber(), "jenkins");
             XrayScanResult xrayScanResult = new XrayScanResult(buildScanResult);
 
             if (xrayScanResult.isFoundVulnerable()) {
-                if (scanConfig.getFailBuild()) {
+                if (xrayScanConfig.getFailBuild()) {
                     build.setResult(Result.FAILURE);
                 }
                 log.error(xrayScanResult.getScanMassege());
