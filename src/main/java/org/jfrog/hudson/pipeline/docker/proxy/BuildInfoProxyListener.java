@@ -30,7 +30,7 @@ public class BuildInfoProxyListener extends ComputerListener implements Serializ
 
             c.getChannel().call(new Callable<Boolean, IOException>() {
                 public Boolean call() throws IOException {
-                    BuildInfoProxyManager.start(port, publicKey, privateKey, agentName);
+                    BuildInfoProxy.start(port, publicKey, privateKey, agentName);
                     return true;
                 }
             });

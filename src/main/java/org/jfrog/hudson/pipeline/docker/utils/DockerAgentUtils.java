@@ -8,7 +8,7 @@ import hudson.remoting.Callable;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.pipeline.docker.DockerImage;
-import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxyManager;
+import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxy;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
 import java.io.IOException;
@@ -86,7 +86,7 @@ public class DockerAgentUtils implements Serializable {
             String digest = DockerUtils.getConfigDigest(content);
             for (Integer buildInfoId : imageIdToBuildInfoId.get(digest)) {
                 String imageTag = imageIdToImageTag.get(digest);
-                DockerImage dockerImage = new DockerImage(digest, imageTag, imageTagToTargetRepo.get(imageTag), content, BuildInfoProxyManager.getAgentName());
+                DockerImage dockerImage = new DockerImage(digest, imageTag, imageTagToTargetRepo.get(imageTag), content, BuildInfoProxy.getAgentName());
                 dockerImage.addProperties(properties);
                 buildInfoIdToDockerImage.put(buildInfoId, dockerImage);
             }

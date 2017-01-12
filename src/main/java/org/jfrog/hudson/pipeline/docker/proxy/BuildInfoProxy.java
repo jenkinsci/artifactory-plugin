@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 /**
  * Created by romang on 7/10/16.
  */
-public class BuildInfoProxyManager implements Serializable {
+public class BuildInfoProxy implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private static HttpProxyServer server = null;
@@ -43,14 +43,11 @@ public class BuildInfoProxyManager implements Serializable {
                 .start();
         getLogger().info("Build-Info proxy certificate public key path: " + proxyPublicKey);
         getLogger().info("Build-Info proxy certificate private key path: " + proxyPrivateKey);
-        BuildInfoProxyManager.agentName = agentName;
+        BuildInfoProxy.agentName = agentName;
     }
 
     public static boolean isUp() {
-        if (server == null) {
-            return false;
-        }
-        return true;
+        return server != null;
     }
 
     public static void stop() {
@@ -73,7 +70,7 @@ public class BuildInfoProxyManager implements Serializable {
             }
             node.getChannel().call(new Callable<Boolean, IOException>() {
                 public Boolean call() throws IOException {
-                    BuildInfoProxyManager.stop();
+                    BuildInfoProxy.stop();
                     return true;
                 }
             });
@@ -107,7 +104,7 @@ public class BuildInfoProxyManager implements Serializable {
 
             node.getChannel().call(new Callable<Boolean, IOException>() {
                 public Boolean call() throws IOException {
-                    BuildInfoProxyManager.start(port, agentCertPath, agentKeyPath, agentName);
+                    BuildInfoProxy.start(port, agentCertPath, agentKeyPath, agentName);
                     return true;
                 }
             });
@@ -115,6 +112,6 @@ public class BuildInfoProxyManager implements Serializable {
     }
 
     private static Logger getLogger() {
-        return Logger.getLogger(BuildInfoProxyManager.class.getName());
+        return Logger.getLogger(BuildInfoProxy.class.getName());
     }
 }

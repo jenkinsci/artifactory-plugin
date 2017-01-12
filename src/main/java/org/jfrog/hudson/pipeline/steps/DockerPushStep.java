@@ -13,7 +13,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepEx
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.Utils;
-import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxyManager;
+import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxy;
 import org.jfrog.hudson.pipeline.docker.utils.DockerAgentUtils;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
@@ -79,7 +79,7 @@ public class DockerPushStep extends AbstractStepImpl {
 
         @Override
         protected BuildInfo run() throws Exception {
-            if (!BuildInfoProxyManager.isUp()) {
+            if (!BuildInfoProxy.isUp()) {
                 getContext().onFailure(new RuntimeException("Build info capturing for Docker images is not available while Artifactory proxy is not running, enable the proxy in Jenkins configuration."));
                 return null;
             }
