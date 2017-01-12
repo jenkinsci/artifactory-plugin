@@ -22,13 +22,12 @@ import java.util.logging.Logger;
 public class BuildInfoProxyManager implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger logger = Logger.getLogger(BuildInfoProxyManager.class.getName());
-    static private HttpProxyServer server = null;
+    private static HttpProxyServer server = null;
     private static String agentName;
 
     public static void start(int proxyPort, String proxyPublicKey, String proxyPrivateKey, String agentName) {
         stop();
-        logger.info("Starting Build-Info proxy");
+        getLogger().info("Starting Build-Info proxy");
         PemFileCertificateSource fileCertificateSource = CertManager.getCertificateSource(proxyPublicKey, proxyPrivateKey);
         ImpersonatingMitmManager mitmManager = ImpersonatingMitmManager.builder()
                 .rootCertificateSource(fileCertificateSource)
@@ -42,8 +41,8 @@ public class BuildInfoProxyManager implements Serializable {
                 .withManInTheMiddle(mitmManager)
                 .withConnectTimeout(0)
                 .start();
-        logger.info("Build-Info proxy certificate public key path: " + proxyPublicKey);
-        logger.info("Build-Info proxy certificate private key path: " + proxyPrivateKey);
+        getLogger().info("Build-Info proxy certificate public key path: " + proxyPublicKey);
+        getLogger().info("Build-Info proxy certificate private key path: " + proxyPrivateKey);
         BuildInfoProxyManager.agentName = agentName;
     }
 
@@ -113,5 +112,9 @@ public class BuildInfoProxyManager implements Serializable {
                 }
             });
         }
+    }
+
+    private static Logger getLogger() {
+        return Logger.getLogger(BuildInfoProxyManager.class.getName());
     }
 }
