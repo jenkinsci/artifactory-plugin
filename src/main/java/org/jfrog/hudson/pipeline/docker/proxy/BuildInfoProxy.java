@@ -12,6 +12,7 @@ import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InvalidClassException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.logging.Logger;
@@ -68,12 +69,18 @@ public class BuildInfoProxy implements Serializable {
             if (node == null || node.getChannel() == null) {
                 continue;
             }
-            node.getChannel().call(new Callable<Boolean, IOException>() {
-                public Boolean call() throws IOException {
-                    BuildInfoProxy.stop();
-                    return true;
-                }
-            });
+            try {
+                node.getChannel().call(new Callable<Boolean, IOException>() {
+                    public Boolean call() throws IOException {
+                        BuildInfoProxy.stop();
+                        return true;
+                    }
+                });
+            } catch (InvalidClassException e) {
+                getLogger().warning("Failed stopping Build-Info proxy on agent: '" + node.getDisplayName() +
+                    "'. It could be because the agent uses a different JDK than the master. " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
@@ -102,12 +109,18 @@ public class BuildInfoProxy implements Serializable {
             FilePath localKeyPath = new FilePath(privateCert);
             localKeyPath.copyTo(remoteKeyPath);
 
-            node.getChannel().call(new Callable<Boolean, IOException>() {
-                public Boolean call() throws IOException {
-                    BuildInfoProxy.start(port, agentCertPath, agentKeyPath, agentName);
-                    return true;
-                }
-            });
+            try {
+                node.getChannel().call(new Callable<Boolean, IOException>() {
+                    public Boolean call() throws IOException {
+                        BuildInfoProxy.start(port, agentCertPath, agentKeyPath, agentName);
+                        return true;
+                    }
+                });
+            } catch (InvalidClassException e) {
+                getLogger().warning("Failed starting Build-Info proxy on agent: '" + node.getDisplayName() +
+                        "'. It could be because the agent uses a different JDK than the master. " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
