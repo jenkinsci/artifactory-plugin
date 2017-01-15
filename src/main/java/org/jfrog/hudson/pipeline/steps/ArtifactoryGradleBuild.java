@@ -166,7 +166,6 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             args.addTokenized(getTasks());
             args.add("-b");
             args.add(step.getBuildFile());
-            env.put("GRADLE_USER_HOME", ws.getRemote());
             if (!launcher.isUnix()) {
                 args = args.toWindowsCommand();
             }
