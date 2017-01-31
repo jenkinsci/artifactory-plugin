@@ -18,7 +18,6 @@ import org.jfrog.hudson.pipeline.ArtifactoryConfigurator;
 import org.jfrog.hudson.pipeline.BuildInfoDeployer;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
-import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -46,7 +45,8 @@ public class BuildInfo implements Serializable {
     public BuildInfo(Run build) {
         this.buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         this.buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
-        this.startDate = new Date(build.getStartTimeInMillis());
+        Calendar calendar = Calendar.getInstance();
+        this.startDate = calendar.getTime();
         this.retention = new BuildRetention();
     }
 
