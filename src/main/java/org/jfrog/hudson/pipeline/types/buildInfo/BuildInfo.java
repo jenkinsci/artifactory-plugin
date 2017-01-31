@@ -16,6 +16,7 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.ArtifactoryConfigurator;
 import org.jfrog.hudson.pipeline.BuildInfoDeployer;
+import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxy;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
 
@@ -175,9 +176,11 @@ public class BuildInfo implements Serializable {
         ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(build.getParent()),
                 preferredDeployer.providePassword(build.getParent()), server.createProxyConfiguration(Jenkins.getInstance().proxy));
 
-        List<Module> dockerModules = dockerBuildInfoHelper.generateBuildInfoModules(build, listener, config);
+        if (BuildInfoProxy.isUp()) {
+            List<Module> dockerModules = dockerBuildInfoHelper.generateBuildInfoModules(build, listener, config);
+            addDockerBuildInfoModules(dockerModules);
+        }
 
-        addDockerBuildInfoModules(dockerModules);
         addDefaultModuleToModules(buildName);
         return new BuildInfoDeployer(config, client, build, listener, new BuildInfoAccessor(this));
     }
