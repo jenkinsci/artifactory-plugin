@@ -46,8 +46,7 @@ public class BuildInfo implements Serializable {
     public BuildInfo(Run build) {
         this.buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         this.buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
-        Calendar calendar = Calendar.getInstance();
-        this.startDate = calendar.getTime();
+        this.startDate = Calendar.getInstance().getTime();
         this.retention = new BuildRetention();
     }
 
