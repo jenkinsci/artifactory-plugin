@@ -3,7 +3,7 @@ package org.jfrog.hudson.util;
 import com.google.common.collect.Sets;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.plugins.jira.JiraIssue;
+import hudson.plugins.jira.model.JiraIssue;
 import hudson.plugins.jira.JiraSite;
 import hudson.plugins.jira.selector.AbstractIssueSelector;
 import hudson.plugins.jira.selector.DefaultIssueSelector;
@@ -58,7 +58,7 @@ public class IssuesTrackerHelper {
                 URL url = site.getUrl(issueId);
                 JiraIssue issue = site.getIssue(issueId);
                 affectedIssuesBuilder.append(issueId).append(">>").append(url.toString()).append(">>").append(
-                        issue.title);
+                        issue.getSummary());
                 matrixParamsBuilder.append(issueId);
             }
             affectedIssues = affectedIssuesBuilder.toString();
