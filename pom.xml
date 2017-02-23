@@ -70,7 +70,17 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <version>${project.parent.version}</version>
+            <version>2.15.1</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>httpcore</artifactId>
+                    <groupId>org.apache.httpcomponents</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>httpclient</artifactId>
+                    <groupId>org.apache.httpcomponents</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -298,6 +308,12 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jenkins-multijob-plugin</artifactId>
             <version>1.13</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>maven-plugin</artifactId>
+                    <groupId>org.jenkins-ci.main</groupId>
+                </exclusion>
+            </exclusions>
             <optional>true</optional>
         </dependency>
         <dependency>
