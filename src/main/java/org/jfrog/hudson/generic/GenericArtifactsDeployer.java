@@ -168,11 +168,12 @@ public class GenericArtifactsDeployer {
 
         public List<Artifact> invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
             Set<DeployDetails> artifactsToDeploy = Sets.newHashSet();
+            ArtifactoryBuildInfoClient client = server.createArtifactoryClient(credentials.getUsername(),
+                    credentials.getPassword(), proxyConfiguration);
             if (StringUtils.isNotEmpty(spec)) {
                 SpecsHelper specsHelper = new SpecsHelper(new JenkinsBuildInfoLog(listener));
-                Spec uploadSpec = specsHelper.getDownloadUploadSpec(spec);
                 try {
-                    artifactsToDeploy = specsHelper.getDeployDetails(uploadSpec, workspace, buildProperties);
+                    return specsHelper.uploadArtifactsBySpec(spec, workspace, buildProperties, client);
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException("Failed uploading artifacts by spec", e);
                 }
@@ -181,15 +182,12 @@ public class GenericArtifactsDeployer {
                 for (Map.Entry<String, File> entry : targetPathToFilesMap.entries()) {
                     artifactsToDeploy.addAll(buildDeployDetailsFromFileEntry(entry));
                 }
-            }
-
-            ArtifactoryBuildInfoClient client = server.createArtifactoryClient(credentials.getUsername(),
-                    credentials.getPassword(), proxyConfiguration);
-            try {
-                deploy(client, artifactsToDeploy);
-                return convertDeployDetailsToArtifacts(artifactsToDeploy);
-            } finally {
-                client.close();
+                try {
+                    deploy(client, artifactsToDeploy);
+                    return convertDeployDetailsToArtifacts(artifactsToDeploy);
+                } finally {
+                    client.close();
+                }
             }
         }
 
