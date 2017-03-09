@@ -23,12 +23,14 @@ public class UploadStep extends AbstractStepImpl {
     private BuildInfo buildInfo;
     private String spec;
     private ArtifactoryServer server;
+    private int deployRetryCount;
 
     @DataBoundConstructor
-    public UploadStep(String spec, BuildInfo buildInfo, ArtifactoryServer server) {
+    public UploadStep(String spec, BuildInfo buildInfo, ArtifactoryServer server, int deployRetryCount) {
         this.spec = spec;
         this.buildInfo = buildInfo;
         this.server = server;
+        this.deployRetryCount = deployRetryCount;
     }
 
     public BuildInfo getBuildInfo() {
@@ -41,6 +43,10 @@ public class UploadStep extends AbstractStepImpl {
 
     public ArtifactoryServer getServer() {
         return server;
+    }
+
+    public int getDeployRetryCount() {
+        return deployRetryCount;
     }
 
     public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
@@ -62,7 +68,7 @@ public class UploadStep extends AbstractStepImpl {
 
         @Override
         protected BuildInfo run() throws Exception {
-            BuildInfo buildInfo = new GenericUploadExecutor(Utils.prepareArtifactoryServer(null, step.getServer()), listener, build, ws, step.getBuildInfo(), getContext()).execution(Util.replaceMacro(step.getSpec(), env));
+            BuildInfo buildInfo = new GenericUploadExecutor(Utils.prepareArtifactoryServer(null, step.getServer()), listener, build, ws, step.getBuildInfo(), getContext(),step.getDeployRetryCount()).execution(Util.replaceMacro(step.getSpec(), env));
             new BuildInfoAccessor(buildInfo).captureVariables(env, build, listener);
             return buildInfo;
         }

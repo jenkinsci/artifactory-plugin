@@ -58,8 +58,23 @@ public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
 
     public void deploy() throws IOException {
         String url = configurator.getArtifactoryServer().getUrl() + "/api/build";
-        listener.getLogger().println("Deploying build info to: " + url);
-        client.sendBuildInfo(buildInfo);
+        int deployRetryCount = this.configurator.getDeployRetryCount();
+        do {
+            deployRetryCount--;
+            try {
+                listener.getLogger().println("Deploying build info to: " + url);
+                client.sendBuildInfo(buildInfo);
+                break;
+            } catch (Exception e) {
+                listener.getLogger().println("Build info deployment failed.");
+                if (deployRetryCount < 0) {
+                    throw new IOException(e);
+                } else {
+                    listener.getLogger().println("ERROR: " + e);
+                    listener.getLogger().println("Retrying...");
+                }
+            }
+        } while ( deployRetryCount >= 0 );
     }
 
     private void createDeployDetailsAndAddToBuildInfo(List<Artifact> deployedArtifacts,

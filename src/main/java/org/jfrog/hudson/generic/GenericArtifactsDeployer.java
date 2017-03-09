@@ -69,13 +69,14 @@ public class GenericArtifactsDeployer {
         FilePath workingDir = build.getExecutor().getCurrentWorkspace();
         ArrayListMultimap<String, String> propertiesToAdd = getbuildPropertiesMap();
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
+        int deployRetryCount = configurator.getDeployRetryCount();
 
         if (configurator.isUseSpecs()) {
             String spec = Util.replaceMacro(SpecUtils.getSpecStringFromSpecConf(
                             configurator.getUploadSpec(), env, workingDir, listener.getLogger()) , env);
             artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, spec, artifactoryServer,
                     credentialsConfig.getCredentials(build.getParent()), propertiesToAdd,
-                    artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
+                    artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy),deployRetryCount));
         } else {
             String deployPattern = Util.replaceMacro(configurator.getDeployPattern(), env);
             deployPattern = StringUtils.replace(deployPattern, "\r\n", "\n");
@@ -87,7 +88,7 @@ public class GenericArtifactsDeployer {
             String repositoryKey = Util.replaceMacro(configurator.getRepositoryKey(), env);
             artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer,
                     credentialsConfig.getCredentials(build.getParent()), repositoryKey, propertiesToAdd,
-                    artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
+                    artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy),deployRetryCount));
         }
     }
 
@@ -138,6 +139,7 @@ public class GenericArtifactsDeployer {
         private ProxyConfiguration proxyConfiguration;
         private PatternType patternType = PatternType.ANT;
         private String spec;
+        private int deployRetryCount;
 
         public enum PatternType {
             ANT, WILDCARD
@@ -145,7 +147,8 @@ public class GenericArtifactsDeployer {
 
         public FilesDeployerCallable(TaskListener listener, Multimap<String, String> patternPairs,
                                      ArtifactoryServer server, Credentials credentials, String repositoryKey,
-                                     ArrayListMultimap<String, String> buildProperties, ProxyConfiguration proxyConfiguration) {
+                                     ArrayListMultimap<String, String> buildProperties, ProxyConfiguration proxyConfiguration,
+                                     int deployRetryCount) {
             this.listener = listener;
             this.patternPairs = patternPairs;
             this.server = server;
@@ -153,21 +156,25 @@ public class GenericArtifactsDeployer {
             this.repositoryKey = repositoryKey;
             this.buildProperties = buildProperties;
             this.proxyConfiguration = proxyConfiguration;
+            this.deployRetryCount = deployRetryCount;
         }
 
         public FilesDeployerCallable(TaskListener listener, String spec,
                                      ArtifactoryServer server, Credentials credentials,
-                                     ArrayListMultimap<String, String> buildProperties, ProxyConfiguration proxyConfiguration) {
+                                     ArrayListMultimap<String, String> buildProperties, ProxyConfiguration proxyConfiguration,
+                                     int deployRetryCount) {
             this.listener = listener;
             this.spec = spec;
             this.server = server;
             this.credentials = credentials;
             this.buildProperties = buildProperties;
             this.proxyConfiguration = proxyConfiguration;
+            this.deployRetryCount = deployRetryCount;
         }
 
         public List<Artifact> invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
             Set<DeployDetails> artifactsToDeploy = Sets.newHashSet();
+            int deployRetryCount = this.deployRetryCount;
             if (StringUtils.isNotEmpty(spec)) {
                 SpecsHelper specsHelper = new SpecsHelper(new JenkinsBuildInfoLog(listener));
                 Spec uploadSpec = specsHelper.getDownloadUploadSpec(spec);
@@ -185,12 +192,23 @@ public class GenericArtifactsDeployer {
 
             ArtifactoryBuildInfoClient client = server.createArtifactoryClient(credentials.getUsername(),
                     credentials.getPassword(), proxyConfiguration);
-            try {
-                deploy(client, artifactsToDeploy);
-                return convertDeployDetailsToArtifacts(artifactsToDeploy);
-            } finally {
-                client.close();
-            }
+            do {
+                deployRetryCount--;
+                try {
+                    listener.getLogger().println("Deploying artifacts");
+                    deploy(client, artifactsToDeploy);
+                    return convertDeployDetailsToArtifacts(artifactsToDeploy);
+                } catch (Exception e) {
+                    listener.getLogger().println("Artifact deployment failed.");
+                    if (deployRetryCount < 0) {
+                        throw new IOException(e);
+                    } else {
+                        listener.getLogger().println("ERROR: " + e);
+                        listener.getLogger().println("Retrying...");
+                    }
+                }
+            } while ( deployRetryCount >= 0 );
+            return convertDeployDetailsToArtifacts(artifactsToDeploy);
         }
 
         private List<Artifact> convertDeployDetailsToArtifacts(Set<DeployDetails> details) {

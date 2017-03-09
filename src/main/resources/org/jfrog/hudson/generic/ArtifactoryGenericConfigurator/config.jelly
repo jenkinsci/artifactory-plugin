@@ -92,6 +92,14 @@
         </f:block>
 
         <f:block>
+            <table style="width:100%" id="retryDeploymentArea">
+                <f:entry title="Retry deployment">
+                    <f:number clazz="number" name="deployRetryCount" value="${instance.deployRetryCount}" min="0" step="1"/>
+                </f:entry>
+            </table>
+        </f:block>
+
+        <f:block>
             <table style="width:100%; " id="uploadSpecArea">
                 <f:dropdownList name="uploadSpec" title="${%Upload spec source}" help="/plugin/artifactory/help/common/help-UploadSpec.html">
 

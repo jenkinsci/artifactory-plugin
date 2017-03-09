@@ -35,14 +35,16 @@ public class GenericUploadExecutor {
     private BuildInfo buildinfo;
     private ArtifactoryServer server;
     private StepContext context;
+    private int deployRetryCount;
 
-    public GenericUploadExecutor(ArtifactoryServer server, TaskListener listener, Run build, FilePath ws, BuildInfo buildInfo, StepContext context) {
+    public GenericUploadExecutor(ArtifactoryServer server, TaskListener listener, Run build, FilePath ws, BuildInfo buildInfo, StepContext context, int deployRetryCount) {
         this.server = server;
         this.listener = listener;
         this.build = build;
         this.buildinfo = Utils.prepareBuildinfo(build, buildInfo);
         this.ws = ws;
         this.context = context;
+        this.deployRetryCount = deployRetryCount;
     }
 
     public BuildInfo execution(String spec) throws IOException, InterruptedException {
@@ -50,7 +52,7 @@ public class GenericUploadExecutor {
                 server.getDeployerCredentialsConfig().providePassword(build.getParent()));
         ProxyConfiguration proxyConfiguration = server.createProxyConfiguration(Jenkins.getInstance().proxy);
         List<Artifact> artifactsToDeploy = ws.act(new GenericArtifactsDeployer.FilesDeployerCallable(listener, spec,
-                server, credentials, getPropertiesMap(), proxyConfiguration));
+                server, credentials, getPropertiesMap(), proxyConfiguration, deployRetryCount));
         new BuildInfoAccessor(buildinfo).appendDeployedArtifacts(artifactsToDeploy);
         return buildinfo;
     }

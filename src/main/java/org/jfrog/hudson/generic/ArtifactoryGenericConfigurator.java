@@ -66,6 +66,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final IncludesExcludes envVarsPatterns;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
+    private final int deployRetryCount;
     private transient List<Dependency> publishedDependencies;
     private transient List<BuildDependency> buildDependencies;
     private String artifactoryCombinationFilter;
@@ -93,6 +94,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                                           boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                           boolean discardOldBuilds,
                                           boolean discardBuildArtifacts,
+                                          int deployRetryCount,
                                           boolean multiConfProject,
                                           String artifactoryCombinationFilter,
                                           String customBuildName,
@@ -112,6 +114,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.envVarsPatterns = envVarsPatterns;
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.deployRetryCount = deployRetryCount;
         this.multiConfProject = multiConfProject;
         this.artifactoryCombinationFilter = artifactoryCombinationFilter;
         this.customBuildName = customBuildName;
@@ -223,6 +226,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     public boolean isDiscardBuildArtifacts() {
         return discardBuildArtifacts;
+    }
+
+    public int getDeployRetryCount() {
+        return deployRetryCount;
     }
 
     public boolean isEnableIssueTrackerIntegration() {
