@@ -18,6 +18,7 @@ import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.docker.proxy.CertManager;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
+import org.jfrog.hudson.pipeline.types.PromotionConfig;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.RepositoriesUtils;
@@ -26,9 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by romang on 4/24/16.
@@ -247,5 +246,39 @@ public class Utils {
             build.setResult(Result.FAILURE);
             throw new Run.RunnerAbortedException();
         }
+    }
+
+    public static PromotionConfig createPromotionConfig(Map<String, Object> promotionParams, boolean isTargetRepositoryMandatory) {
+        final String targetRepository = "targetRepo";
+        List<String> mandatoryParams = new ArrayList<String>(Arrays.asList(ArtifactoryServer.BUILD_NAME, ArtifactoryServer.BUILD_NUMBER));
+        List<String> allowedParams = Arrays.asList(ArtifactoryServer.BUILD_NAME, ArtifactoryServer.BUILD_NUMBER, targetRepository, "sourceRepo", "status", "comment", "includeDependencies", "copy", "failFast");
+
+        if (isTargetRepositoryMandatory) {
+            mandatoryParams.add(targetRepository);
+        }
+        if (!promotionParams.keySet().containsAll(mandatoryParams)) {
+            throw new IllegalArgumentException(mandatoryParams.toString() + " are mandatory arguments");
+        }
+        if (!allowedParams.containsAll(promotionParams.keySet())) {
+            throw new IllegalArgumentException("Only the following arguments are allowed: " + allowedParams.toString());
+        }
+        final ObjectMapper mapper = new ObjectMapper();
+        PromotionConfig config = mapper.convertValue(promotionParams, PromotionConfig.class);
+
+        return config;
+    }
+
+    public static org.jfrog.hudson.release.promotion.PromotionConfig convertPromotionConfig(PromotionConfig pipelinePromotionConfig) {
+        org.jfrog.hudson.release.promotion.PromotionConfig promotionConfig = new org.jfrog.hudson.release.promotion.PromotionConfig();
+        promotionConfig.setBuildName(pipelinePromotionConfig.getBuildName());
+        promotionConfig.setBuildNumber(pipelinePromotionConfig.getBuildNumber());
+        promotionConfig.setTargetRepo(pipelinePromotionConfig.getTargetRepo());
+        promotionConfig.setSourceRepo(pipelinePromotionConfig.getSourceRepo());
+        promotionConfig.setStatus(pipelinePromotionConfig.getStatus());
+        promotionConfig.setComment(pipelinePromotionConfig.getComment());
+        promotionConfig.setIncludeDependencies(pipelinePromotionConfig.isIncludeDependencies());
+        promotionConfig.setCopy(pipelinePromotionConfig.isCopy());
+        promotionConfig.setFailFast(pipelinePromotionConfig.isFailFast());
+        return promotionConfig;
     }
 }

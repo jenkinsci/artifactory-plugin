@@ -39,7 +39,7 @@ import org.jfrog.hudson.*;
 import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.pipeline.Utils;
-import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
+import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
@@ -441,8 +441,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                         result.isBetterOrEqualTo(Result.SUCCESS))) {
                     String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(ArtifactoryIvyFreeStyleConfigurator.this, build);
                     build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
-                    build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyFreeStyleConfigurator>(build,
-                            ArtifactoryIvyFreeStyleConfigurator.this));
+                    build.getActions().add(new UnifiedPromoteBuildAction(build, ArtifactoryIvyFreeStyleConfigurator.this));
                     // Checks if Push to Bintray is disabled.
                     if (PluginsUtils.isPushToBintrayEnabled()) {
                         build.getActions().add(new BintrayPublishAction<ArtifactoryIvyFreeStyleConfigurator>(build,
@@ -580,7 +579,6 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 response.setSuccess(true);
 
             } catch (Exception e) {
-                e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
                 response.setSuccess(false);
             }

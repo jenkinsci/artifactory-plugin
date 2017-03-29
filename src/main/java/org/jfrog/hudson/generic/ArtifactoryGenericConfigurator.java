@@ -24,7 +24,7 @@ import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenc
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
+import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
@@ -399,10 +399,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                             String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(ArtifactoryGenericConfigurator.this, build);
                             // add the result action (prefer always the same index)
                             build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
-                            build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryGenericConfigurator>(build,
-                                    ArtifactoryGenericConfigurator.this));
+                            build.getActions().add(new UnifiedPromoteBuildAction(build, ArtifactoryGenericConfigurator.this));
                             // Checks if Push to Bintray is disabled.
-                            if (PluginsUtils.isPushToBintrayEnabled()){
+                            if (PluginsUtils.isPushToBintrayEnabled()) {
                                 build.getActions().add(new BintrayPublishAction<ArtifactoryGenericConfigurator>(build,
                                         ArtifactoryGenericConfigurator.this));
                             }
@@ -494,7 +493,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                 response.setSuccess(true);
 
             } catch (Exception e) {
-                e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
                 response.setSuccess(false);
             }

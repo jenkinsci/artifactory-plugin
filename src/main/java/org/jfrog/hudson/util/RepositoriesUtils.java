@@ -10,7 +10,6 @@ import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBaseClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.*;
-import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,7 +19,7 @@ import java.util.List;
  */
 public abstract class RepositoriesUtils {
 
-    public static List<String> getReleaseRepositoryKeysFirst(DeployerOverrider deployer, ArtifactoryServer server) {
+    public static List<String> getReleaseRepositoryKeysFirst(DeployerOverrider deployer, ArtifactoryServer server) throws IOException {
         if (server == null) {
             return Lists.newArrayList();
         }
@@ -28,7 +27,7 @@ public abstract class RepositoriesUtils {
         return server.getReleaseRepositoryKeysFirst(deployer, null);
     }
 
-    public static List<String> getSnapshotRepositoryKeysFirst(DeployerOverrider deployer, ArtifactoryServer server) {
+    public static List<String> getSnapshotRepositoryKeysFirst(DeployerOverrider deployer, ArtifactoryServer server) throws IOException {
         if (server == null) {
             return Lists.newArrayList();
         }
@@ -176,7 +175,7 @@ public abstract class RepositoriesUtils {
     }
 
     public static void validateServerConfig(AbstractBuild build, BuildListener listener,
-            ArtifactoryServer artifactoryServer, String artifactoryUrl) throws IOException {
+                                            ArtifactoryServer artifactoryServer, String artifactoryUrl) throws IOException {
         if (artifactoryServer == null) {
             String error = "No Artifactory server configured for " + artifactoryUrl +
                     ". Please check your configuration.";
@@ -192,8 +191,9 @@ public abstract class RepositoriesUtils {
 
     /**
      * Sets the params of the retry mechanism
+     *
      * @param connectionRetry - The max number of retries configured
-     * @param client - The client to set the values
+     * @param client          - The client to set the values
      */
     public static void setRetryParams(int connectionRetry, ArtifactoryBaseClient client) {
         client.setConnectionRetries(connectionRetry);

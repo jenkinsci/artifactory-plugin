@@ -35,7 +35,7 @@ import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
+import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
 import org.jfrog.hudson.release.scm.ScmCoordinator;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
@@ -143,7 +143,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
     public void setUseReleaseBranch(boolean useReleaseBranch) {
         this.useReleaseBranch = useReleaseBranch;
     }
-    
+
     @Override
     public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
@@ -335,7 +335,7 @@ public class MavenReleaseWrapper extends BuildWrapper {
             if (successRun) {
                 if (!redeployPublisher.isAllowPromotionOfNonStagedBuilds()) {
                     // add a stage action
-                    run.addAction(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(run, redeployPublisher));
+                    run.addAction(new UnifiedPromoteBuildAction(run, redeployPublisher));
                 }
                 // Checks if Push to Bintray is disabled.
                 if (PluginsUtils.isPushToBintrayEnabled()) {

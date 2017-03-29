@@ -32,6 +32,7 @@ import org.jfrog.hudson.release.VersionedModule;
 import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -64,7 +65,7 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
     }
 
     @Override
-    public List<String> getRepositoryKeys() {
+    public List<String> getRepositoryKeys() throws IOException {
         ArtifactoryRedeployPublisher artifactoryPublisher = getPublisher();
         if (artifactoryPublisher != null) {
             return artifactoryPublisher.getArtifactoryServer().getReleaseRepositoryKeysFirst(getPublisher(), project);
@@ -119,8 +120,8 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
         releaseVersionPerModule = Maps.newHashMap();
         nextVersionPerModule = Maps.newHashMap();
 
-        for(Map.Entry<String, VersionedModule> entry : defaultModules.entrySet()) {
-            VersionedModule versionedModule  = entry.getValue();
+        for (Map.Entry<String, VersionedModule> entry : defaultModules.entrySet()) {
+            VersionedModule versionedModule = entry.getValue();
             ModuleName module = ModuleName.fromString(versionedModule.getModuleName());
 
             releaseVersionPerModule.put(module, versionedModule.getReleaseVersion());
@@ -195,7 +196,7 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
     }
 
     @Override
-    protected void prepareBuilderSpecificDefaultPromotionConfig() {
+    protected void prepareBuilderSpecificDefaultPromotionConfig() throws IOException {
         defaultPromotionConfig = new PromotionConfig(getDefaultReleaseStagingRepository(), null);
     }
 
@@ -248,7 +249,7 @@ public abstract class BaseMavenReleaseAction extends ReleaseAction<MavenModuleSe
         return "";
     }
 
-    private String getDefaultReleaseStagingRepository() {
+    private String getDefaultReleaseStagingRepository() throws IOException {
         //Get default staging repo from configuration.
         String defaultStagingRepo = getWrapper().getDefaultReleaseStagingRepository();
         if (!defaultStagingRepo.isEmpty() && getRepositoryKeys().contains(defaultStagingRepo)) {

@@ -128,15 +128,15 @@ public class ArtifactoryServer implements Serializable {
         return items;
     }
 
-   public Integer getConnectionRetry() {
-       return connectionRetry;
-   }
+    public Integer getConnectionRetry() {
+        return connectionRetry;
+    }
 
     public void setConnectionRetry(int connectionRetry) {
         this.connectionRetry = connectionRetry;
     }
 
-    public List<String> getLocalRepositoryKeys(Credentials credentials) {
+    public List<String> getLocalRepositoryKeys(Credentials credentials) throws IOException {
         ArtifactoryBuildInfoClient client = createArtifactoryClient(credentials.getUsername(),
                 credentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
@@ -148,14 +148,14 @@ public class ArtifactoryServer implements Serializable {
                 log.log(Level.WARNING,
                         "Could not obtain local repositories list from '" + url + "': " + e.getMessage());
             }
-            return Lists.newArrayList();
+            throw e;
         } finally {
             client.close();
         }
         return repositories;
     }
 
-    public List<String> getReleaseRepositoryKeysFirst(DeployerOverrider deployerOverrider, Item item) {
+    public List<String> getReleaseRepositoryKeysFirst(DeployerOverrider deployerOverrider, Item item) throws IOException {
         CredentialsConfig credentialsConfig = CredentialManager.getPreferredDeployer(deployerOverrider, this);
         List<String> repositoryKeys = getLocalRepositoryKeys(credentialsConfig.getCredentials(item));
         if (repositoryKeys == null || repositoryKeys.isEmpty()) {
@@ -165,7 +165,7 @@ public class ArtifactoryServer implements Serializable {
         return repositoryKeys;
     }
 
-    public List<String> getSnapshotRepositoryKeysFirst(DeployerOverrider deployerOverrider, Item item) {
+    public List<String> getSnapshotRepositoryKeysFirst(DeployerOverrider deployerOverrider, Item item) throws IOException {
         CredentialsConfig credentialsConfig = CredentialManager.getPreferredDeployer(deployerOverrider, this);
         List<String> repositoryKeys = getLocalRepositoryKeys(credentialsConfig.getCredentials(item));
         if (repositoryKeys == null || repositoryKeys.isEmpty()) {
@@ -258,6 +258,7 @@ public class ArtifactoryServer implements Serializable {
 
     /**
      * Set the retry params for the base client
+     *
      * @param client - the client to set the params.
      */
     private void setRetryParams(ArtifactoryBaseClient client) {

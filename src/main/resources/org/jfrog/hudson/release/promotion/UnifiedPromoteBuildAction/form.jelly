@@ -1,0 +1,57 @@
+<!-- displays a form to choose the repository to promote the build to -->
+<!--suppress XmlUnusedNamespaceDeclaration -->
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:r="/lib/jfrog">
+    <st:adjunct includes="lib.jfrog.repos.repos"/>
+    <st:adjunct includes="lib.jfrog.promotions.promotions"/>
+    <l:layout>
+        <l:main-panel>
+            <f:form method="post" action="submit">
+                <f:section title="Artifactory Pro Release Promotion">
+                    <j:choose>
+                        <j:when test="${it.PromoteInfoListSize > 1}">
+                            <f:entry title="${%Build}" field="promotionCandidates"
+                                     help="/plugin/artifactory/help/release/PromoteBuildAction/help-build.html">
+                                <select class="setting-input" name="promotionCandidates"
+                                        id="buildId">
+                                    <j:forEach var="promotionCandidate"
+                                               items="${it.promotionCandidates}">
+                                        <option value="${promotionCandidate.id}">
+                                            ${promotionCandidate.displayName}
+                                        </option>
+                                    </j:forEach>
+                                </select>
+                            </f:entry>
+                            <r:promotions title="${%Load build}"
+                                          id="loadBuild"
+                                          progress="${%Refreshing...}"
+                                          instance="buildBind"/>
+                        </j:when>
+                        <j:otherwise>
+                            <div style="display:none;" id="spinnerDiv">
+                                <img src="${imagesURL}/spinner.gif"/>
+                                ${attrs.progress}
+                            </div>
+                            <div><!-- this is where the error message goes --></div>
+                            <input type="hidden" name="promotionCandidates" value="${it.promotionCandidates[0].id}" id="buildId"/>
+                        </j:otherwise>
+                    </j:choose>
+                    <r:promotionPlugins/>
+                    <td colspan="3">
+                        <f:submit value="${%Promote build}"/>
+                    </td>
+                </f:section>
+            </f:form>
+            <script>
+                var selectPlugin = document.getElementById("pluginList");
+                selectPlugin.onchange = onPluginChange;
+                var buildBind = <st:bind value="${it}"/>;
+                var promoteInfoListSize = "${it.PromoteInfoListSize}";
+                if (promoteInfoListSize == 1) {
+                    loadBuild(buildBind, false); // Auto-load
+                }
+            </script>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

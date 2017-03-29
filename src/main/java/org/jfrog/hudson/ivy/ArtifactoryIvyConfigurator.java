@@ -448,6 +448,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     public static class DescriptorImpl extends BuildWrapperDescriptor {
 
         private AbstractProject<?, ?> item;
+
         public DescriptorImpl() {
             super(ArtifactoryIvyConfigurator.class);
             load();
@@ -486,7 +487,6 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 response.setSuccess(true);
 
             } catch (Exception e) {
-                e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
                 response.setSuccess(false);
             }

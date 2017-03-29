@@ -194,7 +194,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
         return StringUtils.isNotBlank(tagComment) ? tagComment : getDefaultVcsConfig().getTagComment();
     }
 
-    public boolean isOverrideCredentials(){
+    public boolean isOverrideCredentials() {
         return overrideCredentials;
     }
 
@@ -258,7 +258,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
      * @return List of target repositories for deployment (release repositories first). Called from the UI.
      */
     @SuppressWarnings({"UnusedDeclaration"})
-    public abstract List<String> getRepositoryKeys();
+    public abstract List<String> getRepositoryKeys() throws IOException;
 
     @SuppressWarnings("UnusedDeclaration")
     public abstract boolean isArtifactoryPro();
@@ -500,7 +500,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
 
     protected abstract void prepareBuilderSpecificDefaultVcsConfig();
 
-    protected abstract void prepareBuilderSpecificDefaultPromotionConfig();
+    protected abstract void prepareBuilderSpecificDefaultPromotionConfig() throws IOException;
 
     protected void prepareBuilderSpecificDefaultVersioning() {
     }
@@ -601,7 +601,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
         }
     }
 
-    private void prepareDefaultPromotionConfig() {
+    private void prepareDefaultPromotionConfig() throws IOException {
         if (strategyPluginExists) {
             if (stagingStrategy.containsKey("promotionConfig")) {
                 Map<String, String> promotionConfig = (Map<String, String>) stagingStrategy.get("promotionConfig");

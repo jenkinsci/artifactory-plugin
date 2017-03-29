@@ -1,0 +1,54 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="${%Promotion plugin}" field="promotionPlugin"
+             help="/plugin/artifactory/help/release/ReleaseAction/help-promotionPlugin.html">
+        <select class="setting-input" id="pluginList">
+            <option value="None">None</option>
+        </select>
+    </f:entry>
+    <tr>
+        <td colspan="2"/>
+        <td colspan="2">
+            <table width="100%" name="promotionPlugin" id="pluginList-container">
+                <tbody id="None">
+                    <f:entry title="${%Target status}" field="targetStatus"
+                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-targetStatus.html">
+                        <select class="setting-input" name="targetStatus" id="targetStatus">
+                            <j:forEach var="r" items="${it.targetStatuses}">
+                                <f:option selected="${r==it.nextLogicalStatus}"
+                                          value="${r}">${r}
+                                </f:option>
+                            </j:forEach>
+                        </select>
+                    </f:entry>
+                    <f:entry title="${%Comment}" field="comment">
+                        <textarea name="comment" rows="5" class="setting-input" id="promotionComment"/>
+                    </f:entry>
+                    <f:entry title="${%Target promotion repository}" field="targetRepositoryKey"
+                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-promotionRepository.html">
+                        <select class="setting-input" name="targetRepositoryKey" id="targetRepositoryKey"/>
+                    </f:entry>
+                    <f:entry title="${%Source promotion repository}" field="sourceRepositoryKey"
+                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-promotionSourceRepository.html">
+                        <select class="setting-input" name="sourceRepositoryKey" id="sourceRepositoryKey"/>
+                    </f:entry>
+                    <f:entry field="includeDependencies"
+                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-includeDependencies.html">
+                        <f:checkbox default="false" name="includeDependencies" id="includeDependencies"/>
+                        <label class="attach-previous">${%Include dependencies}</label>
+                    </f:entry>
+                    <f:entry field="useCopy"
+                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-useCopy.html">
+                        <f:checkbox default="false" name="useCopy" id="useCopy"/>
+                        <label class="attach-previous">${%Use copy}</label>
+                    </f:entry>
+                    <f:entry field="failFast"
+                             help="/plugin/artifactory/help/release/PromoteBuildAction/help-failFast.html">
+                        <f:checkbox default="true" name="failFast" id="failFast"/>
+                        <label class="attach-previous">${%Fail Fast}</label>
+                    </f:entry>
+                </tbody>
+            </table>
+        </td>
+    </tr>
+</j:jelly>

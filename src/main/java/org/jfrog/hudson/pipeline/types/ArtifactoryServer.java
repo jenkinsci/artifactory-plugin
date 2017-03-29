@@ -1,10 +1,9 @@
 package org.jfrog.hudson.pipeline.types;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.CredentialsConfig;
-import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 
 import java.io.Serializable;
@@ -140,7 +139,7 @@ public class ArtifactoryServer implements Serializable {
     @Whitelisted
     public void promote(Map<String, Object> promotionParams) throws Exception {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
-        stepVariables.put("promotionConfig", createPromotionConfig(promotionParams));
+        stepVariables.put("promotionConfig", Utils.createPromotionConfig(promotionParams, true));
         stepVariables.put(SERVER, this);
 
         cpsScript.invokeMethod("artifactoryPromoteBuild", stepVariables);
@@ -171,25 +170,6 @@ public class ArtifactoryServer implements Serializable {
 
         return new XrayScanConfig((String) xrayScanParams.get(BUILD_NAME),
                 (String) xrayScanParams.get(BUILD_NUMBER), (Boolean) xrayScanParams.get(failBuild));
-    }
-
-    private PromotionConfig createPromotionConfig(Map<String, Object> promotionParams) {
-        final String targetRepository = "targetRepo";
-        List<String> mandatoryArgumentsAsList = Arrays.asList(new String[]{BUILD_NAME, BUILD_NUMBER, targetRepository});
-        if (!promotionParams.keySet().containsAll(mandatoryArgumentsAsList)) {
-            throw new IllegalArgumentException(mandatoryArgumentsAsList.toString() + " are mandatory arguments");
-        }
-
-        Set<String> promotionParamsSet = promotionParams.keySet();
-        List<String> keysAsList = Arrays.asList(new String[]{BUILD_NAME, BUILD_NUMBER, targetRepository, "sourceRepo", "status", "comment", "includeDependencies", "copy", "failFast"});
-        if (!keysAsList.containsAll(promotionParamsSet)) {
-            throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
-        }
-
-        final ObjectMapper mapper = new ObjectMapper();
-        PromotionConfig config = mapper.convertValue(promotionParams, PromotionConfig.class);
-
-        return config;
     }
 
     public String getServerName() {

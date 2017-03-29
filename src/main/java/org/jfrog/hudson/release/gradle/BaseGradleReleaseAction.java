@@ -92,7 +92,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
      * a sub-directory from the root workspace location.
      *
      * @param globalEnv EnvVars to take the workspace from, if workspace is not found
-     *            then it is take from project.getSomeWorkspace()
+     *                  then it is take from project.getSomeWorkspace()
      * @return The location of the root of the Gradle build.
      * @throws IOException
      * @throws InterruptedException
@@ -139,7 +139,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
      */
     @Override
     @SuppressWarnings({"UnusedDeclaration"})
-    public List<String> getRepositoryKeys() {
+    public List<String> getRepositoryKeys() throws IOException {
         ArtifactoryServer server = getArtifactoryServer();
         if (server != null) {
             return getArtifactoryServer().getReleaseRepositoryKeysFirst(getWrapper(), project);
@@ -247,8 +247,8 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
         releaseVersionPerModule = Maps.newHashMap();
         nextVersionPerModule = Maps.newHashMap();
 
-        for(Map.Entry<String, VersionedModule> entry : defaultModules.entrySet()) {
-            VersionedModule versionedModule  = entry.getValue();
+        for (Map.Entry<String, VersionedModule> entry : defaultModules.entrySet()) {
+            VersionedModule versionedModule = entry.getValue();
             String module = versionedModule.getModuleName();
             releaseVersionPerModule.put(module, versionedModule.getReleaseVersion());
             nextVersionPerModule.put(module, versionedModule.getNextDevelopmentVersion());
@@ -289,7 +289,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
     }
 
     @Override
-    protected void prepareBuilderSpecificDefaultPromotionConfig() {
+    protected void prepareBuilderSpecificDefaultPromotionConfig() throws IOException {
         defaultPromotionConfig = new PromotionConfig(getDefaultReleaseStagingRepository(), null);
     }
 
@@ -354,7 +354,7 @@ public abstract class BaseGradleReleaseAction extends ReleaseAction<AbstractProj
     /**
      * @return The release repository configured in Artifactory publisher.
      */
-    private String getDefaultReleaseStagingRepository() {
+    private String getDefaultReleaseStagingRepository() throws IOException {
         // Get default staging repo from configuration.
         String defaultStagingRepo = getReleaseWrapper().getDefaultReleaseStagingRepository();
         if (defaultStagingRepo != null && getRepositoryKeys().contains(defaultStagingRepo)) {

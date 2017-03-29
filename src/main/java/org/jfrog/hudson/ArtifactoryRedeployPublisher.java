@@ -42,7 +42,7 @@ import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.maven2.ArtifactsDeployer;
 import org.jfrog.hudson.maven2.MavenBuildInfoDeployer;
-import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
+import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
@@ -456,7 +456,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private void addJobActions(AbstractBuild build, String buildName) {
         build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
         if (isAllowPromotionOfNonStagedBuilds()) {
-            build.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryRedeployPublisher>(build, this));
+            build.getActions().add(new UnifiedPromoteBuildAction(build, this));
         }
         // Checks if Push to Bintray is disabled.
         if (PluginsUtils.isPushToBintrayEnabled()) {
@@ -620,7 +620,6 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                 response.setUserPlugins(userPluginKeys);
                 response.setSuccess(true);
             } catch (Exception e) {
-                e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
                 response.setSuccess(false);
             }
@@ -658,6 +657,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         public boolean isUseCredentialsPlugin() {
             return PluginsUtils.isUseCredentialsPlugin();
         }
+
         public boolean isPushToBintrayEnabled() {
             return PluginsUtils.isPushToBintrayEnabled();
         }

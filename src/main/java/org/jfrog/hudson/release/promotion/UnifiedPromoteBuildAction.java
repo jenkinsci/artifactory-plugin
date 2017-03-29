@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.hudson.release;
+package org.jfrog.hudson.release.promotion;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
@@ -28,13 +28,17 @@ import org.apache.http.HttpResponse;
 import org.jfrog.build.api.builder.PromotionBuilder;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.*;
+import org.jfrog.hudson.release.PromotionUtils;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,24 +47,92 @@ import java.util.Map;
  *
  * @author Noam Y. Tenne
  */
-public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & DeployerOverrider> extends TaskAction
-        implements BuildBadgeAction {
-    private final AbstractBuild build;
-    private final C configurator;
-
+public class UnifiedPromoteBuildAction extends TaskAction implements BuildBadgeAction {
+    private final Run build;
+    private Map<String, PromotionInfo> promotionCandidates = new HashMap<>();
+    private PromotionInfo currentPromotionCandidate;
     private String targetStatus;
-    private String repositoryKey;
+    private String targetRepositoryKey;
     private String sourceRepositoryKey;
     private String comment;
     private boolean useCopy;
     private boolean failFast = true;
     private boolean includeDependencies;
     private PluginSettings promotionPlugin;
-    private String defaultPromotionRepositoryKey;
 
-    public UnifiedPromoteBuildAction(AbstractBuild build, C configurator) {
+    public UnifiedPromoteBuildAction(Run build) {
         this.build = build;
-        this.configurator = configurator;
+    }
+
+    public UnifiedPromoteBuildAction(Run build, BuildInfoAwareConfigurator configurator) {
+        this(build);
+        String buildName = BuildUniqueIdentifierHelper.
+                getBuildNameConsiderOverride(configurator, build);
+        String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
+        PromotionConfig promotionConfig = new PromotionConfig();
+        promotionConfig.setBuildName(buildName);
+        promotionConfig.setBuildNumber(buildNumber);
+        addPromotionCandidate(promotionConfig, configurator, null);
+    }
+
+    public void addPromotionCandidate(PromotionConfig promotionConfig, BuildInfoAwareConfigurator configurator, String displayName) {
+        PromotionInfo promotionCandidate = new PromotionInfo(promotionConfig, configurator, promotionCandidates.size(), displayName);
+        if (this.currentPromotionCandidate == null) {
+            this.currentPromotionCandidate = promotionCandidate;
+        }
+        promotionCandidates.put(promotionCandidate.getId(), promotionCandidate);
+    }
+
+    private String getCurrentBuildName() {
+        return currentPromotionCandidate.getBuildName();
+    }
+
+    private String getCurrentBuildNumber() {
+        return currentPromotionCandidate.getBuildNumber();
+    }
+
+    private BuildInfoAwareConfigurator getCurrentConfigurator() {
+        return currentPromotionCandidate.getConfigurator();
+    }
+
+    /**
+     * @return List of promote infos for deployment. Called from the UI.
+     */
+    @SuppressWarnings({"UnusedDeclaration"})
+    public List<PromotionInfo> getPromotionCandidates() {
+        return new ArrayList<PromotionInfo>(promotionCandidates.values());
+    }
+
+    /**
+     * Load the related repositories, plugins and a promotion config associated to the buildId.
+     * Called from the UI.
+     *
+     * @param buildId - The unique build id.
+     * @return LoadBuildsResponse e.g. list of repositories, plugins and a promotion config.
+     */
+    @JavaScriptMethod
+    @SuppressWarnings({"UnusedDeclaration"})
+    public LoadBuildsResponse loadBuild(String buildId) {
+        LoadBuildsResponse response = new LoadBuildsResponse();
+        // When we load a new build we need also to reset the promotion plugin.
+        // The null plugin is related to 'None' plugin.
+        setPromotionPlugin(null);
+        try {
+            this.currentPromotionCandidate = promotionCandidates.get(buildId);
+            if (this.currentPromotionCandidate == null) {
+                throw new IllegalArgumentException("Can't find build by ID: " + buildId);
+            }
+            List<String> repositoryKeys = getRepositoryKeys();
+            List<UserPluginInfo> plugins = getPromotionsUserPluginInfo();
+            PromotionConfig promotionConfig = getPromotionConfig();
+            response.addRepositories(repositoryKeys);
+            response.setPlugins(plugins);
+            response.setPromotionConfig(promotionConfig);
+            response.setSuccess(true);
+        } catch (Exception e) {
+            response.setResponseMessage(e.getMessage());
+        }
+        return response;
     }
 
     @Override
@@ -88,22 +160,25 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         return getACL().hasPermission(getPermission());
     }
 
-    public AbstractBuild getBuild() {
+    public Run getBuild() {
         return build;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     public void setTargetStatus(String targetStatus) {
         this.targetStatus = targetStatus;
     }
 
-    public void setRepositoryKey(String repositoryKey) {
-        this.repositoryKey = repositoryKey;
+    public void setTargetRepositoryKey(String targetRepositoryKey) {
+        this.targetRepositoryKey = targetRepositoryKey;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     public String getSourceRepositoryKey() {
         return sourceRepositoryKey;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     public void setSourceRepositoryKey(String sourceRepositoryKey) {
         this.sourceRepositoryKey = sourceRepositoryKey;
     }
@@ -124,6 +199,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         this.includeDependencies = includeDependencies;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     public String getPromotionPluginName() {
         return (promotionPlugin != null) ? promotionPlugin.getPluginName() : null;
     }
@@ -132,21 +208,9 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         this.promotionPlugin = promotionPlugin;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     public String getPluginParamValue(String pluginName, String paramKey) {
         return (promotionPlugin != null) ? promotionPlugin.getPluginParamValue(pluginName, paramKey) : null;
-    }
-
-    /**
-     * @return List of target repositories for deployment (release repositories first). Called from the UI.
-     */
-    public List<String> getRepositoryKeys() {
-        ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
-        if (artifactoryServer == null) {
-            return Lists.newArrayList();
-        }
-        List<String> repos = artifactoryServer.getReleaseRepositoryKeysFirst(configurator, build.getProject());
-        repos.add(0, "");  // option not to move
-        return repos;
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -154,16 +218,38 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         return Lists.newArrayList(/*"Staged", */"Released", "Rolled-back");
     }
 
-    public String getDefaultPromotionTargetRepository() {
-        if (repositoryKey == null) {
-            return configurator.getDefaultPromotionTargetRepository();
+    /**
+     * @return List of target repositories for deployment (release repositories first). Called from the UI.
+     */
+    public List<String> getRepositoryKeys() throws IOException {
+        final BuildInfoAwareConfigurator configurator = getCurrentConfigurator();
+        if (configurator == null) {
+            return Lists.newArrayList();
         }
-        return repositoryKey;
+
+        ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
+        if (artifactoryServer == null) {
+            return Lists.newArrayList();
+        }
+        List<String> repos = artifactoryServer.
+                getReleaseRepositoryKeysFirst((DeployerOverrider) configurator, build.getParent());
+        repos.add(0, "");  // option not to move
+        return repos;
+    }
+
+    public PromotionConfig getPromotionConfig() {
+        return this.currentPromotionCandidate.getPromotionConfig();
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public int getPromoteInfoListSize() {
+        return promotionCandidates.size();
     }
 
     /**
      * @return The repository selected by the latest promotion (to be selected by default).
      */
+    @SuppressWarnings({"UnusedDeclaration"})
     public String lastPromotionSourceRepository() {
         return sourceRepositoryKey;
     }
@@ -217,9 +303,10 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
             }
         }
 
+        final BuildInfoAwareConfigurator configurator = getCurrentConfigurator();
         ArtifactoryServer server = configurator.getArtifactoryServer();
 
-        new PromoteWorkerThread(server, CredentialManager.getPreferredDeployer(configurator, server), ciUser).start();
+        new PromoteWorkerThread(server, CredentialManager.getPreferredDeployer((DeployerOverrider) configurator, server), ciUser).start();
 
         resp.sendRedirect(".");
     }
@@ -243,12 +330,17 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         }
     }
 
-    public List<UserPluginInfo> getPromotionsUserPluginInfo() {
+    private List<UserPluginInfo> getPromotionsUserPluginInfo() {
+        final BuildInfoAwareConfigurator configurator = getCurrentConfigurator();
+        if (configurator == null) {
+            return Lists.newArrayList(UserPluginInfo.NO_PLUGIN);
+        }
+
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
         if (artifactoryServer == null) {
             return Lists.newArrayList(UserPluginInfo.NO_PLUGIN);
         }
-        return artifactoryServer.getPromotionsUserPluginInfo(configurator, build.getProject());
+        return artifactoryServer.getPromotionsUserPluginInfo((DeployerOverrider) configurator, build.getParent());
     }
 
     @Override
@@ -269,7 +361,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
         private final CredentialsConfig deployerConfig;
         private final String ciUser;
 
-        public PromoteWorkerThread(ArtifactoryServer artifactoryServer, CredentialsConfig deployerConfig, String ciUser) {
+        PromoteWorkerThread(ArtifactoryServer artifactoryServer, CredentialsConfig deployerConfig, String ciUser) {
             super(UnifiedPromoteBuildAction.this, ListenerAndText.forMemory(null));
             this.artifactoryServer = artifactoryServer;
             this.deployerConfig = deployerConfig;
@@ -283,7 +375,7 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                 long started = System.currentTimeMillis();
                 listener.getLogger().println("Promoting build ....");
 
-                client = artifactoryServer.createArtifactoryClient(deployerConfig.provideUsername(build.getProject()), deployerConfig.providePassword(build.getProject()),
+                client = artifactoryServer.createArtifactoryClient(deployerConfig.provideUsername(build.getParent()), deployerConfig.providePassword(build.getParent()),
                         artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy));
 
                 if ((promotionPlugin != null) &&
@@ -294,15 +386,16 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
                             .status(targetStatus)
                             .comment(comment)
                             .ciUser(ciUser)
-                            .targetRepo(repositoryKey)
+                            .targetRepo(targetRepositoryKey)
                             .sourceRepo(sourceRepositoryKey)
                             .dependencies(includeDependencies)
                             .copy(useCopy)
                             .failFast(failFast);
 
-                    String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(configurator, build);
-                    String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
-                    PromotionUtils.promoteAndCheckResponse(promotionBuilder, client, listener, buildName, buildNumber);
+                    String buildName = getCurrentBuildName();
+                    String buildNumber = getCurrentBuildNumber();
+                    PromotionUtils.promoteAndCheckResponse(promotionBuilder,
+                            client, listener, buildName, buildNumber);
                 }
 
                 build.save();
@@ -322,10 +415,9 @@ public class UnifiedPromoteBuildAction<C extends BuildInfoAwareConfigurator & De
             }
         }
 
-        private void handlePluginPromotion(TaskListener listener, ArtifactoryBuildInfoClient client)
-                throws IOException {
-            String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(configurator, build);
-            String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
+        private void handlePluginPromotion(TaskListener listener, ArtifactoryBuildInfoClient client) throws IOException {
+            String buildName = getCurrentBuildName();
+            String buildNumber = getCurrentBuildNumber();
             HttpResponse pluginPromotionResponse = client.executePromotionUserPlugin(
                     promotionPlugin.getPluginName(), buildName, buildNumber, promotionPlugin.getParamMap());
             if (PromotionUtils.checkSuccess(pluginPromotionResponse, false, failFast, false, listener)) {

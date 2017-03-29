@@ -41,11 +41,11 @@ import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.release.gradle.BaseGradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseApiAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseWrapper;
+import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
@@ -606,8 +606,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                         if (configurator != null) {
                             if (isAllowPromotionOfNonStagedBuilds()) {
                                 build.getActions()
-                                        .add(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(build,
-                                                ArtifactoryGradleConfigurator.this));
+                                        .add(new UnifiedPromoteBuildAction(build, ArtifactoryGradleConfigurator.this));
                             }
                             // Checks if Push to Bintray is disabled.
                             if (PluginsUtils.isPushToBintrayEnabled()) {
@@ -779,7 +778,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         }
 
         private List<VirtualRepository> refreshVirtualRepositories(ArtifactoryServer artifactoryServer,
-                                                CredentialsConfig credentialsConfig) throws IOException {
+                                                                   CredentialsConfig credentialsConfig) throws IOException {
             List<VirtualRepository> virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
                     credentialsConfig, artifactoryServer, item);
             Collections.sort(virtualRepositories);
@@ -813,7 +812,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 list.add(plugin);
             }
 
-           return list;
+            return list;
         }
 
         /**
@@ -842,7 +841,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 response.setUserPlugins(userPluginKeys);
                 response.setSuccess(true);
             } catch (Exception e) {
-                e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
                 response.setSuccess(false);
             }
@@ -872,7 +870,6 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 response.setVirtualRepositories(virtualRepositories);
                 response.setSuccess(true);
             } catch (Exception e) {
-                e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
                 response.setSuccess(false);
             }
@@ -971,7 +968,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
             if (!wrapper.isAllowPromotionOfNonStagedBuilds()) {
                 if (successRun) {
                     // add a stage action
-                    run.addAction(new UnifiedPromoteBuildAction<ArtifactoryGradleConfigurator>(run, wrapper));
+                    run.addAction(new UnifiedPromoteBuildAction(run, wrapper));
                 }
             }
             // Checks if Push to Bintray is disabled.

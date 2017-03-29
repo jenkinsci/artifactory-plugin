@@ -24,7 +24,7 @@ import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.release.UnifiedPromoteBuildAction;
+import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 
@@ -60,10 +60,9 @@ public class ArtifactoryIvyRunListener extends RunListener<AbstractBuild> {
             if (artifactoryIvyConfigurator.isDeployBuildInfo()) {
                 String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(artifactoryIvyConfigurator, run);
                 run.getActions().add(new BuildInfoResultAction(artifactoryIvyConfigurator.getArtifactoryUrl(), run, buildName));
-                run.getActions().add(new UnifiedPromoteBuildAction<ArtifactoryIvyConfigurator>(run,
-                        artifactoryIvyConfigurator));
+                run.getActions().add(new UnifiedPromoteBuildAction(run, artifactoryIvyConfigurator));
                 // Checks if Push to Bintray is disabled.
-                if (PluginsUtils.isPushToBintrayEnabled()){
+                if (PluginsUtils.isPushToBintrayEnabled()) {
                     run.getActions().add(new BintrayPublishAction<ArtifactoryIvyConfigurator>(run, artifactoryIvyConfigurator));
                 }
             }
