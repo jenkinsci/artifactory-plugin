@@ -19,6 +19,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.build.api.Build;
+import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.hudson.gradle.GradleInitScriptWriter;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.executors.MavenGradleEnvExtractor;
@@ -130,7 +131,8 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             ArgumentListBuilder args = getGradleExecutor();
             envExtractor.buildEnvVars(ws, env);
             exe(args);
-            Build regularBuildInfo = Utils.getGeneratedBuildInfo(build, env, listener, ws, launcher);
+            String generatedBuildPath = env.get(BuildInfoFields.GENERATED_BUILD_INFO);
+            Build regularBuildInfo = Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath);
             buildInfo.append(regularBuildInfo);
             return buildInfo;
         }

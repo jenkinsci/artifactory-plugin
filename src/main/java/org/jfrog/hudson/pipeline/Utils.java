@@ -8,6 +8,7 @@ import hudson.Launcher;
 import hudson.model.*;
 import hudson.plugins.git.util.BuildData;
 import hudson.remoting.Callable;
+import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
@@ -35,6 +36,7 @@ import java.util.List;
 public class Utils {
 
     public static final String BUILD_INFO_DELIMITER = ".";
+    public static final String CONAN_USER_HOME = "CONAN_USER_HOME";
 
     /**
      * Prepares Artifactory server either from serverID or from ArtifactoryServer.
@@ -173,19 +175,19 @@ public class Utils {
         return result;
     }
 
-    public static org.jfrog.build.api.Build getGeneratedBuildInfo(Run build, EnvVars env, TaskListener listener, FilePath ws, Launcher launcher) {
+    public static org.jfrog.build.api.Build getGeneratedBuildInfo(Run build, TaskListener listener, Launcher launcher, String jsonBuildPath) {
         ObjectMapper mapper = new ObjectMapper();
         FilePath generatedBuildInfoFilePath = null;
         InputStream inputStream = null;
         try {
             StringWriter writer = new StringWriter();
-            generatedBuildInfoFilePath = new FilePath(launcher.getChannel(), env.get(BuildInfoFields.GENERATED_BUILD_INFO));
+            generatedBuildInfoFilePath = new FilePath(launcher.getChannel(), jsonBuildPath);
             inputStream = generatedBuildInfoFilePath.read();
             IOUtils.copy(inputStream, writer, "UTF-8");
             String theString = writer.toString();
             return mapper.readValue(theString, org.jfrog.build.api.Build.class);
         } catch (Exception e) {
-            listener.error("Couldn't read generated build info at : " + env.get(BuildInfoFields.GENERATED_BUILD_INFO));
+            listener.error("Couldn't read generated build info at : " + jsonBuildPath);
             build.setResult(Result.FAILURE);
             throw new Run.RunnerAbortedException();
         } finally {
@@ -229,5 +231,21 @@ public class Utils {
                 return tempFile.getAbsolutePath();
             }
         });
+    }
+
+    public static void exeConan(ArgumentListBuilder args, String pwd, Launcher launcher, TaskListener listener, Run build, EnvVars env) {
+        boolean failed;
+        try {
+            int exitValue = launcher.launch().cmds(args).envs(env).stdout(listener).pwd(pwd).join();
+            failed = (exitValue != 0);
+        } catch (Exception e) {
+            listener.error("Couldn't execute the conan client executable. " + e.getMessage());
+            build.setResult(Result.FAILURE);
+            throw new Run.RunnerAbortedException();
+        }
+        if (failed) {
+            build.setResult(Result.FAILURE);
+            throw new Run.RunnerAbortedException();
+        }
     }
 }

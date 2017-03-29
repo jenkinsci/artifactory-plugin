@@ -1,6 +1,7 @@
 package org.jfrog.hudson.pipeline.dsl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.pipeline.types.*;
@@ -102,6 +103,31 @@ public class ArtifactoryPipelineGlobal implements Serializable {
         GradleBuild gradleBuild = (GradleBuild) this.script.invokeMethod("newGradleBuild", new LinkedHashMap<String, Object>());
         gradleBuild.setCpsScript(this.script);
         return gradleBuild;
+    }
+
+    @Whitelisted
+    public ConanClient newConanClient(Map<String, Object> clientArgs) {
+        ConanClient client = new ConanClient();
+        String userPath = (String) clientArgs.get("userHome");
+        if (StringUtils.isBlank(userPath)) {
+            throw new IllegalArgumentException("The newConanClient method expects the 'userHome' argument or no arguments.");
+        }
+        client.setUserPath(userPath);
+        client.setCpsScript(this.script);
+        LinkedHashMap<String, Object> args = new LinkedHashMap<String, Object>();
+        args.put("client", client);
+        this.script.invokeMethod("InitConanClient", args);
+        return client;
+    }
+
+    @Whitelisted
+    public ConanClient newConanClient() {
+        ConanClient client = new ConanClient();
+        client.setCpsScript(this.script);
+        LinkedHashMap<String, Object> args = new LinkedHashMap<String, Object>();
+        args.put("client", client);
+        this.script.invokeMethod("InitConanClient", args);
+        return client;
     }
 
     @Whitelisted
