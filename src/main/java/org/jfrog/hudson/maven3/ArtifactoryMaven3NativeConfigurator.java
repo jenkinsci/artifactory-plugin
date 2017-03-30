@@ -190,7 +190,6 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
                 response.setSuccess(true);
                 return response;
             } catch (Exception e) {
-                e.printStackTrace();
                 response.setResponseMessage(e.getMessage());
                 response.setSuccess(false);
             }

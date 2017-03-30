@@ -24,7 +24,7 @@ public class PromotionConfig implements Serializable {
     }
 
     public void setBuildName(String buildName) {
-        this.buildName = buildName;
+        this.buildName = buildName.trim();
     }
 
     public String getBuildNumber() {
@@ -32,7 +32,7 @@ public class PromotionConfig implements Serializable {
     }
 
     public void setBuildNumber(String buildNumber) {
-        this.buildNumber = buildNumber;
+        this.buildNumber = buildNumber.trim();
     }
 
     public String getTargetRepo() {
@@ -40,7 +40,7 @@ public class PromotionConfig implements Serializable {
     }
 
     public void setTargetRepo(String targetRepo) {
-        this.targetRepo = targetRepo;
+        this.targetRepo = targetRepo.trim();
     }
 
     public String getSourceRepo() {
@@ -48,7 +48,7 @@ public class PromotionConfig implements Serializable {
     }
 
     public void setSourceRepo(String sourceRepo) {
-        this.sourceRepo = sourceRepo;
+        this.sourceRepo = sourceRepo.trim();
     }
 
     public String getStatus() {
@@ -56,7 +56,7 @@ public class PromotionConfig implements Serializable {
     }
 
     public void setStatus(String status) {
-        this.status = status;
+        this.status = status.trim();
     }
 
     public String getComment() {
@@ -64,7 +64,7 @@ public class PromotionConfig implements Serializable {
     }
 
     public void setComment(String comment) {
-        this.comment = comment;
+        this.comment = comment.trim();
     }
 
     public boolean isIncludeDependencies() {

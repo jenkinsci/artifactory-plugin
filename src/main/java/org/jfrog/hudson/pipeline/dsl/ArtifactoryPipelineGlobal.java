@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.types.*;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 
@@ -136,4 +137,22 @@ public class ArtifactoryPipelineGlobal implements Serializable {
         descriptorHandler.setCpsScript(this.script);
         return descriptorHandler;
     }
+
+    @Whitelisted
+    public void addInteractivePromotion(Map<String, Object> promotionArguments) {
+        Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
+        List<String> mandatoryParams = Arrays.asList(ArtifactoryServer.SERVER, "promotionConfig");
+        List<String> allowedParams = Arrays.asList(ArtifactoryServer.SERVER, "promotionConfig", "displayName");
+        if (!promotionArguments.keySet().containsAll(mandatoryParams)) {
+            throw new IllegalArgumentException(mandatoryParams.toString() + " are mandatory arguments");
+        }
+        if (!allowedParams.containsAll(promotionArguments.keySet())){
+            throw new IllegalArgumentException("Only the following arguments are allowed: " + allowedParams.toString());
+        }
+        stepVariables.put("promotionConfig", Utils.createPromotionConfig((Map<String, Object>)promotionArguments.get("promotionConfig"), false));
+        stepVariables.put(ArtifactoryServer.SERVER, promotionArguments.get(ArtifactoryServer.SERVER));
+        stepVariables.put("displayName", promotionArguments.get("displayName"));
+        this.script.invokeMethod("AddInteractivePromotion", stepVariables);
+    }
+
 }
