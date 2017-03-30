@@ -17,12 +17,14 @@
 package org.jfrog.hudson;
 
 import hudson.Util;
-import hudson.model.AbstractBuild;
 import hudson.model.BuildBadgeAction;
 import hudson.model.Run;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Build;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Result of the redeploy publisher. Currently only a link to Artifactory build info.
@@ -31,25 +33,30 @@ import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
  */
 public class BuildInfoResultAction implements BuildBadgeAction {
 
-    private final String url;
-
+    private List<PublishedBuildDetails> publishedBuildsDetails = new ArrayList<PublishedBuildDetails>();
+    private final Run build;
     /**
      * @deprecated Only here to keep compatibility with version 1.0.7 and below (part of the xstream de-serialization)
      */
     @Deprecated
     private transient ArtifactoryRedeployPublisher artifactoryRedeployPublisher;
-    /**
-     * @deprecated Only here to keep compatibility with version 1.0.7 and below (part of the xstream de-serialization)
-     */
-    @Deprecated
-    private transient AbstractBuild build;
 
-    public BuildInfoResultAction(String artifactoryRootUrl, Run build, String buildName) {
-        url = generateUrl(artifactoryRootUrl, build, buildName);
+    public BuildInfoResultAction(Run build) {
+        this.build = build;
     }
 
-    public BuildInfoResultAction(String artifactoryRootUrl, Run build, Build buildInfo) {
-        url = generateUrl(artifactoryRootUrl, build, buildInfo);
+    public BuildInfoResultAction(String artifactoryUrl, Run build, String buildName) {
+        this(build);
+        String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
+        publishedBuildsDetails.add(createBuildInfoIdentifier(artifactoryUrl, buildName, buildNumber));
+    }
+
+    public void addBuildInfoResults(String artifactoryUrl, Build buildInfo) {
+        publishedBuildsDetails.add(createBuildInfoIdentifier(artifactoryUrl, build, buildInfo));
+    }
+
+    public Run getBuild() {
+        return build;
     }
 
     public String getIconFileName() {
@@ -62,32 +69,54 @@ public class BuildInfoResultAction implements BuildBadgeAction {
 
     public String getUrlName() {
         // for backward compatibility if url is empty calculate it from the old structs
-        if (url == null && artifactoryRedeployPublisher != null && build != null) {
+        if (publishedBuildsDetails.size() == 0 && artifactoryRedeployPublisher != null && build != null) {
             String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(artifactoryRedeployPublisher, build);
             return generateUrl(artifactoryRedeployPublisher.getArtifactoryName(), build, buildName);
-        } else {
-            return url;
+        } else if (publishedBuildsDetails.size() == 1) {
+            return publishedBuildsDetails.get(0).getBuildInfoUrl();
         }
+        return "published_builds";
     }
 
-    private String generateUrl(String artifactoryRootUrl, Run build, String buildName) {
-        return artifactoryRootUrl + "/webapp/builds/" + Util.rawEncode(buildName) + "/"
-                + Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
+    private PublishedBuildDetails createBuildInfoIdentifier(String artifactoryUrl, String buildName, String buildNumber) {
+        return new PublishedBuildDetails(artifactoryUrl, Util.rawEncode(buildName), Util.rawEncode(buildNumber));
     }
 
-    private String generateUrl(String artifactoryRootUrl, Run build, Build buildInfo) {
+    private PublishedBuildDetails createBuildInfoIdentifier(String artifactoryUrl, Run build, Build buildInfo) {
         String buildName;
         String buildNumber;
         if (StringUtils.isNotEmpty(buildInfo.getName())) {
-            buildName = Util.rawEncode(buildInfo.getName());
+            buildName = buildInfo.getName();
         } else {
-            buildName = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildName(build));
+            buildName = BuildUniqueIdentifierHelper.getBuildName(build);
         }
         if (StringUtils.isNotEmpty(buildInfo.getNumber())) {
-            buildNumber = Util.rawEncode(buildInfo.getNumber());
+            buildNumber = buildInfo.getNumber();
         } else {
-            buildNumber = Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
+            buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
         }
-        return artifactoryRootUrl + "/webapp/builds/" + buildName + "/" + buildNumber;
+        return createBuildInfoIdentifier(artifactoryUrl, buildName, buildNumber);
     }
+
+    private String generateUrl(String artifactoryUrl, Run build, String buildName) {
+        return artifactoryUrl + "/webapp/builds/" + Util.rawEncode(buildName) + "/"
+                + Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
+    }
+
+    /**
+     * @return whether we have multiple builds. Called from the UI.
+     */
+    @SuppressWarnings({"UnusedDeclaration"})
+    public boolean haveMultipleBuilds() {
+        return publishedBuildsDetails.size() > 1;
+    }
+
+    /**
+     * @return list of build info identifiers. Called from the UI.
+     */
+    @SuppressWarnings({"UnusedDeclaration"})
+    public List<PublishedBuildDetails> getPublishedBuildsDetails() {
+        return publishedBuildsDetails;
+    }
+
 }

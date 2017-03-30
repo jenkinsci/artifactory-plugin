@@ -69,7 +69,18 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
         String url = artifactoryUrl +
                 ArtifactoryBuildInfoClient.BUILD_BROWSE_URL + "/" + encodeUrl(buildInfo.getName()) + "/" + encodeUrl(buildInfo.getNumber());
         listener.getLogger().println("Build successfully deployed. Browse it in Artifactory under " + url);
-        build.getActions().add(0, new BuildInfoResultAction(artifactoryUrl, build, this.buildInfo));
+        addBuildInfoResultAction(artifactoryUrl);
+    }
+
+    private void addBuildInfoResultAction(String artifactoryUrl) {
+        synchronized (build.getActions()) {
+            BuildInfoResultAction action = build.getAction(BuildInfoResultAction.class);
+            if (action == null) {
+                action = new BuildInfoResultAction(build);
+                build.getActions().add(action);
+            }
+            action.addBuildInfoResults(artifactoryUrl, buildInfo);
+        }
     }
 
     /**

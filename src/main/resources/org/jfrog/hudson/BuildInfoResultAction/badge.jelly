@@ -1,3 +1,15 @@
-<a href="${it.urlName}" target="_blank">
-    <img width="16" height="16" title="${it.displayName}" alt="[Artifactory]" src="${rootURL}${it.iconFileName}"/>
-</a>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+    <j:choose>
+        <j:when test="${it.haveMultipleBuilds()}">
+            <a href="${link}published_builds">
+                <img width="16" height="16" title="${it.displayName}" alt="[Artifactory]" src="${rootURL}${it.iconFileName}"/>
+            </a>
+        </j:when>
+        <j:otherwise>
+            <a href="${it.urlName}" target="_blank">
+                <img width="16" height="16" title="${it.displayName}" alt="[Artifactory]" src="${rootURL}${it.iconFileName}"/>
+            </a>
+        </j:otherwise>
+    </j:choose>
+</j:jelly>
