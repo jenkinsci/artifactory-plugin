@@ -49,7 +49,7 @@ import java.util.Map;
  */
 public class UnifiedPromoteBuildAction extends TaskAction implements BuildBadgeAction {
     private final Run build;
-    private Map<String, PromotionInfo> promotionCandidates = new HashMap<>();
+    private Map<String, PromotionInfo> promotionCandidates = new HashMap<String, PromotionInfo>();
     private PromotionInfo currentPromotionCandidate;
     private String targetStatus;
     private String targetRepositoryKey;
