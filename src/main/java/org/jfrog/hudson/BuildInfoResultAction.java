@@ -35,6 +35,8 @@ public class BuildInfoResultAction implements BuildBadgeAction {
 
     private List<PublishedBuildDetails> publishedBuildsDetails = new ArrayList<PublishedBuildDetails>();
     private final Run build;
+    @Deprecated
+    private String url;
     /**
      * @deprecated Only here to keep compatibility with version 1.0.7 and below (part of the xstream de-serialization)
      */
@@ -68,7 +70,12 @@ public class BuildInfoResultAction implements BuildBadgeAction {
     }
 
     public String getUrlName() {
-        // for backward compatibility if url is empty calculate it from the old structs
+        if (StringUtils.isNotEmpty(url)) {
+            return url;
+        } else if (publishedBuildsDetails == null) {
+            publishedBuildsDetails = new ArrayList<PublishedBuildDetails>();
+        }
+        // For backward compatibility if publishedBuildsDetails is empty calculate it from the old structs.
         if (publishedBuildsDetails.size() == 0 && artifactoryRedeployPublisher != null && build != null) {
             String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(artifactoryRedeployPublisher, build);
             return generateUrl(artifactoryRedeployPublisher.getArtifactoryName(), build, buildName);
@@ -108,7 +115,7 @@ public class BuildInfoResultAction implements BuildBadgeAction {
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public boolean haveMultipleBuilds() {
-        return publishedBuildsDetails.size() > 1;
+        return publishedBuildsDetails != null && publishedBuildsDetails.size() > 1;
     }
 
     /**
@@ -119,4 +126,8 @@ public class BuildInfoResultAction implements BuildBadgeAction {
         return publishedBuildsDetails;
     }
 
+    @Deprecated
+    public void setUrl(String url) {
+        this.url = url;
+    }
 }
