@@ -60,7 +60,7 @@ public class ArtifactoryServer implements Serializable {
     // This object is set to Integer instead of int so upon starting if it's missing (due to upgrade from previous version)
     // This object will be null instead of 0. In the ArtifactoryBuilder there is a check if the object is null then we are
     // setting to 3 that is the default.
-    private Integer connectionRetry = ActionableHelper.getDefaultConnectionRetries();
+    private Integer connectionRetry;
     /**
      * List of repository keys, last time we checked. Copy on write semantics.
      */
@@ -128,7 +128,10 @@ public class ArtifactoryServer implements Serializable {
         return items;
     }
 
-    public Integer getConnectionRetry() {
+    public int getConnectionRetry() {
+        if (connectionRetry == null) {
+            connectionRetry = 3;
+        }
         return connectionRetry;
     }
 
