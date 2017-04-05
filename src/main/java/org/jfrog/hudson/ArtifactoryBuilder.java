@@ -78,20 +78,6 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             super(ArtifactoryBuilder.class);
             initDefaultCertPaths();
             load();
-            setConnectionRetry();
-        }
-
-        /**
-         * We need to check upon starting the server if the connection retry field is null.
-         * This can happen upon upgrading from previous version that the field is missing.
-         * If null, we need to set this to the default that is 3.
-         */
-        private void setConnectionRetry() {
-            for (ArtifactoryServer artifactoryServer : artifactoryServers) {
-                if (artifactoryServer.getConnectionRetry() == null) {
-                    artifactoryServer.setConnectionRetry(ActionableHelper.getDefaultConnectionRetries());
-                }
-            }
         }
 
         private void initDefaultCertPaths() {
