@@ -29,7 +29,6 @@ import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBaseClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
-import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.util.CredentialManager;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
@@ -92,7 +91,7 @@ public class ArtifactoryServer implements Serializable {
         this.timeout = timeout > 0 ? timeout : DEFAULT_CONNECTION_TIMEOUT;
         this.bypassProxy = bypassProxy;
         this.id = serverId;
-        this.connectionRetry = connectionRetry;
+        this.connectionRetry = connectionRetry != null ? connectionRetry : 3;
     }
 
     public String getName() {
@@ -265,7 +264,7 @@ public class ArtifactoryServer implements Serializable {
      * @param client - the client to set the params.
      */
     private void setRetryParams(ArtifactoryBaseClient client) {
-        RepositoriesUtils.setRetryParams(connectionRetry, client);
+        RepositoriesUtils.setRetryParams(getConnectionRetry(), client);
     }
 
     public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
