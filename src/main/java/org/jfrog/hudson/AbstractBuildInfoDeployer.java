@@ -17,7 +17,10 @@ import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
-import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
+import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.IncludesExcludes;
+import org.jfrog.hudson.util.IssuesTrackerHelper;
 
 import java.io.IOException;
 import java.util.Calendar;
@@ -131,12 +134,6 @@ public class AbstractBuildInfoDeployer {
         Governance governance = new Governance();
         governance.setBlackDuckProperties(blackDuckProperties);
         builder.governance(governance);
-
-        BuildRetention buildRetention = new BuildRetention(configurator.isDiscardBuildArtifacts());
-        if (configurator.isDiscardOldBuilds()) {
-            buildRetention = BuildRetentionFactory.createBuildRetention(build, configurator.isDiscardBuildArtifacts());
-        }
-        builder.buildRetention(buildRetention);
 
         if ((Jenkins.getInstance().getPlugin("jira") != null) && configurator.isEnableIssueTrackerIntegration()) {
             new IssuesTrackerHelper(build, listener, configurator.isAggregateBuildIssues(),

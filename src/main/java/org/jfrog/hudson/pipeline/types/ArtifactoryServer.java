@@ -132,7 +132,6 @@ public class ArtifactoryServer implements Serializable {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
         stepVariables.put(BUILD_INFO, buildInfo);
         stepVariables.put(SERVER, this);
-
         cpsScript.invokeMethod("publishBuildInfo", stepVariables);
     }
 

@@ -19,14 +19,13 @@ package org.jfrog.hudson.generic;
 import com.google.common.collect.Lists;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.jfrog.build.api.Artifact;
-import org.jfrog.build.api.Build;
-import org.jfrog.build.api.BuildType;
-import org.jfrog.build.api.Dependency;
+import org.jfrog.build.api.*;
 import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.retention.Utils;
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
+import org.jfrog.hudson.util.BuildRetentionFactory;
 import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
@@ -59,7 +58,17 @@ public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
     public void deploy() throws IOException {
         String url = configurator.getArtifactoryServer().getUrl() + "/api/build";
         listener.getLogger().println("Deploying build info to: " + url);
-        client.sendBuildInfo(buildInfo);
+        BuildRetention retention = getBuildRetention();
+        Utils.sendBuildAndBuildRetention(client, buildInfo, retention);
+    }
+
+    private BuildRetention getBuildRetention() {
+        BuildRetention buildRetention = null;
+        if (configurator.isDiscardOldBuilds()) {
+            buildRetention = new BuildRetention(configurator.isDiscardBuildArtifacts());
+            buildRetention = BuildRetentionFactory.createBuildRetention(build, configurator.isDiscardBuildArtifacts());
+        }
+        return buildRetention;
     }
 
     private void createDeployDetailsAndAddToBuildInfo(List<Artifact> deployedArtifacts,
