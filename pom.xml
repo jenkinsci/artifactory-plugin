@@ -30,10 +30,10 @@
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
     <properties>
-        <buildinfo.version>2.7.x-SNAPSHOT</buildinfo.version>
-        <buildinfo.maven3.version>2.6.x-SNAPSHOT</buildinfo.maven3.version>
-        <buildinfo.gradle.version>4.4.x-SNAPSHOT</buildinfo.gradle.version>
-        <buildinfo.ivy.version>2.6.x-SNAPSHOT</buildinfo.ivy.version>
+        <buildinfo.version>2.7.6</buildinfo.version>
+        <buildinfo.maven3.version>2.6.7</buildinfo.maven3.version>
+        <buildinfo.gradle.version>4.4.16</buildinfo.gradle.version>
+        <buildinfo.ivy.version>2.6.4</buildinfo.ivy.version>
         <maven-release-plugin.version>2.2</maven-release-plugin.version>
     </properties>
 
@@ -217,6 +217,11 @@
                     <groupId>org.codehaus.groovy</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.aether</groupId>
+            <artifactId>aether-impl</artifactId>
+            <version>1.0.1.v20141111</version>
         </dependency>
         <dependency>
             <groupId>org.jfrog.buildinfo</groupId>
