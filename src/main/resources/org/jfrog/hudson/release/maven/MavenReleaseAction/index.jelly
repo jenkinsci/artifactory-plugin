@@ -105,9 +105,9 @@
                         <hr/>
                     </f:block>
                     <f:entry title="${%Repository for release staging} (requires Artifactory Pro)"
-                             field="targetRepositoryKey"
+                             field="repositoryKey"
                              help="/plugin/artifactory/help/release/ReleaseAction/help-stagingRepository.html">
-                        <select class="setting-input" name="targetRepositoryKey"
+                        <select class="setting-input" name="repositoryKey"
                                 disabled="${!it.artifactoryPro ? 'disabled' : null}">
                             <j:forEach var="r" items="${it.repositoryKeys}">
                                 <f:option selected="${r==it.defaultPromotionConfig.targetRepository}"
