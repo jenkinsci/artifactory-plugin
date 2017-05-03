@@ -20,6 +20,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepEx
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildInfoFields;
+import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.GradleInitScriptWriter;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.executors.MavenGradleEnvExtractor;
@@ -102,6 +103,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
 
     public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
         private static final long serialVersionUID = 1L;
+        private String initScriptPath;
 
         @StepContextParameter
         private transient Run build;
@@ -134,6 +136,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             String generatedBuildPath = env.get(BuildInfoFields.GENERATED_BUILD_INFO);
             Build regularBuildInfo = Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath);
             buildInfo.append(regularBuildInfo);
+            ActionableHelper.deleteFilePath(ws, initScriptPath);
             return buildInfo;
         }
 
@@ -186,7 +189,8 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             String switches = step.getSwitches();
             if (!step.getGradleBuild().isUsesPlugin()) {
                 try {
-                    switches += " --init-script " + createInitScript();
+                    initScriptPath = createInitScript();
+                    switches += " --init-script " + initScriptPath;
                 } catch (Exception e) {
                     listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
                     build.setResult(Result.FAILURE);
@@ -255,6 +259,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             GradleInitScriptWriter writer = new GradleInitScriptWriter(build, launcher);
             FilePath initScript = ws.createTextTempFile("init-artifactory", "gradle",
                     writer.generateInitScript(), false);
+            ActionableHelper.deleteFilePathOnExit(initScript);
             String initScriptPath = initScript.getRemote();
             initScriptPath = initScriptPath.replace('\\', '/');
             return initScriptPath;

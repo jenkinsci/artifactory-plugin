@@ -17,10 +17,12 @@
 package org.jfrog.hudson.action;
 
 import com.google.common.collect.Lists;
+import hudson.FilePath;
 import hudson.matrix.MatrixConfiguration;
 import hudson.maven.MavenBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.*;
+import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
@@ -31,6 +33,8 @@ import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.hudson.util.publisher.PublisherFindImpl;
 import org.jfrog.hudson.util.publisher.PublisherFlexible;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -64,7 +68,8 @@ public abstract class ActionableHelper {
 
     /**
      * Search for a publisher of the given type in a project and return it, or null if it is not found.
-     * @return  The publisher
+     *
+     * @return The publisher
      */
     public static <T extends Publisher> T getPublisher(AbstractProject<?, ?> project, Class<T> type) {
         // Search for a publisher of the given type in the project and return it if found:
@@ -211,12 +216,13 @@ public abstract class ActionableHelper {
 
     /**
      * Returns the version of Jenkins Artifactory Plugin or empty string if not found
+     *
      * @return the version of Jenkins Artifactory Plugin or empty string if not found
      */
-    public static String getArtifactoryPluginVersion(){
+    public static String getArtifactoryPluginVersion() {
         String pluginsSortName = "artifactory";
         //Validates Jenkins existence because in some jobs the Jenkins instance is unreachable
-        if(Jenkins.getInstance() != null
+        if (Jenkins.getInstance() != null
                 && Jenkins.getInstance().getPlugin(pluginsSortName) != null
                 && Jenkins.getInstance().getPlugin(pluginsSortName).getWrapper() != null) {
             return Jenkins.getInstance().getPlugin(pluginsSortName).getWrapper().getVersion();
@@ -226,9 +232,55 @@ public abstract class ActionableHelper {
 
     /**
      * Returns the default number of retries
+     *
      * @return the default number of retries
      */
     public static int getDefaultConnectionRetries() {
         return ArtifactoryHttpClient.DEFAULT_CONNECTION_RETRY;
+    }
+
+    /**
+     * Deletes a FilePath file.
+     *
+     * @param workspace The build workspace.
+     * @param path      The path in the workspace.
+     * @throws IOException In case of missing file.
+     */
+    public static void deleteFilePath(FilePath workspace, String path) throws IOException {
+        if (StringUtils.isNotBlank(path)) {
+            try {
+                FilePath propertiesFile = new FilePath(workspace, path);
+                propertiesFile.delete();
+            } catch (Exception e) {
+                throw new IOException("Could not delete temp file: " + path);
+            }
+        }
+    }
+
+    /**
+     * Deletes a FilePath file on exit.
+     *
+     * @param workspace The build workspace.
+     * @param path      The path in the workspace.
+     * @throws IOException In case of a missing file.
+     */
+    public static void deleteFilePathOnExit(FilePath workspace, String path) throws IOException, InterruptedException {
+        FilePath filePath = new FilePath(workspace, path);
+        deleteFilePathOnExit(filePath);
+    }
+
+    /**
+     * Deletes a FilePath file on exit.
+     *
+     * @param filePath The FilePath to delete on exit.
+     * @throws IOException In case of a missing file.
+     */
+    public static void deleteFilePathOnExit(FilePath filePath) throws IOException, InterruptedException {
+        filePath.act(new FilePath.FileCallable<Object>() {
+            public Object invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
+                file.deleteOnExit();
+                return null;
+            }
+        });
     }
 }

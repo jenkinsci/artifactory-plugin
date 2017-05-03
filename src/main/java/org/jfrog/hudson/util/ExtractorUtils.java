@@ -44,9 +44,8 @@ import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.List;
@@ -136,7 +135,7 @@ public class ExtractorUtils {
      * @param resolverContext  A context for resolver settings
      */
     public static ArtifactoryClientConfiguration addBuilderInfoArguments(Map<String, String> env, Run build, TaskListener listener,
-                PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws, hudson.Launcher launcher)
+                                                                         PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws, hudson.Launcher launcher)
             throws IOException, InterruptedException {
         ArtifactoryClientConfiguration configuration = getArtifactoryClientConfiguration(env, build,
                 null, listener, publisherContext, resolverContext, ws);
@@ -145,7 +144,7 @@ public class ExtractorUtils {
     }
 
     public static ArtifactoryClientConfiguration getArtifactoryClientConfiguration(Map<String, String> env, Run build,
-                BuildInfo pipelineBuildInfo, TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws) throws UnsupportedEncodingException {
+                                                                                   BuildInfo pipelineBuildInfo, TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws) throws UnsupportedEncodingException {
         ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
         if (build instanceof AbstractBuild) {
             addBuildRootIfNeeded((AbstractBuild) build, configuration);
@@ -239,7 +238,7 @@ public class ExtractorUtils {
      * Set all the parameters relevant for publishing artifacts and build info
      */
     private static void setPublisherInfo(Map<String, String> env, Run build, BuildInfo pipelineBuildInfo, PublisherContext context,
-                ArtifactoryClientConfiguration configuration, FilePath ws) {
+                                         ArtifactoryClientConfiguration configuration, FilePath ws) {
         configuration.setActivateRecorder(Boolean.TRUE);
         String buildName;
         String buildNumber;
@@ -452,8 +451,9 @@ public class ExtractorUtils {
     }
 
     public static void persistConfiguration(ArtifactoryClientConfiguration configuration, Map<String, String> env, FilePath ws,
-                hudson.Launcher launcher) throws IOException, InterruptedException {
+                                            hudson.Launcher launcher) throws IOException, InterruptedException {
         FilePath propertiesFile = ws.createTextTempFile("buildInfo", ".properties", "", false);
+        ActionableHelper.deleteFilePathOnExit(propertiesFile);
         configuration.setPropertiesFile(propertiesFile.getRemote());
         env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFile.getRemote());
@@ -466,14 +466,12 @@ public class ExtractorUtils {
                 Properties properties = new Properties();
                 properties.putAll(configuration.getAllRootConfig());
                 properties.putAll(configuration.getAllProperties());
-                File tempFile = File.createTempFile("buildInfo", ".properties");
-                FileOutputStream stream = new FileOutputStream(tempFile);
+                OutputStream os = propertiesFile.write();
                 try {
-                    properties.store(stream, "");
+                    properties.store(os, "");
                 } finally {
-                    IOUtils.closeQuietly(stream);
+                    IOUtils.closeQuietly(os);
                 }
-                propertiesFile.copyFrom(tempFile.toURI().toURL());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -512,7 +510,7 @@ public class ExtractorUtils {
     }
 
     private static void addEnvVars(Map<String, String> env, Run<?, ?> build,
-                ArtifactoryClientConfiguration configuration, IncludesExcludes envVarsPatterns, TaskListener listener) {
+                                   ArtifactoryClientConfiguration configuration, IncludesExcludes envVarsPatterns, TaskListener listener) {
         IncludeExcludePatterns patterns = new IncludeExcludePatterns(
                 Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env),
                 Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env)

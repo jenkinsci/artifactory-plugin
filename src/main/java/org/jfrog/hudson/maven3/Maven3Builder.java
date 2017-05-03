@@ -53,6 +53,7 @@ public class Maven3Builder extends Builder {
     private final String rootPom;
     private final String goals;
     private final String mavenOpts;
+    private String classworldsConfPath;
 
     @DataBoundConstructor
     public Maven3Builder(String mavenName, String rootPom, String goals, String mavenOpts) {
@@ -98,7 +99,7 @@ public class Maven3Builder extends Builder {
         return RunMaven(build, launcher, listener, env, workDir, cmds);
     }
 
-    private boolean RunMaven(Run<?, ?> build, Launcher launcher, TaskListener listener, EnvVars env, FilePath workDir, String[] cmds) throws InterruptedException {
+    private boolean RunMaven(Run<?, ?> build, Launcher launcher, TaskListener listener, EnvVars env, FilePath workDir, String[] cmds) throws InterruptedException, IOException {
         try {
             int exitValue = launcher.launch().cmds(cmds).envs(env).stdout(listener).pwd(workDir).join();
             boolean success = (exitValue == 0);
@@ -109,6 +110,8 @@ public class Maven3Builder extends Builder {
             e.printStackTrace(listener.fatalError("command execution failed"));
             build.setResult(Result.FAILURE);
             return false;
+        } finally {
+            ActionableHelper.deleteFilePath(workDir, classworldsConfPath);
         }
     }
 
@@ -160,7 +163,6 @@ public class Maven3Builder extends Builder {
         String buildInfoPropertiesFile = env.get(BuildInfoConfigProperties.PROP_PROPS_FILE);
         boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
         listener.getLogger().println("Artifactory integration is " + (artifactoryIntegration ? "enabled" : "disabled"));
-        String classworldsConfPath;
         if (artifactoryIntegration) {
 
             args.addKeyValuePair("-D", BuildInfoConfigProperties.PROP_PROPS_FILE, buildInfoPropertiesFile, false);
@@ -179,7 +181,7 @@ public class Maven3Builder extends Builder {
         } else {
             classworldsConfPath = new FilePath(mavenHome, "bin/m2.conf").getRemote();
         }
-
+        ActionableHelper.deleteFilePathOnExit(ws, classworldsConfPath);
         args.addKeyValuePair("-D", "classworlds.conf", classworldsConfPath, false);
 
         //Starting from Maven 3.3.3

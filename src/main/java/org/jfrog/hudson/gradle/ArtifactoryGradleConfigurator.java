@@ -517,15 +517,17 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         final PublisherContext.Builder finalPublisherBuilder = publisherBuilder;
 
         return new Environment() {
+            String initScriptPath;
+
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 GradleInitScriptWriter writer = new GradleInitScriptWriter(build, launcher);
                 FilePath workspace = build.getWorkspace();
                 FilePath initScript;
-                String initScriptPath;
                 try {
                     initScript = workspace.createTextTempFile("init-artifactory", "gradle",
                             writer.generateInitScript(), false);
+                    ActionableHelper.deleteFilePathOnExit(initScript);
                     initScriptPath = initScript.getRemote();
                     initScriptPath = initScriptPath.replace('\\', '/');
                     env.put("ARTIFACTORY_INIT_SCRIPT", " --init-script " + initScriptPath);
@@ -593,6 +595,11 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                             tasks = tasks.replace("${ARTIFACTORY_TASKS}", "");
                             setTargetsField(gradleBuild, "switches", switches);
                             setTargetsField(gradleBuild, "tasks", tasks);
+                            try {
+                                ActionableHelper.deleteFilePath(build.getWorkspace(), initScriptPath);
+                            } catch (IOException e) {
+                                log.println(e.getStackTrace());
+                            }
                         }
                     };
                 }
