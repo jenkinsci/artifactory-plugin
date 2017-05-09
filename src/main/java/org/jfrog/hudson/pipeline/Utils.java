@@ -18,6 +18,7 @@ import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.docker.proxy.CertManager;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
+import org.jfrog.hudson.pipeline.types.DistributionConfig;
 import org.jfrog.hudson.pipeline.types.PromotionConfig;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.util.IncludesExcludes;
@@ -280,5 +281,21 @@ public class Utils {
         promotionConfig.setCopy(pipelinePromotionConfig.isCopy());
         promotionConfig.setFailFast(pipelinePromotionConfig.isFailFast());
         return promotionConfig;
+    }
+
+    public static DistributionConfig createDistributionConfig(Map<String, Object> promotionParams) {
+        List<String> mandatoryParams = new ArrayList<String>(Arrays.asList(ArtifactoryServer.BUILD_NAME, ArtifactoryServer.BUILD_NUMBER, "targetRepo"));
+        List<String> allowedParams = Arrays.asList(ArtifactoryServer.BUILD_NAME, ArtifactoryServer.BUILD_NUMBER, "publish", "overrideExistingFiles", "gpgPassphrase", "async", "targetRepo", "sourceRepos", "dryRun");
+
+        if (!promotionParams.keySet().containsAll(mandatoryParams)) {
+            throw new IllegalArgumentException(mandatoryParams.toString() + " are mandatory arguments");
+        }
+        if (!allowedParams.containsAll(promotionParams.keySet())) {
+            throw new IllegalArgumentException("Only the following arguments are allowed: " + allowedParams.toString());
+        }
+        final ObjectMapper mapper = new ObjectMapper();
+        DistributionConfig config = mapper.convertValue(promotionParams, DistributionConfig.class);
+
+        return config;
     }
 }

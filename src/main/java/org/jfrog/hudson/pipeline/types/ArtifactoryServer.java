@@ -145,6 +145,15 @@ public class ArtifactoryServer implements Serializable {
     }
 
     @Whitelisted
+    public void distribute(Map<String, Object> distributionParams) throws Exception {
+        Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
+        stepVariables.put("distributionConfig", Utils.createDistributionConfig(distributionParams));
+        stepVariables.put(SERVER, this);
+
+        cpsScript.invokeMethod("artifactoryDistributeBuild", stepVariables);
+    }
+
+    @Whitelisted
     public XrayScanResult xrayScan(Map<String, Object> xrayScanParams) throws Exception {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
         stepVariables.put("xrayScanConfig", createXrayScanConfig(xrayScanParams));

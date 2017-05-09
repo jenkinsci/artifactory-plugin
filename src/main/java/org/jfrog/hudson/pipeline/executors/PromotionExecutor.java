@@ -62,10 +62,10 @@ public class PromotionExecutor {
 
     private void logInfo() {
 
-        StringBuilder strBuilder = new StringBuilder();
-        strBuilder.append("Promoting '").append(promotionConfig.getBuildName()).append("' ");
-        strBuilder.append("#").append(promotionConfig.getBuildNumber());
-        strBuilder.append(" to '").append(promotionConfig.getTargetRepo()).append("'");
+        StringBuilder strBuilder = new StringBuilder()
+                .append("Promoting '").append(promotionConfig.getBuildName()).append("' ")
+                .append("#").append(promotionConfig.getBuildNumber())
+                .append(" to '").append(promotionConfig.getTargetRepo()).append("'");
 
         if (StringUtils.isNotEmpty(promotionConfig.getSourceRepo())) {
             strBuilder.append(" from '").append(promotionConfig.getSourceRepo()).append("'");
