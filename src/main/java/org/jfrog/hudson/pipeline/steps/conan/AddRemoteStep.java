@@ -68,7 +68,7 @@ public class AddRemoteStep extends AbstractStepImpl {
             args.add(step.getServerUrl());
             EnvVars extendedEnv = new EnvVars(env);
             extendedEnv.put(Utils.CONAN_USER_HOME, step.getConanHome());
-            Utils.exeConan(args, ws.getRemote(), launcher, listener, build, extendedEnv);
+            Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
             return true;
         }
     }

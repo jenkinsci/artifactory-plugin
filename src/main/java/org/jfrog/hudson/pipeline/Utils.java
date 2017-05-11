@@ -233,9 +233,12 @@ public class Utils {
         });
     }
 
-    public static void exeConan(ArgumentListBuilder args, String pwd, Launcher launcher, TaskListener listener, Run build, EnvVars env) {
+    public static void exeConan(ArgumentListBuilder args, FilePath pwd, Launcher launcher, TaskListener listener, Run build, EnvVars env) {
         boolean failed;
         try {
+            if (!pwd.exists()) {
+                pwd.mkdirs();
+            }
             int exitValue = launcher.launch().cmds(args).envs(env).stdout(listener).pwd(pwd).join();
             failed = (exitValue != 0);
         } catch (Exception e) {
