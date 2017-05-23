@@ -132,30 +132,10 @@ public class Maven3Builder extends Builder {
         }
 
         ArgumentListBuilder args = new ArgumentListBuilder();
-
-        FilePath mavenBootDir = new FilePath(mavenHome, "boot");
-        FilePath[] classworldsCandidates = mavenBootDir.list("plexus-classworlds*.jar");
-        if (classworldsCandidates == null || classworldsCandidates.length == 0) {
-            listener.error("Couldn't find classworlds jar under " + mavenBootDir.getRemote());
-            throw new Run.RunnerAbortedException();
-        }
-
-        FilePath classWorldsJar = classworldsCandidates[0];
-
-        StringBuilder javaPathBuilder = new StringBuilder();
-        String jdkBinPath = env.get("PATH+JDK");
-        if (StringUtils.isNotBlank(jdkBinPath)) {
-            javaPathBuilder.append(jdkBinPath).append("/");
-        }
-        javaPathBuilder.append("java");
-        if (!launcher.isUnix()) {
-            javaPathBuilder.append(".exe");
-        }
-        args.add(javaPathBuilder.toString());
+        args.add(getJavaPathBuilder(env.get("PATH+JDK"), launcher));
 
         // classpath
-        args.add("-classpath");
-        args.add(classWorldsJar.getRemote());
+        args.add("-classpath", getClasspath(mavenHome, listener));
 
         // maven home
         args.addKeyValuePair("-D", "maven.home", mavenHome.getRemote(), false);
@@ -164,39 +144,16 @@ public class Maven3Builder extends Builder {
         boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
         listener.getLogger().println("Artifactory integration is " + (artifactoryIntegration ? "enabled" : "disabled"));
         if (artifactoryIntegration) {
-
-            args.addKeyValuePair("-D", BuildInfoConfigProperties.PROP_PROPS_FILE, buildInfoPropertiesFile, false);
-
-            // use the classworlds conf packaged with this plugin and resolve the extractor libs
-            File maven3ExtractorJar = Which.jarFile(Maven3BuildInfoLogger.class);
-            FilePath actualDependencyDirectory =
-                    PluginDependencyHelper.getActualDependencyDirectory(maven3ExtractorJar, Utils.getNode(launcher).getRootPath());
-
-            if (getMavenOpts() == null || !getMavenOpts().contains("-Dm3plugin.lib")) {
-                args.addKeyValuePair("-D", "m3plugin.lib", actualDependencyDirectory.getRemote(), false);
-            }
-
-            URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-freestyle.conf");
-            classworldsConfPath = copyClassWorldsFile(ws, resource).getRemote();
+            addArtifactoryIntegrationArgs(args, buildInfoPropertiesFile, launcher, ws);
+            ActionableHelper.deleteFilePathOnExit(ws, classworldsConfPath);
         } else {
-            classworldsConfPath = new FilePath(mavenHome, "bin/m2.conf").getRemote();
+            args.addKeyValuePair("-D", "classworlds.conf", new FilePath(mavenHome, "bin/m2.conf").getRemote(), false);
         }
-        ActionableHelper.deleteFilePathOnExit(ws, classworldsConfPath);
-        args.addKeyValuePair("-D", "classworlds.conf", classworldsConfPath, false);
 
         //Starting from Maven 3.3.3
         args.addKeyValuePair("-D", "maven.multiModuleProjectDirectory", getMavenProjectPath(build, ws), false);
 
-        // maven opts
-        if (StringUtils.isNotBlank(getMavenOpts())) {
-            String mavenOpts = getMavenOpts();
-            if (build instanceof AbstractBuild) {
-                // If we aren't in pipeline job we, might need to evaluate the variable real value.
-                mavenOpts = Util.replaceMacro(getMavenOpts(), ((AbstractBuild) build).getBuildVariables());
-            }
-            // HAP-314 - We need to separate the args, same as jenkins maven plugin does
-            args.addTokenized(mavenOpts);
-        }
+        addMavenOpts(args, build);
 
         // classworlds launcher main class
         args.add(CLASSWORLDS_LAUNCHER);
@@ -211,6 +168,59 @@ public class Maven3Builder extends Builder {
         args.addTokenized(Util.replaceMacro(getGoals(), env));
 
         return args;
+    }
+
+    private String getJavaPathBuilder(String jdkBinPath, Launcher launcher) {
+        StringBuilder javaPathBuilder = new StringBuilder();
+        if (StringUtils.isNotBlank(jdkBinPath)) {
+            javaPathBuilder.append(jdkBinPath).append("/");
+        }
+        javaPathBuilder.append("java");
+        if (!launcher.isUnix()) {
+            javaPathBuilder.append(".exe");
+        }
+        return javaPathBuilder.toString();
+    }
+
+    private String getClasspath(FilePath mavenHome, TaskListener listener) throws IOException, InterruptedException {
+        FilePath mavenBootDir = new FilePath(mavenHome, "boot");
+        FilePath[] classworldsCandidates = mavenBootDir.list("plexus-classworlds*.jar");
+        if (classworldsCandidates == null || classworldsCandidates.length == 0) {
+            listener.error("Couldn't find classworlds jar under " + mavenBootDir.getRemote());
+            throw new Run.RunnerAbortedException();
+        }
+
+        FilePath classWorldsJar = classworldsCandidates[0];
+        return classWorldsJar.getRemote();
+    }
+
+    private void addArtifactoryIntegrationArgs(ArgumentListBuilder args, String buildInfoPropertiesFile, Launcher launcher, FilePath ws) throws IOException, InterruptedException {
+        args.addKeyValuePair("-D", BuildInfoConfigProperties.PROP_PROPS_FILE, buildInfoPropertiesFile, false);
+
+        // use the classworlds conf packaged with this plugin and resolve the extractor libs
+        File maven3ExtractorJar = Which.jarFile(Maven3BuildInfoLogger.class);
+        FilePath actualDependencyDirectory =
+                PluginDependencyHelper.getActualDependencyDirectory(maven3ExtractorJar, Utils.getNode(launcher).getRootPath());
+
+        if (getMavenOpts() == null || !getMavenOpts().contains("-Dm3plugin.lib")) {
+            args.addKeyValuePair("-D", "m3plugin.lib", actualDependencyDirectory.getRemote(), false);
+        }
+
+        URL resource = getClass().getClassLoader().getResource("org/jfrog/hudson/maven3/classworlds-freestyle.conf");
+        classworldsConfPath = copyClassWorldsFile(ws, resource).getRemote();
+        args.addKeyValuePair("-D", "classworlds.conf", classworldsConfPath, false);
+    }
+
+    private void addMavenOpts(ArgumentListBuilder args, Run<?, ?> build) {
+        if (StringUtils.isNotBlank(getMavenOpts())) {
+            String mavenOpts = getMavenOpts();
+            if (build instanceof AbstractBuild) {
+                // If we aren't in pipeline job we, might need to evaluate the variable real value.
+                mavenOpts = Util.replaceMacro(getMavenOpts(), ((AbstractBuild) build).getBuildVariables());
+            }
+            // HAP-314 - We need to separate the args, same as jenkins maven plugin does
+            args.addTokenized(mavenOpts);
+        }
     }
 
     private FilePath getMavenHome(TaskListener listener, EnvVars env, Launcher launcher) throws IOException, InterruptedException {
