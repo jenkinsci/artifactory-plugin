@@ -105,6 +105,10 @@ public class GradleDeployer extends Deployer {
         return server == null || StringUtils.isEmpty(repo);
     }
 
+    public String getTargetRepository(String deployPath) {
+        return repo;
+    }
+
     public PublisherContext.Builder getContextBuilder() {
         return new PublisherContext.Builder()
                 .artifactoryServer(getArtifactoryServer())

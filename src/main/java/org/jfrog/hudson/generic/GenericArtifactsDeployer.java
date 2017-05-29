@@ -20,7 +20,6 @@ import org.jfrog.build.client.DeployDetails;
 import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.util.PublishedItemsHelper;
-import org.jfrog.build.extractor.clientConfiguration.util.spec.Spec;
 import org.jfrog.build.extractor.clientConfiguration.util.spec.SpecsHelper;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
@@ -138,6 +137,7 @@ public class GenericArtifactsDeployer {
         private ProxyConfiguration proxyConfiguration;
         private PatternType patternType = PatternType.ANT;
         private String spec;
+        private Set<DeployDetails> deployableArtifacts;
 
         public enum PatternType {
             ANT, WILDCARD
@@ -166,21 +166,41 @@ public class GenericArtifactsDeployer {
             this.proxyConfiguration = proxyConfiguration;
         }
 
+        public FilesDeployerCallable(TaskListener listener, Set<DeployDetails> deployableArtifacts,
+                                     ArtifactoryServer server, Credentials credentials,
+                                     ProxyConfiguration proxyConfiguration) {
+            this.listener = listener;
+            this.deployableArtifacts = deployableArtifacts;
+            this.server = server;
+            this.credentials = credentials;
+            this.proxyConfiguration = proxyConfiguration;
+        }
+
         public List<Artifact> invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
-            Set<DeployDetails> artifactsToDeploy = Sets.newHashSet();
+            Set<DeployDetails> artifactsToDeploy;
             ArtifactoryBuildInfoClient client = server.createArtifactoryClient(credentials.getUsername(),
                     credentials.getPassword(), proxyConfiguration);
             if (StringUtils.isNotEmpty(spec)) {
+                // Option 1. Upload - Use file specs.
                 SpecsHelper specsHelper = new SpecsHelper(new JenkinsBuildInfoLog(listener));
                 try {
                     return specsHelper.uploadArtifactsBySpec(spec, workspace, buildProperties, client);
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException("Failed uploading artifacts by spec", e);
+                } finally {
+                    client.close();
                 }
             } else {
-                Multimap<String, File> targetPathToFilesMap = buildTargetPathToFiles(workspace);
-                for (Map.Entry<String, File> entry : targetPathToFilesMap.entries()) {
-                    artifactsToDeploy.addAll(buildDeployDetailsFromFileEntry(entry));
+                if (deployableArtifacts != null) {
+                    // Option 2. Pipeline deploy - There is already a deployable artifacts set.
+                    artifactsToDeploy = deployableArtifacts;
+                } else {
+                    // Option 3. Generic deploy - Fetch the artifacts details from workspace by using 'patternPairs'.
+                    artifactsToDeploy = Sets.newHashSet();
+                    Multimap<String, File> targetPathToFilesMap = buildTargetPathToFiles(workspace);
+                    for (Map.Entry<String, File> entry : targetPathToFilesMap.entries()) {
+                        artifactsToDeploy.addAll(buildDeployDetailsFromFileEntry(entry));
+                    }
                 }
                 try {
                     deploy(client, artifactsToDeploy);

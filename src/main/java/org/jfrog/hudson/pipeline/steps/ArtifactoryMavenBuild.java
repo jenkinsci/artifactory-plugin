@@ -13,7 +13,6 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
-import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.hudson.maven3.Maven3Builder;
 import org.jfrog.hudson.pipeline.Utils;
@@ -118,8 +117,9 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
                 throw new RuntimeException("Maven build failed");
             }
             String generatedBuildPath = env.get(BuildInfoFields.GENERATED_BUILD_INFO);
-            Build regularBuildInfo = Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath);
-            buildInfo.append(regularBuildInfo);
+            buildInfo.append(Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath));
+            buildInfo.appendDeployableArtifacts(env.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS), ws, listener);
+            buildInfo.setAgentName(Utils.getAgentName(ws));
             return buildInfo;
         }
 

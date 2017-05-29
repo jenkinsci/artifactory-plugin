@@ -1,9 +1,12 @@
 package org.jfrog.hudson.pipeline.types.buildInfo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ArrayListMultimap;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
@@ -11,7 +14,10 @@ import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.build.api.*;
 import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.api.dependency.BuildDependency;
+import org.jfrog.build.client.DeployDetails;
+import org.jfrog.build.client.DeployableArtifactDetail;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.util.DeployableArtifactsUtils;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.ArtifactoryConfigurator;
@@ -20,6 +26,7 @@ import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxy;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
@@ -36,10 +43,13 @@ public class BuildInfo implements Serializable {
     private BuildRetention retention;
     private List<BuildDependency> buildDependencies = new ArrayList<BuildDependency>();
     private List<Artifact> deployedArtifacts = new ArrayList<Artifact>();
+    // The candidates artifacts to be deployed in the 'deployArtifacts' step.
+    private List<DeployDetails> deployableArtifacts = new ArrayList<DeployDetails>();
     private List<Dependency> publishedDependencies = new ArrayList<Dependency>();
 
     private List<Module> modules = new ArrayList<Module>();
     private Env env = new Env();
+    private String agentName;
 
     private DockerBuildInfoHelper dockerBuildInfoHelper = new DockerBuildInfoHelper(this);
 
@@ -84,6 +94,7 @@ public class BuildInfo implements Serializable {
     public void append(BuildInfo other) {
         this.modules.addAll(other.modules);
         this.deployedArtifacts.addAll(other.deployedArtifacts);
+        this.deployableArtifacts.addAll(other.deployableArtifacts);
         this.publishedDependencies.addAll(other.publishedDependencies);
         this.buildDependencies.addAll(other.buildDependencies);
         this.dockerBuildInfoHelper.append(other.dockerBuildInfoHelper);
@@ -139,6 +150,23 @@ public class BuildInfo implements Serializable {
             return;
         }
         deployedArtifacts.addAll(artifacts);
+    }
+
+    public List<DeployDetails> getDeployableArtifacts() {
+        return deployableArtifacts;
+    }
+
+    public void appendDeployableArtifacts(String deployableArtifactsPath, FilePath ws, TaskListener listener) throws IOException, InterruptedException {
+        List<DeployDetails> deployableArtifacts = ws.act(new DeployPathsAndPropsCallable(deployableArtifactsPath, listener, this));
+        this.deployableArtifacts.addAll(deployableArtifacts);
+    }
+
+    public String getAgentName() {
+        return agentName;
+    }
+
+    public void setAgentName(String agentName) {
+        this.agentName = agentName;
     }
 
     protected void appendBuildDependencies(List<BuildDependency> dependencies) {
@@ -206,5 +234,48 @@ public class BuildInfo implements Serializable {
 
     public List<Module> getModules() {
         return modules;
+    }
+
+    public static class DeployPathsAndPropsCallable implements FilePath.FileCallable<List<DeployDetails>> {
+        private String deployableArtifactsPath;
+        private TaskListener listener;
+        private ArrayListMultimap<String, String> propertiesMap;
+
+        public DeployPathsAndPropsCallable(String deployableArtifactsPath, TaskListener listener, BuildInfo buildInfo) {
+            this.deployableArtifactsPath = deployableArtifactsPath;
+            this.listener = listener;
+            this.propertiesMap = getbuildPropertiesMap(buildInfo);
+        }
+
+        public List<DeployDetails> invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
+            try {
+                List<DeployDetails> results = new ArrayList<DeployDetails>();
+                List<DeployableArtifactDetail> deployableArtifacts = new ArrayList<DeployableArtifactDetail>();
+                File deployableArtifactsFile = new File(deployableArtifactsPath);
+                deployableArtifacts.addAll(DeployableArtifactsUtils.loadDeployableArtifactsFromFile(deployableArtifactsFile));
+                deployableArtifactsFile.delete();
+                for (DeployableArtifactDetail artifact : deployableArtifacts) {
+                    DeployDetails.Builder builder = new DeployDetails.Builder()
+                            .file(new File(artifact.getSourcePath()))
+                            .artifactPath(artifact.getArtifactDest())
+                            .addProperties(propertiesMap)
+                            .targetRepository("empty_repo")
+                            .sha1(artifact.getSha1());
+                    results.add(builder.build());
+                }
+                return results;
+            } catch (ClassNotFoundException e) {
+                listener.getLogger().println(e.getMessage());
+                return new ArrayList<DeployDetails>();
+            }
+        }
+
+        private ArrayListMultimap<String, String> getbuildPropertiesMap(BuildInfo buildInfo) {
+            ArrayListMultimap<String, String> properties = ArrayListMultimap.create();
+            properties.put("build.name", buildInfo.getName());
+            properties.put("build.number", buildInfo.getNumber());
+            properties.put("build.timestamp", buildInfo.getStartDate().getTime() + "");
+            return properties;
+        }
     }
 }

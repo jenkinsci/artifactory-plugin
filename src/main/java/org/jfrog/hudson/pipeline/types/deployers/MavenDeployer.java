@@ -78,9 +78,13 @@ public class MavenDeployer extends Deployer {
         return server == null || (StringUtils.isEmpty(releaseRepo) && StringUtils.isEmpty(snapshotRepo));
     }
 
+    public String getTargetRepository(String deployPath) {
+        return StringUtils.isNotBlank(snapshotRepo) && deployPath.contains("-SNAPSHOT") ? snapshotRepo : releaseRepo;
+    }
+
     private static MavenDeployer createEmptyDeployer() {
         MavenDeployer dummy = new MavenDeployer();
-        ArtifactoryServer server = new ArtifactoryServer("http://empty_url", "user", "passwrod");
+        ArtifactoryServer server = new ArtifactoryServer("http://empty_url", "user", "password");
         dummy.setServer(server);
         dummy.setReleaseRepo("empty_repo");
         dummy.setSnapshotRepo("empty_repo");

@@ -55,7 +55,7 @@ public class AbstractBuildInfoDeployer {
                 .number(BuildUniqueIdentifierHelper.getBuildNumber(build)).type(buildType)
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
                 .buildAgent(new BuildAgent(buildAgentName, buildAgentVersion))
-                .agent(new Agent("hudson", Jenkins.VERSION));
+                .agent(new Agent("Jenkins", Jenkins.VERSION));
         String buildUrl = ActionableHelper.getBuildUrl(build);
         if (StringUtils.isNotBlank(buildUrl)) {
             builder.url(buildUrl);

@@ -8,11 +8,12 @@ import hudson.Launcher;
 import hudson.model.*;
 import hudson.plugins.git.util.BuildData;
 import hudson.remoting.Callable;
+import hudson.remoting.Channel;
+import hudson.remoting.LocalChannel;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
-import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.Vcs;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.CredentialsConfig;
@@ -223,10 +224,10 @@ public class Utils {
         }
     }
 
-    public static String createTempBuildInfoFile(Launcher launcher) throws Exception {
+    public static String createTempJsonFile(Launcher launcher, final String name) throws Exception {
         return launcher.getChannel().call(new Callable<String, Exception>() {
             public String call() throws IOException {
-                File tempFile = File.createTempFile(BuildInfoFields.GENERATED_BUILD_INFO, ".json");
+                File tempFile = File.createTempFile(name, ".json");
                 tempFile.deleteOnExit();
                 return tempFile.getAbsolutePath();
             }
@@ -300,5 +301,12 @@ public class Utils {
         DistributionConfig config = mapper.convertValue(promotionParams, DistributionConfig.class);
 
         return config;
+    }
+
+    public static String getAgentName(FilePath ws) {
+        if (ws.getChannel() != null) {
+            return ws.getChannel() instanceof LocalChannel ? "Master" : ((Channel) ws.getChannel()).getName();
+        }
+        return "Unknown";
     }
 }

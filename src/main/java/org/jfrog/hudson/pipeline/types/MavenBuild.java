@@ -63,6 +63,7 @@ public class MavenBuild implements Serializable {
         if (!args.containsKey("goals") || !args.containsKey("pom")) {
             throw new IllegalArgumentException("pom and goals are mandatory arguments.");
         }
+        deployer.setCpsScript(cpsScript);
         Map<String, Object> stepVariables = getExecutionArguments((String) args.get("pom"), (String) args.get("goals"), (BuildInfo) args.get("buildInfo"));
         BuildInfo build = (BuildInfo) cpsScript.invokeMethod("ArtifactoryMavenBuild", stepVariables);
         return build;

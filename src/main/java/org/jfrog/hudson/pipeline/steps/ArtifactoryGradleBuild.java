@@ -18,7 +18,6 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
-import org.jfrog.build.api.Build;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.GradleInitScriptWriter;
@@ -134,9 +133,11 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             envExtractor.buildEnvVars(ws, env);
             exe(args);
             String generatedBuildPath = env.get(BuildInfoFields.GENERATED_BUILD_INFO);
-            Build regularBuildInfo = Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath);
-            buildInfo.append(regularBuildInfo);
+            buildInfo.append(Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath));
             ActionableHelper.deleteFilePath(ws, initScriptPath);
+            // Read the deployable artifacts list from the 'json' file in the agent and append them to the buildInfo object.
+            buildInfo.appendDeployableArtifacts(env.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS), ws, listener);
+            buildInfo.setAgentName(Utils.getAgentName(ws));
             return buildInfo;
         }
 

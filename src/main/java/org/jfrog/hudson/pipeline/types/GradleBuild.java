@@ -73,6 +73,7 @@ public class GradleBuild implements Serializable {
         if (!args.containsKey("tasks")) {
             throw new IllegalArgumentException("tasks is a mandatory argument.");
         }
+        deployer.setCpsScript(cpsScript);
         Map<String, Object> stepVariables = getRunArguments((String) args.get("buildFile"), (String) args.get("tasks"), (String) args.get("switches"), (String) args.get("rootDir"), (BuildInfo) args.get("buildInfo"));
         BuildInfo build = (BuildInfo) cpsScript.invokeMethod("ArtifactoryGradleBuild", stepVariables);
         return build;

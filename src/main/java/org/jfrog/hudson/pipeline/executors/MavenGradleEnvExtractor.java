@@ -81,15 +81,19 @@ public class MavenGradleEnvExtractor {
     }
 
     private void addPipelineInfoToConfiguration(EnvVars env, ArtifactoryClientConfiguration configuration) {
-        String tempFile = "";
+        String buildInfoTempFile;
+        String deployableArtifactsFile;
         try {
-            tempFile = Utils.createTempBuildInfoFile(launcher);
+            buildInfoTempFile = Utils.createTempJsonFile(launcher, BuildInfoFields.GENERATED_BUILD_INFO);
+            deployableArtifactsFile = Utils.createTempJsonFile(launcher, BuildInfoFields.DEPLOYABLE_ARTIFACTS);
         } catch (Exception e) {
-            buildListener.error("Failed while generating temp build info file. " + e.getMessage());
+            buildListener.error("Failed while generating temp file. " + e.getMessage());
             build.setResult(Result.FAILURE);
             throw new Run.RunnerAbortedException();
         }
-        env.put(BuildInfoFields.GENERATED_BUILD_INFO, tempFile);
-        configuration.info.setGeneratedBuildInfoFilePath(tempFile);
+        env.put(BuildInfoFields.GENERATED_BUILD_INFO, buildInfoTempFile);
+        configuration.info.setGeneratedBuildInfoFilePath(buildInfoTempFile);
+        env.put(BuildInfoFields.DEPLOYABLE_ARTIFACTS, deployableArtifactsFile);
+        configuration.info.setDeployableArtifactsFilePath(deployableArtifactsFile);
     }
 }
