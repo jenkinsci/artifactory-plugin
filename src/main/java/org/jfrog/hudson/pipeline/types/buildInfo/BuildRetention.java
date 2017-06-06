@@ -15,14 +15,14 @@ public class BuildRetention implements Serializable {
     private int maxBuilds;
     private List<String> doNotDiscardBuilds;
     private int maxDays;
-
+    private boolean async;
 
     public BuildRetention() {
         this.maxDays = -1;
         this.maxBuilds = -1;
     }
 
-    public org.jfrog.build.api.BuildRetention build() {
+    public org.jfrog.build.api.BuildRetention createBuildRetention() {
         org.jfrog.build.api.BuildRetention buildRetention = new org.jfrog.build.api.BuildRetention();
         buildRetention.setCount(Math.max(maxBuilds, -1));
 
@@ -30,8 +30,7 @@ public class BuildRetention implements Serializable {
             Calendar cal = new GregorianCalendar();
             cal.add(Calendar.DAY_OF_MONTH, -1 * this.maxDays);
             buildRetention.setMinimumBuildDate(cal.getTime());
-        }
-        else {
+        } else {
             buildRetention.setMinimumBuildDate(null);
         }
         buildRetention.setBuildNumbersNotToBeDiscarded(this.getDoNotDiscardBuilds());
@@ -45,6 +44,7 @@ public class BuildRetention implements Serializable {
         this.deleteBuildArtifacts = false;
         this.maxBuilds = -1;
         this.doNotDiscardBuilds = null;
+        this.async = false;
     }
 
     @Whitelisted
@@ -85,5 +85,15 @@ public class BuildRetention implements Serializable {
     @Whitelisted
     public List<String> getDoNotDiscardBuilds() {
         return this.doNotDiscardBuilds;
+    }
+
+    @Whitelisted
+    public void setAsync(boolean async) {
+        this.async = async;
+    }
+
+    @Whitelisted
+    public boolean isAsync() {
+        return this.async;
     }
 }

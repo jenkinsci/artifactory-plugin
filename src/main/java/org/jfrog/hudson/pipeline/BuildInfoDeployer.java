@@ -29,6 +29,7 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
     private final Map<String, String> envVars;
     private ArtifactoryConfigurator configurator;
     private Build buildInfo;
+    private boolean asyncBuildRetention;
 
     public BuildInfoDeployer(ArtifactoryConfigurator configurator, ArtifactoryBuildInfoClient client,
                              Run build, TaskListener listener, BuildInfoAccessor buildinfoAccessor) throws IOException, InterruptedException, NoSuchAlgorithmException {
@@ -38,7 +39,8 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
         envVars = buildinfoAccessor.getEnvVars();
         sysVars = buildinfoAccessor.getSysVars();
         buildInfo = createBuildInfo("Pipeline", "", BuildType.GENERIC);
-        buildInfo.setBuildRetention(buildinfoAccessor.getRetention().build());
+        buildInfo.setBuildRetention(buildinfoAccessor.getRetention().createBuildRetention());
+        asyncBuildRetention = buildinfoAccessor.getRetention().isAsync();
 
         if (buildinfoAccessor.getStartDate() != null) {
             buildInfo.setStartedDate(buildinfoAccessor.getStartDate());
@@ -67,7 +69,7 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
         listener.getLogger().println("Deploying build info to: " + artifactoryUrl + "/api/build");
         BuildRetention retention = buildInfo.getBuildRetention();
         buildInfo.setBuildRetention(null);
-        org.jfrog.build.extractor.retention.Utils.sendBuildAndBuildRetention(client, this.buildInfo, retention);
+        org.jfrog.build.extractor.retention.Utils.sendBuildAndBuildRetention(client, this.buildInfo, retention, asyncBuildRetention);
         String url = artifactoryUrl +
                 ArtifactoryBuildInfoClient.BUILD_BROWSE_URL + "/" + encodeUrl(buildInfo.getName()) + "/" + encodeUrl(buildInfo.getNumber());
         listener.getLogger().println("Build successfully deployed. Browse it in Artifactory under " + url);

@@ -22,6 +22,7 @@ import hudson.model.TaskListener;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+import org.jfrog.build.api.util.Log;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.build.client.ArtifactoryVersion;
@@ -245,7 +246,15 @@ public class ArtifactoryServer implements Serializable {
      */
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password,
                                                               ProxyConfiguration proxyConfiguration) {
-        ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password, new NullLog());
+        return createArtifactoryClient(userName, password, proxyConfiguration, new NullLog());
+    }
+
+    /**
+     * This method might run on slaves, this is why we provide it with a proxy from the master config
+     */
+    public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password,
+                                                              ProxyConfiguration proxyConfiguration, Log logger) {
+        ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password, logger);
         client.setConnectionTimeout(timeout);
         setRetryParams(client);
         if (!bypassProxy && proxyConfiguration != null) {

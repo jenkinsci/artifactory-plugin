@@ -358,6 +358,7 @@ public class ExtractorUtils {
                 configuration.info.setBuildRetentionMinimumDate(String.valueOf(days));
             }
             configuration.info.setDeleteBuildArtifacts(context.isDiscardBuildArtifacts());
+            configuration.info.setAsyncBuildRetention(context.isAsyncBuildRetention());
             configuration.info.setBuildNumbersNotToDelete(getBuildNumbersNotToBeDeletedAsString(build));
         }
         configuration.publisher.setPublishArtifacts(context.isDeployArtifacts());

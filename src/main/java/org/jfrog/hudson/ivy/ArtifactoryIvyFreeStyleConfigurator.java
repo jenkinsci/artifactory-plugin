@@ -87,6 +87,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private final boolean notM2Compatible;
     private final IncludesExcludes artifactDeploymentPatterns;
     private final boolean discardOldBuilds;
+    private final boolean asyncBuildRetention;
     private final boolean passIdentifiedDownstream;
     private final boolean discardBuildArtifacts;
     private final String matrixParams;
@@ -119,7 +120,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                                                boolean deployBuildInfo, boolean runChecks, String violationRecipients,
                                                boolean includePublishArtifacts, String scopes, boolean disableLicenseAutoDiscovery, String ivyPattern,
                                                String artifactPattern, boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
-                                               boolean discardOldBuilds, boolean passIdentifiedDownstream, boolean discardBuildArtifacts,
+                                               boolean discardOldBuilds, boolean asyncBuildRetention, boolean passIdentifiedDownstream, boolean discardBuildArtifacts,
                                                String matrixParams, boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
                                                String aggregationBuildStatus, boolean blackDuckRunChecks, String blackDuckAppName,
                                                String blackDuckAppVersion, String blackDuckReportRecipients, String blackDuckScopes,
@@ -145,6 +146,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
         this.notM2Compatible = notM2Compatible;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.discardOldBuilds = discardOldBuilds;
+        this.asyncBuildRetention = asyncBuildRetention;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.matrixParams = matrixParams;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
@@ -189,6 +191,10 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
 
     public boolean isDiscardOldBuilds() {
         return discardOldBuilds;
+    }
+
+    public boolean isAsyncBuildRetention() {
+        return asyncBuildRetention;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -503,8 +509,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
                 .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
-                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
-                .maven2Compatible(isM2Compatible()).artifactsPattern(getArtifactPattern())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).asyncBuildRetention(isAsyncBuildRetention())
+                .matrixParams(getMatrixParams()).maven2Compatible(isM2Compatible()).artifactsPattern(getArtifactPattern())
                 .ivyPattern(getIvyPattern()).enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),

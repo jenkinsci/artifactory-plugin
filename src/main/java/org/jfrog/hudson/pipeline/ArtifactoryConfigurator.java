@@ -71,6 +71,10 @@ public class ArtifactoryConfigurator implements BuildInfoAwareConfigurator, Depl
         return false;
     }
 
+    public boolean isAsyncBuildRetention() {
+        return false;
+    }
+
     public boolean isEnableIssueTrackerIntegration() {
         return false;
     }

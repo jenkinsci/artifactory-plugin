@@ -33,6 +33,8 @@ public interface BuildInfoAwareConfigurator {
 
     boolean isDiscardBuildArtifacts();
 
+    boolean isAsyncBuildRetention();
+
     boolean isEnableIssueTrackerIntegration();
 
     boolean isAggregateBuildIssues();

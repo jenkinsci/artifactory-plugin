@@ -245,6 +245,11 @@
                                     <f:checkbox default="true" checked="${instance.discardBuildArtifacts}"/>
                                     <label class="attach-previous">${%Discard build artifacts}</label>
                                 </f:entry>
+                                <f:entry field="asyncBuildRetention"
+                                         help="/plugin/artifactory/help/common/help-asyncBuildRetention.html">
+                                    <f:checkbox default="false" checked="${instance.asyncBuildRetention}"/>
+                                    <label class="attach-previous">${%Async}</label>
+                                </f:entry>
                             </f:optionalBlock>
                         </table>
                     </f:block>

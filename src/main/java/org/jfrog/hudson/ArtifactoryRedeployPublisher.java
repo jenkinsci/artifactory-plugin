@@ -94,6 +94,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     private final boolean disableLicenseAutoDiscovery;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
+    private final boolean asyncBuildRetention;
     private final String matrixParams;
     private final boolean enableIssueTrackerIntegration;
     private final boolean allowPromotionOfNonStagedBuilds;
@@ -133,7 +134,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
                                         boolean deployBuildInfo, boolean evenIfUnstable, boolean runChecks,
                                         String violationRecipients, boolean includePublishArtifacts, String scopes,
                                         boolean disableLicenseAutoDiscovery, boolean discardOldBuilds, boolean passIdentifiedDownstream,
-                                        boolean discardBuildArtifacts, String matrixParams, boolean enableIssueTrackerIntegration,
+                                        boolean discardBuildArtifacts, boolean asyncBuildRetention, String matrixParams, boolean enableIssueTrackerIntegration,
                                         boolean aggregateBuildIssues, String aggregationBuildStatus,
                                         boolean recordAllDependencies, boolean allowPromotionOfNonStagedBuilds,
                                         String defaultPromotionTargetRepository,
@@ -158,6 +159,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         this.discardOldBuilds = discardOldBuilds;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.asyncBuildRetention = asyncBuildRetention;
         this.matrixParams = matrixParams;
         this.aggregationBuildStatus = aggregationBuildStatus;
         this.filterExcludedArtifactsFromBuild = filterExcludedArtifactsFromBuild;
@@ -204,6 +206,10 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
 
     public boolean isDiscardBuildArtifacts() {
         return discardBuildArtifacts;
+    }
+
+    public boolean isAsyncBuildRetention() {
+        return asyncBuildRetention;
     }
 
     public boolean isPassIdentifiedDownstream() {

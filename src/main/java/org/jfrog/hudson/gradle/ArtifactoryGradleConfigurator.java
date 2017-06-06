@@ -94,6 +94,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private final boolean passIdentifiedDownstream;
     private final GradleReleaseWrapper releaseWrapper;
     private final boolean discardBuildArtifacts;
+    private final boolean asyncBuildRetention;
     private final String matrixParams;
     private final boolean skipInjectInitScript;
     private final boolean allowPromotionOfNonStagedBuilds;
@@ -138,7 +139,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                          boolean disableLicenseAutoDiscovery, String ivyPattern, String artifactPattern,
                                          boolean notM2Compatible, IncludesExcludes artifactDeploymentPatterns,
                                          boolean discardOldBuilds, boolean passIdentifiedDownstream,
-                                         GradleReleaseWrapper releaseWrapper, boolean discardBuildArtifacts,
+                                         GradleReleaseWrapper releaseWrapper, boolean discardBuildArtifacts, boolean asyncBuildRetention,
                                          String matrixParams, boolean skipInjectInitScript,
                                          boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
                                          String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
@@ -178,6 +179,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.discardOldBuilds = discardOldBuilds;
         this.passIdentifiedDownstream = passIdentifiedDownstream;
         this.releaseWrapper = releaseWrapper;
+        this.asyncBuildRetention = asyncBuildRetention;
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.matrixParams = matrixParams;
         this.skipInjectInitScript = skipInjectInitScript;
@@ -224,6 +226,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     public boolean isDiscardOldBuilds() {
         return discardOldBuilds;
+    }
+
+    public boolean isAsyncBuildRetention() {
+        return asyncBuildRetention;
     }
 
     public boolean isSkipInjectInitScript() {
@@ -666,8 +672,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
                 .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
-                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
-                .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).asyncBuildRetention(isAsyncBuildRetention())
+                .matrixParams(getMatrixParams()).artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern())
                 .deployIvy(isDeployIvy()).deployMaven(isDeployMaven()).maven2Compatible(isM2Compatible())
                 .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(isAggregateBuildIssues())

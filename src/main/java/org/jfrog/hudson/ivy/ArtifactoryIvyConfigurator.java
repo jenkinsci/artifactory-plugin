@@ -74,6 +74,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
     private boolean licenseAutoDiscovery;
     private boolean disableLicenseAutoDiscovery;
     private boolean discardOldBuilds;
+    private boolean asyncBuildRetention;
     private boolean notM2Compatible;
     private String ivyPattern;
     private String aggregationBuildStatus;
@@ -103,7 +104,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                                       boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                       boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
                                       String scopes, boolean disableLicenseAutoDiscovery, boolean notM2Compatible, String ivyPattern,
-                                      String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, String matrixParams,
+                                      String artifactPattern, boolean discardOldBuilds, boolean discardBuildArtifacts, boolean asyncBuildRetention, String matrixParams,
                                       boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues, String aggregationBuildStatus,
                                       boolean blackDuckRunChecks, String blackDuckAppName, String blackDuckAppVersion,
                                       String blackDuckReportRecipients, String blackDuckScopes, boolean blackDuckIncludePublishedArtifacts,
@@ -129,6 +130,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
         this.artifactPattern = clearApostrophes(artifactPattern);
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.asyncBuildRetention = asyncBuildRetention;
         this.matrixParams = matrixParams;
         this.licenseAutoDiscovery = !disableLicenseAutoDiscovery;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
@@ -190,6 +192,10 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     public void setDiscardOldBuilds(boolean discardOldBuilds) {
         this.discardOldBuilds = discardOldBuilds;
+    }
+
+    public boolean isAsyncBuildRetention() {
+        return asyncBuildRetention;
     }
 
     public String getArtifactPattern() {
@@ -394,8 +400,8 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
                 .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
-                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
-                .artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern()).maven2Compatible(isM2Compatible())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).asyncBuildRetention(isAsyncBuildRetention())
+                .matrixParams(getMatrixParams()).artifactsPattern(getArtifactPattern()).ivyPattern(getIvyPattern()).maven2Compatible(isM2Compatible())
                 .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),

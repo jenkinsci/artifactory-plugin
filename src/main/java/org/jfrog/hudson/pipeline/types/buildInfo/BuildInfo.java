@@ -25,6 +25,7 @@ import org.jfrog.hudson.pipeline.BuildInfoDeployer;
 import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxy;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.CredentialManager;
+import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -136,7 +137,7 @@ public class BuildInfo implements Serializable {
     @Whitelisted
     public void retention(Map<String, Object> retentionArguments) throws Exception {
         Set<String> retentionArgumentsSet = retentionArguments.keySet();
-        List<String> keysAsList = Arrays.asList(new String[]{"maxDays", "maxBuilds", "deleteBuildArtifacts", "doNotDiscardBuilds"});
+        List<String> keysAsList = Arrays.asList(new String[]{"maxDays", "maxBuilds", "deleteBuildArtifacts", "doNotDiscardBuilds", "async"});
         if (!keysAsList.containsAll(retentionArgumentsSet)) {
             throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
         }
@@ -201,8 +202,7 @@ public class BuildInfo implements Serializable {
         ArtifactoryConfigurator config = new ArtifactoryConfigurator(server);
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(config, server);
         ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(build.getParent()),
-                preferredDeployer.providePassword(build.getParent()), server.createProxyConfiguration(Jenkins.getInstance().proxy));
-
+                preferredDeployer.providePassword(build.getParent()), server.createProxyConfiguration(Jenkins.getInstance().proxy), new JenkinsBuildInfoLog(listener));
         if (BuildInfoProxy.isUp()) {
             List<Module> dockerModules = dockerBuildInfoHelper.generateBuildInfoModules(build, listener, config);
             addDockerBuildInfoModules(dockerModules);

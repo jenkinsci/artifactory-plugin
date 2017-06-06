@@ -39,6 +39,7 @@ public class PublisherContext {
     private boolean licenseAutoDiscovery;
     private boolean discardOldBuilds;
     private boolean discardBuildArtifacts;
+    private boolean asyncBuildRetention;
     private boolean deployArtifacts;
     private IncludesExcludes includesExcludes;
     private boolean skipBuildInfoDeploy;
@@ -90,6 +91,10 @@ public class PublisherContext {
 
     public boolean isDiscardBuildArtifacts() {
         return discardBuildArtifacts;
+    }
+
+    public boolean isAsyncBuildRetention() {
+        return asyncBuildRetention;
     }
 
     public ServerDetails getServerDetails() {
@@ -331,6 +336,11 @@ public class PublisherContext {
 
         public Builder discardBuildArtifacts(boolean discardBuildArtifacts) {
             publisher.discardBuildArtifacts = discardBuildArtifacts;
+            return this;
+        }
+
+        public Builder asyncBuildRetention(boolean asyncBuildRetention) {
+            publisher.asyncBuildRetention = asyncBuildRetention;
             return this;
         }
 

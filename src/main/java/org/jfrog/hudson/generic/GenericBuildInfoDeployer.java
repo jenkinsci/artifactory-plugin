@@ -59,13 +59,12 @@ public class GenericBuildInfoDeployer extends AbstractBuildInfoDeployer {
         String url = configurator.getArtifactoryServer().getUrl() + "/api/build";
         listener.getLogger().println("Deploying build info to: " + url);
         BuildRetention retention = getBuildRetention();
-        Utils.sendBuildAndBuildRetention(client, buildInfo, retention);
+        Utils.sendBuildAndBuildRetention(client, buildInfo, retention, configurator.isAsyncBuildRetention());
     }
 
     private BuildRetention getBuildRetention() {
         BuildRetention buildRetention = null;
         if (configurator.isDiscardOldBuilds()) {
-            buildRetention = new BuildRetention(configurator.isDiscardBuildArtifacts());
             buildRetention = BuildRetentionFactory.createBuildRetention(build, configurator.isDiscardBuildArtifacts());
         }
         return buildRetention;

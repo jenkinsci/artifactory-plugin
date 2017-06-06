@@ -85,6 +85,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     private final String scopes;
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
+    private final boolean asyncBuildRetention;
     private final String matrixParams;
     private final boolean enableIssueTrackerIntegration;
     private final boolean filterExcludedArtifactsFromBuild;
@@ -131,7 +132,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                                          IncludesExcludes envVarsPatterns,
                                          boolean runChecks, String violationRecipients, boolean includePublishArtifacts,
                                          String scopes, boolean disableLicenseAutoDiscovery, boolean discardOldBuilds,
-                                         boolean discardBuildArtifacts, String matrixParams,
+                                         boolean discardBuildArtifacts, boolean asyncBuildRetention, String matrixParams,
                                          boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
                                          String aggregationBuildStatus, boolean recordAllDependencies,
                                          boolean blackDuckRunChecks, String blackDuckAppName,
@@ -157,6 +158,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.scopes = scopes;
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
+        this.asyncBuildRetention = asyncBuildRetention;
         this.matrixParams = matrixParams;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.aggregateBuildIssues = aggregateBuildIssues;
@@ -203,6 +205,10 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
 
     public boolean isDiscardBuildArtifacts() {
         return discardBuildArtifacts;
+    }
+
+    public boolean isAsyncBuildRetention() {
+        return asyncBuildRetention;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -441,8 +447,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
                 .skipBuildInfoDeploy(!deployBuildInfo).recordAllDependencies(isRecordAllDependencies())
                 .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
-                .discardBuildArtifacts(isDiscardBuildArtifacts()).matrixParams(getMatrixParams())
-                .enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).asyncBuildRetention(isAsyncBuildRetention())
+                .matrixParams(getMatrixParams()).enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
                 .integrateBlackDuck(isBlackDuckRunChecks(), getBlackDuckAppName(), getBlackDuckAppVersion(),
                         getBlackDuckReportRecipients(), getBlackDuckScopes(), isBlackDuckIncludePublishedArtifacts(),

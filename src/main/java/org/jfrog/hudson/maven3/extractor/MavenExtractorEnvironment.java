@@ -201,7 +201,7 @@ public class MavenExtractorEnvironment extends Environment {
                 .skipBuildInfoDeploy(!publisher.isDeployBuildInfo())
                 .recordAllDependencies(publisher.isRecordAllDependencies())
                 .includeEnvVars(publisher.isIncludeEnvVars()).envVarsPatterns(publisher.getEnvVarsPatterns())
-                .discardBuildArtifacts(publisher.isDiscardBuildArtifacts())
+                .discardBuildArtifacts(publisher.isDiscardBuildArtifacts()).asyncBuildRetention(publisher.isAsyncBuildRetention())
                 .matrixParams(publisher.getMatrixParams()).evenIfUnstable(publisher.isEvenIfUnstable())
                 .enableIssueTrackerIntegration(publisher.isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(publisher.isAggregateBuildIssues())
