@@ -62,6 +62,11 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
     private void addVcsDataToBuild(Run build) {
         List<Vcs> vcsList = Utils.extractVcsBuildData(build);
         buildInfo.setVcs(vcsList);
+        if (!vcsList.isEmpty()) {
+            Vcs lastVcs = vcsList.get(vcsList.size() - 1);
+            buildInfo.setVcsUrl(lastVcs.getUrl());
+            buildInfo.setVcsRevision(lastVcs.getRevision());
+        }
     }
 
     public void deploy() throws IOException {
