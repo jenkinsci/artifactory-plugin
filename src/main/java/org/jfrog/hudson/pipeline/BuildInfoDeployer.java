@@ -75,9 +75,6 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
         BuildRetention retention = buildInfo.getBuildRetention();
         buildInfo.setBuildRetention(null);
         org.jfrog.build.extractor.retention.Utils.sendBuildAndBuildRetention(client, this.buildInfo, retention, asyncBuildRetention);
-        String url = artifactoryUrl +
-                ArtifactoryBuildInfoClient.BUILD_BROWSE_URL + "/" + encodeUrl(buildInfo.getName()) + "/" + encodeUrl(buildInfo.getNumber());
-        listener.getLogger().println("Build successfully deployed. Browse it in Artifactory under " + url);
         addBuildInfoResultAction(artifactoryUrl);
     }
 
