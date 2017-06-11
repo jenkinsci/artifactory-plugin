@@ -16,8 +16,8 @@ import java.util.List;
  */
 public class MavenModulesExtractor implements FilePath.FileCallable<List<String>> {
 
-    // This been invoked by the FilePath object on the server that this job runs on.
-    // This is needed if running on slaves.
+    // This method is invoked by the FilePath object on the server that this job runs on.
+    // This is needed when running on slaves.
     public List<String> invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
         MavenProject mavenProject = getMavenProject(f.getAbsolutePath());
         return mavenProject.getModel().getModules();

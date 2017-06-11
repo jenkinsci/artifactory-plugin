@@ -286,16 +286,16 @@ public class MavenReleaseWrapper extends BuildWrapper {
     }
 
     /**
-     * The actual path to the xml file of the module.
+     * Creates the actual path to the xml file of the module.
      */
     private String createPomPath(String relativePath, String moduleName) {
         if (!moduleName.contains(".xml")) {
             // Inside the parent pom, the reference is to the pom.xml file
             return relativePath + "/" + POM_NAME;
         }
-        // There is a reference to other xml file that is not the pom.
-        String folderName = relativePath.substring(0, relativePath.indexOf("/"));
-        return folderName + "/" + moduleName;
+        // There is a reference to another xml file, which is not the pom.
+        String dirName = relativePath.substring(0, relativePath.indexOf("/"));
+        return dirName + "/" + moduleName;
     }
 
     private void log(BuildListener listener, String message) {
