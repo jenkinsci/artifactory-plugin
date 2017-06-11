@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.types.buildInfo;
 
+import com.google.common.collect.Lists;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 
 import java.io.Serializable;
@@ -13,7 +14,7 @@ import java.util.List;
 public class BuildRetention implements Serializable {
     private boolean deleteBuildArtifacts;
     private int maxBuilds;
-    private List<String> doNotDiscardBuilds;
+    private List<String> doNotDiscardBuilds = Lists.newArrayList();
     private int maxDays;
     private boolean async;
 
@@ -43,7 +44,7 @@ public class BuildRetention implements Serializable {
         this.maxDays = -1;
         this.deleteBuildArtifacts = false;
         this.maxBuilds = -1;
-        this.doNotDiscardBuilds = null;
+        this.doNotDiscardBuilds = Lists.newArrayList();
         this.async = false;
     }
 
@@ -79,6 +80,10 @@ public class BuildRetention implements Serializable {
 
     @Whitelisted
     public void setDoNotDiscardBuilds(List<String> buildNumbersNotToBeDiscarded) {
+        if (buildNumbersNotToBeDiscarded == null) {
+            this.doNotDiscardBuilds = Lists.newArrayList();
+            return;
+        }
         this.doNotDiscardBuilds = buildNumbersNotToBeDiscarded;
     }
 
