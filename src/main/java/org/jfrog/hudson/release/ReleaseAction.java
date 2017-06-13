@@ -26,6 +26,7 @@ import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -282,9 +283,16 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
             // Read values from the request and override the staging plugin values:
             overrideStagingPluginParams(req);
             // Schedule the release build:
-            if (!project.scheduleBuild(0, new Cause.UserIdCause(), this)) {
+            Queue.WaitingItem item = Jenkins.getInstance().getQueue().schedule(
+                    project, 0,
+                    new Action[]{this, new CauseAction(new Cause.UserIdCause())}
+            );
+            if (item == null) {
                 log.log(Level.SEVERE, "Failed to schedule a release build following a Release API invocation");
                 resp.setStatus(StaplerResponse.SC_INTERNAL_SERVER_ERROR);
+            } else {
+                String url = req.getContextPath() + '/' + item.getUrl();
+                resp.sendRedirect(201, url);
             }
         } catch (Exception e) {
             log.log(Level.SEVERE, "Artifactory Release Staging API invocation failed: " + e.getMessage(), e);
