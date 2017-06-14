@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson.util;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
@@ -34,6 +35,7 @@ import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
+import org.jfrog.build.extractor.clientConfiguration.util.spec.SpecsHelper;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.ServerDetails;
@@ -491,23 +493,10 @@ public class ExtractorUtils {
     private static void addMatrixParams(PublisherContext context,
                                         ArtifactoryClientConfiguration.PublisherHandler publisher,
                                         Map<String, String> env) {
-        String matrixParams = context.getMatrixParams();
-        if (StringUtils.isBlank(matrixParams)) {
-            return;
-        }
-
-        matrixParams = Util.replaceMacro(matrixParams, env);
-        String[] keyValuePairs = StringUtils.split(matrixParams, "; ");
-        if (keyValuePairs == null) {
-            return;
-        }
-        for (String keyValuePair : keyValuePairs) {
-            String[] split = StringUtils.split(keyValuePair, "=");
-            if (split.length == 2) {
-                String value = split[1];
-                publisher.addMatrixParam(split[0], value);
-            }
-        }
+        String matrixParams = Util.replaceMacro(context.getMatrixParams(), env);
+        ArrayListMultimap<String, String> params = ArrayListMultimap.create();
+        SpecsHelper.fillPropertiesMap(matrixParams, params);
+        publisher.addMatrixParams(params);
     }
 
     private static void addEnvVars(Map<String, String> env, Run<?, ?> build,
