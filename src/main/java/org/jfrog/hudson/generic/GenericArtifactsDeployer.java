@@ -21,6 +21,7 @@ import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.util.PublishedItemsHelper;
 import org.jfrog.build.extractor.clientConfiguration.util.spec.SpecsHelper;
+import org.jfrog.build.extractor.clientConfiguration.util.spec.UploadSpecHelper;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -268,7 +269,7 @@ public class GenericArtifactsDeployer {
             if (patternType == PatternType.ANT) {
                 path = PublishedItemsHelper.calculateTargetPath(targetPath, artifactFile);
             } else {
-                path = PublishedItemsHelper.wildcardCalculateTargetPath(targetPath, artifactFile);
+                path = UploadSpecHelper.wildcardCalculateTargetPath(targetPath, artifactFile);
             }
             path = StringUtils.replace(path, "//", "/");
 

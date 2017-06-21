@@ -3,6 +3,7 @@ package org.jfrog.hudson.generic;
 import com.google.common.collect.Lists;
 import com.tikal.jenkins.plugins.multijob.MultiJobProject;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
@@ -342,17 +343,19 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         ArtifactoryServer server = getArtifactoryResolverServer();
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(ArtifactoryGenericConfigurator.this,
                 server);
-        ArtifactoryDependenciesClient dependenciesClient = server.createArtifactoryDependenciesClient(
-                preferredResolver.provideUsername(build.getProject()),
-                preferredResolver.providePassword(build.getProject()), proxyConfiguration, listener);
+        String username = preferredResolver.provideUsername(build.getProject());
+        String password = preferredResolver.providePassword(build.getProject());
+        ArtifactoryDependenciesClient dependenciesClient =
+                server.createArtifactoryDependenciesClient(username, password, proxyConfiguration, listener);
         try {
-            GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener,
-                    dependenciesClient);
             if (isUseSpecs()) {
-                String spec = SpecUtils.getSpecStringFromSpecConf(
-                        downloadSpec, build.getEnvironment(listener), build.getExecutor().getCurrentWorkspace(), listener.getLogger());
-                publishedDependencies = artifactsResolver.retrieveDependenciesBySpec(resolverDetails.getArtifactoryUrl(), spec);
+                String spec = SpecUtils.getSpecStringFromSpecConf(downloadSpec, build.getEnvironment(listener),
+                        build.getExecutor().getCurrentWorkspace(), listener.getLogger());
+                FilePath workspace = build.getExecutor().getCurrentWorkspace();
+                publishedDependencies = workspace.act(new FilesResolverCallable(
+                        new JenkinsBuildInfoLog(listener), username, password, server.getUrl(), spec, proxyConfiguration));
             } else {
+                GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener, dependenciesClient);
                 publishedDependencies = artifactsResolver.retrievePublishedDependencies(resolvePattern);
                 buildDependencies = artifactsResolver.retrieveBuildDependencies(resolvePattern);
             }

@@ -16,19 +16,15 @@
 
 package org.jfrog.hudson.generic;
 
-import com.google.common.collect.Lists;
 import hudson.EnvVars;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
 import org.jfrog.build.extractor.clientConfiguration.util.*;
-import org.jfrog.build.extractor.clientConfiguration.util.spec.Spec;
-import org.jfrog.build.extractor.clientConfiguration.util.spec.SpecsHelper;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
 import java.io.IOException;
@@ -62,16 +58,6 @@ public class GenericArtifactsResolver {
     public List<BuildDependency> retrieveBuildDependencies(String resolvePattern) throws IOException, InterruptedException {
         BuildDependenciesHelper helper = new BuildDependenciesHelper(createDependenciesDownloader(), log);
         return helper.retrieveBuildDependencies(Util.replaceMacro(resolvePattern, envVars));
-    }
-
-    public List<Dependency> retrieveDependenciesBySpec(String serverUrl, String downloadSpec) throws IOException {
-        if (StringUtils.isEmpty(downloadSpec)) {
-            return Lists.newArrayList();
-        }
-        DependenciesDownloaderHelper helper = new DependenciesDownloaderHelper(createDependenciesDownloader(), log);
-        SpecsHelper specsHelper = new SpecsHelper(log);
-        Spec spec = specsHelper.getDownloadUploadSpec(Util.replaceMacro(downloadSpec, envVars));
-        return helper.downloadDependencies(serverUrl, spec);
     }
 
     private DependenciesDownloader createDependenciesDownloader() {
