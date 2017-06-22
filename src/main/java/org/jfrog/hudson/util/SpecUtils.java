@@ -14,8 +14,7 @@ import java.io.PrintStream;
  */
 public class SpecUtils {
 
-    public static String getSpecStringFromSpecConf(
-            SpecConfiguration specConfiguration, EnvVars env, FilePath workspace, PrintStream logger)
+    public static String getSpecStringFromSpecConf(SpecConfiguration specConfiguration, EnvVars env, FilePath workspace, PrintStream logger)
             throws IOException, InterruptedException {
 
         if (StringUtils.isNotBlank(specConfiguration.getFilePath())) {

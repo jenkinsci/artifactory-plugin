@@ -78,7 +78,7 @@ public class BuildInfoProxy implements Serializable {
                 });
             } catch (InvalidClassException e) {
                 getLogger().warning("Failed stopping Build-Info proxy on agent: '" + node.getDisplayName() +
-                    "'. It could be because the agent uses a different JDK than the master. " + e.getMessage());
+                        "'. It could be because the agent uses a different JDK than the master. " + e.getMessage());
                 e.printStackTrace();
             }
         }

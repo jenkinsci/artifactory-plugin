@@ -17,8 +17,8 @@ public class BuildInfoHttpFiltersSource extends HttpFiltersSourceAdapter {
     @Override
     public HttpFilters filterRequest(HttpRequest originalRequest, ChannelHandlerContext ctx) {
 
-        String uri = originalRequest.getUri();
-        if (originalRequest.getMethod() == HttpMethod.CONNECT) {
+        String uri = originalRequest.uri();
+        if (originalRequest.method() == HttpMethod.CONNECT) {
             if (ctx != null) {
                 String prefix = "https://" + uri.replaceFirst(":443$", "");
                 ctx.channel().attr(CONNECTED_URL).set(prefix);
