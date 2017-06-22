@@ -51,7 +51,7 @@ public class GenericArtifactsResolver {
     }
 
     public List<Dependency> retrievePublishedDependencies(String resolvePattern) throws IOException, InterruptedException {
-        DependenciesHelper helper = new AntPatternsDependenciesHelper(createDependenciesDownloader(), log);
+        AntPatternsDependenciesHelper helper = new AntPatternsDependenciesHelper(createDependenciesDownloader(), log);
         return helper.retrievePublishedDependencies(Util.replaceMacro(resolvePattern, envVars));
     }
 
