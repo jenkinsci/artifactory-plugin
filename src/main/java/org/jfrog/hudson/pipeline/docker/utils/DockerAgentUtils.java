@@ -66,7 +66,7 @@ public class DockerAgentUtils implements Serializable {
         }
     }
 
-    private static void registerImage(String imageId, String imageTag, String host, String targetRepo, int buildInfoId) {
+    private static void registerImage(String imageId, String imageTag, String host, String targetRepo, int buildInfoId) throws IOException {
         if (!DockerUtils.isDockerHostExists(host)) {
             return;
         }
@@ -212,7 +212,7 @@ public class DockerAgentUtils implements Serializable {
         return parentUpdated;
     }
 
-    private static boolean updateImageParent(JenkinsBuildInfoLog log, String imageTag, String host, int buildInfoId) {
+    private static boolean updateImageParent(JenkinsBuildInfoLog log, String imageTag, String host, int buildInfoId) throws IOException {
         boolean parentUpdated = false;
         for (DockerImage image : buildInfoIdToDockerImage.get(buildInfoId)) {
             if (image.getImageTag().equals(imageTag)) {

@@ -24,13 +24,16 @@ import java.util.List;
  */
 public class DockerUtils implements Serializable {
 
-    public static boolean isDockerHostExists(String host) {
+    public static boolean isDockerHostExists(String host) throws IOException {
+        DockerClient dockerClient = null;
         try {
-            DockerClient dockerClient = getDockerClient(host);
+            dockerClient = getDockerClient(host);
             dockerClient.pingCmd().exec();
             return true;
         } catch (Exception e) {
             return false;
+        } finally {
+            dockerClient.close();
         }
     }
 
@@ -41,9 +44,14 @@ public class DockerUtils implements Serializable {
      * @param host
      * @return
      */
-    public static String getImageIdFromTag(String imageTag, String host) {
-        DockerClient dockerClient = getDockerClient(host);
-        return dockerClient.inspectImageCmd(imageTag).exec().getId();
+    public static String getImageIdFromTag(String imageTag, String host) throws IOException {
+        DockerClient dockerClient = null;
+        try {
+            dockerClient = getDockerClient(host);
+            return dockerClient.inspectImageCmd(imageTag).exec().getId();
+        } finally {
+            dockerClient.close();
+        }
     }
 
     /**
@@ -54,13 +62,18 @@ public class DockerUtils implements Serializable {
      * @param password
      * @param host
      */
-    public static void pushImage(String imageTag, String username, String password, String host) {
+    public static void pushImage(String imageTag, String username, String password, String host) throws IOException {
         final AuthConfig authConfig = new AuthConfig();
         authConfig.withUsername(username);
         authConfig.withPassword(password);
 
-        DockerClient dockerClient = getDockerClient(host);
-        dockerClient.pushImageCmd(imageTag).withAuthConfig(authConfig).exec(new PushImageResultCallback()).awaitSuccess();
+        DockerClient dockerClient = null;
+        try {
+            dockerClient = getDockerClient(host);
+            dockerClient.pushImageCmd(imageTag).withAuthConfig(authConfig).exec(new PushImageResultCallback()).awaitSuccess();
+        } finally {
+            dockerClient.close();
+        }
     }
 
     /**
@@ -71,13 +84,18 @@ public class DockerUtils implements Serializable {
      * @param password
      * @param host
      */
-    public static void pullImage(String imageTag, String username, String password, String host) {
+    public static void pullImage(String imageTag, String username, String password, String host) throws IOException {
         final AuthConfig authConfig = new AuthConfig();
         authConfig.withUsername(username);
         authConfig.withPassword(password);
 
-        DockerClient dockerClient = getDockerClient(host);
-        dockerClient.pullImageCmd(imageTag).withAuthConfig(authConfig).exec(new PullImageResultCallback()).awaitSuccess();
+        DockerClient dockerClient = null;
+        try {
+            dockerClient = getDockerClient(host);
+            dockerClient.pullImageCmd(imageTag).withAuthConfig(authConfig).exec(new PullImageResultCallback()).awaitSuccess();
+        } finally {
+            dockerClient.close();
+        }
     }
 
     /**
@@ -87,9 +105,14 @@ public class DockerUtils implements Serializable {
      * @param host
      * @return
      */
-    public static String getParentId(String digest, String host) {
-        DockerClient dockerClient = getDockerClient(host);
-        return dockerClient.inspectImageCmd(digest).exec().getParent();
+    public static String getParentId(String digest, String host) throws IOException {
+        DockerClient dockerClient = null;
+        try {
+            dockerClient = getDockerClient(host);
+            return dockerClient.inspectImageCmd(digest).exec().getParent();
+        } finally {
+            dockerClient.close();
+        }
     }
 
     /**
