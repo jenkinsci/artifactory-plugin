@@ -221,7 +221,8 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
                     }
                     Map<String, String> checksums = FileChecksumCalculator.calculateChecksums(artifact.getFile(), SHA1, MD5);
                     if (!checksums.get(SHA1).equals(artifact.getSha1())) {
-                        listener.error("SHA1 mismatch at '" + artifactPath + "' expected: " + artifact.getSha1() + ", got " + checksums.get(SHA1));
+                        listener.error("SHA1 mismatch at '" + artifactPath + "' expected: " + artifact.getSha1() + ", got " + checksums.get(SHA1)
+                        + ". Make sure that the same artifacts were not built more than once.");
                         isSuccess = false;
                     } else {
                         DeployDetails.Builder builder = new DeployDetails.Builder()
