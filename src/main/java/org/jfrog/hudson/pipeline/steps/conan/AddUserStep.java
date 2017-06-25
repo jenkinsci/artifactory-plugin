@@ -70,14 +70,17 @@ public class AddUserStep extends AbstractStepImpl {
             org.jfrog.hudson.ArtifactoryServer artifactoryServer = Utils.prepareArtifactoryServer(null, step.getServer());
             ArtifactoryConfigurator configurator = new ArtifactoryConfigurator(artifactoryServer);
             CredentialsConfig deployerConfig = CredentialManager.getPreferredDeployer(configurator, artifactoryServer);
+            String username = deployerConfig.provideUsername(build.getParent());
+            String serverName = step.getServerName();
             args.addTokenized("conan user");
-            args.add(deployerConfig.provideUsername(build.getParent()));
+            args.add(username);
             args.add("-p");
             args.addMasked(deployerConfig.providePassword(build.getParent()));
             args.add("-r");
-            args.add(step.getServerName());
+            args.add(serverName);
             EnvVars extendedEnv = new EnvVars(env);
             extendedEnv.put(Utils.CONAN_USER_HOME, step.getConanHome());
+            listener.getLogger().println("Adding conan user '" + username + "', server '" + serverName + "'");
             Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
             return true;
         }

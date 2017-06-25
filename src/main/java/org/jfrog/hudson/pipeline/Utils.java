@@ -240,6 +240,22 @@ public class Utils {
             if (!pwd.exists()) {
                 pwd.mkdirs();
             }
+            if (launcher.isUnix()) {
+                boolean hasMaskedArguments = args.hasMaskedArguments();
+                StringBuilder sb = new StringBuilder();
+                for (String arg : args.toList()) {
+                    sb.append(arg).append(" ");
+                }
+                args.clear();
+                args.add("sh", "-c");
+                if (hasMaskedArguments) {
+                    args.addMasked(sb.toString());
+                } else {
+                    args.add(sb.toString());
+                }
+            } else {
+                args = args.toWindowsCommand();
+            }
             int exitValue = launcher.launch().cmds(args).envs(env).stdout(listener).pwd(pwd).join();
             failed = (exitValue != 0);
         } catch (Exception e) {
