@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class ConanClient implements Serializable {
     public final static String CONAN_LOG_FILE = "conan_log.log";
-    private CpsScript cpsScript;
+    private transient CpsScript cpsScript;
     private String userPath;
     private ConanRemote remote = new ConanRemote();
 

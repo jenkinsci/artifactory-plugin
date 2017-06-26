@@ -14,7 +14,7 @@ import java.util.*;
  * Created by Tamirh on 04/08/2016.
  */
 public class GradleBuild implements Serializable {
-    private CpsScript cpsScript;
+    private transient CpsScript cpsScript;
     private GradleDeployer deployer = new GradleDeployer();
     private GradleResolver resolver = new GradleResolver();
     private String tool = "";

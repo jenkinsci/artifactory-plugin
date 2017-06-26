@@ -14,7 +14,7 @@ import java.util.UUID;
  */
 
 public class ConanRemote implements Serializable {
-    private CpsScript cpsScript;
+    private transient CpsScript cpsScript;
     private String conanHome;
     public ConanRemote() {
     }

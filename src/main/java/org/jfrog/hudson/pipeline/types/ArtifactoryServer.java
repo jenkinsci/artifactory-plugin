@@ -25,7 +25,7 @@ public class ArtifactoryServer implements Serializable {
     private String password;
     private String credentialsId;
     private boolean bypassProxy;
-    private CpsScript cpsScript;
+    private transient CpsScript cpsScript;
     private boolean usesCredetialsId;
     private Connection connection = new Connection();
 

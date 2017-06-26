@@ -17,7 +17,7 @@ public class MavenDescriptor implements Serializable {
     private String pomFile = "pom.xml";
     private String version = "";
     private Map<String, String> versionPerModule = new HashedMap();
-    private CpsScript cpsScript;
+    private transient CpsScript cpsScript;
     private boolean failOnSnapshot;
 
 

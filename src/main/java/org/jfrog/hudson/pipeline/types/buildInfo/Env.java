@@ -20,8 +20,7 @@ public class Env implements Serializable {
     private Map<String, String> sysVars = new HashMap<String, String>();
     private EnvFilter filter = new EnvFilter();
     private boolean capture = false; //By default don't collect
-
-    private CpsScript cpsScript;
+    private transient CpsScript cpsScript;
 
     public Env() {
     }

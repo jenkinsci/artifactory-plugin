@@ -15,7 +15,7 @@ import java.util.*;
  * Created by Tamirh on 04/08/2016.
  */
 public class MavenBuild implements Serializable {
-    private CpsScript cpsScript;
+    private transient CpsScript cpsScript;
     private MavenDeployer deployer = new MavenDeployer();
     private MavenResolver resolver = new MavenResolver();
     private String tool = "";
