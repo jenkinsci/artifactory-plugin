@@ -14,6 +14,7 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Vcs;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.CredentialsConfig;
@@ -185,8 +186,11 @@ public class Utils {
             generatedBuildInfoFilePath = new FilePath(launcher.getChannel(), jsonBuildPath);
             inputStream = generatedBuildInfoFilePath.read();
             IOUtils.copy(inputStream, writer, "UTF-8");
-            String theString = writer.toString();
-            return mapper.readValue(theString, org.jfrog.build.api.Build.class);
+            String buildInfoFileContent = writer.toString();
+            if (StringUtils.isBlank(buildInfoFileContent)) {
+                return new org.jfrog.build.api.Build();
+            }
+            return mapper.readValue(buildInfoFileContent, org.jfrog.build.api.Build.class);
         } catch (Exception e) {
             listener.error("Couldn't read generated build info at : " + jsonBuildPath);
             build.setResult(Result.FAILURE);

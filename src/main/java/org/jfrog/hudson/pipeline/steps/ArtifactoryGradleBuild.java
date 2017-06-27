@@ -169,21 +169,13 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
                 }
             }
             args.addTokenized(getSwitches());
-            args.addTokenized(getTasks());
+            args.addTokenized(step.getTasks());
             args.add("-b");
             args.add(step.getBuildFile());
             if (!launcher.isUnix()) {
                 args = args.toWindowsCommand();
             }
             return args;
-        }
-
-        private String getTasks() {
-            String tasks = step.getTasks();
-            if (!(tasks.contains("artifactoryP") || tasks.contains("artifactoryPublish"))) {
-                tasks += " artifactoryPublish";
-            }
-            return tasks;
         }
 
         private String getSwitches() {

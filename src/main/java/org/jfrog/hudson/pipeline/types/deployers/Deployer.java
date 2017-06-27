@@ -180,6 +180,10 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
     }
 
     public void deployArtifacts(BuildInfo buildInfo, TaskListener listener, FilePath ws) throws IOException, InterruptedException {
+        if (buildInfo.getDeployableArtifacts().isEmpty()) {
+            listener.getLogger().println("No artifacts for deployment were found");
+            return;
+        }
         String agentName = Utils.getAgentName(ws);
         if (buildInfo.getAgentName().equals(agentName)) {
             org.jfrog.hudson.ArtifactoryServer artifactoryServer = Utils.prepareArtifactoryServer(null, server);
