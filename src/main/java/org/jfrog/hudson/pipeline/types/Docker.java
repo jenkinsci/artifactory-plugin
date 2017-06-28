@@ -13,7 +13,7 @@ import java.util.Map;
  * Created by romang on 7/28/16.
  */
 public class Docker implements Serializable {
-    private CpsScript script;
+    private transient CpsScript script;
     private String username;
     private String password;
     private String credentialsId;
