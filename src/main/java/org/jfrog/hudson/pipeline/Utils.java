@@ -39,6 +39,7 @@ public class Utils {
 
     public static final String BUILD_INFO_DELIMITER = ".";
     public static final String CONAN_USER_HOME = "CONAN_USER_HOME";
+    private static final String UNIX_GLOB_CHARS = "*?[]";
 
     /**
      * Prepares Artifactory server either from serverID or from ArtifactoryServer.
@@ -248,7 +249,7 @@ public class Utils {
                 boolean hasMaskedArguments = args.hasMaskedArguments();
                 StringBuilder sb = new StringBuilder();
                 for (String arg : args.toList()) {
-                    sb.append(arg).append(" ");
+                    sb.append(escapeUnixArgument(arg)).append(" ");
                 }
                 args.clear();
                 args.add("sh", "-c");
@@ -271,6 +272,17 @@ public class Utils {
             build.setResult(Result.FAILURE);
             throw new Run.RunnerAbortedException();
         }
+    }
+
+    private static String escapeUnixArgument(String arg) {
+        StringBuilder res = new StringBuilder();
+        for (char c : arg.toCharArray()) {
+            if (UNIX_GLOB_CHARS.indexOf(c) >= 0) {
+                res.append("\\");
+            }
+            res.append(c);
+        }
+        return res.toString();
     }
 
     public static PromotionConfig createPromotionConfig(Map<String, Object> promotionParams, boolean isTargetRepositoryMandatory) {
