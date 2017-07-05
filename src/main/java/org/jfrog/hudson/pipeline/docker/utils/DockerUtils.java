@@ -33,7 +33,9 @@ public class DockerUtils implements Serializable {
         } catch (Exception e) {
             return false;
         } finally {
-            dockerClient.close();
+            if (dockerClient != null) {
+                dockerClient.close();
+            }
         }
     }
 
@@ -50,7 +52,9 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             return dockerClient.inspectImageCmd(imageTag).exec().getId();
         } finally {
-            dockerClient.close();
+            if (dockerClient != null) {
+                dockerClient.close();
+            }
         }
     }
 
@@ -72,7 +76,9 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             dockerClient.pushImageCmd(imageTag).withAuthConfig(authConfig).exec(new PushImageResultCallback()).awaitSuccess();
         } finally {
-            dockerClient.close();
+            if (dockerClient != null) {
+                dockerClient.close();
+            }
         }
     }
 
@@ -94,7 +100,9 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             dockerClient.pullImageCmd(imageTag).withAuthConfig(authConfig).exec(new PullImageResultCallback()).awaitSuccess();
         } finally {
-            dockerClient.close();
+            if (dockerClient != null) {
+                dockerClient.close();
+            }
         }
     }
 
@@ -111,7 +119,9 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             return dockerClient.inspectImageCmd(digest).exec().getParent();
         } finally {
-            dockerClient.close();
+            if (dockerClient != null) {
+                dockerClient.close();
+            }
         }
     }
 
