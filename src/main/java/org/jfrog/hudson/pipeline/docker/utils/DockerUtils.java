@@ -33,9 +33,7 @@ public class DockerUtils implements Serializable {
         } catch (Exception e) {
             return false;
         } finally {
-            if (dockerClient != null) {
-                dockerClient.close();
-            }
+            closeQuietly(dockerClient);
         }
     }
 
@@ -52,9 +50,7 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             return dockerClient.inspectImageCmd(imageTag).exec().getId();
         } finally {
-            if (dockerClient != null) {
-                dockerClient.close();
-            }
+            closeQuietly(dockerClient);
         }
     }
 
@@ -76,9 +72,7 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             dockerClient.pushImageCmd(imageTag).withAuthConfig(authConfig).exec(new PushImageResultCallback()).awaitSuccess();
         } finally {
-            if (dockerClient != null) {
-                dockerClient.close();
-            }
+            closeQuietly(dockerClient);
         }
     }
 
@@ -100,9 +94,7 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             dockerClient.pullImageCmd(imageTag).withAuthConfig(authConfig).exec(new PullImageResultCallback()).awaitSuccess();
         } finally {
-            if (dockerClient != null) {
-                dockerClient.close();
-            }
+            closeQuietly(dockerClient);
         }
     }
 
@@ -119,8 +111,16 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             return dockerClient.inspectImageCmd(digest).exec().getParent();
         } finally {
-            if (dockerClient != null) {
-                dockerClient.close();
+            closeQuietly(dockerClient);
+        }
+    }
+
+    private static void closeQuietly(DockerClient c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (IOException e) {
+                // Ignore
             }
         }
     }
