@@ -23,7 +23,7 @@ public class SpecUtils {
             return buildDownloadSpecPath(filePath, workspace, logger).readToString();
         }
         if (StringUtils.isNotBlank(specConfiguration.getSpec())) {
-            return specConfiguration.getSpec().trim();
+            return Util.replaceMacro(specConfiguration.getSpec().trim(), env);
         }
         return "";
     }

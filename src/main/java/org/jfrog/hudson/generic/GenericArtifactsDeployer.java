@@ -71,8 +71,7 @@ public class GenericArtifactsDeployer {
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
 
         if (configurator.isUseSpecs()) {
-            String spec = Util.replaceMacro(SpecUtils.getSpecStringFromSpecConf(
-                            configurator.getUploadSpec(), env, workingDir, listener.getLogger()) , env);
+            String spec = SpecUtils.getSpecStringFromSpecConf(configurator.getUploadSpec(), env, workingDir, listener.getLogger());
             artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, spec, artifactoryServer,
                     credentialsConfig.getCredentials(build.getParent()), propertiesToAdd,
                     artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
