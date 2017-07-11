@@ -2,6 +2,7 @@ package org.jfrog.hudson.pipeline;
 
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.*;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
@@ -10,14 +11,13 @@ import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfo
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
 import org.jfrog.hudson.BuildInfoResultAction;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfoAccessor;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static org.jfrog.build.client.ArtifactoryHttpClient.encodeUrl;
 
 /**
  * Created by romang on 4/25/16.
@@ -60,6 +60,9 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
     }
 
     private void addVcsDataToBuild(Run build) {
+        if (Jenkins.getInstance().getPlugin(PluginsUtils.GIT_PLUGIN_ID) == null) {
+            return;
+        }
         List<Vcs> vcsList = Utils.extractVcsBuildData(build);
         buildInfo.setVcs(vcsList);
         if (!vcsList.isEmpty()) {
