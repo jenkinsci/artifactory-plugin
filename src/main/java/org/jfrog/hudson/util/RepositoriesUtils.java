@@ -71,15 +71,19 @@ public abstract class RepositoriesUtils {
         } else {
             client = new ArtifactoryBuildInfoClient(url, new NullLog());
         }
-        client.setConnectionTimeout(artifactoryServer.getTimeout());
-        setRetryParams(artifactoryServer, client);
+        try {
+            client.setConnectionTimeout(artifactoryServer.getTimeout());
+            setRetryParams(artifactoryServer, client);
 
-        if (Jenkins.getInstance().proxy != null && !artifactoryServer.isBypassProxy()) {
-            client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            if (Jenkins.getInstance().proxy != null && !artifactoryServer.isBypassProxy()) {
+                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            virtualRepositories = RepositoriesUtils.generateVirtualRepos(client);
+            return virtualRepositories;
+        } finally {
+            client.close();
         }
-
-        virtualRepositories = RepositoriesUtils.generateVirtualRepos(client);
-        return virtualRepositories;
     }
 
     public static List<String> getLocalRepositories(String url, CredentialsConfig credentialsConfig,
@@ -94,15 +98,18 @@ public abstract class RepositoriesUtils {
         } else {
             client = new ArtifactoryBuildInfoClient(url, new NullLog());
         }
-        client.setConnectionTimeout(artifactoryServer.getTimeout());
-        setRetryParams(artifactoryServer, client);
-        if (Jenkins.getInstance().proxy != null && !artifactoryServer.isBypassProxy()) {
-            client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+        try {
+            client.setConnectionTimeout(artifactoryServer.getTimeout());
+            setRetryParams(artifactoryServer, client);
+            if (Jenkins.getInstance().proxy != null && !artifactoryServer.isBypassProxy()) {
+                client.setProxyConfiguration(createProxyConfiguration(Jenkins.getInstance().proxy));
+            }
+
+            localRepository = client.getLocalRepositoriesKeys();
+            return localRepository;
+        } finally {
+          client.close();
         }
-
-        localRepository = client.getLocalRepositoriesKeys();
-
-        return localRepository;
     }
 
     public static ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {

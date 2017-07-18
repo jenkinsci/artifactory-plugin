@@ -44,6 +44,10 @@ public class FilesResolverCallable implements FilePath.FileCallable<List<Depende
         if (proxyConfig != null) {
             client.setProxyConfiguration(proxyConfig);
         }
-        return specsHelper.downloadArtifactsBySpec(downloadSpec, client, file.getCanonicalPath());
+        try {
+            return specsHelper.downloadArtifactsBySpec(downloadSpec, client, file.getCanonicalPath());
+        } finally {
+            client.close();
+        }
     }
 }
