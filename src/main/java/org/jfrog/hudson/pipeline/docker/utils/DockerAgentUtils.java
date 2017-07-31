@@ -4,7 +4,9 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import hudson.Launcher;
 import hudson.model.Node;
+import hudson.model.TaskListener;
 import hudson.remoting.Callable;
+import hudson.remoting.ChannelClosedException;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.pipeline.docker.DockerImage;
@@ -104,7 +106,7 @@ public class DockerAgentUtils implements Serializable {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static List<DockerImage> getDockerImagesFromAgents(final int buildInfoId) throws IOException, InterruptedException {
+    public static List<DockerImage> getDockerImagesFromAgents(final int buildInfoId, TaskListener listener) throws IOException, InterruptedException {
         List<DockerImage> dockerImages = new ArrayList<DockerImage>();
 
         //Master
@@ -118,15 +120,19 @@ public class DockerAgentUtils implements Serializable {
                 continue;
             }
 
-            List<DockerImage> partialDockerImages = node.getChannel().call(new Callable<List<DockerImage>, IOException>() {
-                public List<DockerImage> call() throws IOException {
-                    List<DockerImage> dockerImages = new ArrayList<DockerImage>();
-                    dockerImages.addAll(buildInfoIdToDockerImage.get(buildInfoId));
-                    buildInfoIdToDockerImage.removeAll(buildInfoId);
-                    return dockerImages;
-                }
-            });
-            dockerImages.addAll(partialDockerImages);
+            try {
+                List<DockerImage> partialDockerImages = node.getChannel().call(new Callable<List<DockerImage>, IOException>() {
+                    public List<DockerImage> call() throws IOException {
+                        List<DockerImage> dockerImages = new ArrayList<DockerImage>();
+                        dockerImages.addAll(buildInfoIdToDockerImage.get(buildInfoId));
+                        buildInfoIdToDockerImage.removeAll(buildInfoId);
+                        return dockerImages;
+                    }
+                });
+                dockerImages.addAll(partialDockerImages);
+            } catch (ChannelClosedException e) {
+                listener.getLogger().println("Could not collect docker images from Jenkins node '" + node.getDisplayName() + "' due to: " + e.getMessage());
+            }
         }
         return dockerImages;
     }
