@@ -130,7 +130,7 @@ public class DockerAgentUtils implements Serializable {
                     }
                 });
                 dockerImages.addAll(partialDockerImages);
-            } catch (ChannelClosedException e) {
+            } catch (Exception e) {
                 listener.getLogger().println("Could not collect docker images from Jenkins node '" + node.getDisplayName() + "' due to: " + e.getMessage());
             }
         }
