@@ -24,19 +24,6 @@ import java.util.List;
  */
 public class DockerUtils implements Serializable {
 
-    public static boolean isDockerHostExists(String host) throws IOException {
-        DockerClient dockerClient = null;
-        try {
-            dockerClient = getDockerClient(host);
-            dockerClient.pingCmd().exec();
-            return true;
-        } catch (Exception e) {
-            return false;
-        } finally {
-            closeQuietly(dockerClient);
-        }
-    }
-
     /**
      * Get image Id from imageTag using DockerBuildInfoHelper client.
      *

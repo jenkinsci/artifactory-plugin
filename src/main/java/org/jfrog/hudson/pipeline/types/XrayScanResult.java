@@ -32,11 +32,6 @@ public class XrayScanResult implements Serializable {
         }
     }
 
-    @Depricated
-    public String getScanMassege() {
-        return getScanMessage();
-    }
-
     public String getScanMessage() {
         Summary summary = scanResult.getSummary();
         if (summary != null) {

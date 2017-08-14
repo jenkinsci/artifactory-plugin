@@ -77,9 +77,9 @@ public class XrayScanBuildStep extends AbstractStepImpl {
                 if (xrayScanConfig.getFailBuild()) {
                     build.setResult(Result.FAILURE);
                 }
-                log.error(xrayScanResult.getScanMassege());
+                log.error(xrayScanResult.getScanMessage());
             } else {
-                log.info(xrayScanResult.getScanMassege());
+                log.info(xrayScanResult.getScanMessage());
             }
 
             if (StringUtils.isNotEmpty(xrayScanResult.getScanUrl())) {

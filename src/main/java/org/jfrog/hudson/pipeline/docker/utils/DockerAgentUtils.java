@@ -6,7 +6,6 @@ import hudson.Launcher;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.remoting.Callable;
-import hudson.remoting.ChannelClosedException;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.pipeline.docker.DockerImage;
@@ -51,7 +50,7 @@ public class DockerAgentUtils implements Serializable {
     public synchronized static void registerImageOnAgents(Launcher launcher, final String imageTag, final String host, final String targetRepo, final int buildInfoId) throws IOException, InterruptedException {
         // Master
         final String imageId = getImageIdFromAgent(launcher, imageTag, host);
-        registerImage(imageId, imageTag, host, targetRepo, buildInfoId);
+        registerImage(imageId, imageTag, targetRepo, buildInfoId);
 
         // Agents
         List<Node> nodes = Jenkins.getInstance().getNodes();
@@ -61,17 +60,24 @@ public class DockerAgentUtils implements Serializable {
             }
             node.getChannel().call(new Callable<Boolean, IOException>() {
                 public Boolean call() throws IOException {
-                    registerImage(imageId, imageTag, host, targetRepo, buildInfoId);
+                    registerImage(imageId, imageTag, targetRepo, buildInfoId);
                     return true;
                 }
             });
         }
     }
 
-    private static void registerImage(String imageId, String imageTag, String host, String targetRepo, int buildInfoId) throws IOException {
-        if (!DockerUtils.isDockerHostExists(host)) {
-            return;
-        }
+    /**
+     * Register image ID and Tag for build-info capturing on all the agents available.
+     * To allow using all proxy servers to capture build-info.
+     *
+     * @param imageId
+     * @param imageTag
+     * @param targetRepo
+     * @param buildInfoId
+     * @throws IOException
+     */
+    private static void registerImage(String imageId, String imageTag, String targetRepo, int buildInfoId) throws IOException {
         imageIdToBuildInfoId.put(imageId, buildInfoId);
         imageIdToImageTag.put(imageId, imageTag);
         imageTagToTargetRepo.put(imageTag, targetRepo);
