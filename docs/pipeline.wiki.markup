@@ -385,7 +385,7 @@ The rtGradle instance supports additional configuration APIs. You can use these 
     // Set the deployed Ivy descriptor pattern:
     rtGradle.deployer.ivyPattern = '[organisation]/[module]/ivy-[revision].xml'
     // Set the deployed Ivy artifacts pattern:
-    rtGradle.deployer.artifactPattern = '[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]'
+    rtGradle.deployer.artifactPattern = '[orgPath]/[module]/[revision]/[artifact]-[revision](-[classifier]'
     // Set mavenCompatible to true, if you wish to replace dots with slashes in the Ivy layout path, to match the Maven layout:
     rtGradle.deployer.mavenCompatible = true
 {code}

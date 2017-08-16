@@ -16,7 +16,7 @@ public class GradleDeployer extends Deployer {
     private boolean deployMavenDescriptors;
     private boolean deployIvyDescriptors;
     private String ivyPattern = "[organisation]/[module]/ivy-[revision].xml";
-    private String artifactPattern = "[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]";
+    private String artifactPattern = "[orgPath]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]";
     private boolean mavenCompatible = true;
     private String repo;
     public final static GradleDeployer EMPTY_DEPLOYER;
