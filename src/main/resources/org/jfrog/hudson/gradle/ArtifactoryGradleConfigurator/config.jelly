@@ -339,7 +339,7 @@
                         <f:entry title="Artifact pattern" field="artifactPattern"
                                  help="/plugin/artifactory/help/common/help-artifactPattern.html">
                             <f:textbox value="${instance.artifactPattern}"
-                                       default="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]"/>
+                                       default="[orgPath]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]"/>
                         </f:entry>
                         <f:block>
                             <table style="width:100%">
