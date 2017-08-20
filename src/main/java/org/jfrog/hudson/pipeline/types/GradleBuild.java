@@ -118,14 +118,11 @@ public class GradleBuild implements Serializable {
     private Map<String, Object> getRunArguments(String buildFile, String tasks, String switches, String rootDir, BuildInfo buildInfo) {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
         stepVariables.put("gradleBuild", this);
-        stepVariables.put("tool", tool);
         stepVariables.put("rootDir", rootDir);
         stepVariables.put("buildFile", buildFile);
         stepVariables.put("tasks", tasks);
         stepVariables.put("switches", switches);
-        stepVariables.put("useWrapper", useWrapper);
         stepVariables.put("buildInfo", buildInfo);
-        stepVariables.put("usesPlugin", usesPlugin);
         return stepVariables;
     }
 }

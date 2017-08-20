@@ -10,6 +10,7 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
@@ -110,11 +111,11 @@ public class RunCommandStep extends AbstractStepImpl {
             Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
         }
 
-        private void persistBuildProperties(BuildInfo buildInfo, FilePath conanHomeDirectory)
-                throws IOException, InterruptedException {
+        private void persistBuildProperties(BuildInfo buildInfo, FilePath conanHomeDirectory) throws IOException, InterruptedException {
             FilePath buildProperties = new FilePath(conanHomeDirectory, ".conan").child("artifacts.properties");
             final String buildName = buildInfo.getName();
             final String buildNumber = buildInfo.getNumber();
+            final String revision = Utils.extractVcsRevision(ws);
             final long startTime = buildInfo.getStartDate().getTime();
             buildProperties.touch(0);
             buildProperties.act(new FilePath.FileCallable<Boolean>() {
@@ -124,6 +125,9 @@ public class RunCommandStep extends AbstractStepImpl {
                     props.setProperty(propsPrefix + "build.name", buildName);
                     props.setProperty(propsPrefix + "build.number", buildNumber);
                     props.setProperty(propsPrefix + "build.timestamp", String.valueOf(startTime));
+                    if (StringUtils.isNotEmpty(revision)) {
+                        props.setProperty(propsPrefix + "vcs.revision", revision);
+                    }
                     FileOutputStream fos = null;
                     try {
                         fos = new FileOutputStream(conanProperties.getCanonicalFile());

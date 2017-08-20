@@ -21,6 +21,7 @@ import org.jfrog.hudson.pipeline.types.MavenBuild;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.types.deployers.Deployer;
 import org.jfrog.hudson.pipeline.types.deployers.MavenDeployer;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -31,30 +32,18 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
     private MavenBuild mavenBuild;
     private String goal;
     private String pom;
-    private String tool;
-    private String opts;
     private BuildInfo buildInfo;
 
     @DataBoundConstructor
-    public ArtifactoryMavenBuild(MavenBuild mavenBuild, String tool, String pom, String goals, String opts, BuildInfo buildInfo) {
+    public ArtifactoryMavenBuild(MavenBuild mavenBuild, String pom, String goals, BuildInfo buildInfo) {
         this.mavenBuild = mavenBuild;
         this.goal = goals == null ? "" : goals;
         this.pom = pom == null ? "" : pom;
-        this.tool = tool == null ? "" : tool;
-        this.opts = opts == null ? "" : opts;
         this.buildInfo = buildInfo;
     }
 
     public MavenBuild getMavenBuild() {
         return mavenBuild;
-    }
-
-    public String getTool() {
-        return tool;
-    }
-
-    public String getOpts() {
-        return opts;
     }
 
     public String getGoal() {
@@ -67,10 +56,6 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
 
     public BuildInfo getBuildInfo() {
         return buildInfo;
-    }
-
-    public void setMavenBuild(MavenBuild mavenBuild) {
-        this.mavenBuild = mavenBuild;
     }
 
     public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
@@ -94,31 +79,36 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
         @StepContextParameter
         private transient EnvVars env;
 
+        private transient EnvVars extendedEnv;
+
         @Override
         protected BuildInfo run() throws Exception {
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
             Deployer deployer = getDeployer();
             deployer.createPublisherBuildInfoDetails(buildInfo);
+            String revision = Utils.extractVcsRevision(new FilePath(ws, step.getPom()));
+            extendedEnv = new EnvVars(env);
+            extendedEnv.put(ExtractorUtils.GIT_COMMIT, revision);
             MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build,
                     buildInfo, deployer, step.getMavenBuild().getResolver(), listener, launcher);
-            envExtractor.buildEnvVars(ws, env);
-            String stepOpts = step.getOpts();
+            envExtractor.buildEnvVars(ws, extendedEnv);
+            String stepOpts = step.getMavenBuild().getOpts();
             String mavenOpts = stepOpts + (
-                env.get("MAVEN_OPTS") != null ? (
-                    stepOpts.length() > 0 ? " " : ""
-                ) + env.get("MAVEN_OPTS") : ""
+                    extendedEnv.get("MAVEN_OPTS") != null ? (
+                            stepOpts.length() > 0 ? " " : ""
+                    ) + extendedEnv.get("MAVEN_OPTS") : ""
             );
             mavenOpts = mavenOpts.replaceAll("[\t\r\n]+", " ");
-            Maven3Builder maven3Builder = new Maven3Builder(step.getTool(), step.getPom(), step.getGoal(), mavenOpts);
+            Maven3Builder maven3Builder = new Maven3Builder(step.getMavenBuild().getTool(), step.getPom(), step.getGoal(), mavenOpts);
             convertJdkPath();
-            boolean result = maven3Builder.perform(build, launcher, listener, env, ws);
+            boolean result = maven3Builder.perform(build, launcher, listener, extendedEnv, ws);
             if (!result) {
                 build.setResult(Result.FAILURE);
                 throw new RuntimeException("Maven build failed");
             }
-            String generatedBuildPath = env.get(BuildInfoFields.GENERATED_BUILD_INFO);
+            String generatedBuildPath = extendedEnv.get(BuildInfoFields.GENERATED_BUILD_INFO);
             buildInfo.append(Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath));
-            buildInfo.appendDeployableArtifacts(env.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS), ws, listener);
+            buildInfo.appendDeployableArtifacts(extendedEnv.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS), ws, listener);
             buildInfo.setAgentName(Utils.getAgentName(ws));
             return buildInfo;
         }
@@ -129,12 +119,12 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
          */
         private void convertJdkPath() {
             String seperator = launcher.isUnix() ? "/" : "\\";
-            String java_home = env.get("JAVA_HOME");
+            String java_home = extendedEnv.get("JAVA_HOME");
             if (StringUtils.isNotEmpty(java_home)) {
                 if (!StringUtils.endsWith(java_home, seperator)) {
                     java_home += seperator;
                 }
-                env.put("PATH+JDK", java_home + "bin");
+                extendedEnv.put("PATH+JDK", java_home + "bin");
             }
         }
 

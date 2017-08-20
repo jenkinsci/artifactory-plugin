@@ -64,6 +64,7 @@ public class ExtractorUtils {
      * Jenkins.
      */
     public static final String EXTRACTOR_USED = "extractor.used";
+    public static final String GIT_COMMIT = "GIT_COMMIT";
 
     private ExtractorUtils() {
         // utility class
@@ -80,7 +81,7 @@ public class ExtractorUtils {
     public static String getVcsRevision(Map<String, String> env) {
         String revision = env.get("SVN_REVISION");
         if (StringUtils.isBlank(revision)) {
-            revision = env.get("GIT_COMMIT");
+            revision = env.get(GIT_COMMIT);
         }
         if (StringUtils.isBlank(revision)) {
             revision = env.get("P4_CHANGELIST");
