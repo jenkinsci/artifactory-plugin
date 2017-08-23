@@ -11,6 +11,7 @@ import com.github.dockerjava.core.command.PushImageResultCallback;
 import com.github.dockerjava.netty.NettyDockerCmdExecFactory;
 import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
+import hudson.util.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.pipeline.Utils;
 
@@ -37,7 +38,7 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             return dockerClient.inspectImageCmd(imageTag).exec().getId();
         } finally {
-            closeQuietly(dockerClient);
+            IOUtils.closeQuietly(dockerClient);
         }
     }
 
@@ -59,7 +60,7 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             dockerClient.pushImageCmd(imageTag).withAuthConfig(authConfig).exec(new PushImageResultCallback()).awaitSuccess();
         } finally {
-            closeQuietly(dockerClient);
+            IOUtils.closeQuietly(dockerClient);
         }
     }
 
@@ -81,7 +82,7 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             dockerClient.pullImageCmd(imageTag).withAuthConfig(authConfig).exec(new PullImageResultCallback()).awaitSuccess();
         } finally {
-            closeQuietly(dockerClient);
+            IOUtils.closeQuietly(dockerClient);
         }
     }
 
@@ -98,17 +99,7 @@ public class DockerUtils implements Serializable {
             dockerClient = getDockerClient(host);
             return dockerClient.inspectImageCmd(digest).exec().getParent();
         } finally {
-            closeQuietly(dockerClient);
-        }
-    }
-
-    private static void closeQuietly(DockerClient c) {
-        if (c != null) {
-            try {
-                c.close();
-            } catch (IOException e) {
-                // Ignore
-            }
+            IOUtils.closeQuietly(dockerClient);
         }
     }
 
@@ -321,14 +312,20 @@ public class DockerUtils implements Serializable {
     }
 
     private static DockerClient getDockerClient(String host) {
-        NettyDockerCmdExecFactory nettyDockerCmdExecFactory = new NettyDockerCmdExecFactory();
-        if (StringUtils.isEmpty(host)) {
-            return DockerClientBuilder.getInstance().withDockerCmdExecFactory(nettyDockerCmdExecFactory).build();
-        }
+        NettyDockerCmdExecFactory nettyDockerCmdExecFactory = null;
 
-        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost(host)
-                .build();
-        return DockerClientBuilder.getInstance(config).withDockerCmdExecFactory(nettyDockerCmdExecFactory).build();
+        try {
+            nettyDockerCmdExecFactory = new NettyDockerCmdExecFactory();
+            if (StringUtils.isEmpty(host)) {
+                return DockerClientBuilder.getInstance().withDockerCmdExecFactory(nettyDockerCmdExecFactory).build();
+            }
+
+            DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
+                    .withDockerHost(host)
+                    .build();
+            return DockerClientBuilder.getInstance(config).withDockerCmdExecFactory(nettyDockerCmdExecFactory).build();
+        } finally {
+            IOUtils.closeQuietly(nettyDockerCmdExecFactory);
+        }
     }
 }
