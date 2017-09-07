@@ -15,30 +15,18 @@ import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by romang on 8/15/16.
  */
 public class DockerAgentUtils implements Serializable {
+    // Docker images cache. Every image which is intersepted by the Build-Info Proxy, is added to this cache,
+    // so that it can be used to create the build-info in Artifactory.
+    private static Map<String, DockerImage> images = new ConcurrentHashMap<String, DockerImage>();
 
     /**
-     * Using the structure below to create link between the desired docker image to the build.
-     */
-
-    //Contains image id to build-info id for registering imageId to build-info
-    private static Multimap<String, Integer> imageIdToBuildInfoId = ArrayListMultimap.create();
-
-    //Contains all the prepared docker images for build-info
-    private static Multimap<Integer, DockerImage> buildInfoIdToDockerImage = ArrayListMultimap.create();
-
-    //Image id to image tag
-    private static Map<String, String> imageIdToImageTag = new HashMap<String, String>();
-
-    //Image tag to target repository
-    private static Map<String, String> imageTagToTargetRepo = new HashMap<String, String>();
-
-    /**
-     * Register image to be captured for building build-info.
+     * Registers an image to be captured by the build-info proxy.
      *
      * @param imageTag
      * @param host
@@ -47,10 +35,12 @@ public class DockerAgentUtils implements Serializable {
      * @throws IOException
      * @throws InterruptedException
      */
-    public synchronized static void registerImageOnAgents(Launcher launcher, final String imageTag, final String host, final String targetRepo, final int buildInfoId) throws IOException, InterruptedException {
+    public synchronized static void registerImagOnAgents(Launcher launcher, final String imageTag,
+            final String host, final String targetRepo, final ArrayListMultimap<String, String> artifactsProps,
+                final int buildInfoId) throws IOException, InterruptedException {
         // Master
         final String imageId = getImageIdFromAgent(launcher, imageTag, host);
-        registerImage(imageId, imageTag, targetRepo, buildInfoId);
+        registerImage(imageId, imageTag, targetRepo, artifactsProps, buildInfoId);
 
         // Agents
         List<Node> nodes = Jenkins.getInstance().getNodes();
@@ -60,7 +50,7 @@ public class DockerAgentUtils implements Serializable {
             }
             node.getChannel().call(new Callable<Boolean, IOException>() {
                 public Boolean call() throws IOException {
-                    registerImage(imageId, imageTag, targetRepo, buildInfoId);
+                    registerImage(imageId, imageTag, targetRepo, artifactsProps, buildInfoId);
                     return true;
                 }
             });
@@ -68,8 +58,7 @@ public class DockerAgentUtils implements Serializable {
     }
 
     /**
-     * Register image ID and Tag for build-info capturing on all the agents available.
-     * To allow using all proxy servers to capture build-info.
+     * Registers an image to the images cache, so that it can be captured by the build-info proxy.
      *
      * @param imageId
      * @param imageTag
@@ -77,14 +66,25 @@ public class DockerAgentUtils implements Serializable {
      * @param buildInfoId
      * @throws IOException
      */
-    private static void registerImage(String imageId, String imageTag, String targetRepo, int buildInfoId) throws IOException {
-        imageIdToBuildInfoId.put(imageId, buildInfoId);
-        imageIdToImageTag.put(imageId, imageTag);
-        imageTagToTargetRepo.put(imageTag, targetRepo);
+    private static void registerImage(String imageId, String imageTag, String targetRepo,
+            ArrayListMultimap<String, String> artifactsProps, int buildInfoId) throws IOException {
+        DockerImage image = images.get(imageId);
+        if (image == null) {
+            synchronized (images) {
+                image = images.get(imageId);
+                if (image == null) {
+                    image = new DockerImage(imageId, imageTag, targetRepo);
+                    images.put(imageId, image);
+                }
+            }
+        }
+        image.addBuildInfoId(buildInfoId);
+        image.setArtifactsProps(artifactsProps);
     }
 
     /**
-     * Capture manifest and extract layers data from it to create docker images build-info
+     * Captures the docker image manifest and extracts the layers data
+     * from it, to create a build-info for it.
      *
      * @param content
      * @param properties
@@ -92,20 +92,70 @@ public class DockerAgentUtils implements Serializable {
     public synchronized static void captureContent(String content, Properties properties) {
         try {
             String digest = DockerUtils.getConfigDigest(content);
-            for (Integer buildInfoId : imageIdToBuildInfoId.get(digest)) {
-                String imageTag = imageIdToImageTag.get(digest);
-                DockerImage dockerImage = new DockerImage(digest, imageTag, imageTagToTargetRepo.get(imageTag), content, BuildInfoProxy.getAgentName());
-                dockerImage.addProperties(properties);
-                buildInfoIdToDockerImage.put(buildInfoId, dockerImage);
+            for (Iterator<Map.Entry<String, DockerImage>> it = images.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, DockerImage> entry = it.next();
+                DockerImage image = entry.getValue();
+                if (digest.equals(image.getImageId())) {
+                    image.setManifest(content);
+                    image.setAgentName(BuildInfoProxy.getAgentName());
+                    image.addBuildInfoModuleProps(properties);
+                }
             }
-            imageIdToBuildInfoId.removeAll(digest);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     /**
-     * Retrieve prepared docker images from an agent(could be master as well) related to the given build-info id
+     * Gets a list of registered docker images from the images cache, if it has been
+     * registered to the cache for a specific build-info ID and if a docker manifest has been captured for it
+     * by the build-info proxy.
+     * @param buildInfoId
+     * @return
+     */
+    public static List<DockerImage> getImagesByBuildId(int buildInfoId) {
+        List<DockerImage> list = new ArrayList<DockerImage>();
+        for (Iterator<Map.Entry<String, DockerImage>> it = images.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, DockerImage> entry = it.next();
+            DockerImage image = entry.getValue();
+            if (image.hasBuild(buildInfoId) && image.hasManifest()) {
+                list.add(image);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Gets a list of registered docker images from the images cache, if it has been
+     * registered to the cache for a specific build-info ID and if a docker manifest has been captured for it
+     * by the build-info proxy.
+     * Additionally, the methods also removes the returned images from the cache.
+     * @param buildInfoId
+     * @return
+     */
+    public static List<DockerImage> getAndDiscardImagesByBuildId(int buildInfoId) {
+        List<DockerImage> list = new ArrayList<DockerImage>();
+        synchronized(images) {
+            for (Iterator<Map.Entry<String, DockerImage>> it = images.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, DockerImage> entry = it.next();
+                DockerImage image = entry.getValue();
+                if (image.hasBuild(buildInfoId)) {
+                    if (image.hasManifest()) {
+                        list.add(image);
+                    }
+                    image.removeBuild(buildInfoId);
+                }
+                if (!image.hasBuilds()) {
+                    it.remove();
+                }
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Retrieves from all the Jenkins agents all the docker images, which have been registered for a specific build-info ID
+     * Only images for which manifests have been captured are returned.
      *
      * @param buildInfoId
      * @return
@@ -115,23 +165,20 @@ public class DockerAgentUtils implements Serializable {
     public static List<DockerImage> getDockerImagesFromAgents(final int buildInfoId, TaskListener listener) throws IOException, InterruptedException {
         List<DockerImage> dockerImages = new ArrayList<DockerImage>();
 
-        //Master
-        dockerImages.addAll(buildInfoIdToDockerImage.get(buildInfoId));
-        buildInfoIdToDockerImage.removeAll(buildInfoId);
+        // Collect images from the master:
+        dockerImages.addAll(getAndDiscardImagesByBuildId(buildInfoId));
 
-        //Agents
+        // Collect images from all the agents:
         List<Node> nodes = Jenkins.getInstance().getNodes();
         for (Node node : nodes) {
             if (node == null || node.getChannel() == null) {
                 continue;
             }
-
             try {
                 List<DockerImage> partialDockerImages = node.getChannel().call(new Callable<List<DockerImage>, IOException>() {
                     public List<DockerImage> call() throws IOException {
                         List<DockerImage> dockerImages = new ArrayList<DockerImage>();
-                        dockerImages.addAll(buildInfoIdToDockerImage.get(buildInfoId));
-                        buildInfoIdToDockerImage.removeAll(buildInfoId);
+                        dockerImages.addAll(getAndDiscardImagesByBuildId(buildInfoId));
                         return dockerImages;
                     }
                 });
@@ -224,15 +271,25 @@ public class DockerAgentUtils implements Serializable {
         return parentUpdated;
     }
 
+    /**
+     * Adds the docker image parent (the base image) as property on the docker image.
+     * This property will be later added to the generated build-info deployed to Artifactory.
+     * @param log
+     * @param imageTag
+     * @param host
+     * @param buildInfoId
+     * @return
+     * @throws IOException
+     */
     private static boolean updateImageParent(JenkinsBuildInfoLog log, String imageTag, String host, int buildInfoId) throws IOException {
         boolean parentUpdated = false;
-        for (DockerImage image : buildInfoIdToDockerImage.get(buildInfoId)) {
+        for (DockerImage image : getImagesByBuildId(buildInfoId)) {
             if (image.getImageTag().equals(imageTag)) {
                 String parentId = DockerUtils.getParentId(image.getImageId(), host);
                 if (StringUtils.isNotEmpty(parentId)) {
                     Properties properties = new Properties();
                     properties.setProperty("docker.image.parent", DockerUtils.getShaValue(parentId));
-                    image.addProperties(properties);
+                    image.addBuildInfoModuleProps(properties);
                 }
                 log.info("Docker build-info captured on '" + image.getAgentName() + "' agent.");
                 parentUpdated = true;

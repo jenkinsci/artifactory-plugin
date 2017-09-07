@@ -6,6 +6,7 @@ import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
 /**
@@ -70,7 +71,7 @@ public class MavenDeployer extends Deployer {
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
                 .includeEnvVars(isIncludeEnvVars())
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
-                .matrixParams(buildPropertiesString())
+                .matrixParams(ExtractorUtils.buildPropertiesString(getProperties()))
                 .includesExcludes(getArtifactsIncludeExcludeForDeyployment());
     }
 
