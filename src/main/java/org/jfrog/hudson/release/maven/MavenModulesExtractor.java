@@ -24,14 +24,23 @@ public class MavenModulesExtractor implements FilePath.FileCallable<List<String>
     }
 
     private MavenProject getMavenProject(String pomFile) throws IOException {
+        FileReader reader = null;
         try {
             MavenXpp3Reader mavenReader = new MavenXpp3Reader();
-            FileReader reader = new FileReader(pomFile);
+            reader = new FileReader(pomFile);
             Model model = mavenReader.read(reader);
             model.setPomFile(new File(pomFile));
             return new MavenProject(model);
         } catch (Exception ex) {
             throw new IOException(ex);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (Exception e) {
+                    // Ignored
+                }
+            }
         }
     }
 }

@@ -27,6 +27,7 @@ import hudson.matrix.MatrixProject;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.ArtifactoryPlugin;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -284,14 +285,21 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
             overrideStagingPluginParams(req);
             // Schedule the release build:
             Queue.WaitingItem item = Jenkins.getInstance().getQueue().schedule(
-                    project, 0,
-                    new Action[]{this, new CauseAction(new Cause.UserIdCause())}
+                project, 0,
+                new Action[]{this, new CauseAction(new Cause.UserIdCause())}
             );
             if (item == null) {
                 log.log(Level.SEVERE, "Failed to schedule a release build following a Release API invocation");
                 resp.setStatus(StaplerResponse.SC_INTERNAL_SERVER_ERROR);
             } else {
                 String url = req.getContextPath() + '/' + item.getUrl();
+                JSONObject json = new JSONObject();
+                json.element("queueItem", item.id);
+                json.element("releaseVersion", getReleaseVersion());
+                json.element("nextVersion", getNextVersion());
+                json.element("releaseBranch", getReleaseBranch());
+                // Must use getOutputStream as sendRedirect uses getOutputStream (and closes it)
+                resp.getOutputStream().print(json.toString());
                 resp.sendRedirect(201, url);
             }
         } catch (Exception e) {
@@ -439,8 +447,10 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
     }
 
     protected void doGlobalVersioning() {
-        releaseVersion = defaultGlobalModule.getReleaseVersion();
-        nextVersion = defaultGlobalModule.getNextDevelopmentVersion();
+        if (defaultGlobalModule != null) {
+            releaseVersion = defaultGlobalModule.getReleaseVersion();
+            nextVersion = defaultGlobalModule.getNextDevelopmentVersion();
+        }
     }
 
     protected W getWrapper() {

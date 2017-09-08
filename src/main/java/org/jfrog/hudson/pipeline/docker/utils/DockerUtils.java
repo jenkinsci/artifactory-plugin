@@ -24,19 +24,6 @@ import java.util.List;
  */
 public class DockerUtils implements Serializable {
 
-    public static boolean isDockerHostExists(String host) throws IOException {
-        DockerClient dockerClient = null;
-        try {
-            dockerClient = getDockerClient(host);
-            dockerClient.pingCmd().exec();
-            return true;
-        } catch (Exception e) {
-            return false;
-        } finally {
-            closeQuietly(dockerClient);
-        }
-    }
-
     /**
      * Get image Id from imageTag using DockerBuildInfoHelper client.
      *
@@ -112,16 +99,6 @@ public class DockerUtils implements Serializable {
             return dockerClient.inspectImageCmd(digest).exec().getParent();
         } finally {
             closeQuietly(dockerClient);
-        }
-    }
-
-    private static void closeQuietly(DockerClient c) {
-        if (c != null) {
-            try {
-                c.close();
-            } catch (IOException e) {
-                // Ignore
-            }
         }
     }
 
@@ -334,7 +311,9 @@ public class DockerUtils implements Serializable {
     }
 
     private static DockerClient getDockerClient(String host) {
-        NettyDockerCmdExecFactory nettyDockerCmdExecFactory = new NettyDockerCmdExecFactory();
+        NettyDockerCmdExecFactory nettyDockerCmdExecFactory = null;
+
+        nettyDockerCmdExecFactory = new NettyDockerCmdExecFactory();
         if (StringUtils.isEmpty(host)) {
             return DockerClientBuilder.getInstance().withDockerCmdExecFactory(nettyDockerCmdExecFactory).build();
         }
@@ -343,5 +322,15 @@ public class DockerUtils implements Serializable {
                 .withDockerHost(host)
                 .build();
         return DockerClientBuilder.getInstance(config).withDockerCmdExecFactory(nettyDockerCmdExecFactory).build();
+    }
+
+    private static void closeQuietly(DockerClient dockerClient) {
+        if (dockerClient != null) {
+            try {
+                dockerClient.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
     }
 }

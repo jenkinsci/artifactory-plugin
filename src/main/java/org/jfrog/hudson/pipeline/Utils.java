@@ -10,11 +10,14 @@ import hudson.plugins.git.util.BuildData;
 import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import hudson.remoting.LocalChannel;
+import hudson.remoting.VirtualChannel;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Ref;
 import org.jfrog.build.api.Vcs;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.CredentialsConfig;
@@ -129,6 +132,23 @@ public class Utils {
             }
         }
         return result;
+    }
+
+    public static String extractVcsRevision(FilePath filePath) throws IOException, InterruptedException {
+        if (filePath == null) {
+            return "";
+        }
+        FilePath dotGitPath = new FilePath(filePath, ".git");
+        if (dotGitPath.exists()) {
+            return dotGitPath.act(new FilePath.FileCallable<String>() {
+                public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+                    FileRepository repository = new FileRepository(f);
+                    Ref head = repository.getRef("HEAD");
+                    return head.getObjectId().getName();
+                }
+            });
+        }
+        return extractVcsRevision(filePath.getParent());
     }
 
     public static Node getNode(Launcher launcher) {

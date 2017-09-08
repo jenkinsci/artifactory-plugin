@@ -10,7 +10,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
-import org.jfrog.hudson.pipeline.BuildInfoDeployer;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
@@ -56,8 +56,13 @@ public class PublishBuildInfoStep extends AbstractStepImpl {
         @Override
         protected Boolean run() throws Exception {
             BuildInfoAccessor buildInfo = new BuildInfoAccessor(step.getBuildInfo());
-            BuildInfoDeployer deployer = buildInfo.createDeployer(build, listener, launcher, Utils.prepareArtifactoryServer(null, step.getServer()));
-            deployer.deploy();
+            org.jfrog.hudson.ArtifactoryServer server = Utils.prepareArtifactoryServer(null, step.getServer());
+            ArtifactoryBuildInfoClient client = buildInfo.createArtifactoryClient(server, build, listener);
+            try {
+                buildInfo.createDeployer(build, listener, server, client).deploy();
+            } finally {
+                client.close();
+            }
             return true;
         }
     }

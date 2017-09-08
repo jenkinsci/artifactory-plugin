@@ -1,11 +1,13 @@
 package org.jfrog.hudson.pipeline.types;
 
+import com.google.common.collect.ArrayListMultimap;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -18,6 +20,8 @@ public class Docker implements Serializable {
     private String password;
     private String credentialsId;
     private String host;
+    // Properties to attach to the deployed docker layers.
+    private ArrayListMultimap<String, String> properties = ArrayListMultimap.create();
 
     public Docker() {
     }
@@ -51,6 +55,12 @@ public class Docker implements Serializable {
     }
 
     @Whitelisted
+    public Docker addProperty(String key, String... values) {
+        properties.putAll(key, Arrays.asList(values));
+        return this;
+    }
+
+    @Whitelisted
     public BuildInfo push(String imageTag, String targetRepository) throws Exception {
         return push(imageTag, targetRepository, null);
     }
@@ -69,6 +79,7 @@ public class Docker implements Serializable {
         CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, credentialsId);
         dockerArguments.put("credentialsConfig", credentialsConfig);
         dockerArguments.put("host", host);
+        dockerArguments.put("properties", properties);
 
         BuildInfo buildInfo = (BuildInfo) script.invokeMethod("dockerPushStep", dockerArguments);
         buildInfo.setCpsScript(script);

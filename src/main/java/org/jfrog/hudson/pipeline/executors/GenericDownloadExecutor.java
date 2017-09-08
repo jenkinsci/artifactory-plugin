@@ -47,15 +47,9 @@ public class GenericDownloadExecutor {
     }
 
     private ProxyConfiguration getProxyConfiguration() {
-        hudson.ProxyConfiguration proxy = Jenkins.getInstance().proxy;
-        ProxyConfiguration proxyConfiguration = null;
-        if (proxy != null) {
-            proxyConfiguration = new ProxyConfiguration();
-            proxyConfiguration.host = proxy.name;
-            proxyConfiguration.port = proxy.port;
-            proxyConfiguration.username = proxy.getUserName();
-            proxyConfiguration.password = proxy.getPassword();
+        if (server.isBypassProxy()) {
+            return null;
         }
-        return proxyConfiguration;
+        return ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy);
     }
 }

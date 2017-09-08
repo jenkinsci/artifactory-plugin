@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.steps;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.FilePath;
@@ -29,18 +30,27 @@ public class DockerPushStep extends AbstractStepImpl {
     private String host;
     private BuildInfo buildInfo;
     private String targetRepo;
+    // Properties to attach to the deployed docker layers.
+    private ArrayListMultimap<String, String> properties;
 
     @DataBoundConstructor
-    public DockerPushStep(String image, CredentialsConfig credentialsConfig, String host, String targetRepo, BuildInfo buildInfo) {
+    public DockerPushStep(String image, CredentialsConfig credentialsConfig, String host, String targetRepo,
+              BuildInfo buildInfo, ArrayListMultimap<String, String> properties) {
+
         this.image = image;
         this.credentialsConfig = credentialsConfig;
         this.host = host;
-        this.buildInfo = buildInfo;
         this.targetRepo = targetRepo;
+        this.buildInfo = buildInfo;
+        this.properties = properties;
     }
 
     public String getImage() {
         return image;
+    }
+
+    public ArrayListMultimap<String, String> getProperties() {
+        return properties;
     }
 
     public CredentialsConfig getCredentialsConfig() {
@@ -94,7 +104,8 @@ public class DockerPushStep extends AbstractStepImpl {
                 return null;
             }
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
-            DockerAgentUtils.registerImageOnAgents(launcher, step.getImage(), step.getHost(), step.getTargetRepo(), buildInfo.hashCode());
+            DockerAgentUtils.registerImagOnAgents(
+                    launcher, step.getImage(), step.getHost(), step.getTargetRepo(), step.getProperties(), buildInfo.hashCode());
 
             String username = step.getCredentialsConfig().provideUsername(build.getParent());
             String password = step.getCredentialsConfig().providePassword(build.getParent());

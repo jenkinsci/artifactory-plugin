@@ -324,37 +324,33 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         listener.getLogger().println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
 
-        final String artifactoryServerName = getArtifactoryName();
-        if (StringUtils.isBlank(artifactoryServerName)) {
+        if (StringUtils.isBlank(getArtifactoryName())) {
             return super.setUp(build, launcher, listener);
         }
 
-        hudson.ProxyConfiguration proxy = Jenkins.getInstance().proxy;
-        ProxyConfiguration proxyConfiguration = null;
-        if (proxy != null) {
-            proxyConfiguration = new ProxyConfiguration();
-            proxyConfiguration.host = proxy.name;
-            proxyConfiguration.port = proxy.port;
-            proxyConfiguration.username = proxy.getUserName();
-            proxyConfiguration.password = proxy.getPassword();
-        }
-
-        //Resolve process
-        ArtifactoryServer server = getArtifactoryResolverServer();
+        // Resolve process:
+        ArtifactoryServer resolverServer = getArtifactoryResolverServer();
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(ArtifactoryGenericConfigurator.this,
-                server);
+                resolverServer);
         String username = preferredResolver.provideUsername(build.getProject());
         String password = preferredResolver.providePassword(build.getProject());
-        ArtifactoryDependenciesClient dependenciesClient =
-                server.createArtifactoryDependenciesClient(username, password, proxyConfiguration, listener);
+
+        ProxyConfiguration proxyConfiguration = null;
+        hudson.ProxyConfiguration proxy = Jenkins.getInstance().proxy;
+        if (proxy != null && !resolverServer.isBypassProxy()) {
+            proxyConfiguration = ArtifactoryServer.createProxyConfiguration(proxy);
+        }
+
+        ArtifactoryDependenciesClient dependenciesClient = null;
         try {
             if (isUseSpecs()) {
                 String spec = SpecUtils.getSpecStringFromSpecConf(downloadSpec, build.getEnvironment(listener),
                         build.getExecutor().getCurrentWorkspace(), listener.getLogger());
                 FilePath workspace = build.getExecutor().getCurrentWorkspace();
                 publishedDependencies = workspace.act(new FilesResolverCallable(
-                        new JenkinsBuildInfoLog(listener), username, password, server.getUrl(), spec, proxyConfiguration));
+                        new JenkinsBuildInfoLog(listener), username, password, resolverServer.getUrl(), spec, proxyConfiguration));
             } else {
+                dependenciesClient = resolverServer.createArtifactoryDependenciesClient(username, password, proxyConfiguration, listener);
                 GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener, dependenciesClient);
                 publishedDependencies = artifactsResolver.retrievePublishedDependencies(resolvePattern);
                 buildDependencies = artifactsResolver.retrieveBuildDependencies(resolvePattern);
@@ -365,7 +361,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             e.printStackTrace(listener.error(e.getMessage()));
             build.setResult(Result.FAILURE);
         } finally {
-            dependenciesClient.close();
+            if (dependenciesClient != null) {
+                dependenciesClient.close();
+            }
         }
         return null;
     }

@@ -28,7 +28,7 @@ public class DockerBuildInfoHelper implements Serializable {
         aggregatedBuildInfoIds.add(buildInfo.hashCode());
         List<DockerImage> dockerImages = new ArrayList<DockerImage>();
         for (Integer buildInfoId : aggregatedBuildInfoIds) {
-            dockerImages.addAll(DockerAgentUtils.getDockerImagesFromAgents(buildInfoId));
+            dockerImages.addAll(DockerAgentUtils.getDockerImagesFromAgents(buildInfoId, listener));
         }
 
         String timestamp = Long.toString(buildInfo.getStartDate().getTime());
