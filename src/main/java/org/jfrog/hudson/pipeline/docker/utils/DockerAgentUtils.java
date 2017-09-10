@@ -15,7 +15,6 @@ import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by romang on 8/15/16.
@@ -23,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DockerAgentUtils implements Serializable {
     // Docker images cache. Every image which is intersepted by the Build-Info Proxy, is added to this cache,
     // so that it can be used to create the build-info in Artifactory.
-    private static Map<String, DockerImage> images = new ConcurrentHashMap<String, DockerImage>();
+    private static final List<DockerImage> images = Collections.synchronizedList(new ArrayList<DockerImage>());
 
     /**
      * Registers an image to be captured by the build-info proxy.
@@ -68,18 +67,9 @@ public class DockerAgentUtils implements Serializable {
      */
     private static void registerImage(String imageId, String imageTag, String targetRepo,
             ArrayListMultimap<String, String> artifactsProps, int buildInfoId) throws IOException {
-        DockerImage image = images.get(imageId);
-        if (image == null) {
-            synchronized (images) {
-                image = images.get(imageId);
-                if (image == null) {
-                    image = new DockerImage(imageId, imageTag, targetRepo);
-                    images.put(imageId, image);
-                }
-            }
-        }
-        image.addBuildInfoId(buildInfoId);
+        DockerImage image = new DockerImage(imageId, imageTag, targetRepo, buildInfoId);
         image.setArtifactsProps(artifactsProps);
+        images.add(image);
     }
 
     /**
@@ -92,9 +82,9 @@ public class DockerAgentUtils implements Serializable {
     public synchronized static void captureContent(String content, Properties properties) {
         try {
             String digest = DockerUtils.getConfigDigest(content);
-            for (Iterator<Map.Entry<String, DockerImage>> it = images.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, DockerImage> entry = it.next();
-                DockerImage image = entry.getValue();
+            Iterator<DockerImage> it = images.iterator();
+            while (it.hasNext()) {
+                DockerImage image = it.next();
                 if (digest.equals(image.getImageId())) {
                     image.setManifest(content);
                     image.setAgentName(BuildInfoProxy.getAgentName());
@@ -115,10 +105,10 @@ public class DockerAgentUtils implements Serializable {
      */
     public static List<DockerImage> getImagesByBuildId(int buildInfoId) {
         List<DockerImage> list = new ArrayList<DockerImage>();
-        for (Iterator<Map.Entry<String, DockerImage>> it = images.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, DockerImage> entry = it.next();
-            DockerImage image = entry.getValue();
-            if (image.hasBuild(buildInfoId) && image.hasManifest()) {
+        Iterator<DockerImage> it = images.iterator();
+        while (it.hasNext()) {
+            DockerImage image = it.next();
+            if (image.getBuildInfoId() == buildInfoId && image.hasManifest()) {
                 list.add(image);
             }
         }
@@ -136,16 +126,16 @@ public class DockerAgentUtils implements Serializable {
     public static List<DockerImage> getAndDiscardImagesByBuildId(int buildInfoId) {
         List<DockerImage> list = new ArrayList<DockerImage>();
         synchronized(images) {
-            for (Iterator<Map.Entry<String, DockerImage>> it = images.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, DockerImage> entry = it.next();
-                DockerImage image = entry.getValue();
-                if (image.hasBuild(buildInfoId)) {
+            Iterator<DockerImage> it = images.iterator();
+            while (it.hasNext()) {
+                DockerImage image = it.next();
+                if (image.getBuildInfoId() == buildInfoId) {
                     if (image.hasManifest()) {
                         list.add(image);
                     }
-                    image.removeBuild(buildInfoId);
-                }
-                if (!image.hasBuilds()) {
+                    it.remove();
+                } else // Remove old images from the cache, for which build-info hasn't been published to Artifactory:
+                if (image.isExpired()) {
                     it.remove();
                 }
             }

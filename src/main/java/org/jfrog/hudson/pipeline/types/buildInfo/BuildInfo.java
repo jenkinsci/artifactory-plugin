@@ -93,7 +93,11 @@ public class BuildInfo implements Serializable {
         this.publishedDependencies.addAll(other.publishedDependencies);
         this.buildDependencies.addAll(other.buildDependencies);
         this.dockerBuildInfoHelper.append(other.dockerBuildInfoHelper);
-        this.env.append(other.env);
+
+        Env tempEnv = new Env();
+        tempEnv.append(this.env);
+        tempEnv.append(other.env);
+        this.env = tempEnv;
     }
 
     public void append(Build other) {

@@ -32,40 +32,37 @@ import java.util.*;
  * Created by romang on 8/9/16.
  */
 public class DockerImage implements Serializable {
+    // Maximum time in milliseconds, after which this image can be removed from the images cache.
+    private static final long MAX_AGE_MILLI = 12 * 60 * 60 * 1000L;
+    // Stores the time this image is created, so that it can be later removed.
+    private final long createdTime = System.currentTimeMillis();
     private final String imageId;
     private final String imageTag;
     private final String targetRepo;
     // List of build-info IDs. These IDs link this docker image to the specific corresponding
     // build-info instances.
-    private final HashSet<Integer> buildInfoIds = new HashSet<Integer>();
+    private int buildInfoId;
     private String manifest;
     private String agentName = "";
     // List of properties added to the build-info generated for this docker image.
-    private Properties buildInfoNoduleProps = new Properties();
+    private Properties buildInfoModuleProps = new Properties();
     // Properties to be attached to the docker layers deployed to Artifactory.
     private ArrayListMultimap<String, String> artifactsProps;
     private final ArtifactoryVersion VIRTUAL_REPOS_SUPPORTED_VERSION = new ArtifactoryVersion("4.8.1");
 
-    public DockerImage(String imageId, String imageTag, String targetRepo) {
+    public DockerImage(String imageId, String imageTag, String targetRepo, int buildInfoId) {
         this.imageId = imageId;
         this.imageTag = imageTag;
         this.targetRepo = targetRepo;
+        this.buildInfoId = buildInfoId;
     }
 
-    public void addBuildInfoId(int id) {
-        buildInfoIds.add(id);
+    public boolean isExpired() {
+        return System.currentTimeMillis() - createdTime > MAX_AGE_MILLI;
     }
 
-    public boolean hasBuild(int buildInfoId) {
-        return buildInfoIds.contains(buildInfoId);
-    }
-
-    public void removeBuild(int buildInfoId) {
-        buildInfoIds.remove(buildInfoId);
-    }
-
-    public boolean hasBuilds() {
-        return buildInfoIds.size() > 0;
+    public int getBuildInfoId() {
+        return buildInfoId;
     }
 
     public void setManifest(String manifest) {
@@ -82,10 +79,6 @@ public class DockerImage implements Serializable {
      */
     public boolean hasManifest() {
         return StringUtils.isNotBlank(manifest);
-    }
-
-    public ArrayListMultimap<String, String> getArtifactsProps() {
-        return artifactsProps;
     }
 
     public String getImageTag() {
@@ -156,13 +149,13 @@ public class DockerImage implements Serializable {
     }
 
     private void setBuildInfoModuleProps(Module buildInfoModule) {
-        buildInfoNoduleProps.setProperty("docker.image.id", DockerUtils.getShaValue(imageId));
-        buildInfoNoduleProps.setProperty("docker.captured.image", imageTag);
-        buildInfoModule.setProperties(buildInfoNoduleProps);
+        buildInfoModuleProps.setProperty("docker.image.id", DockerUtils.getShaValue(imageId));
+        buildInfoModuleProps.setProperty("docker.captured.image", imageTag);
+        buildInfoModule.setProperties(buildInfoModuleProps);
     }
 
     public void addBuildInfoModuleProps(Properties props) {
-        buildInfoNoduleProps.putAll(props);
+        buildInfoModuleProps.putAll(props);
     }
 
     private DockerLayers createLayers(ArtifactoryDependenciesClient dependenciesClient, boolean includeVirtualReposSupported) throws IOException {
