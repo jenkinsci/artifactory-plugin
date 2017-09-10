@@ -91,7 +91,8 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
             extendedEnv.put(ExtractorUtils.GIT_COMMIT, revision);
             MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build,
                     buildInfo, deployer, step.getMavenBuild().getResolver(), listener, launcher);
-            envExtractor.buildEnvVars(ws, extendedEnv);
+            FilePath tempDir = new FilePath(ws.getParent(), ws.getBaseName() + "@tmp");
+            envExtractor.buildEnvVars(tempDir, extendedEnv);
             String stepOpts = step.getMavenBuild().getOpts();
             String mavenOpts = stepOpts + (
                     extendedEnv.get("MAVEN_OPTS") != null ? (
@@ -101,14 +102,14 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
             mavenOpts = mavenOpts.replaceAll("[\t\r\n]+", " ");
             Maven3Builder maven3Builder = new Maven3Builder(step.getMavenBuild().getTool(), step.getPom(), step.getGoal(), mavenOpts);
             convertJdkPath();
-            boolean result = maven3Builder.perform(build, launcher, listener, extendedEnv, ws);
+            boolean result = maven3Builder.perform(build, launcher, listener, extendedEnv, ws, tempDir);
             if (!result) {
                 build.setResult(Result.FAILURE);
                 throw new RuntimeException("Maven build failed");
             }
             String generatedBuildPath = extendedEnv.get(BuildInfoFields.GENERATED_BUILD_INFO);
             buildInfo.append(Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath));
-            buildInfo.appendDeployableArtifacts(extendedEnv.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS), ws, listener);
+            buildInfo.appendDeployableArtifacts(extendedEnv.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS), tempDir, listener);
             buildInfo.setAgentName(Utils.getAgentName(ws));
             return buildInfo;
         }

@@ -453,7 +453,7 @@ public class ExtractorUtils {
 
     public static void persistConfiguration(ArtifactoryClientConfiguration configuration, Map<String, String> env, FilePath ws,
                                             hudson.Launcher launcher) throws IOException, InterruptedException {
-        FilePath propertiesFile = ws.createTextTempFile("buildInfo", ".properties", "", false);
+        FilePath propertiesFile = ws.createTextTempFile("buildInfo", ".properties", "");
         ActionableHelper.deleteFilePathOnExit(propertiesFile);
         configuration.setPropertiesFile(propertiesFile.getRemote());
         env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());

@@ -6,7 +6,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.Hudson;
 import hudson.model.Run;
 import org.apache.commons.lang.StringUtils;
-import org.jfrog.hudson.pipeline.Utils;
+import org.jfrog.hudson.action.ActionableHelper;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,7 +63,7 @@ public class PluginDependencyHelper {
         if (build instanceof AbstractBuild) {
             return ((AbstractBuild) build).getBuiltOn().getRootPath();
         }
-        return Utils.getNode(launcher).getRootPath();
+        return ActionableHelper.getNode(launcher).getRootPath();
     }
 
 }

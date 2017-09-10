@@ -18,6 +18,7 @@ package org.jfrog.hudson.action;
 
 import com.google.common.collect.Lists;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.matrix.MatrixConfiguration;
 import hudson.maven.MavenBuild;
 import hudson.maven.reporters.MavenArtifactRecord;
@@ -282,5 +283,17 @@ public abstract class ActionableHelper {
                 return null;
             }
         });
+    }
+
+    public static Node getNode(Launcher launcher) {
+        Node node = null;
+        Jenkins j = Jenkins.getInstance();
+        for (Computer c : j.getComputers()) {
+            if (c.getChannel() == launcher.getChannel()) {
+                node = c.getNode();
+                break;
+            }
+        }
+        return node;
     }
 }

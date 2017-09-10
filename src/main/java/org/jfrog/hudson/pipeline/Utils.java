@@ -151,18 +151,6 @@ public class Utils {
         return extractVcsRevision(filePath.getParent());
     }
 
-    public static Node getNode(Launcher launcher) {
-        Node node = null;
-        Jenkins j = Jenkins.getInstance();
-        for (Computer c : j.getComputers()) {
-            if (c.getChannel() == launcher.getChannel()) {
-                node = c.getNode();
-                break;
-            }
-        }
-        return node;
-    }
-
     public static Computer getCurrentComputer(Launcher launcher) {
         Jenkins j = Jenkins.getInstance();
         for (Computer c : j.getComputers()) {
@@ -249,10 +237,10 @@ public class Utils {
         }
     }
 
-    public static String createTempJsonFile(Launcher launcher, final String name) throws Exception {
+    public static String createTempJsonFile(Launcher launcher, final String name, final String dir) throws Exception {
         return launcher.getChannel().call(new Callable<String, Exception>() {
             public String call() throws IOException {
-                File tempFile = File.createTempFile(name, ".json");
+                File tempFile = File.createTempFile(name, ".json", new File(dir));
                 tempFile.deleteOnExit();
                 return tempFile.getAbsolutePath();
             }

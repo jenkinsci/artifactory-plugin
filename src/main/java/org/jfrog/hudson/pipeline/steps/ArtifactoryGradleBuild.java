@@ -30,7 +30,6 @@ import org.jfrog.hudson.pipeline.types.deployers.GradleDeployer;
 import org.jfrog.hudson.util.ExtractorUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -103,6 +102,8 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
 
         private transient EnvVars extendedEnv;
 
+        private transient FilePath tempDir;
+
         @Override
         protected BuildInfo run() throws Exception {
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
@@ -113,14 +114,15 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             extendedEnv.put(ExtractorUtils.GIT_COMMIT, revision);
             MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build,
                     buildInfo, deployer, step.getGradleBuild().getResolver(), listener, launcher);
+            tempDir = new FilePath(ws.getParent(), ws.getBaseName() + "@tmp");
             ArgumentListBuilder args = getGradleExecutor();
-            envExtractor.buildEnvVars(ws, extendedEnv);
+            envExtractor.buildEnvVars(tempDir, extendedEnv);
             exe(args);
             String generatedBuildPath = extendedEnv.get(BuildInfoFields.GENERATED_BUILD_INFO);
             buildInfo.append(Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath));
-            ActionableHelper.deleteFilePath(ws, initScriptPath);
+            ActionableHelper.deleteFilePath(tempDir, initScriptPath);
             // Read the deployable artifacts list from the 'json' file in the agent and append them to the buildInfo object.
-            buildInfo.appendDeployableArtifacts(extendedEnv.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS), ws, listener);
+            buildInfo.appendDeployableArtifacts(extendedEnv.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS), tempDir, listener);
             buildInfo.setAgentName(Utils.getAgentName(ws));
             return buildInfo;
         }
@@ -136,17 +138,13 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
         private ArgumentListBuilder getGradleExecutor() {
             ArgumentListBuilder args = new ArgumentListBuilder();
             if (step.getGradleBuild().isUseWrapper()) {
-                String execName = !launcher.isUnix() ? GradleInstallation.WINDOWS_GRADLE_WRAPPER_COMMAND : GradleInstallation.UNIX_GRADLE_WRAPPER_COMMAND;
+                String execName = launcher.isUnix() ? GradleInstallation.UNIX_GRADLE_WRAPPER_COMMAND : GradleInstallation.WINDOWS_GRADLE_WRAPPER_COMMAND;
                 FilePath gradleWrapperFile = new FilePath(new FilePath(ws, step.getRootDir()), execName);
                 args.add(gradleWrapperFile.getRemote());
             } else {
                 try {
-                    getGradleHome(args);
-                } catch (IOException e) {
-                    listener.error("Couldn't find Gradle executable.");
-                    build.setResult(Result.FAILURE);
-                    throw new Run.RunnerAbortedException();
-                } catch (InterruptedException e) {
+                    args.add(getGradleExe());
+                } catch (Exception e) {
                     listener.error("Couldn't find Gradle executable.");
                     build.setResult(Result.FAILURE);
                     throw new Run.RunnerAbortedException();
@@ -217,35 +215,34 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             return null;
         }
 
-        private FilePath getGradleHome(ArgumentListBuilder args) throws IOException, InterruptedException {
+        private String getGradleExe() throws IOException, InterruptedException {
             if (!StringUtils.isEmpty(step.getGradleBuild().getTool())) {
                 GradleInstallation gi = getGradleInstallation();
                 if (gi == null) {
                     listener.error("Couldn't find Gradle executable.");
-                    build.setResult(Result.FAILURE);
                     throw new Run.RunnerAbortedException();
                 } else {
-                    Node node = Utils.getNode(launcher);
+                    Node node = ActionableHelper.getNode(launcher);
                     gi = gi.forNode(node, listener);
                     gi = gi.forEnvironment(extendedEnv);
                 }
 
                 extendedEnv.put("GRADLE_HOME", gi.getHome());
-                args.add(gi.getExecutable(launcher));
-                return new FilePath(launcher.getChannel(), gi.getHome());
+                String gradleExe = gi.getExecutable(launcher);
+                if (gradleExe != null) {
+                    return gradleExe;
+                }
+                return extendedEnv.get("GRADLE_HOME") + "/bin/gradle";
             }
-
-            if (extendedEnv.get("GRADLE_HOME") != null) {
-                return new FilePath(new File(extendedEnv.get("GRADLE_HOME")));
+            if (extendedEnv.get("GRADLE_HOME") == null) {
+                throw new RuntimeException("Couldn't find gradle installation");
             }
-            build.setResult(Result.FAILURE);
-            throw new RuntimeException("Couldn't find gradle installation");
+            return extendedEnv.get("GRADLE_HOME");
         }
 
         private String createInitScript() throws Exception {
-            GradleInitScriptWriter writer = new GradleInitScriptWriter(build, launcher);
-            FilePath initScript = ws.createTextTempFile("init-artifactory", "gradle",
-                    writer.generateInitScript(), false);
+            GradleInitScriptWriter writer = new GradleInitScriptWriter(tempDir);
+            FilePath initScript = tempDir.createTextTempFile("init-artifactory", "gradle", writer.generateInitScript());
             ActionableHelper.deleteFilePathOnExit(initScript);
             String initScriptPath = initScript.getRemote();
             initScriptPath = initScriptPath.replace('\\', '/');
