@@ -4,6 +4,7 @@ import com.google.common.collect.*;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Util;
+import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Run;
@@ -44,14 +45,14 @@ public class GenericArtifactsDeployer {
     private static final String SHA1 = "SHA1";
     private static final String MD5 = "MD5";
 
-    private Run build;
+    private AbstractBuild build;
     private ArtifactoryGenericConfigurator configurator;
     private BuildListener listener;
     private CredentialsConfig credentialsConfig;
     private EnvVars env;
     private List<Artifact> artifactsToDeploy = Lists.newArrayList();
 
-    public GenericArtifactsDeployer(Run build, ArtifactoryGenericConfigurator configurator,
+    public GenericArtifactsDeployer(AbstractBuild build, ArtifactoryGenericConfigurator configurator,
                                     BuildListener listener, CredentialsConfig credentialsConfig)
             throws IOException, InterruptedException, NoSuchAlgorithmException {
         this.build = build;
@@ -72,7 +73,7 @@ public class GenericArtifactsDeployer {
         ArtifactoryServer artifactoryServer = configurator.getArtifactoryServer();
 
         if (configurator.isUseSpecs()) {
-            String spec = SpecUtils.getSpecStringFromSpecConf(configurator.getUploadSpec(), env, workingDir, listener.getLogger());
+            String spec = SpecUtils.getSpecStringFromSpecConf(configurator.getUploadSpec(), build, listener);
             artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, spec, artifactoryServer,
                     credentialsConfig.getCredentials(build.getParent()), propertiesToAdd,
                     artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
