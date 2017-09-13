@@ -170,13 +170,13 @@ public class Utils {
         StringBuilder include = new StringBuilder();
         StringBuilder exclude = new StringBuilder();
         for (int i = 0; i < includePatterns.length; i++) {
-            if (i < includePatterns.length - 1 && include.length() > 0) {
+            if (include.length() > 0) {
                 include.append(", ");
             }
             include.append(includePatterns[i]);
         }
         for (int i = 0; i < excludePatterns.length; i++) {
-            if (i < excludePatterns.length - 1 && exclude.length() > 0) {
+            if (exclude.length() > 0) {
                 exclude.append(", ");
             }
             exclude.append(excludePatterns[i]);
