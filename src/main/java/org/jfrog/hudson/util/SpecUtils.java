@@ -20,7 +20,8 @@ public class SpecUtils {
         if (StringUtils.isNotBlank(specConfiguration.getFilePath())) {
             String filePath = specConfiguration.getFilePath().trim();
             filePath = Util.replaceMacro(filePath, env);
-            return buildDownloadSpecPath(filePath, workspace, logger).readToString();
+            String spec = buildDownloadSpecPath(filePath, workspace, logger).readToString();
+            return Util.replaceMacro(spec.trim(), env);
         }
         if (StringUtils.isNotBlank(specConfiguration.getSpec())) {
             return Util.replaceMacro(specConfiguration.getSpec().trim(), env);
