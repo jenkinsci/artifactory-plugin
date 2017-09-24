@@ -47,12 +47,19 @@ public class DockerAgentUtils implements Serializable {
             if (node == null || node.getChannel() == null) {
                 continue;
             }
-            node.getChannel().call(new Callable<Boolean, IOException>() {
-                public Boolean call() throws IOException {
-                    registerImage(imageId, imageTag, targetRepo, artifactsProps, buildInfoId);
-                    return true;
-                }
-            });
+            try {
+                node.getChannel().call(new Callable<Boolean, IOException>() {
+                    public Boolean call() throws IOException {
+                        registerImage(imageId, imageTag, targetRepo, artifactsProps, buildInfoId);
+                        return true;
+                    }
+                });
+            } catch (Exception e) {
+                launcher.getListener().getLogger().println("Could not register docker image " + imageTag +
+                        " on Jenkins node '" + node.getDisplayName() + "' due to: " + e.getMessage() +
+                        " This could be because this node is now offline."
+                );
+            }
         }
     }
 
