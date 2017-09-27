@@ -344,8 +344,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         ArtifactoryDependenciesClient dependenciesClient = null;
         try {
             if (isUseSpecs()) {
-                String spec = SpecUtils.getSpecStringFromSpecConf(downloadSpec, build.getEnvironment(listener),
-                        build.getExecutor().getCurrentWorkspace(), listener.getLogger());
+                String spec = SpecUtils.getSpecStringFromSpecConf(downloadSpec, build, listener);
                 FilePath workspace = build.getExecutor().getCurrentWorkspace();
                 publishedDependencies = workspace.act(new FilesResolverCallable(
                         new JenkinsBuildInfoLog(listener), username, password, resolverServer.getUrl(), spec, proxyConfiguration));

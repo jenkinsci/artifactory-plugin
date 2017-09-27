@@ -139,6 +139,12 @@
             <artifactId>credentials</artifactId>
             <version>1.22</version>
         </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>token-macro</artifactId>
+            <version>1.10</version> <!-- Depends on Jenkins 1.609 -->
+            <optional>true</optional>
+        </dependency>
         <!-- usage of jenkins customized xstream is a must for the integration tests -->
         <dependency>
             <groupId>org.jvnet.hudson</groupId>

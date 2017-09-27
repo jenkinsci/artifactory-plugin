@@ -3,6 +3,8 @@ package org.jfrog.hudson.util;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Util;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.SpecConfiguration;
 
@@ -14,17 +16,23 @@ import java.io.PrintStream;
  */
 public class SpecUtils {
 
-    public static String getSpecStringFromSpecConf(SpecConfiguration specConfiguration, EnvVars env, FilePath workspace, PrintStream logger)
+    public static String getSpecStringFromSpecConf(SpecConfiguration specConfiguration, AbstractBuild<?, ?> build, final BuildListener listener)
             throws IOException, InterruptedException {
-
+        EnvVars env =build.getEnvironment(listener);
         if (StringUtils.isNotBlank(specConfiguration.getFilePath())) {
             String filePath = specConfiguration.getFilePath().trim();
             filePath = Util.replaceMacro(filePath, env);
-            String spec = buildDownloadSpecPath(filePath, workspace, logger).readToString();
-            return Util.replaceMacro(spec.trim(), env);
+            FilePath workspace= build.getExecutor().getCurrentWorkspace();
+            PrintStream logger =listener.getLogger();
+            return buildDownloadSpecPath(filePath, workspace, logger).readToString();
         }
         if (StringUtils.isNotBlank(specConfiguration.getSpec())) {
-            return Util.replaceMacro(specConfiguration.getSpec().trim(), env);
+            try {
+                Class.forName("org.jenkinsci.plugins.tokenmacro.TokenMacro");
+                return org.jenkinsci.plugins.tokenmacro.TokenMacro.expandAll(build, listener, specConfiguration.getSpec().trim());
+            } catch (Throwable ex) {
+                return Util.replaceMacro(specConfiguration.getSpec().trim(), env);
+            }
         }
         return "";
     }
