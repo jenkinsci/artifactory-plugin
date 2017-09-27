@@ -38,7 +38,6 @@ import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
-import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
 import org.jfrog.hudson.util.*;
 import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
@@ -467,7 +466,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private String actualDependencyDirPath(AbstractBuild build, Launcher launcher) throws IOException, InterruptedException {
         File localDependencyFile = Which.jarFile(ArtifactoryBuildListener.class);
         FilePath actualDependencyDir =
-                PluginDependencyHelper.getActualDependencyDirectory(localDependencyFile, Utils.getNode(launcher).getRootPath());
+                PluginDependencyHelper.getActualDependencyDirectory(localDependencyFile, ActionableHelper.getNode(launcher).getRootPath());
         String actualDependencyDirPath = actualDependencyDir.getRemote();
         actualDependencyDirPath = actualDependencyDirPath.replace('\\', '/');
         actualDependencyDirPath = "\"" + actualDependencyDirPath + "\"";

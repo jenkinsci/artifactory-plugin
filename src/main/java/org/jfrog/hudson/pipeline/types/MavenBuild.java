@@ -108,10 +108,8 @@ public class MavenBuild implements Serializable {
     private Map<String, Object> getExecutionArguments(String pom, String goals, BuildInfo buildInfo) {
         Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
         stepVariables.put("mavenBuild", this);
-        stepVariables.put("tool", tool);
         stepVariables.put("pom", pom);
         stepVariables.put("goals", goals);
-        stepVariables.put("opts", opts);
         stepVariables.put("buildInfo", buildInfo);
         return stepVariables;
     }

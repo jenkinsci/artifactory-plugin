@@ -40,6 +40,7 @@ import org.jfrog.hudson.*;
 import org.jfrog.hudson.BintrayPublish.BintrayPublishAction;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.action.ArtifactoryProjectAction;
+import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.gradle.BaseGradleReleaseAction;
 import org.jfrog.hudson.release.gradle.GradleReleaseAction;
@@ -527,7 +528,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
             @Override
             public void buildEnvVars(Map<String, String> env) {
-                GradleInitScriptWriter writer = new GradleInitScriptWriter(build, launcher);
+                GradleInitScriptWriter writer = new GradleInitScriptWriter(ActionableHelper.getNode(launcher).getRootPath());
                 FilePath workspace = build.getWorkspace();
                 FilePath initScript;
                 try {

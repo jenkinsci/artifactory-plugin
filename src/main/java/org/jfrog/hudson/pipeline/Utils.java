@@ -10,11 +10,14 @@ import hudson.plugins.git.util.BuildData;
 import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import hudson.remoting.LocalChannel;
+import hudson.remoting.VirtualChannel;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Ref;
 import org.jfrog.build.api.Vcs;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.hudson.CredentialsConfig;
@@ -131,16 +134,21 @@ public class Utils {
         return result;
     }
 
-    public static Node getNode(Launcher launcher) {
-        Node node = null;
-        Jenkins j = Jenkins.getInstance();
-        for (Computer c : j.getComputers()) {
-            if (c.getChannel() == launcher.getChannel()) {
-                node = c.getNode();
-                break;
-            }
+    public static String extractVcsRevision(FilePath filePath) throws IOException, InterruptedException {
+        if (filePath == null) {
+            return "";
         }
-        return node;
+        FilePath dotGitPath = new FilePath(filePath, ".git");
+        if (dotGitPath.exists()) {
+            return dotGitPath.act(new FilePath.FileCallable<String>() {
+                public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+                    FileRepository repository = new FileRepository(f);
+                    Ref head = repository.getRef("HEAD");
+                    return head.getObjectId().getName();
+                }
+            });
+        }
+        return extractVcsRevision(filePath.getParent());
     }
 
     public static Computer getCurrentComputer(Launcher launcher) {
@@ -162,13 +170,13 @@ public class Utils {
         StringBuilder include = new StringBuilder();
         StringBuilder exclude = new StringBuilder();
         for (int i = 0; i < includePatterns.length; i++) {
-            if (i < includePatterns.length - 1 && include.length() > 0) {
+            if (include.length() > 0) {
                 include.append(", ");
             }
             include.append(includePatterns[i]);
         }
         for (int i = 0; i < excludePatterns.length; i++) {
-            if (i < excludePatterns.length - 1 && exclude.length() > 0) {
+            if (exclude.length() > 0) {
                 exclude.append(", ");
             }
             exclude.append(excludePatterns[i]);
@@ -229,10 +237,10 @@ public class Utils {
         }
     }
 
-    public static String createTempJsonFile(Launcher launcher, final String name) throws Exception {
+    public static String createTempJsonFile(Launcher launcher, final String name, final String dir) throws Exception {
         return launcher.getChannel().call(new Callable<String, Exception>() {
             public String call() throws IOException {
-                File tempFile = File.createTempFile(name, ".json");
+                File tempFile = File.createTempFile(name, ".json", new File(dir));
                 tempFile.deleteOnExit();
                 return tempFile.getAbsolutePath();
             }

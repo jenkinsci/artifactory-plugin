@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.docker;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Sets;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -21,6 +22,7 @@ import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.ArtifactoryConfigurator;
 import org.jfrog.hudson.pipeline.docker.utils.DockerUtils;
 import org.jfrog.hudson.util.CredentialManager;
+import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -30,20 +32,53 @@ import java.util.*;
  * Created by romang on 8/9/16.
  */
 public class DockerImage implements Serializable {
+    // Maximum time in milliseconds, after which this image can be removed from the images cache.
+    private static final long MAX_AGE_MILLI = 12 * 60 * 60 * 1000L;
+    // Stores the time this image is created, so that it can be later removed.
+    private final long createdTime = System.currentTimeMillis();
     private final String imageId;
     private final String imageTag;
-    private final String manifest;
     private final String targetRepo;
+    // List of build-info IDs. These IDs link this docker image to the specific corresponding
+    // build-info instances.
+    private int buildInfoId;
+    private String manifest;
     private String agentName = "";
-    private Properties properties = new Properties();
+    // List of properties added to the build-info generated for this docker image.
+    private Properties buildInfoModuleProps = new Properties();
+    // Properties to be attached to the docker layers deployed to Artifactory.
+    private ArrayListMultimap<String, String> artifactsProps;
     private final ArtifactoryVersion VIRTUAL_REPOS_SUPPORTED_VERSION = new ArtifactoryVersion("4.8.1");
 
-    public DockerImage(String imageId, String imageTag, String targetRepo, String manifest, String agentName) {
+    public DockerImage(String imageId, String imageTag, String targetRepo, int buildInfoId) {
         this.imageId = imageId;
         this.imageTag = imageTag;
         this.targetRepo = targetRepo;
+        this.buildInfoId = buildInfoId;
+    }
+
+    public boolean isExpired() {
+        return System.currentTimeMillis() - createdTime > MAX_AGE_MILLI;
+    }
+
+    public int getBuildInfoId() {
+        return buildInfoId;
+    }
+
+    public void setManifest(String manifest) {
         this.manifest = manifest;
-        this.agentName = agentName;
+    }
+
+    public void setArtifactsProps(ArrayListMultimap<String, String> artifactsProps) {
+        this.artifactsProps = artifactsProps;
+    }
+
+    /**
+     * Indicates whether a manifest has been captured and attached for this image.
+     * @return
+     */
+    public boolean hasManifest() {
+        return StringUtils.isNotBlank(manifest);
     }
 
     public String getImageTag() {
@@ -58,16 +93,36 @@ public class DockerImage implements Serializable {
         return agentName;
     }
 
-    public void addProperties(Properties properties) {
-        this.properties.putAll(properties);
+    public void setAgentName(String agentName) {
+        this.agentName = agentName;
     }
 
+    /**
+     * Generates the build-info module for this docker image.
+     * Additionally. this method tags the deployed docker layers with properties,
+     * such as build.name, build.number and custom properties defined in the Jenkins build.
+     * @param build
+     * @param listener
+     * @param config
+     * @param buildName
+     * @param buildNumber
+     * @param timestamp
+     * @return
+     * @throws IOException
+     */
     public Module generateBuildInfoModule(Run build, TaskListener listener, ArtifactoryConfigurator config, String buildName, String buildNumber, String timestamp) throws IOException {
-        final String buildProperties = String.format("build.name=%s|build.number=%s|build.timestamp=%s", buildName, buildNumber, timestamp);
-        Properties artifactProperties = new Properties();
-        artifactProperties.setProperty("build.name", buildName);
-        artifactProperties.setProperty("build.number", buildNumber);
-        artifactProperties.setProperty("build.timestamp", timestamp);
+        if (artifactsProps == null) {
+            artifactsProps = ArrayListMultimap.create();
+        }
+        artifactsProps.put("build.name", buildName);
+        artifactsProps.put("build.number", buildNumber);
+        artifactsProps.put("build.timestamp", timestamp);
+        String artifactsPropsStr = ExtractorUtils.buildPropertiesString(artifactsProps);
+
+        Properties buildInfoItemsProps = new Properties();
+        buildInfoItemsProps.setProperty("build.name", buildName);
+        buildInfoItemsProps.setProperty("build.number", buildNumber);
+        buildInfoItemsProps.setProperty("build.timestamp", timestamp);
 
         ArtifactoryServer server = config.getArtifactoryServer();
         CredentialsConfig preferredResolver = server.getDeployerCredentialsConfig();
@@ -87,16 +142,20 @@ public class DockerImage implements Serializable {
         boolean includeVirtualReposSupported = propertyChangeClient.getArtifactoryVersion().isAtLeast(VIRTUAL_REPOS_SUPPORTED_VERSION);
         DockerLayers layers = createLayers(dependenciesClient, includeVirtualReposSupported);
 
-        setDependenciesAndArtifacts(buildInfoModule, layers, buildProperties, artifactProperties,
+        setDependenciesAndArtifacts(buildInfoModule, layers, artifactsPropsStr, buildInfoItemsProps,
                 dependenciesClient, propertyChangeClient, server);
-        setProperties(buildInfoModule);
+        setBuildInfoModuleProps(buildInfoModule);
         return buildInfoModule;
     }
 
-    private void setProperties(Module buildInfoModule) {
-        properties.setProperty("docker.image.id", DockerUtils.getShaValue(imageId));
-        properties.setProperty("docker.captured.image", imageTag);
-        buildInfoModule.setProperties(properties);
+    private void setBuildInfoModuleProps(Module buildInfoModule) {
+        buildInfoModuleProps.setProperty("docker.image.id", DockerUtils.getShaValue(imageId));
+        buildInfoModuleProps.setProperty("docker.captured.image", imageTag);
+        buildInfoModule.setProperties(buildInfoModuleProps);
+    }
+
+    public void addBuildInfoModuleProps(Properties props) {
+        buildInfoModuleProps.putAll(props);
     }
 
     private DockerLayers createLayers(ArtifactoryDependenciesClient dependenciesClient, boolean includeVirtualReposSupported) throws IOException {
@@ -121,7 +180,7 @@ public class DockerImage implements Serializable {
         return layers;
     }
 
-    private void setDependenciesAndArtifacts(Module buildInfoModule, DockerLayers layers, String buildProperties, Properties artifactProperties, ArtifactoryDependenciesClient dependenciesClient, ArtifactoryBuildInfoClient propertyChangeClient, ArtifactoryServer server) throws IOException {
+    private void setDependenciesAndArtifacts(Module buildInfoModule, DockerLayers layers, String artifactsProps, Properties buildInfoItemsProps, ArtifactoryDependenciesClient dependenciesClient, ArtifactoryBuildInfoClient propertyChangeClient, ArtifactoryServer server) throws IOException {
         DockerLayer historyLayer = layers.getByDigest(imageId);
         if (historyLayer == null) {
             return;
@@ -135,11 +194,11 @@ public class DockerImage implements Serializable {
         for (int i = 0; i < dependencyLayerNum; i++) {
             String digest = it.next();
             DockerLayer layer = layers.getByDigest(digest);
-            propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), buildProperties);
-            Dependency dependency = new DependencyBuilder().id(layer.getFileName()).sha1(layer.getSha1()).properties(artifactProperties).build();
+            propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            Dependency dependency = new DependencyBuilder().id(layer.getFileName()).sha1(layer.getSha1()).properties(buildInfoItemsProps).build();
             dependencies.add(dependency);
 
-            Artifact artifact = new ArtifactBuilder(layer.getFileName()).sha1(layer.getSha1()).properties(artifactProperties).build();
+            Artifact artifact = new ArtifactBuilder(layer.getFileName()).sha1(layer.getSha1()).properties(buildInfoItemsProps).build();
             artifacts.add(artifact);
         }
         buildInfoModule.setDependencies(dependencies);
@@ -150,8 +209,8 @@ public class DockerImage implements Serializable {
             if (layer == null) {
                 continue;
             }
-            propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), buildProperties);
-            Artifact artifact = new ArtifactBuilder(layer.getFileName()).sha1(layer.getSha1()).properties(artifactProperties).build();
+            propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            Artifact artifact = new ArtifactBuilder(layer.getFileName()).sha1(layer.getSha1()).properties(buildInfoItemsProps).build();
             artifacts.add(artifact);
         }
         buildInfoModule.setArtifacts(artifacts);

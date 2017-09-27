@@ -6,6 +6,7 @@ import hudson.Launcher;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.Callable;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
@@ -21,6 +22,7 @@ import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.ResolverContext;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -33,7 +35,6 @@ public class MavenGradleEnvExtractor {
     private Run build;
     private BuildInfo buildInfo;
     private TaskListener buildListener;
-    private String propertiesFilePath;
     private Launcher launcher;
 
     public MavenGradleEnvExtractor(Run build, BuildInfo buildInfo, Deployer publisher, Resolver resolver, TaskListener buildListener, Launcher launcher)
@@ -50,7 +51,7 @@ public class MavenGradleEnvExtractor {
         return publisher.getContextBuilder().build();
     }
 
-    public void buildEnvVars(FilePath ws, EnvVars env) throws Exception {
+    public void buildEnvVars(FilePath tempDir, EnvVars env) throws Exception {
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
         ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
         if (release != null) {
@@ -68,24 +69,24 @@ public class MavenGradleEnvExtractor {
                         resolverCredentials.getCredentials(build.getParent()), resolver);
             }
 
+            createProjectTempDir(launcher, tempDir.getRemote());
             ArtifactoryClientConfiguration configuration = ExtractorUtils.getArtifactoryClientConfiguration(
-                    env, build, buildInfo, buildListener, publisherContext, resolverContext, ws);
-            addPipelineInfoToConfiguration(env, configuration);
-            ExtractorUtils.persistConfiguration(configuration, env, ws, launcher);
-            propertiesFilePath = configuration.getPropertiesFile();
+                    env, build, buildInfo, buildListener, publisherContext, resolverContext, tempDir);
+            addPipelineInfoToConfiguration(env, configuration, tempDir);
+            ExtractorUtils.persistConfiguration(configuration, env, tempDir, launcher);
+            String propertiesFilePath = configuration.getPropertiesFile();
+            env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
     }
 
-    private void addPipelineInfoToConfiguration(EnvVars env, ArtifactoryClientConfiguration configuration) {
+    private void addPipelineInfoToConfiguration(EnvVars env, ArtifactoryClientConfiguration configuration, FilePath tempDir) {
         String buildInfoTempFile;
         String deployableArtifactsFile;
         try {
-            buildInfoTempFile = Utils.createTempJsonFile(launcher, BuildInfoFields.GENERATED_BUILD_INFO);
-            deployableArtifactsFile = Utils.createTempJsonFile(launcher, BuildInfoFields.DEPLOYABLE_ARTIFACTS);
+            buildInfoTempFile = Utils.createTempJsonFile(launcher, BuildInfoFields.GENERATED_BUILD_INFO, tempDir.getRemote());
+            deployableArtifactsFile = Utils.createTempJsonFile(launcher, BuildInfoFields.DEPLOYABLE_ARTIFACTS, tempDir.getRemote());
         } catch (Exception e) {
             buildListener.error("Failed while generating temp file. " + e.getMessage());
             build.setResult(Result.FAILURE);
@@ -95,5 +96,22 @@ public class MavenGradleEnvExtractor {
         configuration.info.setGeneratedBuildInfoFilePath(buildInfoTempFile);
         env.put(BuildInfoFields.DEPLOYABLE_ARTIFACTS, deployableArtifactsFile);
         configuration.info.setDeployableArtifactsFilePath(deployableArtifactsFile);
+    }
+
+    /**
+     * Create the <PROJECT_PATH@tmp> directory in case it doesn't exists.
+     * @param launcher
+     * @param tempDirPath
+     * @throws Exception
+     */
+    private static void createProjectTempDir(Launcher launcher, final String tempDirPath) throws Exception {
+        launcher.getChannel().call(new Callable<Boolean, IOException>() {
+            public Boolean call() throws IOException {
+                File tempDirFile = new File(tempDirPath);
+                tempDirFile.mkdir();
+                tempDirFile.deleteOnExit();
+                return true;
+            }
+        });
     }
 }

@@ -276,7 +276,7 @@ public class ArtifactoryServer implements Serializable {
         RepositoriesUtils.setRetryParams(getConnectionRetry(), client);
     }
 
-    public ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
+    public static ProxyConfiguration createProxyConfiguration(hudson.ProxyConfiguration proxy) {
         ProxyConfiguration proxyConfiguration = null;
         if (proxy != null) {
             proxyConfiguration = new ProxyConfiguration();

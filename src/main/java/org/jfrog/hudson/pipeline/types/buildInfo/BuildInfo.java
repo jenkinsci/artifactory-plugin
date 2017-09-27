@@ -3,11 +3,9 @@ package org.jfrog.hudson.pipeline.types.buildInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import hudson.FilePath;
-import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
@@ -18,14 +16,10 @@ import org.jfrog.build.client.DeployDetails;
 import org.jfrog.build.client.DeployableArtifactDetail;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.util.DeployableArtifactsUtils;
-import org.jfrog.hudson.ArtifactoryServer;
-import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.ArtifactoryConfigurator;
 import org.jfrog.hudson.pipeline.BuildInfoDeployer;
 import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxy;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
-import org.jfrog.hudson.util.CredentialManager;
-import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -99,7 +93,11 @@ public class BuildInfo implements Serializable {
         this.publishedDependencies.addAll(other.publishedDependencies);
         this.buildDependencies.addAll(other.buildDependencies);
         this.dockerBuildInfoHelper.append(other.dockerBuildInfoHelper);
-        this.env.append(other.env);
+
+        Env tempEnv = new Env();
+        tempEnv.append(this.env);
+        tempEnv.append(other.env);
+        this.env = tempEnv;
     }
 
     public void append(Build other) {
@@ -196,13 +194,8 @@ public class BuildInfo implements Serializable {
         return env.getSysVars();
     }
 
-    protected BuildInfoDeployer createDeployer(Run build, TaskListener listener, Launcher launcher, ArtifactoryServer server)
+    protected BuildInfoDeployer createDeployer(Run build, TaskListener listener, ArtifactoryConfigurator config, ArtifactoryBuildInfoClient client)
             throws InterruptedException, NoSuchAlgorithmException, IOException {
-
-        ArtifactoryConfigurator config = new ArtifactoryConfigurator(server);
-        CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(config, server);
-        ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideUsername(build.getParent()),
-                preferredDeployer.providePassword(build.getParent()), server.createProxyConfiguration(Jenkins.getInstance().proxy), new JenkinsBuildInfoLog(listener));
         if (BuildInfoProxy.isUp()) {
             List<Module> dockerModules = dockerBuildInfoHelper.generateBuildInfoModules(build, listener, config);
             addDockerBuildInfoModules(dockerModules);

@@ -1,15 +1,20 @@
 package org.jfrog.hudson.pipeline.types.buildInfo;
 
 import hudson.EnvVars;
-import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.Module;
 import org.jfrog.build.api.dependency.BuildDependency;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.CredentialsConfig;
+import org.jfrog.hudson.pipeline.ArtifactoryConfigurator;
 import org.jfrog.hudson.pipeline.BuildInfoDeployer;
+import org.jfrog.hudson.util.CredentialManager;
+import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -70,9 +75,15 @@ public class BuildInfoAccessor {
         this.buildInfo.appendDeployedArtifacts(artifacts);
     }
 
-    public BuildInfoDeployer createDeployer(Run build, TaskListener listener, Launcher launcher, ArtifactoryServer server)
+    public ArtifactoryBuildInfoClient createArtifactoryClient(ArtifactoryServer server, Run build, TaskListener listener) {
+        CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(new ArtifactoryConfigurator(server), server);
+        return server.createArtifactoryClient(preferredDeployer.provideUsername(build.getParent()),
+                preferredDeployer.providePassword(build.getParent()), server.createProxyConfiguration(Jenkins.getInstance().proxy), new JenkinsBuildInfoLog(listener));
+    }
+
+    public BuildInfoDeployer createDeployer(Run build, TaskListener listener, ArtifactoryServer server, ArtifactoryBuildInfoClient client)
             throws InterruptedException, NoSuchAlgorithmException, IOException {
-        return this.buildInfo.createDeployer(build, listener, launcher, server);
+        return this.buildInfo.createDeployer(build, listener, new ArtifactoryConfigurator(server), client);
     }
 
     public List<Module> getModules() {

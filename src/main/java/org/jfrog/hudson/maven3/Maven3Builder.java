@@ -38,6 +38,8 @@ import org.kohsuke.stapler.StaplerRequest;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Maven3 builder for free style projects. Hudson 1.392 added native support for maven 3 but this one is useful for free style.
@@ -79,22 +81,36 @@ public class Maven3Builder extends Builder {
         return mavenOpts;
     }
 
+    // Used by Generic jobs only
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
         listener.getLogger().println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         EnvVars env = build.getEnvironment(listener);
         FilePath workDir = build.getModuleRoot();
-        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher, ((AbstractBuild) build).getWorkspace());
+        FilePath ws = build.getWorkspace();
+        FilePath mavenHome = getMavenHome(listener, env, launcher);
+
+        if (!mavenHome.exists()) {
+            listener.error("Couldn't find Maven home: " + mavenHome.getRemote());
+            throw new Run.RunnerAbortedException();
+        }
+        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher, mavenHome, ws, ws);
         String[] cmds = cmdLine.toCommandArray();
         return RunMaven(build, launcher, listener, env, workDir, cmds);
     }
 
-    public boolean perform(Run<?, ?> build, Launcher launcher, TaskListener listener, EnvVars env, FilePath workDir)
+    // Used by Pipeline jobs only
+    public boolean perform(Run<?, ?> build, Launcher launcher, TaskListener listener, EnvVars env, FilePath workDir, FilePath tempDir)
             throws InterruptedException, IOException {
         listener.getLogger().println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
+        FilePath mavenHome = getMavenHome(listener, env, launcher);
 
-        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher, workDir);
+        if (!mavenHome.exists()) {
+            listener.getLogger().println("Couldn't find Maven home at " + mavenHome.getRemote() + " on agent " + Utils.getAgentName(workDir) +
+                    ". This could be because this build is running inside a Docker container.");
+        }
+        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher, mavenHome, workDir, tempDir);
         String[] cmds = cmdLine.toCommandArray();
         return RunMaven(build, launcher, listener, env, workDir, cmds);
     }
@@ -121,21 +137,15 @@ public class Maven3Builder extends Builder {
     }
 
     private ArgumentListBuilder buildMavenCmdLine(Run<?, ?> build, TaskListener listener,
-                                                  EnvVars env, Launcher launcher, FilePath ws)
+                                                  EnvVars env, Launcher launcher, FilePath mavenHome, FilePath ws, FilePath tempDir)
             throws IOException, InterruptedException {
-
-        FilePath mavenHome = getMavenHome(listener, env, launcher);
-
-        if (!mavenHome.exists()) {
-            listener.error("Couldn't find Maven home: " + mavenHome.getRemote());
-            throw new Run.RunnerAbortedException();
-        }
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add(getJavaPathBuilder(env.get("PATH+JDK"), launcher));
 
         // classpath
-        args.add("-classpath", getClasspath(mavenHome, listener));
+        Path classPath = Paths.get(mavenHome.getRemote(), "boot", "*");
+        args.add("-classpath", classPath.toString());
 
         // maven home
         args.addKeyValuePair("-D", "maven.home", mavenHome.getRemote(), false);
@@ -144,8 +154,8 @@ public class Maven3Builder extends Builder {
         boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
         listener.getLogger().println("Artifactory integration is " + (artifactoryIntegration ? "enabled" : "disabled"));
         if (artifactoryIntegration) {
-            addArtifactoryIntegrationArgs(args, buildInfoPropertiesFile, launcher, ws);
-            ActionableHelper.deleteFilePathOnExit(ws, classworldsConfPath);
+            addArtifactoryIntegrationArgs(args, buildInfoPropertiesFile, tempDir);
+            ActionableHelper.deleteFilePathOnExit(tempDir, classworldsConfPath);
         } else {
             args.addKeyValuePair("-D", "classworlds.conf", new FilePath(mavenHome, "bin/m2.conf").getRemote(), false);
         }
@@ -182,25 +192,13 @@ public class Maven3Builder extends Builder {
         return javaPathBuilder.toString();
     }
 
-    private String getClasspath(FilePath mavenHome, TaskListener listener) throws IOException, InterruptedException {
-        FilePath mavenBootDir = new FilePath(mavenHome, "boot");
-        FilePath[] classworldsCandidates = mavenBootDir.list("plexus-classworlds*.jar");
-        if (classworldsCandidates == null || classworldsCandidates.length == 0) {
-            listener.error("Couldn't find classworlds jar under " + mavenBootDir.getRemote());
-            throw new Run.RunnerAbortedException();
-        }
-
-        FilePath classWorldsJar = classworldsCandidates[0];
-        return classWorldsJar.getRemote();
-    }
-
-    private void addArtifactoryIntegrationArgs(ArgumentListBuilder args, String buildInfoPropertiesFile, Launcher launcher, FilePath ws) throws IOException, InterruptedException {
+    private void addArtifactoryIntegrationArgs(ArgumentListBuilder args, String buildInfoPropertiesFile, FilePath ws) throws IOException, InterruptedException {
         args.addKeyValuePair("-D", BuildInfoConfigProperties.PROP_PROPS_FILE, buildInfoPropertiesFile, false);
 
         // use the classworlds conf packaged with this plugin and resolve the extractor libs
         File maven3ExtractorJar = Which.jarFile(Maven3BuildInfoLogger.class);
         FilePath actualDependencyDirectory =
-                PluginDependencyHelper.getActualDependencyDirectory(maven3ExtractorJar, Utils.getNode(launcher).getRootPath());
+                PluginDependencyHelper.getActualDependencyDirectory(maven3ExtractorJar, ws);
 
         if (getMavenOpts() == null || !getMavenOpts().contains("-Dm3plugin.lib")) {
             args.addKeyValuePair("-D", "m3plugin.lib", actualDependencyDirectory.getRemote(), false);
@@ -230,7 +228,7 @@ public class Maven3Builder extends Builder {
                 listener.error("Couldn't find Maven executable.");
                 throw new Run.RunnerAbortedException();
             } else {
-                Node node = Utils.getNode(launcher);
+                Node node = ActionableHelper.getNode(launcher);
                 mi = mi.forNode(node, listener);
                 mi = mi.forEnvironment(env);
             }
@@ -275,7 +273,7 @@ public class Maven3Builder extends Builder {
     private FilePath copyClassWorldsFile(FilePath ws, URL resource) {
         try {
             FilePath remoteClassworlds =
-                    ws.createTextTempFile("classworlds", "conf", "", false);
+                    ws.createTextTempFile("classworlds", "conf", "");
             remoteClassworlds.copyFrom(resource);
             return remoteClassworlds;
         } catch (Exception e) {

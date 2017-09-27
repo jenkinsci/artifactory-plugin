@@ -7,6 +7,7 @@ import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.types.ArtifactoryServer;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
 /**
@@ -122,7 +123,7 @@ public class GradleDeployer extends Deployer {
                 .deployerOverrider(this)
                 .includeEnvVars(isIncludeEnvVars())
                 .maven2Compatible(getMavenCompatible())
-                .matrixParams(buildPropertiesString())
+                .matrixParams(ExtractorUtils.buildPropertiesString(getProperties()))
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
     }
 
