@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
+import static org.jfrog.hudson.pipeline.docker.utils.DockerUtils.checkSuccess;
+
 /**
  * Created by romang on 8/9/16.
  */
@@ -219,7 +221,8 @@ public class DockerImage implements Serializable {
         for (int i = 0; i < dependencyLayerNum; i++) {
             String digest = it.next();
             DockerLayer layer = layers.getByDigest(digest);
-            propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            HttpResponse httpResponse = propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            checkSuccess(httpResponse);
             Dependency dependency = new DependencyBuilder().id(layer.getFileName()).sha1(layer.getSha1()).properties(buildInfoItemsProps).build();
             dependencies.add(dependency);
 
@@ -234,7 +237,8 @@ public class DockerImage implements Serializable {
             if (layer == null) {
                 continue;
             }
-            propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            HttpResponse httpResponse = propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            checkSuccess(httpResponse);
             Artifact artifact = new ArtifactBuilder(layer.getFileName()).sha1(layer.getSha1()).properties(buildInfoItemsProps).build();
             artifacts.add(artifact);
         }
