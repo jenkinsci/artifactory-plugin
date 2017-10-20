@@ -563,6 +563,12 @@ public class ExtractorUtils {
         return buildVariables;
     }
 
+    /**
+     * Converts the http entity to string. If entity is null, returns empty string.
+     * @param entity
+     * @return
+     * @throws IOException
+     */
     public static String entityToString(HttpEntity entity) throws IOException {
         if (entity != null) {
             InputStream is = entity.getContent();
@@ -571,9 +577,14 @@ public class ExtractorUtils {
         return "";
     }
 
-    public static void validateJson(String content) throws IOException {
-        if (StringUtils.isBlank(content) || !content.startsWith("{")) {
-            throw new IOException("Failed parsing Artifactory response: " + content);
+    /**
+     * Validates that the String is not blank.
+     * @param content
+     * @throws IOException - If the string is empty.
+     */
+    public static void validateStringNotBlank(String content) throws IOException {
+        if (StringUtils.isBlank(content)) {
+            throw new IOException("Received empty String.");
         }
 
     }

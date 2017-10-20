@@ -61,7 +61,7 @@ public class PromotionUtils {
             String content = ExtractorUtils.entityToString(response.getEntity());
             if (assertResponseStatus(dryRun, failFast, listener, status, content)) {
                 if (parseMessages) {
-                    ExtractorUtils.validateJson(content);
+                    ExtractorUtils.validateStringNotBlank(content);
                     JSONObject json = JSONObject.fromObject(content);
                     JSONArray messages = json.getJSONArray("messages");
                     for (Object messageObj : messages) {

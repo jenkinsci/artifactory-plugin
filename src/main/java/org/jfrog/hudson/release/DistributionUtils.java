@@ -63,7 +63,7 @@ public class DistributionUtils {
         String content = "";
         try {
             content = ExtractorUtils.entityToString(response.getEntity());
-            ExtractorUtils.validateJson(content);
+            ExtractorUtils.validateStringNotBlank(content);
             JSONObject json = JSONObject.fromObject(content);
             String message = json.getString("message");
             if (assertResponseStatus(dryRun, listener, status, message)) {
