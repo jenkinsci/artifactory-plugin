@@ -11,14 +11,10 @@ import com.github.dockerjava.core.command.PushImageResultCallback;
 import com.github.dockerjava.netty.NettyDockerCmdExecFactory;
 import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
 import org.jfrog.hudson.pipeline.Utils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -345,22 +341,4 @@ public class DockerUtils implements Serializable {
             }
         }
     }
-
-    public static void checkSuccess(HttpResponse httpResponse) throws IOException {
-        int code = httpResponse.getStatusLine().getStatusCode();
-        if (code != 204) {
-            String response = entityToString(httpResponse);
-            throw new IOException("Setting properties failed: " + response);
-        }
-    }
-
-    private static String entityToString(HttpResponse response) throws IOException {
-        HttpEntity entity = response.getEntity();
-        if (entity != null) {
-            InputStream is = entity.getContent();
-            return IOUtils.toString(is, "UTF-8");
-        }
-        return "";
-    }
-
 }
