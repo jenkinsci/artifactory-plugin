@@ -233,7 +233,6 @@ public class GenericArtifactsDeployer {
                     deploymentPathBuilder.append("/");
                 }
                 deploymentPathBuilder.append(deployDetail.getArtifactPath());
-                listener.getLogger().println("Deploying artifact: " + deploymentPathBuilder.toString());
                 client.deployArtifact(deployDetail);
             }
         }
