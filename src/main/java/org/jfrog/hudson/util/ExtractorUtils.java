@@ -302,16 +302,17 @@ public class ExtractorUtils {
         configuration.info.setAgentName("Jenkins");
         configuration.info.setAgentVersion(Jenkins.VERSION);
         ArtifactoryServer artifactoryServer = context.getArtifactoryServer();
-        CredentialsConfig preferredDeployer =
-                CredentialManager.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
-        if (StringUtils.isNotBlank(preferredDeployer.provideUsername(build.getParent()))) {
-            configuration.publisher.setUsername(preferredDeployer.provideUsername(build.getParent()));
-            configuration.publisher.setPassword(preferredDeployer.providePassword(build.getParent()));
-        }
-        configuration.setTimeout(artifactoryServer.getTimeout());
-        setRetryParams(configuration, artifactoryServer);
+        if (artifactoryServer != null) {
+            CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
+            if (StringUtils.isNotBlank(preferredDeployer.provideUsername(build.getParent()))) {
+                configuration.publisher.setUsername(preferredDeployer.provideUsername(build.getParent()));
+                configuration.publisher.setPassword(preferredDeployer.providePassword(build.getParent()));
+            }
+            configuration.setTimeout(artifactoryServer.getTimeout());
+            setRetryParams(configuration, artifactoryServer);
 
-        configuration.publisher.setContextUrl(artifactoryServer.getUrl());
+            configuration.publisher.setContextUrl(artifactoryServer.getUrl());
+        }
 
         ServerDetails serverDetails = context.getServerDetails();
         if (serverDetails != null) {

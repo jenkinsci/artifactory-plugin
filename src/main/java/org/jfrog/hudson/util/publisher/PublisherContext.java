@@ -245,9 +245,6 @@ public class PublisherContext {
         PublisherContext publisher = new PublisherContext();
 
         public PublisherContext build() {
-            if (publisher.artifactoryServer == null) {
-                throw new IllegalArgumentException("No matching Artifactory server was found in General Configuration. Please update your job configuration.");
-            }
             if (publisher.serverDetails == null) {
                 throw new IllegalArgumentException("serverDetails cannot be null");
             }
