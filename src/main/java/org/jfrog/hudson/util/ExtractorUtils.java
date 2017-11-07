@@ -364,8 +364,12 @@ public class ExtractorUtils {
         }
         configuration.publisher.setPublishArtifacts(context.isDeployArtifacts());
         configuration.publisher.setEvenUnstable(context.isEvenIfUnstable());
-        configuration.publisher.setIvy(context.isDeployIvy());
-        configuration.publisher.setMaven(context.isDeployMaven());
+        if (context.isDeployIvy() != null) {
+            configuration.publisher.setIvy(context.isDeployIvy());
+        }
+        if (context.isDeployMaven() != null) {
+            configuration.publisher.setMaven(context.isDeployMaven());
+        }
         IncludesExcludes deploymentPatterns = context.getIncludesExcludes();
         if (deploymentPatterns != null) {
             String includePatterns = deploymentPatterns.getIncludePatterns();

@@ -46,8 +46,8 @@ public class PublisherContext {
     private boolean includeEnvVars;
     private IncludesExcludes envVarsPatterns;
     private boolean evenIfUnstable;
-    private boolean deployMaven;
-    private boolean deployIvy;
+    private Boolean deployMaven;
+    private Boolean deployIvy;
     private String artifactsPattern = "";
     private String ivyPattern = "";
     private String matrixParams;
@@ -165,11 +165,11 @@ public class PublisherContext {
         return serverDetails != null ? serverDetails.artifactoryName : null;
     }
 
-    public boolean isDeployMaven() {
+    public Boolean isDeployMaven() {
         return deployMaven;
     }
 
-    public boolean isDeployIvy() {
+    public Boolean isDeployIvy() {
         return deployIvy;
     }
 
@@ -356,12 +356,12 @@ public class PublisherContext {
             return this;
         }
 
-        public Builder deployMaven(boolean deployMaven) {
+        public Builder deployMaven(Boolean deployMaven) {
             publisher.deployMaven = deployMaven;
             return this;
         }
 
-        public Builder deployIvy(boolean deployIvy) {
+        public Builder deployIvy(Boolean deployIvy) {
             publisher.deployIvy = deployIvy;
             return this;
         }
