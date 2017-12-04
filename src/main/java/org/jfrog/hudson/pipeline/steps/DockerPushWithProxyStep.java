@@ -113,9 +113,9 @@ public class DockerPushWithProxyStep extends AbstractStepImpl {
 
             JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
             String deprecationMessage = "It looks like you are using the following deprecated signature of creating Artifactory.docker instance:\n" +
-                    "    def rtDocker = Artifactory.docker [credentialsId: 'credentialsId'] [host: 'tcp://<daemon IP>:<daemon port>']\n" +
+                    "    def rtDocker = Artifactory.docker, [credentialsId: 'credentialsId'] [host: 'tcp://<daemon IP>:<daemon port>']\n" +
                     "Please use the following signature of the method, adding the Artifactory server as argument:\n" +
-                    "    def rtDocker = Artifactory.docker <server: server> [host: 'tcp://<daemon IP>:<daemon port>']\n" +
+                    "    def rtDocker = Artifactory.docker <server: server>, [host: 'tcp://<daemon IP>:<daemon port>']\n" +
                     "The new method signature does not require setting up the Build-Info Proxy.";
 
             log.warn(deprecationMessage);
