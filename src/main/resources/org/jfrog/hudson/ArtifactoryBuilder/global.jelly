@@ -130,10 +130,17 @@
             </f:repeatable>
         </f:entry>
 
-        <f:optionalBlock title="Enable Build-Info proxy for Docker images"
+        <f:optionalBlock title="Deprecated - Enable Build-Info proxy for Docker images"
             name="buildInfoProxyEnabled"
             field="buildInfoProxyEnabled"
             checked="${descriptor.buildInfoProxyEnabled}">
+
+            <f:block>
+                <p>
+                    Creating build info for docker images is no longer requires proxy configuration. <br/>
+                    For further information refer to: https://www.jfrog.com/confluence/display/RTF/Working+With+Pipeline+Jobs+in+Jenkins#WorkingWithPipelineJobsinJenkins-DockerBuildswithArtifactory
+                </p>
+            </f:block>
 
             <f:entry title="Port" help="/plugin/artifactory/help/ArtifactoryBuilder/help-buildInfoProxyPort.html">
                 <f:textbox id="buildInfoProxyPort" field="buildInfoProxyPort" value="${descriptor.buildInfoProxyPort}"/>
