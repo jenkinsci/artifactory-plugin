@@ -1,0 +1,7 @@
+# Safe, no deserialization, only basic types
+org.jfrog.build.client.DeployDetails
+
+# Safe, only basic types. Classes below XStream annotations, so it's supposed to be serialized
+org.jfrog.build.api.Artifact
+org.jfrog.build.api.Dependency
+

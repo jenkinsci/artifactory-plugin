@@ -280,8 +280,8 @@ public abstract class ActionableHelper implements Serializable {
      * @throws IOException In case of a missing file.
      */
     public static void deleteFilePathOnExit(FilePath filePath) throws IOException, InterruptedException {
-        filePath.act(new MasterToSlaveFileCallable<Object>() {
-            public Object invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
+        filePath.act(new MasterToSlaveFileCallable<Void>() {
+            public Void invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
                 file.deleteOnExit();
                 return null;
             }
