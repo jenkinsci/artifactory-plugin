@@ -10,6 +10,7 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.IOUtils;
+import jenkins.MasterToSlaveFileCallable;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -118,7 +119,7 @@ public class RunCommandStep extends AbstractStepImpl {
             final String revision = Utils.extractVcsRevision(ws);
             final long startTime = buildInfo.getStartDate().getTime();
             buildProperties.touch(0);
-            buildProperties.act(new FilePath.FileCallable<Boolean>() {
+            buildProperties.act(new MasterToSlaveFileCallable<Boolean>() {
                 public Boolean invoke(File conanProperties, VirtualChannel channel) throws IOException, InterruptedException {
                     final String propsPrefix = "artifact_property_";
                     Properties props = new Properties();

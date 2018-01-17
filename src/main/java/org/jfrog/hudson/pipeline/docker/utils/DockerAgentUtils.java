@@ -7,6 +7,7 @@ import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.remoting.Callable;
 import jenkins.model.Jenkins;
+import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.pipeline.docker.DockerImage;
 import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxy;
@@ -48,7 +49,7 @@ public class DockerAgentUtils implements Serializable {
                 continue;
             }
             try {
-                node.getChannel().call(new Callable<Boolean, IOException>() {
+                node.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
                     public Boolean call() throws IOException {
                         registerImage(imageId, imageTag, targetRepo, artifactsProps, buildInfoId);
                         return true;
@@ -172,7 +173,7 @@ public class DockerAgentUtils implements Serializable {
                 continue;
             }
             try {
-                List<DockerImage> partialDockerImages = node.getChannel().call(new Callable<List<DockerImage>, IOException>() {
+                List<DockerImage> partialDockerImages = node.getChannel().call(new MasterToSlaveCallable<List<DockerImage>, IOException>() {
                     public List<DockerImage> call() throws IOException {
                         List<DockerImage> dockerImages = new ArrayList<DockerImage>();
                         dockerImages.addAll(getAndDiscardImagesByBuildId(buildInfoId));
@@ -202,7 +203,7 @@ public class DockerAgentUtils implements Serializable {
     public static boolean pushImage(Launcher launcher, final JenkinsBuildInfoLog log, final String imageTag, final String username, final String password, final String host)
             throws IOException, InterruptedException {
 
-        return launcher.getChannel().call(new Callable<Boolean, IOException>() {
+        return launcher.getChannel().call(new  MasterToSlaveCallable<Boolean, IOException>() {
             public Boolean call() throws IOException {
                 String message = "Pushing image: " + imageTag;
                 if (StringUtils.isNotEmpty(host)) {
@@ -231,7 +232,7 @@ public class DockerAgentUtils implements Serializable {
     public static boolean pullImage(Launcher launcher, final String imageTag, final String username, final String password, final String host)
             throws IOException, InterruptedException {
 
-        return launcher.getChannel().call(new Callable<Boolean, IOException>() {
+        return launcher.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
             public Boolean call() throws IOException {
                 DockerUtils.pullImage(imageTag, username, password, host);
                 return true;
@@ -258,7 +259,7 @@ public class DockerAgentUtils implements Serializable {
             if (node == null || node.getChannel() == null) {
                 continue;
             }
-            boolean parentNodeUpdated = node.getChannel().call(new Callable<Boolean, IOException>() {
+            boolean parentNodeUpdated = node.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
                 public Boolean call() throws IOException {
                     return updateImageParent(log, imageTag, host, buildInfoId);
                 }
@@ -302,7 +303,7 @@ public class DockerAgentUtils implements Serializable {
      * @return
      */
     public static String getImageIdFromAgent(Launcher launcher, final String imageTag, final String host) throws IOException, InterruptedException {
-        return launcher.getChannel().call(new Callable<String, IOException>() {
+        return launcher.getChannel().call(new MasterToSlaveCallable<String, IOException>() {
             public String call() throws IOException {
                 return DockerUtils.getImageIdFromTag(imageTag, host);
             }
@@ -316,7 +317,7 @@ public class DockerAgentUtils implements Serializable {
      * @return
      */
     public static String getParentIdFromAgent(Launcher launcher, final String imageID, final String host) throws IOException, InterruptedException {
-        return launcher.getChannel().call(new Callable<String, IOException>() {
+        return launcher.getChannel().call(new MasterToSlaveCallable<String, IOException>() {
             public String call() throws IOException {
                 return DockerUtils.getParentId(imageID, host);
             }

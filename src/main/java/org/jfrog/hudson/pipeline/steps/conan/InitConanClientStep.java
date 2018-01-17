@@ -9,6 +9,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.remoting.Callable;
 import hudson.util.ArgumentListBuilder;
+import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -91,7 +92,7 @@ public class InitConanClientStep extends AbstractStepImpl {
             final String prefix = "conan";
             final String suffix = "";
             try {
-                return launcher.getChannel().call(new Callable<FilePath, IOException>() {
+                return launcher.getChannel().call(new MasterToSlaveCallable<FilePath, IOException>() {
                     public FilePath call() throws IOException {
                         File f = File.createTempFile(prefix, suffix, null);
                         f.delete();

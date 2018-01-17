@@ -28,6 +28,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
 import hudson.util.DescribableList;
+import jenkins.MasterToSlaveFileCallable;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.client.ArtifactoryHttpClient;
@@ -279,7 +280,7 @@ public abstract class ActionableHelper implements Serializable {
      * @throws IOException In case of a missing file.
      */
     public static void deleteFilePathOnExit(FilePath filePath) throws IOException, InterruptedException {
-        filePath.act(new FilePath.FileCallable<Object>() {
+        filePath.act(new MasterToSlaveFileCallable<Object>() {
             public Object invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
                 file.deleteOnExit();
                 return null;

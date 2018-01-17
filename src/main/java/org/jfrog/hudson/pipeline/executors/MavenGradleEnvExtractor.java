@@ -7,6 +7,7 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.remoting.Callable;
+import jenkins.security.MasterToSlaveCallable;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
@@ -98,6 +99,7 @@ public class MavenGradleEnvExtractor {
         configuration.info.setDeployableArtifactsFilePath(deployableArtifactsFile);
     }
 
+    //TODO: Replace by standard FilePath operations
     /**
      * Create the <PROJECT_PATH@tmp> directory in case it doesn't exists.
      * @param launcher
@@ -105,7 +107,7 @@ public class MavenGradleEnvExtractor {
      * @throws Exception
      */
     private static void createProjectTempDir(Launcher launcher, final String tempDirPath) throws Exception {
-        launcher.getChannel().call(new Callable<Boolean, IOException>() {
+        launcher.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
             public Boolean call() throws IOException {
                 File tempDirFile = new File(tempDirPath);
                 tempDirFile.mkdir();
