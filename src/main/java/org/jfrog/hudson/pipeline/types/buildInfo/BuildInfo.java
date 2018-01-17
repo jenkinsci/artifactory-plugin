@@ -6,6 +6,7 @@ import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
+import jenkins.MasterToSlaveFileCallable;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
@@ -229,7 +230,7 @@ public class BuildInfo implements Serializable {
         return modules;
     }
 
-    public static class DeployPathsAndPropsCallable implements FilePath.FileCallable<List<DeployDetails>> {
+    public static class DeployPathsAndPropsCallable extends MasterToSlaveFileCallable<List<DeployDetails>> {
         private String deployableArtifactsPath;
         private TaskListener listener;
         private ArrayListMultimap<String, String> propertiesMap;

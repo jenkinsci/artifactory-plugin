@@ -4,6 +4,7 @@ import hudson.FilePath;
 import hudson.model.Node;
 import hudson.remoting.Callable;
 import jenkins.model.Jenkins;
+import jenkins.security.MasterToSlaveCallable;
 import net.lightbody.bmp.mitm.PemFileCertificateSource;
 import net.lightbody.bmp.mitm.TrustSource;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
@@ -70,7 +71,7 @@ public class BuildInfoProxy implements Serializable {
                 continue;
             }
             try {
-                node.getChannel().call(new Callable<Boolean, IOException>() {
+                node.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
                     public Boolean call() throws IOException {
                         BuildInfoProxy.stop();
                         return true;
@@ -110,7 +111,7 @@ public class BuildInfoProxy implements Serializable {
             localKeyPath.copyTo(remoteKeyPath);
 
             try {
-                node.getChannel().call(new Callable<Boolean, IOException>() {
+                node.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
                     public Boolean call() throws IOException {
                         BuildInfoProxy.start(port, agentCertPath, agentKeyPath, agentName);
                         return true;

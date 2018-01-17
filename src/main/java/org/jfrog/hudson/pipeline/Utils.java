@@ -13,7 +13,9 @@ import hudson.remoting.LocalChannel;
 import hudson.remoting.VirtualChannel;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
+import jenkins.MasterToSlaveFileCallable;
 import jenkins.model.Jenkins;
+import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
@@ -140,7 +142,7 @@ public class Utils {
         }
         FilePath dotGitPath = new FilePath(filePath, ".git");
         if (dotGitPath.exists()) {
-            return dotGitPath.act(new FilePath.FileCallable<String>() {
+            return dotGitPath.act(new MasterToSlaveFileCallable<String>() {
                 public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
                     FileRepository repository = new FileRepository(f);
                     Ref head = repository.getRef("HEAD");
@@ -238,7 +240,7 @@ public class Utils {
     }
 
     public static String createTempJsonFile(Launcher launcher, final String name, final String dir) throws Exception {
-        return launcher.getChannel().call(new Callable<String, Exception>() {
+        return launcher.getChannel().call(new MasterToSlaveCallable<String, Exception>() {
             public String call() throws IOException {
                 File tempFile = File.createTempFile(name, ".json", new File(dir));
                 tempFile.deleteOnExit();
