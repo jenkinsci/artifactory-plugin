@@ -5,3 +5,5 @@ org.jfrog.build.client.DeployDetails
 org.jfrog.build.api.Artifact
 org.jfrog.build.api.Dependency
 
+# XStream
+com.google.common.collect.ArrayListMultimap
