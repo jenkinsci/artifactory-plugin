@@ -147,7 +147,7 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "ArtifactoryMavenBuild";
+            return "artifactoryMavenBuild";
         }
 
         @Override
