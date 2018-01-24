@@ -28,6 +28,7 @@ import hudson.slaves.SlaveComputer;
 import hudson.util.IOUtils;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpEntity;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.BuildRetention;
@@ -47,6 +48,7 @@ import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -559,5 +561,31 @@ public class ExtractorUtils {
             buildVariables = Utils.extractBuildParameters(build, listener);
         }
         return buildVariables;
+    }
+
+    /**
+     * Converts the http entity to string. If entity is null, returns empty string.
+     * @param entity
+     * @return
+     * @throws IOException
+     */
+    public static String entityToString(HttpEntity entity) throws IOException {
+        if (entity != null) {
+            InputStream is = entity.getContent();
+            return IOUtils.toString(is, "UTF-8");
+        }
+        return "";
+    }
+
+    /**
+     * Validates that the String is not blank.
+     * @param content
+     * @throws IOException - If the string is empty.
+     */
+    public static void validateStringNotBlank(String content) throws IOException {
+        if (StringUtils.isBlank(content)) {
+            throw new IOException("Received empty String.");
+        }
+
     }
 }

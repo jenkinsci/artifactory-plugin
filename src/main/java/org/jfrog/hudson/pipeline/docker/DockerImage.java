@@ -5,7 +5,6 @@ import com.google.common.collect.Sets;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.jfrog.build.api.Artifact;
@@ -28,6 +27,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+
+import static org.jfrog.hudson.util.ExtractorUtils.entityToString;
 
 /**
  * Created by romang on 8/9/16.
@@ -211,7 +212,7 @@ public class DockerImage implements Serializable {
             throw new IllegalStateException("Could not find the history docker layer: " + imageId + " for image: " + imageTag + " in Artifactory.");
         }
         HttpResponse res = dependenciesClient.downloadArtifact(server.getUrl() + "/" + historyLayer.getFullPath());
-        int dependencyLayerNum = DockerUtils.getNumberOfDependentLayers(IOUtils.toString(res.getEntity().getContent()));
+        int dependencyLayerNum = DockerUtils.getNumberOfDependentLayers(ExtractorUtils.entityToString(res.getEntity()));
 
         List<Dependency> dependencies = new ArrayList<Dependency>();
         List<Artifact> artifacts = new ArrayList<Artifact>();
@@ -219,7 +220,8 @@ public class DockerImage implements Serializable {
         for (int i = 0; i < dependencyLayerNum; i++) {
             String digest = it.next();
             DockerLayer layer = layers.getByDigest(digest);
-            propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            HttpResponse httpResponse = propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            validateResponse(httpResponse);
             Dependency dependency = new DependencyBuilder().id(layer.getFileName()).sha1(layer.getSha1()).properties(buildInfoItemsProps).build();
             dependencies.add(dependency);
 
@@ -234,7 +236,8 @@ public class DockerImage implements Serializable {
             if (layer == null) {
                 continue;
             }
-            propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            HttpResponse httpResponse = propertyChangeClient.executeUpdateFileProperty(layer.getFullPath(), artifactsProps);
+            validateResponse(httpResponse);
             Artifact artifact = new ArtifactBuilder(layer.getFileName()).sha1(layer.getSha1()).properties(buildInfoItemsProps).build();
             artifacts.add(artifact);
         }
@@ -272,5 +275,13 @@ public class DockerImage implements Serializable {
             aqlRequestForDockerSha.append("]}).include(\"name\",\"repo\",\"path\",\"actual_sha1\")");
         }
         return aqlRequestForDockerSha.toString();
+    }
+
+    private void validateResponse(HttpResponse httpResponse) throws IOException {
+        int code = httpResponse.getStatusLine().getStatusCode();
+        if (code != 204) {
+            String response = entityToString(httpResponse.getEntity());
+            throw new IOException("Failed while trying to set properties on docker layer: " + response);
+        }
     }
 }
