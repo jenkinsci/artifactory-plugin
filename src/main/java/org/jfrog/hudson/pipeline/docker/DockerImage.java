@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.jfrog.build.api.Artifact;
