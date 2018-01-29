@@ -41,8 +41,11 @@ import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator;
+import org.jfrog.hudson.maven3.ArtifactoryMaven3NativeConfigurator;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.pipeline.types.resolvers.MavenResolver;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
@@ -141,6 +144,9 @@ public class ExtractorUtils {
             throws IOException, InterruptedException {
         ArtifactoryClientConfiguration configuration = getArtifactoryClientConfiguration(env, build,
                 null, listener, publisherContext, resolverContext, ws);
+        if (isMavenResolutionConfigured(resolverContext)) {
+            env.put(BuildInfoConfigProperties.PROP_ARTIFACTORY_RESOLUTION_ENABLED, Boolean.TRUE.toString());
+        }
         persistConfiguration(configuration, env, ws, launcher);
         return configuration;
     }
@@ -587,5 +593,13 @@ public class ExtractorUtils {
             throw new IOException("Received empty String.");
         }
 
+    }
+
+    private static boolean isMavenResolutionConfigured(ResolverContext resolverContext) {
+        return resolverContext != null &&
+                resolverContext.getResolverOverrider() != null &&
+                (resolverContext.getResolverOverrider() instanceof ArtifactoryMaven3Configurator ||
+                        resolverContext.getResolverOverrider() instanceof ArtifactoryMaven3NativeConfigurator ||
+                        resolverContext.getResolverOverrider() instanceof MavenResolver);
     }
 }

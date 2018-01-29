@@ -79,7 +79,7 @@ public class Maven3Builder extends Builder {
         return mavenOpts;
     }
 
-    // Used by Generic jobs only
+    // Used by FreeStyle Maven jobs only
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
@@ -153,7 +153,7 @@ public class Maven3Builder extends Builder {
         boolean artifactoryIntegration = StringUtils.isNotBlank(buildInfoPropertiesFile);
         listener.getLogger().println("Artifactory integration is " + (artifactoryIntegration ? "enabled" : "disabled"));
         if (artifactoryIntegration) {
-            addArtifactoryIntegrationArgs(args, buildInfoPropertiesFile, tempDir);
+            addArtifactoryIntegrationArgs(args, buildInfoPropertiesFile, tempDir, env);
             ActionableHelper.deleteFilePathOnExit(tempDir, classworldsConfPath);
         } else {
             args.addKeyValuePair("-D", "classworlds.conf", new FilePath(mavenHome, "bin/m2.conf").getRemote(), false);
@@ -199,8 +199,12 @@ public class Maven3Builder extends Builder {
         return javaPathBuilder.toString();
     }
 
-    private void addArtifactoryIntegrationArgs(ArgumentListBuilder args, String buildInfoPropertiesFile, FilePath ws) throws IOException, InterruptedException {
+    private void addArtifactoryIntegrationArgs(ArgumentListBuilder args, String buildInfoPropertiesFile, FilePath ws, EnvVars env) throws IOException, InterruptedException {
         args.addKeyValuePair("-D", BuildInfoConfigProperties.PROP_PROPS_FILE, buildInfoPropertiesFile, false);
+
+        if (Boolean.parseBoolean(env.get(BuildInfoConfigProperties.PROP_ARTIFACTORY_RESOLUTION_ENABLED))) {
+            args.addKeyValuePair("-D", BuildInfoConfigProperties.PROP_ARTIFACTORY_RESOLUTION_ENABLED, Boolean.TRUE.toString(), false);
+        }
 
         // use the classworlds conf packaged with this plugin and resolve the extractor libs
         File maven3ExtractorJar = Which.jarFile(Maven3BuildInfoLogger.class);
