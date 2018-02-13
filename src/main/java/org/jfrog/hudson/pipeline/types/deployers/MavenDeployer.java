@@ -15,22 +15,10 @@ import org.jfrog.hudson.util.publisher.PublisherContext;
 public class MavenDeployer extends Deployer {
     private String snapshotRepo;
     private String releaseRepo;
-    private boolean evenIfUnstable;
     public final static MavenDeployer EMPTY_DEPLOYER;
 
     static {
         EMPTY_DEPLOYER = createEmptyDeployer();
-    }
-
-    @Whitelisted
-    public boolean isEvenIfUnstable() {
-        return evenIfUnstable;
-    }
-
-    @Whitelisted
-    public Deployer setEvenIfUnstable(boolean evenIfUnstable) {
-        this.evenIfUnstable = evenIfUnstable;
-        return this;
     }
 
     @Whitelisted
@@ -68,6 +56,7 @@ public class MavenDeployer extends Deployer {
                 .deployerOverrider(this)
                 .serverDetails(getDetails())
                 .deployArtifacts(isDeployArtifacts())
+                .evenIfUnstable(isDeployEvenIfUnstable())
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
                 .includeEnvVars(isIncludeEnvVars())
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
@@ -90,6 +79,7 @@ public class MavenDeployer extends Deployer {
         dummy.setReleaseRepo("empty_repo");
         dummy.setSnapshotRepo("empty_repo");
         dummy.setDeployArtifacts(false);
+        dummy.setDeployEvenIfUnstable(false);
         return dummy;
     }
 }

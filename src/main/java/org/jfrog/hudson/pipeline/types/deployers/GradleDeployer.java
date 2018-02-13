@@ -111,6 +111,7 @@ public class GradleDeployer extends Deployer {
                 .artifactoryServer(getArtifactoryServer())
                 .serverDetails(getDetails())
                 .deployArtifacts(isDeployArtifacts()).includesExcludes(Utils.getArtifactsIncludeExcludeForDeyployment(getArtifactDeploymentPatterns().getPatternFilter()))
+                .evenIfUnstable(isDeployEvenIfUnstable())
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
                 .artifactsPattern(getArtifactPattern())
                 .ivyPattern(getIvyPattern())
