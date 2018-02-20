@@ -20,6 +20,7 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -29,14 +30,18 @@ import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
 import hudson.security.ACL;
+
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jfrog.hudson.release.ReleaseRepository;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Logger;
@@ -86,6 +91,53 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
         log(buildListener, String.format("Creating tag '%s' with message '%s'", tagName, commitMessage));
         client.tag(tagName, commitMessage);
+    }
+
+    public boolean isTagExists(final ReleaseRepository releaseRepository, final String tagName)
+            throws IOException, InterruptedException {
+        GitClient client = getGitClient(releaseRepository);
+
+        log(buildListener, String.format("Checking if tag '%s' exists.", tagName));
+        return client.tagExists(tagName);
+    }
+
+    /**
+     * This method uses the configured git credentials and repo, to test its validity.
+     * In addition, in case the user requested creation of a new tag, it checks that
+     * another tag with the same name doesn't exist
+     */
+    public void testPush(final ReleaseRepository releaseRepository, final String tagName)
+            throws Exception {
+        createTag(tagName, "this is a test tag");
+
+        GitClient client = getGitClient(releaseRepository);
+        log(buildListener, String.format("Attempting to push tag %s with --dry-run", tagName));
+
+        org.eclipse.jgit.transport.CredentialsProvider provider = null;
+        Pair<String, StandardCredentials> cred = getGitClientCredentials();
+        if (cred != null && cred.getValue() instanceof StandardUsernamePasswordCredentials) {
+            StandardUsernamePasswordCredentials asd = (StandardUsernamePasswordCredentials)cred.getValue();
+            provider = new UsernamePasswordCredentialsProvider(asd.getUsername(), asd.getPassword().getPlainText());
+        }
+
+        if (provider == null) {
+            throw new Exception("Failed to retrieve git credentials");
+        }
+
+        org.eclipse.jgit.api.Git git = org.eclipse.jgit.api.Git.open(new File(client.getWorkTree().toURI()));
+        try {
+            org.eclipse.jgit.api.PushCommand pc = git.push().setRemote(releaseRepository.getTargetRepoPrivateUri())
+                 .setCredentialsProvider(provider)
+                 .setDryRun(true)
+                 .setPushTags();
+
+            pc.call();
+            log(buildListener,"Push dry-run completed successfully");
+        } finally {
+            if (git.getRepository() != null) {
+                git.getRepository().close();
+            }
+        }
     }
 
     public void push(final ReleaseRepository releaseRepository, final String branch) throws Exception {
@@ -233,23 +285,37 @@ public class GitManager extends AbstractScmManager<GitSCM> {
     }
 
     private void addCredentialsToGitClient(GitClient client) {
+        Pair<String, StandardCredentials> cred = getGitClientCredentials();
+        if (cred != null) {
+            client.addCredentials(cred.getKey(), cred.getValue());
+        }
+    }
+
+    /**
+     * Returns a Pair<key, value> which contains the git credentials to use.
+     * Key - url to repository
+     * Value - StandardCredentials, containing username and password
+     */
+    private Pair<String, StandardCredentials> getGitClientCredentials() {
         GitSCM gitScm = getJenkinsScm();
         for (UserRemoteConfig uc : gitScm.getUserRemoteConfigs()) {
             String url = uc.getUrl();
             if (this.credentials != null) {
-                client.addCredentials(url, this.credentials);
-            } else if (uc.getCredentialsId() != null) {
-                StandardUsernameCredentials credentials = CredentialsMatchers
-                        .firstOrNull(
+                return Pair.of(url, this.credentials);
+            }
+
+            if (uc.getCredentialsId() != null) {
+                StandardUsernameCredentials credentials = CredentialsMatchers.firstOrNull(
                                 CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
                                         build.getProject(), ACL.SYSTEM, URIRequirementBuilder.fromUri(url).build()),
                                 CredentialsMatchers.allOf(CredentialsMatchers.withId(uc.getCredentialsId()),
                                         GitClient.CREDENTIALS_MATCHER));
                 if (credentials != null) {
-                    client.addCredentials(url, credentials);
+                    return Pair.of(url, (StandardCredentials)credentials);
                 }
             }
         }
+        return null;
     }
 
     private FilePath getWorkingDirectory(GitSCM gitSCM, FilePath ws) throws IOException {

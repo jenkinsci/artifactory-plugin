@@ -19,7 +19,6 @@ package org.jfrog.hudson.release.scm.git;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
-import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.release.ReleaseRepository;
 import org.jfrog.hudson.release.scm.AbstractScmCoordinator;
@@ -57,6 +56,25 @@ public class GitCoordinator extends AbstractScmCoordinator {
         // find the current local built branch
         String gitBranchName = build.getEnvironment(listener).get("GIT_BRANCH");
         checkoutBranch = scmManager.getBranchNameWithoutRemote(gitBranchName);
+    }
+
+    public void pushDryRun() throws Exception {
+        if (releaseAction.isCreateVcsTag()) {
+            if (scmManager.isTagExists(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl())) {
+                throw new Exception(String.format("Tag with name '%s' already exists", releaseAction.getTagUrl()));
+            }
+        }
+
+        String testTagName = releaseAction.getTagUrl() + "_test";
+        try {
+            scmManager.testPush(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), testTagName);
+        } catch (Exception e) {
+            throw new Exception(String.format("Failed while attempting push dry-run: %s", e.getMessage()), e);
+        } finally {
+            if (scmManager.isTagExists(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), testTagName)) {
+                scmManager.deleteLocalTag(testTagName);
+            }
+        }
     }
 
     public void beforeReleaseVersionChange() throws IOException, InterruptedException {
