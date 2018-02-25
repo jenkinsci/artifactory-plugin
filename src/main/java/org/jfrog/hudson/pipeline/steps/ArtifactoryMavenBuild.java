@@ -5,7 +5,6 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
@@ -108,7 +107,6 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
             convertJdkPath();
             boolean result = maven3Builder.perform(build, launcher, listener, extendedEnv, ws, tempDir);
             if (!result) {
-                build.setResult(Result.FAILURE);
                 throw new RuntimeException("Maven build failed");
             }
             String generatedBuildPath = extendedEnv.get(BuildInfoFields.GENERATED_BUILD_INFO);
