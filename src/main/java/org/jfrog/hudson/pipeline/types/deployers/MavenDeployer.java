@@ -15,6 +15,7 @@ import org.jfrog.hudson.util.publisher.PublisherContext;
 public class MavenDeployer extends Deployer {
     private String snapshotRepo;
     private String releaseRepo;
+    private boolean deployEvenIfUnstable = false;
     public final static MavenDeployer EMPTY_DEPLOYER;
 
     static {
@@ -41,6 +42,20 @@ public class MavenDeployer extends Deployer {
     @Whitelisted
     public String getSnapshotRepo() {
         return snapshotRepo;
+    }
+
+    @Whitelisted
+    public Deployer setDeployEvenIfUnstable(boolean deployEvenIfUnstable) {
+        this.deployEvenIfUnstable = deployEvenIfUnstable;
+        return this;
+    }
+
+    /**
+     * @return  True if should deploy artifacts even when the build is unstable (test failures).
+     */
+    @Whitelisted
+    public boolean isDeployEvenIfUnstable() {
+        return deployEvenIfUnstable;
     }
 
     @Override

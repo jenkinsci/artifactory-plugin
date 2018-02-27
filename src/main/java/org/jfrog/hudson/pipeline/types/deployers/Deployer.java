@@ -36,7 +36,6 @@ import java.util.*;
  */
 public abstract class Deployer implements DeployerOverrider, Serializable {
     private boolean deployArtifacts = true;
-    private boolean deployEvenIfUnstable = false;
     private boolean includeEnvVars;
     private ArrayListMultimap<String, String> properties = ArrayListMultimap.create();
     private Filter artifactDeploymentPatterns = new Filter();
@@ -73,20 +72,6 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
     @Whitelisted
     public boolean isDeployArtifacts() {
         return deployArtifacts;
-    }
-
-    /**
-     * @return  True if should deploy artifacts even when the build is unstable (test failures).
-     */
-    @Whitelisted
-    public boolean isDeployEvenIfUnstable() {
-        return deployEvenIfUnstable;
-    }
-
-    @Whitelisted
-    public Deployer setDeployEvenIfUnstable(boolean deployEvenIfUnstable) {
-        this.deployEvenIfUnstable = deployEvenIfUnstable;
-        return this;
     }
 
     @Whitelisted
