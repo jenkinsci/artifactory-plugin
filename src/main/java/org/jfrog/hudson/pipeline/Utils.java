@@ -42,10 +42,9 @@ import java.util.*;
  */
 public class Utils {
 
-    public static final String BUILD_INFO_DELIMITER = ".";
-    public static final String CONAN_USER_HOME = "CONAN_USER_HOME";
-    private static final String UNIX_GLOB_CHARS = "*?[]";
-    public static final String BUILD_INFO = "buildInfo";
+    public static final String CONAN_USER_HOME = "CONAN_USER_HOME"; // Conan user home environment variable name
+    public static final String BUILD_INFO = "buildInfo"; // The build info argument used in pipeline
+    private static final String UNIX_SPECIAL_CHARS = "`^<>| ,;!?'\"()[]{}$*\\&#"; // Unix special characters to escape in '/bin/sh' execution
 
     /**
      * Prepares Artifactory server either from serverID or from ArtifactoryServer.
@@ -74,16 +73,6 @@ public class Utils {
             return null;
         }
         return server;
-    }
-
-    public static ListBoxModel getServerListBox() {
-        ListBoxModel r = new ListBoxModel();
-        List<org.jfrog.hudson.ArtifactoryServer> servers = RepositoriesUtils.getArtifactoryServers();
-        r.add("", "");
-        for (org.jfrog.hudson.ArtifactoryServer server : servers) {
-            r.add(server.getName() + Utils.BUILD_INFO_DELIMITER + server.getUrl(), server.getName());
-        }
-        return r;
     }
 
     public static BuildInfo prepareBuildinfo(Run build, BuildInfo buildinfo) {
@@ -285,10 +274,10 @@ public class Utils {
         }
     }
 
-    private static String escapeUnixArgument(String arg) {
+    static String escapeUnixArgument(String arg) {
         StringBuilder res = new StringBuilder();
         for (char c : arg.toCharArray()) {
-            if (UNIX_GLOB_CHARS.indexOf(c) >= 0) {
+            if (UNIX_SPECIAL_CHARS.indexOf(c) >= 0) {
                 res.append("\\");
             }
             res.append(c);
