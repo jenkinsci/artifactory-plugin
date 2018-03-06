@@ -74,7 +74,7 @@ public class InitConanClientStep extends AbstractStepImpl {
             ConanClient conanClient = step.getClient();
             FilePath conanHomeDirectory;
             if (StringUtils.isEmpty(conanClient.getUserPath())) {
-                conanHomeDirectory = createConanTempHome();
+                conanHomeDirectory = env.containsKey(Utils.CONAN_USER_HOME) ? new FilePath(new File(env.get(Utils.CONAN_USER_HOME))) : createConanTempHome();
             } else {
                 conanHomeDirectory = new FilePath(launcher.getChannel(), conanClient.getUserPath());
                 if (!conanHomeDirectory.exists()) {
