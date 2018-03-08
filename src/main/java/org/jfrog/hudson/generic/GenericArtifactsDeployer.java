@@ -9,6 +9,7 @@ import hudson.model.Cause;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
+import jenkins.MasterToSlaveFileCallable;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
@@ -75,7 +76,7 @@ public class GenericArtifactsDeployer {
             String spec = SpecUtils.getSpecStringFromSpecConf(configurator.getUploadSpec(), env, workingDir, listener.getLogger());
             artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, spec, artifactoryServer,
                     credentialsConfig.getCredentials(build.getParent()), propertiesToAdd,
-                    artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
+                    ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
         } else {
             String deployPattern = Util.replaceMacro(configurator.getDeployPattern(), env);
             deployPattern = StringUtils.replace(deployPattern, "\r\n", "\n");
@@ -87,7 +88,7 @@ public class GenericArtifactsDeployer {
             String repositoryKey = Util.replaceMacro(configurator.getRepositoryKey(), env);
             artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer,
                     credentialsConfig.getCredentials(build.getParent()), repositoryKey, propertiesToAdd,
-                    artifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
+                    ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
         }
     }
 
@@ -127,7 +128,7 @@ public class GenericArtifactsDeployer {
         }
     }
 
-    public static class FilesDeployerCallable implements FilePath.FileCallable<List<Artifact>> {
+    public static class FilesDeployerCallable extends MasterToSlaveFileCallable<List<Artifact>> {
 
         private String repositoryKey;
         private TaskListener listener;

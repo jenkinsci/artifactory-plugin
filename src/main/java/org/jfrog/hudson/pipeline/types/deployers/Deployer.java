@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
+import jenkins.MasterToSlaveFileCallable;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
@@ -181,7 +182,7 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
         }
     }
 
-    public static class DeployDetailsCallable implements FilePath.FileCallable<Set<DeployDetails>> {
+    public static class DeployDetailsCallable extends MasterToSlaveFileCallable<Set<DeployDetails>> {
         private static final String SHA1 = "SHA1";
         private static final String MD5 = "MD5";
         private List<DeployDetails> deployableArtifactsPaths;

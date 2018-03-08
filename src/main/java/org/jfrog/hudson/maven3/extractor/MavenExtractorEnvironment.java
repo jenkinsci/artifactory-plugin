@@ -227,7 +227,7 @@ public class MavenExtractorEnvironment extends Environment {
     public static class ArtifactoryPlexusContributor extends PlexusModuleContributorFactory {
 
         private static final String INCLUDED_FILES = "*.jar";
-        private static final String EXCLUDED_FILES = "classes.jar, *ivy*, *gradle*";
+        private static final String EXCLUDED_FILES = "classes.jar, *ivy*, *gradle*, artifactory*.jar";
 
         @Override
         public PlexusModuleContributor createFor(AbstractBuild<?, ?> context) throws IOException, InterruptedException {
