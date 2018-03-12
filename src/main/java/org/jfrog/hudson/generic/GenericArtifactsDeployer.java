@@ -108,18 +108,18 @@ public class GenericArtifactsDeployer {
             properties.put(BuildInfoFields.VCS_REVISION, revision);
         }
 
-        addMatrixParams(properties);
+        addDeploymentProperties(properties);
 
         return properties;
     }
 
-    private void addMatrixParams(Multimap<String, String> properties) {
-        String[] matrixParams = StringUtils.split(configurator.getMatrixParams(), ";");
-        if (matrixParams == null) {
+    private void addDeploymentProperties(Multimap<String, String> properties) {
+        String[] deploymentProperties = StringUtils.split(configurator.getDeploymentProperties(), ";");
+        if (deploymentProperties == null) {
             return;
         }
-        for (String matrixParam : matrixParams) {
-            String[] split = StringUtils.split(matrixParam, '=');
+        for (String property : deploymentProperties) {
+            String[] split = StringUtils.split(property, '=');
             if (split.length == 2) {
                 String value = Util.replaceMacro(split[1], env);
                 //Space is not allowed in property key

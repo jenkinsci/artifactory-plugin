@@ -406,7 +406,7 @@ public class ExtractorUtils {
             configuration.setEnvVarsIncludePatterns(Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env));
             configuration.setEnvVarsExcludePatterns(Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env));
         }
-        addMatrixParams(context, configuration.publisher, env);
+        addDeploymentProperties(context, configuration.publisher, env);
     }
 
     private static void setRetryParams(ArtifactoryClientConfiguration configuration, ArtifactoryServer artifactoryServer) {
@@ -520,12 +520,12 @@ public class ExtractorUtils {
         }
     }
 
-    private static void addMatrixParams(PublisherContext context,
-                                        ArtifactoryClientConfiguration.PublisherHandler publisher,
-                                        Map<String, String> env) {
-        String matrixParams = Util.replaceMacro(context.getMatrixParams(), env);
+    private static void addDeploymentProperties(PublisherContext context,
+                                                ArtifactoryClientConfiguration.PublisherHandler publisher,
+                                                Map<String, String> env) {
+        String deploymentProperties = Util.replaceMacro(context.getDeploymentProperties(), env);
         ArrayListMultimap<String, String> params = ArrayListMultimap.create();
-        SpecsHelper.fillPropertiesMap(matrixParams, params);
+        SpecsHelper.fillPropertiesMap(deploymentProperties, params);
         publisher.addMatrixParams(params);
     }
 

@@ -75,7 +75,7 @@ public class MavenDeployer extends Deployer {
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
                 .includeEnvVars(isIncludeEnvVars())
                 .skipBuildInfoDeploy(!isDeployBuildInfo())
-                .matrixParams(ExtractorUtils.buildPropertiesString(getProperties()))
+                .deploymentProperties(ExtractorUtils.buildPropertiesString(getProperties()))
                 .includesExcludes(getArtifactsIncludeExcludeForDeyployment());
     }
 

@@ -182,7 +182,7 @@ public class MavenExtractorEnvironment extends Environment {
 
     private PublisherContext createPublisherContext(ArtifactoryRedeployPublisher publisher, AbstractBuild build) {
         ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
-        ServerDetails server = publisher.getDetails();
+        ServerDetails server = publisher.getDeployerDetails();
         if (release != null) {
             // staging build might change the target deployment repository
             String stagingRepoKey = release.getStagingRepositoryKey();
@@ -204,7 +204,7 @@ public class MavenExtractorEnvironment extends Environment {
                 .recordAllDependencies(publisher.isRecordAllDependencies())
                 .includeEnvVars(publisher.isIncludeEnvVars()).envVarsPatterns(publisher.getEnvVarsPatterns())
                 .discardBuildArtifacts(publisher.isDiscardBuildArtifacts()).asyncBuildRetention(publisher.isAsyncBuildRetention())
-                .matrixParams(publisher.getMatrixParams()).evenIfUnstable(publisher.isEvenIfUnstable())
+                .deploymentProperties(publisher.getDeploymentProperties()).evenIfUnstable(publisher.isEvenIfUnstable())
                 .enableIssueTrackerIntegration(publisher.isEnableIssueTrackerIntegration())
                 .aggregateBuildIssues(publisher.isAggregateBuildIssues())
                 .aggregationBuildStatus(publisher.getAggregationBuildStatus())
