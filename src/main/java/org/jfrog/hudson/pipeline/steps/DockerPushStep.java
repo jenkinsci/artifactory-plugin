@@ -121,7 +121,7 @@ public class DockerPushStep extends AbstractStepImpl {
 
             String imageId = DockerAgentUtils.getImageIdFromAgent(launcher, step.getImage(), step.getHost());
             DockerAgentUtils.pushImage(launcher, log, step.getImage(), username, password, step.getHost());
-            DockerImage image = new DockerImage(imageId, step.getImage(), step.getTargetRepo(), buildInfo.hashCode());
+            DockerImage image = new DockerImage(imageId, step.getImage(), step.getTargetRepo(), buildInfo.hashCode(), step.properties);
 
             String parentId = DockerAgentUtils.getParentIdFromAgent(launcher, imageId, step.getHost());
             if (!StringUtils.isEmpty(parentId)) {

@@ -53,11 +53,13 @@ public class DockerImage implements Serializable {
     private ArrayListMultimap<String, String> artifactsProps;
     private final ArtifactoryVersion VIRTUAL_REPOS_SUPPORTED_VERSION = new ArtifactoryVersion("4.8.1");
 
-    public DockerImage(String imageId, String imageTag, String targetRepo, int buildInfoId) {
+    public DockerImage(String imageId, String imageTag, String targetRepo, int buildInfoId,
+           ArrayListMultimap<String, String> artifactsProps) {
         this.imageId = imageId;
         this.imageTag = imageTag;
         this.targetRepo = targetRepo;
         this.buildInfoId = buildInfoId;
+        this.artifactsProps = artifactsProps;
     }
 
     public boolean isExpired() {
@@ -70,10 +72,6 @@ public class DockerImage implements Serializable {
 
     public void setManifest(String manifest) {
         this.manifest = manifest;
-    }
-
-    public void setArtifactsProps(ArrayListMultimap<String, String> artifactsProps) {
-        this.artifactsProps = artifactsProps;
     }
 
     /**

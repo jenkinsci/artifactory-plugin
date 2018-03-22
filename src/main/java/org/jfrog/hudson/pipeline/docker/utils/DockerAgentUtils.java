@@ -73,8 +73,7 @@ public class DockerAgentUtils implements Serializable {
      */
     private static void registerImage(String imageId, String imageTag, String targetRepo,
             ArrayListMultimap<String, String> artifactsProps, int buildInfoId) throws IOException {
-        DockerImage image = new DockerImage(imageId, imageTag, targetRepo, buildInfoId);
-        image.setArtifactsProps(artifactsProps);
+        DockerImage image = new DockerImage(imageId, imageTag, targetRepo, buildInfoId, artifactsProps);
         images.add(image);
     }
 
