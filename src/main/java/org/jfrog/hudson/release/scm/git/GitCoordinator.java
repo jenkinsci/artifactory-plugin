@@ -58,6 +58,11 @@ public class GitCoordinator extends AbstractScmCoordinator {
         checkoutBranch = scmManager.getBranchNameWithoutRemote(gitBranchName);
     }
 
+    /**
+     * This method uses the configured git credentials and repo, to test its validity.
+     * In addition, in case the user requested creation of a new tag, it checks that
+     * another tag with the same name doesn't exist
+     */
     public void pushDryRun() throws Exception {
         if (releaseAction.isCreateVcsTag()) {
             if (scmManager.isTagExists(scmManager.getRemoteConfig(releaseAction.getTargetRemoteName()), releaseAction.getTagUrl())) {
