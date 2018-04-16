@@ -91,7 +91,7 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
             extendedEnv.put(ExtractorUtils.GIT_COMMIT, revision);
             MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build,
                     buildInfo, deployer, step.getMavenBuild().getResolver(), listener, launcher);
-            FilePath tempDir = new FilePath(ws.getParent(), ws.getBaseName() + "@tmp");
+            FilePath tempDir = ExtractorUtils.createAndGetTempDir(launcher, ws);
             envExtractor.buildEnvVars(tempDir, extendedEnv);
             String stepOpts = step.getMavenBuild().getOpts();
             String mavenOpts = stepOpts + (

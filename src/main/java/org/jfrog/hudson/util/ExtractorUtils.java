@@ -151,8 +151,7 @@ public class ExtractorUtils {
         }
 
         // Create tempdir for properties file
-        FilePath tempDir = new FilePath(ws.getParent(), ws.getBaseName() + "@tmp");
-        ExtractorUtils.createTempDir(launcher, tempDir.getRemote());
+        FilePath tempDir = createAndGetTempDir(launcher, ws);
 
         persistConfiguration(configuration, env, tempDir, launcher);
         return configuration;
@@ -611,19 +610,21 @@ public class ExtractorUtils {
     }
 
     /**
-     * Create a temporary directory.
+     * Create a temporary directory under a given workspace
      * @param launcher
-     * @param tempDirPath
+     * @param ws
      * @throws Exception
      */
-    public static void createTempDir(hudson.Launcher launcher, final String tempDirPath) throws Exception {
+    public static FilePath createAndGetTempDir(hudson.Launcher launcher, FilePath ws) throws Exception {
+        final FilePath tempDirPath = new FilePath(ws.getParent(), ws.getBaseName() + "@tmp");
         launcher.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
             public Boolean call() {
-                File tempDirFile = new File(tempDirPath);
+                File tempDirFile = new File(tempDirPath.getRemote());
                 tempDirFile.mkdir();
                 tempDirFile.deleteOnExit();
                 return true;
             }
         });
+        return tempDirPath;
     }
 }

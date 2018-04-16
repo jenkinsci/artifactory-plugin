@@ -8,7 +8,6 @@ import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
-import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -16,10 +15,10 @@ import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.hudson.pipeline.Utils;
 import org.jfrog.hudson.pipeline.types.ConanClient;
+import org.jfrog.hudson.util.ExtractorUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Calendar;
 
 public class InitConanClientStep extends AbstractStepImpl {
@@ -70,7 +69,7 @@ public class InitConanClientStep extends AbstractStepImpl {
             return true;
         }
 
-        private ConanClient getConanClient() throws IOException, InterruptedException {
+        private ConanClient getConanClient() throws Exception {
             ConanClient conanClient = step.getClient();
             FilePath conanHomeDirectory;
             if (StringUtils.isEmpty(conanClient.getUserPath())) {
@@ -87,21 +86,12 @@ public class InitConanClientStep extends AbstractStepImpl {
             return conanClient;
         }
 
-        private FilePath createConanTempHome() throws IOException {
-            final String prefix = "conan";
-            final String suffix = "";
-            try {
-                return launcher.getChannel().call(new MasterToSlaveCallable<FilePath, IOException>() {
-                    public FilePath call() throws IOException {
-                        File f = File.createTempFile(prefix, suffix, null);
-                        f.delete();
-                        f.mkdir();
-                        return new FilePath(f);
-                    }
-                });
-            } catch (InterruptedException e) {
-                throw new IOException(e);
-            }
+        private FilePath createConanTempHome() throws Exception {
+            // Create the @tmp directory
+            FilePath tempDir = ExtractorUtils.createAndGetTempDir(launcher, ws);
+
+            // Create the conan directory
+            return tempDir.createTempDir("conan", "");
         }
     }
 

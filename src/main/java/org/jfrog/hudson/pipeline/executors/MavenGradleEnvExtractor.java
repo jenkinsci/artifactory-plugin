@@ -67,7 +67,6 @@ public class MavenGradleEnvExtractor {
                         resolverCredentials.getCredentials(build.getParent()), resolver);
             }
 
-            ExtractorUtils.createTempDir(launcher, tempDir.getRemote());
             ArtifactoryClientConfiguration configuration = ExtractorUtils.getArtifactoryClientConfiguration(
                     env, build, buildInfo, buildListener, publisherContext, resolverContext);
             addPipelineInfoToConfiguration(env, configuration, tempDir);
