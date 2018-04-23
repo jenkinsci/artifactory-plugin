@@ -234,7 +234,7 @@
                         <table style="width:100%">
                             <f:optionalBlock name="runChecks"
                                              checked="${instance.runChecks}"
-                                             title="Run Artifactory license checks (requires Artifactory Pro)"
+                                             title="Run Artifactory license checks (deprecated)"
                                              inline="true"
                                              help="/plugin/artifactory/help/common/help-runChecks.html">
                                 <f:entry title="${%Send license violation notifications to: }"
