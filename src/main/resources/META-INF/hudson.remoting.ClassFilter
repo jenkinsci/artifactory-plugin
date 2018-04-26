@@ -3,7 +3,6 @@ com.fasterxml.jackson.databind.JsonMappingException$Reference
 
 org.jfrog.build.client.artifactoryXrayResponse.ArtifactoryXrayResponse
 org.jfrog.build.client.artifactoryXrayResponse.Summary
-org.jfrog.build.client.DeployDetails
 
 org.jfrog.build.api.Agent
 org.jfrog.build.api.Artifact
@@ -44,6 +43,7 @@ org.jfrog.build.api.util.DeployableFile
 org.jfrog.build.api.util.NullLog
 
 org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns
+org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails
 
 com.google.common.collect.ArrayListMultimap
 com.google.common.collect.AbstractListMultimap

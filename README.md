@@ -2,7 +2,7 @@
 
 ### General
 The plugin integrates Jenkins and Artifactory to publish, resolve, promote and release traceable build artifacts.
-For more information please visit the [Artifactory Plugin - Jenkins Wiki](http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin)
+For more information please visit the [Artifactory Plugin - Jenkins Wiki](https://www.jfrog.com/confluence/display/RTF/Jenkins+Artifactory+Plug-in)
 
 ### How to Contribute
 JFrog welcomes community contribution through pull requests.
