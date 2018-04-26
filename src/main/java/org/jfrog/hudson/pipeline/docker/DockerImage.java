@@ -8,6 +8,7 @@ import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.Module;
@@ -138,7 +139,7 @@ public class DockerImage implements Serializable {
                 server.createProxyConfiguration(Jenkins.getInstance().proxy));
 
         Module buildInfoModule = new Module();
-        buildInfoModule.setId(imageTag.substring(imageTag.indexOf("/") + 1));
+        buildInfoModule.setId(imageTag.substring(imageTag.lastIndexOf("/") + 1));
 
         boolean includeVirtualReposSupported = propertyChangeClient.getArtifactoryVersion().isAtLeast(VIRTUAL_REPOS_SUPPORTED_VERSION);
         if (StringUtils.isEmpty(manifest) && !findAndSetManifestFromArtifactory(server, dependenciesClient, listener)) {
@@ -156,8 +157,9 @@ public class DockerImage implements Serializable {
     private boolean findAndSetManifestFromArtifactory(ArtifactoryServer server, ArtifactoryDependenciesClient dependenciesClient, TaskListener listener) throws IOException {
         String imagePath = DockerUtils.getImagePath(imageTag);
         String manifestPath = StringUtils.join(new String[]{server.getUrl(), targetRepo, imagePath, "manifest.json"}, "/");
+        HttpResponse res = null;
         try {
-            HttpResponse res = dependenciesClient.downloadArtifact(manifestPath);
+            res = dependenciesClient.downloadArtifact(manifestPath);
 
             String candidateManifest = IOUtils.toString(res.getEntity().getContent());
             String imageDigest = DockerUtils.getConfigDigest(candidateManifest);
@@ -169,6 +171,10 @@ public class DockerImage implements Serializable {
             }
         } catch (FileNotFoundException e) {
             listener.getLogger().println("Could not find manifest.json in Artifactory in the following path: " + manifestPath);
+        } finally {
+            if (res != null) {
+                EntityUtils.consume(res.getEntity());
+            }
         }
         return false;
     }

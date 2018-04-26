@@ -134,7 +134,7 @@ public class DockerPushStep extends AbstractStepImpl {
             ArtifactoryConfigurator config = new ArtifactoryConfigurator(Utils.prepareArtifactoryServer(null, server));
             Module module = image.generateBuildInfoModule(build, listener, config, buildInfo.getName(), buildInfo.getNumber(), timestamp);
 
-            if (module.getArtifacts().size() == 0) {
+            if (module.getArtifacts() == null || module.getArtifacts().size() == 0) {
                 log.warn("Could not find docker image: " + step.getImage() + "in Artifactory.");
             }
 

@@ -236,16 +236,16 @@ public class DockerUtils implements Serializable {
      * @return
      */
     public static String getImagePath(String imageTag) {
-        int indexOfFirstSlash = imageTag.indexOf("/");
+        int indexOfLastSlash = imageTag.lastIndexOf("/");
         int indexOfLastColon = imageTag.lastIndexOf(":");
         String imageName;
         String imageVersion;
 
-        if (indexOfLastColon < 0 || indexOfLastColon < indexOfFirstSlash) {
-            imageName = imageTag.substring(indexOfFirstSlash + 1);
+        if (indexOfLastColon < 0 || indexOfLastColon < indexOfLastSlash) {
+            imageName = imageTag.substring(indexOfLastSlash + 1);
             imageVersion = "latest";
         } else {
-            imageName = imageTag.substring(indexOfFirstSlash + 1, indexOfLastColon);
+            imageName = imageTag.substring(indexOfLastSlash + 1, indexOfLastColon);
             imageVersion = imageTag.substring(indexOfLastColon + 1);
         }
         return imageName + "/" + imageVersion;
