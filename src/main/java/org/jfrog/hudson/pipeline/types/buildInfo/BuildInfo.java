@@ -37,13 +37,13 @@ public class BuildInfo implements Serializable {
     private String buildNumber;
     private Date startDate;
     private BuildRetention retention;
-    private List<BuildDependency> buildDependencies = new ArrayList<BuildDependency>();
-    private List<Artifact> deployedArtifacts = new ArrayList<Artifact>();
+    private List<BuildDependency> buildDependencies = Collections.synchronizedList(new ArrayList<BuildDependency>());
+    private List<Artifact> deployedArtifacts = Collections.synchronizedList(new ArrayList<Artifact>());
     // The candidates artifacts to be deployed in the 'deployArtifacts' step.
-    private List<DeployDetails> deployableArtifacts = new ArrayList<DeployDetails>();
-    private List<Dependency> publishedDependencies = new ArrayList<Dependency>();
+    private List<DeployDetails> deployableArtifacts = Collections.synchronizedList(new ArrayList<DeployDetails>());
+    private List<Dependency> publishedDependencies = Collections.synchronizedList(new ArrayList<Dependency>());
 
-    private List<Module> modules = new ArrayList<Module>();
+    private List<Module> modules = Collections.synchronizedList(new ArrayList<Module>());
     private Env env = new Env();
     private String agentName;
 
