@@ -188,7 +188,9 @@ public class GenericArtifactsDeployer {
                 SpecsHelper specsHelper = new SpecsHelper(log);
                 try {
                     return specsHelper.uploadArtifactsBySpec(spec, workspace, buildProperties, client);
-                } catch (NoSuchAlgorithmException e) {
+                } catch (InterruptedException e) {
+                    throw e;
+                } catch (Exception e) {
                     throw new RuntimeException("Failed uploading artifacts by spec", e);
                 } finally {
                     client.close();
