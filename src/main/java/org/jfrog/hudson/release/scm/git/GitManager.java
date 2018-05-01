@@ -34,13 +34,11 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jfrog.hudson.release.ReleaseRepository;
 import org.jfrog.hudson.release.scm.AbstractScmManager;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -115,34 +113,27 @@ public class GitManager extends AbstractScmManager<GitSCM> {
         log(buildListener, String.format("Attempting to push tag %s with --dry-run", tagName));
 
         List<Pair<String, StandardCredentials>> credentialsList = getGitClientCredentials();
-        org.eclipse.jgit.transport.CredentialsProvider provider = null;
+        StandardUsernamePasswordCredentials credentials = null;
         for (Pair<String, StandardCredentials> credentialsPair : credentialsList) {
             // Look for the credentials matching ReleaseRepository
             if (credentialsPair.getKey().equals(releaseRepository.getGitUri())) {
-                StandardUsernamePasswordCredentials credentials = (StandardUsernamePasswordCredentials)credentialsPair.getValue();
-                provider = new UsernamePasswordCredentialsProvider(credentials.getUsername(), credentials.getPassword().getPlainText());
+                credentials = (StandardUsernamePasswordCredentials)credentialsPair.getValue();
                 break;
             }
         }
 
-        if (provider == null) {
+        if (credentials == null) {
             throw new IllegalStateException("Failed to retrieve git credentials");
         }
 
-        org.eclipse.jgit.api.Git git = org.eclipse.jgit.api.Git.open(new File(client.getWorkTree().toURI()));
-        try {
-            org.eclipse.jgit.api.PushCommand pc = git.push().setRemote(releaseRepository.getTargetRepoPrivateUri())
-                 .setCredentialsProvider(provider)
-                 .setDryRun(true)
-                 .setPushTags();
-
-            pc.call();
-            log(buildListener,"Push dry-run completed successfully");
-        } finally {
-            if (git.getRepository() != null) {
-                git.getRepository().close();
-            }
-        }
+        // Run push dry-run on the build agent
+        FilePath directory = getWorkingDirectory(getJenkinsScm(), build.getWorkspace());
+        directory.act(new GitPushDryRunCallable(
+                credentials.getUsername(),
+                credentials.getPassword().getPlainText(),
+                releaseRepository.getTargetRepoPrivateUri(),
+                client.getWorkTree().toURI()));
+        log(buildListener,"Push dry-run completed successfully");
     }
 
     public void push(final ReleaseRepository releaseRepository, final String branch) throws Exception {
