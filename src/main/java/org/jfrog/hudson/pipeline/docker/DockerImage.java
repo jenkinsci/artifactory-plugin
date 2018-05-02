@@ -139,7 +139,7 @@ public class DockerImage implements Serializable {
                 server.createProxyConfiguration(Jenkins.getInstance().proxy));
 
         Module buildInfoModule = new Module();
-        buildInfoModule.setId(imageTag.substring(imageTag.lastIndexOf("/") + 1));
+        buildInfoModule.setId(imageTag.substring(imageTag.indexOf("/") + 1));
 
         boolean includeVirtualReposSupported = propertyChangeClient.getArtifactoryVersion().isAtLeast(VIRTUAL_REPOS_SUPPORTED_VERSION);
         if (StringUtils.isEmpty(manifest) && !findAndSetManifestFromArtifactory(server, dependenciesClient, listener)) {
