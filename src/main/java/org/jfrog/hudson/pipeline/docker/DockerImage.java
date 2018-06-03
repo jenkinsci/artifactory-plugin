@@ -146,8 +146,11 @@ public class DockerImage implements Serializable {
             return buildInfoModule;
         }
 
+        listener.getLogger().println("Fetching details of published docker layers from Artifactory...");
         boolean includeVirtualReposSupported = propertyChangeClient.getArtifactoryVersion().isAtLeast(VIRTUAL_REPOS_SUPPORTED_VERSION);
         DockerLayers layers = createLayers(dependenciesClient, includeVirtualReposSupported);
+
+        listener.getLogger().println("Tagging published docker layers with build properties in Artifactory...");
         setDependenciesAndArtifacts(buildInfoModule, layers, artifactsPropsStr, buildInfoItemsProps,
                 dependenciesClient, propertyChangeClient, server);
         setBuildInfoModuleProps(buildInfoModule);
@@ -306,8 +309,9 @@ public class DockerImage implements Serializable {
      */
     private String getAqlQuery(boolean includeVirtualRepos) throws IOException {
         List<String> layersDigest = DockerUtils.getLayersDigests(manifest);
+        StringBuilder aqlRequestForDockerSha = new StringBuilder("items.find({")
+            .append("\"path\":\"").append(imagePath).append("\",\"$or\":[");
 
-        StringBuilder aqlRequestForDockerSha = new StringBuilder("items.find({\"$or\":[ ");
         List<String> layersQuery = new ArrayList<String>();
         for (String digest : layersDigest) {
             String shaVersion = DockerUtils.getShaVersion(digest);
