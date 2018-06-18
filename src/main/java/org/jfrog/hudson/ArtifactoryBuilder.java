@@ -17,8 +17,7 @@
 package org.jfrog.hudson;
 
 import hudson.Extension;
-import hudson.model.Descriptor;
-import hudson.model.Item;
+import hudson.model.*;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
@@ -31,6 +30,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator;
 import org.jfrog.hudson.pipeline.docker.proxy.BuildInfoProxy;
 import org.jfrog.hudson.pipeline.docker.proxy.CertManager;
 import org.jfrog.hudson.util.Credentials;
@@ -233,7 +234,31 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             }
             setArtifactoryServers(artifactoryServers);
             save();
+            if (useCredentialsPlugin) {
+                resetCredentials();
+            }
             return super.configure(req, o);
+        }
+
+        private void resetCredentials() {
+            List<AbstractProject> jobs = Jenkins.getInstance().getAllItems(AbstractProject.class);
+            for(AbstractProject job : jobs) {
+                if (job instanceof BuildableItemWithBuildWrappers) {
+                    ArtifactoryGradleConfigurator configurator =
+                            ActionableHelper.getBuildWrapper(job,
+                                    ArtifactoryGradleConfigurator.class);
+
+                    if (configurator != null) {
+                        if (configurator.getResolverCredentialsConfig() != null) {
+                            configurator.getResolverCredentialsConfig().deleteCredentials();
+                        }
+                        if (configurator.getDeployerCredentialsConfig() != null) {
+                            configurator.getDeployerCredentialsConfig().deleteCredentials();
+                        }
+                        configurator.getDescriptor().save();
+                    }
+                }
+            }
         }
 
         private synchronized void configureProxy(JSONObject proxyConfig) throws IOException, InterruptedException {
