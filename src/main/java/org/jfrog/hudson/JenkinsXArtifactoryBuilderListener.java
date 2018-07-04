@@ -16,12 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Adds an Artifactory server `ARTIFACTORY_SERVER` to servers list on startup if `artifactoryUrl`, `artifactoryUsername` and `artifactoryPassword` files exist on `/var/artifactory/`.
+ * Adds an Artifactory server `JX_ARTIFACTORY_SERVER` to servers list on startup if `artifactoryUrl`, `artifactoryUsername` and `artifactoryPassword` files exist on `/var/artifactory/`.
  * When the Jenkins instance is created by Jenkins X, a default Artifactory server configuration should be created. This class creates this server.
  */
 @Extension
-public class ArtifactoryBuilderListener extends ComputerListener implements Serializable {
-    private static final String STARTUP_ARTIFACTORY_SERVER_ID = "ARTIFACTORY_SERVER";
+public class JenkinsXArtifactoryBuilderListener extends ComputerListener implements Serializable {
+    private static final String JX_ARTIFACTORY_SERVER_ID = "JX_ARTIFACTORY_SERVER";
 
     @Override
     public void onOnline(final Computer c, TaskListener listener) throws IOException, InterruptedException {
@@ -50,12 +50,12 @@ public class ArtifactoryBuilderListener extends ComputerListener implements Seri
 
     private ArtifactoryServer createArtifactoryServer(String url, String username, String password) {
         CredentialsConfig credentialsConfig = new CredentialsConfig(username, password, "");
-        return new ArtifactoryServer(STARTUP_ARTIFACTORY_SERVER_ID, url, credentialsConfig, credentialsConfig, 0, false, null);
+        return new ArtifactoryServer(JX_ARTIFACTORY_SERVER_ID, url, credentialsConfig, credentialsConfig, 0, false, null);
     }
 
     private boolean isServerExists(List<ArtifactoryServer> artifactoryServers) {
         for (ArtifactoryServer server : artifactoryServers) {
-            if (STARTUP_ARTIFACTORY_SERVER_ID.equals(server.getName())) {
+            if (JX_ARTIFACTORY_SERVER_ID.equals(server.getName())) {
                 return true;
             }
         }
