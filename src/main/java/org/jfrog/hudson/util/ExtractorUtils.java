@@ -616,7 +616,7 @@ public class ExtractorUtils {
      * @throws Exception
      */
     public static FilePath createAndGetTempDir(hudson.Launcher launcher, FilePath ws) throws Exception {
-        final FilePath tempDirPath = new FilePath(ws.getParent(), ws.getBaseName() + "@tmp");
+        final FilePath tempDirPath = new FilePath(ws.getParent(), ws.getName() + "@tmp");
         launcher.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
             public Boolean call() {
                 File tempDirFile = new File(tempDirPath.getRemote());
