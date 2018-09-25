@@ -116,8 +116,8 @@ public class DockerPushStep extends AbstractStepImpl {
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
 
             ArtifactoryServer server = step.getServer();
-            String username = server.createCredentialsConfig().provideUsername(build.getParent());
-            String password = server.createCredentialsConfig().providePassword(build.getParent());
+            String username = step.getCredentialsConfig().provideUsername(build.getParent());
+            String password = step.getCredentialsConfig().providePassword(build.getParent());
 
             String imageId = DockerAgentUtils.getImageIdFromAgent(launcher, step.getImage(), step.getHost());
             DockerAgentUtils.pushImage(launcher, log, step.getImage(), username, password, step.getHost());
