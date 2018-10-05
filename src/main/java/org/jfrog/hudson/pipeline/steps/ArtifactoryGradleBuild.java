@@ -228,7 +228,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
             if (extendedEnv.get("GRADLE_HOME") == null) {
                 throw new RuntimeException("Couldn't find gradle installation");
             }
-            return extendedEnv.get("GRADLE_HOME");
+            return extendedEnv.get("GRADLE_HOME") + "/bin/gradle";
         }
 
         private String createInitScript() throws Exception {
