@@ -19,6 +19,7 @@ import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.util.FileChecksumCalculator;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.client.ProxyConfiguration;
+import org.jfrog.build.extractor.clientConfiguration.ArtifactoryBuildInfoClientBuilder;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
 import org.jfrog.build.extractor.clientConfiguration.util.PublishedItemsHelper;
@@ -181,19 +182,20 @@ public class GenericArtifactsDeployer {
         public List<Artifact> invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
             Set<DeployDetails> artifactsToDeploy;
             Log log = new JenkinsBuildInfoLog(listener);
-            ArtifactoryBuildInfoClient client = server.createArtifactoryClient(credentials.getUsername(),
+
+            // Create ArtifactoryClientBuilder
+            ArtifactoryBuildInfoClientBuilder clientBuilder = server.createArtifactoryClientBuilder(credentials.getUsername(),
                     credentials.getPassword(), proxyConfiguration, log);
+
             if (StringUtils.isNotEmpty(spec)) {
                 // Option 1. Upload - Use file specs.
                 SpecsHelper specsHelper = new SpecsHelper(log);
                 try {
-                    return specsHelper.uploadArtifactsBySpec(spec, workspace, buildProperties, client);
+                    return specsHelper.uploadArtifactsBySpec(spec, workspace, buildProperties, clientBuilder);
                 } catch (InterruptedException e) {
                     throw e;
                 } catch (Exception e) {
                     throw new RuntimeException("Failed uploading artifacts by spec", e);
-                } finally {
-                    client.close();
                 }
             } else {
                 if (deployableArtifacts != null) {
@@ -207,11 +209,9 @@ public class GenericArtifactsDeployer {
                         artifactsToDeploy.addAll(buildDeployDetailsFromFileEntry(entry));
                     }
                 }
-                try {
+                try (ArtifactoryBuildInfoClient client = clientBuilder.build()) {
                     deploy(client, artifactsToDeploy);
                     return convertDeployDetailsToArtifacts(artifactsToDeploy);
-                } finally {
-                    client.close();
                 }
             }
         }

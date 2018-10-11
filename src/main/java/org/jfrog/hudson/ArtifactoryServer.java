@@ -27,6 +27,7 @@ import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.client.ProxyConfiguration;
+import org.jfrog.build.extractor.clientConfiguration.ArtifactoryBuildInfoClientBuilder;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBaseClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
@@ -254,17 +255,20 @@ public class ArtifactoryServer implements Serializable {
      */
     public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password,
                                                               ProxyConfiguration proxyConfiguration, Log logger) {
-        ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(url, userName, password, logger);
-        client.setConnectionTimeout(timeout);
-        setRetryParams(client);
-        if (!bypassProxy && proxyConfiguration != null) {
-            client.setProxyConfiguration(proxyConfiguration.host,
-                    proxyConfiguration.port,
-                    proxyConfiguration.username,
-                    proxyConfiguration.password);
+        ArtifactoryBuildInfoClientBuilder clientBuilder = createArtifactoryClientBuilder(userName, password, proxyConfiguration, logger);
+        return clientBuilder.build();
+    }
+
+    public ArtifactoryBuildInfoClientBuilder createArtifactoryClientBuilder(String userName, String password, ProxyConfiguration proxyConfiguration, Log logger) {
+        ArtifactoryBuildInfoClientBuilder clientBuilder = new ArtifactoryBuildInfoClientBuilder();
+        clientBuilder.setArtifactoryUrl(url).setUsername(userName)
+                .setPassword(password).setLog(logger).setConnectionRetry(getConnectionRetry())
+                .setConnectionTimeout(timeout);
+        if (!bypassProxy) {
+            clientBuilder.setProxyConfiguration(proxyConfiguration);
         }
 
-        return client;
+        return clientBuilder;
     }
 
     /**
