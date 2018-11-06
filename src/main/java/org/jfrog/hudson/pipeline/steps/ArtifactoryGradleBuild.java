@@ -207,7 +207,7 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
         }
 
         private String getGradleExe() throws IOException, InterruptedException {
-            if (!StringUtils.isEmpty(step.getGradleBuild().getTool())) {
+            if (StringUtils.isNotEmpty(step.getGradleBuild().getTool())) {
                 GradleInstallation gi = getGradleInstallation();
                 if (gi == null) {
                     listener.error("Couldn't find Gradle executable.");
@@ -223,12 +223,11 @@ public class ArtifactoryGradleBuild extends AbstractStepImpl {
                 if (gradleExe != null) {
                     return gradleExe;
                 }
-                return extendedEnv.get("GRADLE_HOME") + "/bin/gradle";
             }
-            if (extendedEnv.get("GRADLE_HOME") == null) {
+            if (!extendedEnv.containsKey("GRADLE_HOME")) {
                 throw new RuntimeException("Couldn't find gradle installation");
             }
-            return extendedEnv.get("GRADLE_HOME");
+            return extendedEnv.get("GRADLE_HOME") + "/bin/gradle";
         }
 
         private String createInitScript() throws Exception {
