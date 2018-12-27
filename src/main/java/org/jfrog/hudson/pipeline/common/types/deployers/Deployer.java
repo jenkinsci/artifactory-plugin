@@ -164,8 +164,8 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
     }
 
     @Whitelisted
-    public void deployArtifacts(BuildInfo buildInfo) throws IOException, InterruptedException {
-        Map<String, Object> stepVariables = new LinkedHashMap<String, Object>();
+    public void deployArtifacts(BuildInfo buildInfo) {
+        Map<String, Object> stepVariables = new LinkedHashMap<>();
         stepVariables.put("deployer", this);
         stepVariables.put("buildInfo", buildInfo);
         cpsScript.invokeMethod("deployArtifacts", stepVariables);
@@ -199,13 +199,13 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
         private TaskListener listener;
         private Deployer deployer;
 
-        public DeployDetailsCallable(List<DeployDetails> deployableArtifactsPaths, TaskListener listener, Deployer deployer) {
+        DeployDetailsCallable(List<DeployDetails> deployableArtifactsPaths, TaskListener listener, Deployer deployer) {
             this.deployableArtifactsPaths = deployableArtifactsPaths;
             this.listener = listener;
             this.deployer = deployer;
         }
 
-        public Set<DeployDetails> invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
+        public Set<DeployDetails> invoke(File file, VirtualChannel virtualChannel) throws IOException {
             boolean isSuccess = true;
             Set<DeployDetails> results = Sets.newLinkedHashSet();
             try {
@@ -218,7 +218,7 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
                     Map<String, String> checksums = FileChecksumCalculator.calculateChecksums(artifact.getFile(), SHA1, MD5);
                     if (!checksums.get(SHA1).equals(artifact.getSha1())) {
                         listener.error("SHA1 mismatch at '" + artifactPath + "' expected: " + artifact.getSha1() + ", got " + checksums.get(SHA1)
-                        + ". Make sure that the same artifacts were not built more than once.");
+                                + ". Make sure that the same artifacts were not built more than once.");
                         isSuccess = false;
                     } else {
                         DeployDetails.Builder builder = new DeployDetails.Builder()

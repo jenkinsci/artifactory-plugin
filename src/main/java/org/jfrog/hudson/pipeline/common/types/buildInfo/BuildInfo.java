@@ -121,7 +121,7 @@ public class BuildInfo implements Serializable {
             this.env.append(otherEnv);
         }
         if (other.getModules() != null) {
-            this.modules.addAll(other.getModules());
+            other.getModules().forEach(this::addModule);
         }
         if (other.getBuildDependencies() != null) {
             this.buildDependencies.addAll(other.getBuildDependencies());
@@ -264,6 +264,22 @@ public class BuildInfo implements Serializable {
 
     public void setEnv(Env env) {
         this.env = env;
+    }
+
+    private void addModule(Module other) {
+        List<Module> modules = getModules();
+        Module currentModule = modules.stream()
+                // Check if there's already a module with the same name.
+                .filter(module -> StringUtils.equals(module.getId(), other.getId()))
+                .findAny()
+                .orElse(null);
+        if (currentModule == null) {
+            // Append new module.
+            modules.add(other);
+        } else {
+            // Append the other module into the existing module with the same name.
+            currentModule.append(other);
+        }
     }
 
     public static class DeployPathsAndPropsCallable extends MasterToSlaveFileCallable<List<DeployDetails>> {

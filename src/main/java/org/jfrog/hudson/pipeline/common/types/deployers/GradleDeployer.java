@@ -21,18 +21,13 @@ public class GradleDeployer extends Deployer {
     private boolean mavenCompatible = true;
     private String repo;
 
-    public GradleDeployer() {
-        super();
-    }
-
     @Override
     @JsonIgnore
     public ServerDetails getDetails() {
-        RepositoryConf releaseRepositoryConf = new RepositoryConf(repo, repo, false);
-        if (server != null) {
-            return new ServerDetails(server.getServerName(), server.getUrl(), releaseRepositoryConf, null, releaseRepositoryConf, null, "", "");
-        }
-        return new ServerDetails("", "", releaseRepositoryConf, null, releaseRepositoryConf, null, "", "");
+        RepositoryConf releaesRepositoryConf = new RepositoryConf(repo, repo, false);
+        String serverName = server == null ? "" : server.getServerName();
+        String url = server == null ? "" : server.getUrl();
+        return new ServerDetails(serverName, url, releaesRepositoryConf, null, releaesRepositoryConf, null, "", "");
     }
 
     @Whitelisted

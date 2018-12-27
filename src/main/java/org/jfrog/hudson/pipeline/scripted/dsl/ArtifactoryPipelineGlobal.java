@@ -6,8 +6,14 @@ import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.pipeline.common.Utils;
-import org.jfrog.hudson.pipeline.common.types.*;
+import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
+import org.jfrog.hudson.pipeline.common.types.ConanClient;
+import org.jfrog.hudson.pipeline.common.types.Docker;
+import org.jfrog.hudson.pipeline.common.types.MavenDescriptor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.pipeline.types.packageManagerBuilds.GradleBuild;
+import org.jfrog.hudson.pipeline.types.packageManagerBuilds.MavenBuild;
+import org.jfrog.hudson.pipeline.types.packageManagerBuilds.NpmBuild;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -111,6 +117,13 @@ public class ArtifactoryPipelineGlobal implements Serializable {
         GradleBuild gradleBuild = (GradleBuild) cpsScript.invokeMethod("newGradleBuild", Maps.newLinkedHashMap());
         gradleBuild.setCpsScript(cpsScript);
         return gradleBuild;
+    }
+
+    @Whitelisted
+    public NpmBuild newNpmBuild() {
+        NpmBuild npmBuild = (NpmBuild) cpsScript.invokeMethod("newNpmBuild", Maps.newLinkedHashMap());
+        npmBuild.setCpsScript(cpsScript);
+        return npmBuild;
     }
 
     @Whitelisted

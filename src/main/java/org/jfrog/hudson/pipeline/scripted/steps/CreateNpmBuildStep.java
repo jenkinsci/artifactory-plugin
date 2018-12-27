@@ -1,24 +1,24 @@
-package org.jfrog.hudson.pipeline.scripted.steps;
+package org.jfrog.hudson.pipeline.steps;
 
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
-import org.jfrog.hudson.pipeline.types.packageManagerBuilds.MavenBuild;
+import org.jfrog.hudson.pipeline.types.packageManagerBuilds.NpmBuild;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class CreateMavenBuildStep extends AbstractStepImpl {
+public class CreateNpmBuildStep extends AbstractStepImpl {
 
     @DataBoundConstructor
-    public CreateMavenBuildStep() {
+    public CreateNpmBuildStep() {
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<MavenBuild> {
+    public static class Execution extends AbstractSynchronousStepExecution<NpmBuild> {
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected MavenBuild run() throws Exception {
-            return new MavenBuild();
+        protected NpmBuild run() throws Exception {
+            return new NpmBuild();
         }
     }
 
@@ -26,17 +26,17 @@ public class CreateMavenBuildStep extends AbstractStepImpl {
     public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
 
         public DescriptorImpl() {
-            super(CreateMavenBuildStep.Execution.class);
+            super(CreateNpmBuildStep.Execution.class);
         }
 
         @Override
         public String getFunctionName() {
-            return "newMavenBuild";
+            return "newNpmBuild";
         }
 
         @Override
         public String getDisplayName() {
-            return "New Artifactory maven";
+            return "New Artifactory npm executor";
         }
 
         @Override
@@ -44,6 +44,4 @@ public class CreateMavenBuildStep extends AbstractStepImpl {
             return true;
         }
     }
-
 }
-
