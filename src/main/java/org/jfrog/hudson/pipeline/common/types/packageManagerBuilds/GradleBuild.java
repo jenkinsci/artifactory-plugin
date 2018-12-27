@@ -1,11 +1,11 @@
-package org.jfrog.hudson.pipeline.types.packageManagerBuilds;
+package org.jfrog.hudson.pipeline.common.types.packageManagerBuilds;
 
 import com.google.common.collect.Maps;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
-import org.jfrog.hudson.pipeline.Utils;
-import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.types.deployers.GradleDeployer;
-import org.jfrog.hudson.pipeline.types.resolvers.GradleResolver;
+import org.jfrog.hudson.pipeline.common.Utils;
+import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.pipeline.common.types.deployers.GradleDeployer;
+import org.jfrog.hudson.pipeline.common.types.resolvers.GradleResolver;
 
 import java.util.Arrays;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package org.jfrog.hudson.pipeline.types.resolvers;
+package org.jfrog.hudson.pipeline.common.types.resolvers;
 
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;

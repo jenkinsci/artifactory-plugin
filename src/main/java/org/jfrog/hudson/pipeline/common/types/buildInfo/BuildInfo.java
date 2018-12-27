@@ -230,42 +230,6 @@ public class BuildInfo implements Serializable {
         return modules;
     }
 
-    public void setRetention(BuildRetention retention) {
-        this.retention = retention;
-    }
-
-    public void setBuildDependencies(List<BuildDependency> buildDependencies) {
-        this.buildDependencies = buildDependencies;
-    }
-
-    public List<Artifact> getDeployedArtifacts() {
-        return deployedArtifacts;
-    }
-
-    public void setDeployedArtifacts(List<Artifact> deployedArtifacts) {
-        this.deployedArtifacts = deployedArtifacts;
-    }
-
-    public void setDeployableArtifacts(List<DeployDetails> deployableArtifacts) {
-        this.deployableArtifacts = deployableArtifacts;
-    }
-
-    public List<Dependency> getPublishedDependencies() {
-        return publishedDependencies;
-    }
-
-    public void setPublishedDependencies(List<Dependency> publishedDependencies) {
-        this.publishedDependencies = publishedDependencies;
-    }
-
-    public void setModules(List<Module> modules) {
-        this.modules = modules;
-    }
-
-    public void setEnv(Env env) {
-        this.env = env;
-    }
-
     private void addModule(Module other) {
         List<Module> modules = getModules();
         Module currentModule = modules.stream()

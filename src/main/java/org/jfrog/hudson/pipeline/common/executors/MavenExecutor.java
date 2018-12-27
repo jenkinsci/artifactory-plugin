@@ -10,10 +10,10 @@ import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.hudson.maven3.Maven3Builder;
 import org.jfrog.hudson.pipeline.common.Utils;
-import org.jfrog.hudson.pipeline.common.types.MavenBuild;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.deployers.Deployer;
 import org.jfrog.hudson.pipeline.common.types.deployers.MavenDeployer;
+import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.MavenBuild;
 import org.jfrog.hudson.util.ExtractorUtils;
 
 public class MavenExecutor implements Executor {

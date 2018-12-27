@@ -8,8 +8,8 @@ import org.jfrog.build.api.Build;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryBuildInfoClientBuilder;
 import org.jfrog.build.extractor.npm.extractor.NpmPublish;
-import org.jfrog.hudson.pipeline.Utils;
-import org.jfrog.hudson.pipeline.types.deployers.NpmDeployer;
+import org.jfrog.hudson.pipeline.common.Utils;
+import org.jfrog.hudson.pipeline.common.types.deployers.NpmDeployer;
 
 import java.io.File;
 import java.nio.file.Path;

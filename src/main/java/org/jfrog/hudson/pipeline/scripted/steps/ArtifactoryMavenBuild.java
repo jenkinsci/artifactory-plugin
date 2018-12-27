@@ -12,8 +12,8 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.hudson.pipeline.common.executors.MavenExecutor;
-import org.jfrog.hudson.pipeline.common.types.MavenBuild;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.MavenBuild;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**

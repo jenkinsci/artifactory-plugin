@@ -11,9 +11,9 @@ import org.jfrog.hudson.pipeline.common.types.ConanClient;
 import org.jfrog.hudson.pipeline.common.types.Docker;
 import org.jfrog.hudson.pipeline.common.types.MavenDescriptor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.types.packageManagerBuilds.GradleBuild;
-import org.jfrog.hudson.pipeline.types.packageManagerBuilds.MavenBuild;
-import org.jfrog.hudson.pipeline.types.packageManagerBuilds.NpmBuild;
+import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.GradleBuild;
+import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.MavenBuild;
+import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.NpmBuild;
 
 import java.io.Serializable;
 import java.util.Arrays;

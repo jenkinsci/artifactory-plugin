@@ -1,4 +1,4 @@
-package org.jfrog.hudson.pipeline.types.packageManagerBuilds;
+package org.jfrog.hudson.pipeline.common.types.packageManagerBuilds;
 
 import com.google.common.collect.Maps;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;

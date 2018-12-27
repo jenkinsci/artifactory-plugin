@@ -11,7 +11,10 @@ import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
 import org.jfrog.hudson.pipeline.common.Utils;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * Created by romang on 6/22/16.

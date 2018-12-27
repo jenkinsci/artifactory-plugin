@@ -16,9 +16,9 @@ import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.GradleInitScriptWriter;
 import org.jfrog.hudson.pipeline.common.Utils;
-import org.jfrog.hudson.pipeline.common.types.GradleBuild;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.deployers.Deployer;
+import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.GradleBuild;
 import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;

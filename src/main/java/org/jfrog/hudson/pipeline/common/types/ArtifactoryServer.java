@@ -269,22 +269,6 @@ public class ArtifactoryServer implements Serializable {
         this.usesCredentialsId = true;
     }
 
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
-
-    public void setServerName(String serverName) {
-        this.serverName = serverName;
-    }
-
-    public boolean isUsesCredentialsId() {
-        return usesCredentialsId;
-    }
-
-    public void setUsesCredentialsId(boolean usesCredentialsId) {
-        this.usesCredentialsId = usesCredentialsId;
-    }
-
     @Whitelisted
     public Connection getConnection() {
         return connection;

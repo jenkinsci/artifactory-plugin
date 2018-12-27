@@ -46,6 +46,10 @@ public class MavenGradleEnvExtractor implements Executor {
         this.env = env;
     }
 
+    private PublisherContext createPublisherContext() {
+        return publisher.getContextBuilder().build();
+    }
+
     public void execute() {
         env.put(ExtractorUtils.EXTRACTOR_USED, "true");
         ReleaseAction release = ActionableHelper.getLatestAction(build, ReleaseAction.class);
@@ -72,10 +76,6 @@ public class MavenGradleEnvExtractor implements Executor {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private PublisherContext createPublisherContext() {
-        return publisher.getContextBuilder().build();
     }
 
     private void addPipelineInfoToConfiguration(EnvVars env, ArtifactoryClientConfiguration configuration, FilePath tempDir) {

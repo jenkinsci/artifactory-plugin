@@ -1,4 +1,4 @@
-package org.jfrog.hudson.pipeline.types.packageManagerBuilds;
+package org.jfrog.hudson.pipeline.common.types.packageManagerBuilds;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.sf.json.JSONObject;
@@ -66,6 +66,14 @@ public class PackageManagerBuild implements Serializable {
         if (server != null) {
             deployer.setServer((ArtifactoryServer) server);
         }
+    }
+
+    public void setDeployer(Deployer deployer) {
+        this.deployer = deployer;
+    }
+
+    public void setResolver(Resolver resolver) {
+        this.resolver = resolver;
     }
 
     private void checkArguments(Map<String, Object> arguments, List<String> keysAsList) {

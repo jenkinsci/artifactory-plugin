@@ -1,18 +1,18 @@
-package org.jfrog.hudson.pipeline.types.packageManagerBuilds;
+package org.jfrog.hudson.pipeline.common.types.packageManagerBuilds;
 
 import com.google.common.collect.Maps;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
-import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.deployers.NpmDeployer;
-import org.jfrog.hudson.pipeline.types.resolvers.NpmResolver;
+import org.jfrog.hudson.pipeline.common.types.resolvers.NpmResolver;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.jfrog.hudson.pipeline.Utils.BUILD_INFO;
-import static org.jfrog.hudson.pipeline.Utils.appendBuildInfo;
+import static org.jfrog.hudson.pipeline.common.Utils.BUILD_INFO;
+import static org.jfrog.hudson.pipeline.common.Utils.appendBuildInfo;
 
 /**
  * Created by Yahav Itzhak on 26 Dec 2018.

@@ -1,4 +1,4 @@
-package org.jfrog.hudson.pipeline.steps;
+package org.jfrog.hudson.pipeline.scripted.steps;
 
 import com.google.inject.Inject;
 import hudson.Extension;
@@ -9,9 +9,9 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
-import org.jfrog.hudson.pipeline.executors.NpmPublishExecutor;
-import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.types.packageManagerBuilds.NpmBuild;
+import org.jfrog.hudson.pipeline.common.executors.NpmPublishExecutor;
+import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.NpmBuild;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**

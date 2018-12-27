@@ -1,4 +1,4 @@
-package org.jfrog.hudson.pipeline.executors;
+package org.jfrog.hudson.pipeline.common.executors;
 
 import hudson.FilePath;
 import hudson.model.Run;
@@ -10,9 +10,9 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryDependenciesClie
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.npm.NpmInstallCallable;
-import org.jfrog.hudson.pipeline.Utils;
+import org.jfrog.hudson.pipeline.common.Utils;
+import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.NpmBuild;
-import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.resolvers.NpmResolver;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
