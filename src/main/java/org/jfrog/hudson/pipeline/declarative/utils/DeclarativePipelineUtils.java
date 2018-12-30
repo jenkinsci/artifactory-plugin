@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+import static org.jfrog.hudson.util.ExtractorUtils.createAndGetTempDir;
+
 public class DeclarativePipelineUtils {
 
     static final String PIPELINE_CACHE_DIR_NAME = "artifactory-pipeline-cache";
@@ -35,7 +37,7 @@ public class DeclarativePipelineUtils {
      * @throws Exception - In case of no write permissions.
      */
     public static void writeBuildDataFile(FilePath ws, String buildNumber, BuildDataFile buildDataFile, Log logger) throws Exception {
-        getTempDirPath(ws).act(new CreateBuildDataFileCallable(buildNumber, buildDataFile, logger));
+        createAndGetTempDir(ws).act(new CreateBuildDataFileCallable(buildNumber, buildDataFile, logger));
     }
 
     /**
@@ -48,11 +50,7 @@ public class DeclarativePipelineUtils {
      * @throws IOException - In case of no read permissions.
      */
     public static BuildDataFile readBuildDataFile(FilePath ws, final String buildNumber, final String stepName, final String stepId) throws IOException, InterruptedException {
-        return getTempDirPath(ws).act(new ReadBuildDataFileCallable(buildNumber, stepName, stepId));
-    }
-
-    private static FilePath getTempDirPath(FilePath ws) {
-        return new FilePath(ws.getParent(), ws.getName() + "@tmp");
+        return createAndGetTempDir(ws).act(new ReadBuildDataFileCallable(buildNumber, stepName, stepId));
     }
 
     static String getBuildDataFileName(String stepName, String stepId) {

@@ -88,7 +88,7 @@ public class InitConanClientStep extends AbstractStepImpl {
 
         private FilePath createConanTempHome() throws Exception {
             // Create the @tmp directory
-            FilePath tempDir = ExtractorUtils.createAndGetTempDir(launcher, ws);
+            FilePath tempDir = ExtractorUtils.createAndGetTempDir(ws);
 
             // Create the conan directory
             return tempDir.createTempDir("conan", "");

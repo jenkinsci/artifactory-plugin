@@ -147,7 +147,7 @@ public class ExtractorUtils {
         }
 
         // Create tempdir for properties file
-        FilePath tempDir = createAndGetTempDir(launcher, ws);
+        FilePath tempDir = createAndGetTempDir(ws);
 
         persistConfiguration(configuration, env, tempDir, launcher);
         return configuration;
@@ -582,13 +582,12 @@ public class ExtractorUtils {
 
     /**
      * Create a temporary directory under a given workspace
-     * @param launcher
-     * @param ws
-     * @throws Exception
      */
-    public static FilePath createAndGetTempDir(hudson.Launcher launcher, final FilePath ws) throws Exception {
-        String workspaceList = System.getProperty("hudson.slaves.WorkspaceList"); // The token that combines the project name and unique number to create unique workspace directory.
-        return launcher.getChannel().call(new MasterToSlaveCallable<FilePath, IOException>() {
+    public static FilePath createAndGetTempDir(final FilePath ws) throws IOException, InterruptedException {
+        // The token that combines the project name and unique number to create unique workspace directory.
+        String workspaceList = System.getProperty("hudson.slaves.WorkspaceList");
+        return ws.act(new MasterToSlaveCallable<FilePath, IOException>() {
+            @Override
             public FilePath call() {
                 final FilePath tempDir = ws.sibling(ws.getName() + Objects.toString(workspaceList, "@") + "tmp").child("artifactory");
                 File tempDirFile = new File(tempDir.getRemote());
