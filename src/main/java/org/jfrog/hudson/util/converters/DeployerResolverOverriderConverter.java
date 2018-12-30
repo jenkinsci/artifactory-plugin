@@ -123,9 +123,9 @@ public class DeployerResolverOverriderConverter<T> extends XStream2.PassthruConv
 
     /**
      * Convert the (ServerDetails)details to (ServerDetails)resolverDetails if it doesn't exists already
-     * This convertion comes after a seperation to two ServerDetails (resolver and deployer).
+     * This conversion comes after a separation to two ServerDetails (resolver and deployer).
      * Incase the configuration has only one ServerDetails instance called "details", create a new one for resolver.
-     * In ArtifactoryMaven3NativeConfigurator the converstion is part of a name change only.
+     * In ArtifactoryMaven3NativeConfigurator the conversion is part of a name change only.
      */
     private void overrideResolverDetails(T overrider, Class overriderClass) {
         if (overrider instanceof ResolverOverrider) {
