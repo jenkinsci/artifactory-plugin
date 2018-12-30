@@ -230,6 +230,51 @@ public class BuildInfo implements Serializable {
         return modules;
     }
 
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public void setRetention(BuildRetention retention) {
+        this.retention = retention;
+    }
+
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public void setBuildDependencies(List<BuildDependency> buildDependencies) {
+        this.buildDependencies = buildDependencies;
+    }
+
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public List<Artifact> getDeployedArtifacts() {
+        return deployedArtifacts;
+    }
+
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public void setDeployedArtifacts(List<Artifact> deployedArtifacts) {
+        this.deployedArtifacts = deployedArtifacts;
+    }
+
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public void setDeployableArtifacts(List<DeployDetails> deployableArtifacts) {
+        this.deployableArtifacts = deployableArtifacts;
+    }
+
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public List<Dependency> getPublishedDependencies() {
+        return publishedDependencies;
+    }
+
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public void setPublishedDependencies(List<Dependency> publishedDependencies) {
+        this.publishedDependencies = publishedDependencies;
+    }
+
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public void setModules(List<Module> modules) {
+        this.modules = modules;
+    }
+
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public void setEnv(Env env) {
+        this.env = env;
+    }
+
     private void addModule(Module other) {
         List<Module> modules = getModules();
         Module currentModule = modules.stream()
