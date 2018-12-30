@@ -586,16 +586,16 @@ public class ExtractorUtils {
      * @param ws
      * @throws Exception
      */
-    public static FilePath createAndGetTempDir(hudson.Launcher launcher, FilePath ws) throws Exception {
-        final FilePath tempDirPath = new FilePath(ws.getParent(), ws.getName() + "@tmp");
-        launcher.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
-            public Boolean call() {
-                File tempDirFile = new File(tempDirPath.getRemote());
-                tempDirFile.mkdir();
+    public static FilePath createAndGetTempDir(hudson.Launcher launcher, final FilePath ws) throws Exception {
+        String workspaceList = System.getProperty("hudson.slaves.WorkspaceList"); // The token that combines the project name and unique number to create unique workspace directory.
+        return launcher.getChannel().call(new MasterToSlaveCallable<FilePath, IOException>() {
+            public FilePath call() {
+                final FilePath tempDir = ws.sibling(ws.getName() + Objects.toString(workspaceList, "@") + "tmp").child("artifactory");
+                File tempDirFile = new File(tempDir.getRemote());
+                tempDirFile.mkdirs();
                 tempDirFile.deleteOnExit();
-                return true;
+                return tempDir;
             }
         });
-        return tempDirPath;
     }
 }
