@@ -147,7 +147,7 @@ public class ExtractorUtils {
         }
 
         // Create tempdir for properties file
-        FilePath tempDir = createAndGetTempDir(launcher, ws);
+        FilePath tempDir = createAndGetTempDir(ws);
 
         persistConfiguration(configuration, env, tempDir, launcher);
         return configuration;
@@ -581,27 +581,20 @@ public class ExtractorUtils {
     }
 
     /**
-     * The token that combines the project name and unique number to create unique workspace directory.
-     */
-    private static final String WORKSPACELIST = System.getProperty("hudson.slaves.WorkspaceList");
-
-    /**
      * Create a temporary directory under a given workspace
-     * @param launcher
-     * @param ws
-     * @throws Exception
      */
-    public static FilePath createAndGetTempDir(hudson.Launcher launcher, FilePath ws) throws Exception {
-        final String WORKSPACELIST = System.getProperty("hudson.slaves.WorkspaceList");
-        final FilePath tempDirPath = new FilePath(ws.getParent(), ws.getName() + ((WORKSPACELIST != null) ? WORKSPACELIST : "@") + "tmp");
-        launcher.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
-            public Boolean call() {
-                File tempDirFile = new File(tempDirPath.getRemote());
-                tempDirFile.mkdir();
+    public static FilePath createAndGetTempDir(final FilePath ws) throws IOException, InterruptedException {
+        // The token that combines the project name and unique number to create unique workspace directory.
+        String workspaceList = System.getProperty("hudson.slaves.WorkspaceList");
+        return ws.act(new MasterToSlaveCallable<FilePath, IOException>() {
+            @Override
+            public FilePath call() {
+                final FilePath tempDir = ws.sibling(ws.getName() + Objects.toString(workspaceList, "@") + "tmp").child("artifactory");
+                File tempDirFile = new File(tempDir.getRemote());
+                tempDirFile.mkdirs();
                 tempDirFile.deleteOnExit();
-                return true;
+                return tempDir;
             }
         });
-        return tempDirPath;
     }
 }

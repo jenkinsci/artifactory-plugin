@@ -51,7 +51,7 @@ public class MavenExecutor implements Executor {
         String revision = Utils.extractVcsRevision(new FilePath(ws, pom));
         EnvVars extendedEnv = new EnvVars(env);
         extendedEnv.put(ExtractorUtils.GIT_COMMIT, revision);
-        FilePath tempDir = ExtractorUtils.createAndGetTempDir(launcher, ws);
+        FilePath tempDir = ExtractorUtils.createAndGetTempDir(ws);
         MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build,
                 buildInfo, deployer, mavenBuild.getResolver(), listener, launcher, tempDir, extendedEnv);
         envExtractor.execute();
