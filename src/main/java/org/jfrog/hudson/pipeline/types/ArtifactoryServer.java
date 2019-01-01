@@ -34,15 +34,17 @@ public class ArtifactoryServer implements Serializable {
     private transient CpsScript cpsScript;
     private boolean usesCredentialsId;
     private Connection connection = new Connection();
+    private int fileSpecThreadNumber;
 
     public ArtifactoryServer() {
     }
 
-    public ArtifactoryServer(String artifactoryServerName, String url, String username, String password) {
+    public ArtifactoryServer(String artifactoryServerName, String url, String username, String password, int fileSpecThreadNumber) {
         serverName = artifactoryServerName;
         this.url = url;
         this.username = username;
         this.password = password;
+        this.fileSpecThreadNumber = fileSpecThreadNumber;
     }
 
     public ArtifactoryServer(String url, String username, String password) {
@@ -255,6 +257,11 @@ public class ArtifactoryServer implements Serializable {
     @Whitelisted
     public Connection getConnection() {
         return connection;
+    }
+
+    @Whitelisted
+    public int getFileSpecThreads() {
+        return fileSpecThreadNumber;
     }
 
 }

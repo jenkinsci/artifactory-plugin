@@ -78,6 +78,16 @@
                                          </j:forEach>
                                     </select>
                                 </f:entry>
+                                <f:entry field="fileSpecThreads" title="Number of concurrent threads for File Spec uploads"
+                                     help="/plugin/artifactory/help/ArtifactoryBuilder/help-fileSpecUploadThreads.html">
+                                      <select class="setting-input" name="fileSpecThreads">
+                                          <j:forEach var="r" items="${server.fileSpecUploadThreads}">
+                                              <f:option selected="${r==server.fileSpecThreads}"
+                                                  value="${r}">${r}
+                                              </f:option>
+                                            </j:forEach>
+                                       </select>
+                                 </f:entry>
                                 <f:optionalBlock name="artifactory.bypassProxy" title="Bypass HTTP Proxy" checked="${server.bypassProxy}" inline="true"
                                                                          help="/plugin/artifactory/help/ArtifactoryBuilder/help-bypassproxy.html">
                                 </f:optionalBlock>
