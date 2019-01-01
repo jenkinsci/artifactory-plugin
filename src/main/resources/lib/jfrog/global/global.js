@@ -32,5 +32,22 @@ function populateDropDownList() {
                 timeout[i].value = value;
             }
         }
+
+        // Populates the fileSpecThreads field
+        var fileSpecThreadsValue = document.getElementsByName("fileSpecThreads");
+        for (var i = 0; i < fileSpecThreadsValue.length; i++) {
+            if (fileSpecThreadsValue[i].length == 0) {
+                // populate the selection fields and set 3 as default.
+                for (var j = 1; j < 10; j++) {
+                    var el = document.createElement("option");
+                    el.textContent = j;
+                    el.value = j;
+                    fileSpecThreadsValue[i].appendChild(el);
+                    if (j == 3) {
+                        fileSpecThreadsValue[i].selectedIndex = j;
+                    }
+                }
+            }
+        }
     }
 }
