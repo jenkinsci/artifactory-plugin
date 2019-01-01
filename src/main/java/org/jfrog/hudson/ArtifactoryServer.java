@@ -62,7 +62,7 @@ public class ArtifactoryServer implements Serializable {
     // This object will be null instead of 0. In the ArtifactoryBuilder there is a check if the object is null then we are
     // setting to 3 that is the default.
     private Integer connectionRetry;
-    private Integer fileSpecThreads;
+    private Integer deploymentThreads;
     /**
      * List of repository keys, last time we checked. Copy on write semantics.
      */
@@ -87,7 +87,7 @@ public class ArtifactoryServer implements Serializable {
 
     @DataBoundConstructor
     public ArtifactoryServer(String serverId, String artifactoryUrl, CredentialsConfig deployerCredentialsConfig,
-                             CredentialsConfig resolverCredentialsConfig, int timeout, boolean bypassProxy, Integer connectionRetry, Integer fileSpecThreads) {
+                             CredentialsConfig resolverCredentialsConfig, int timeout, boolean bypassProxy, Integer connectionRetry, Integer deploymentThreads) {
         this.url = StringUtils.removeEnd(artifactoryUrl, "/");
         this.deployerCredentialsConfig = deployerCredentialsConfig;
         this.resolverCredentialsConfig = resolverCredentialsConfig;
@@ -95,7 +95,7 @@ public class ArtifactoryServer implements Serializable {
         this.bypassProxy = bypassProxy;
         this.id = serverId;
         this.connectionRetry = connectionRetry != null ? connectionRetry : 3;
-        this.fileSpecThreads = fileSpecThreads;
+        this.deploymentThreads = deploymentThreads;
     }
 
     public String getName() {
@@ -153,15 +153,15 @@ public class ArtifactoryServer implements Serializable {
     }
 
     // Jelly uses reflection here and the above method to get the data by the method and variable (matching) names
-    public void setFileSpecThreads(int fileSpecThreads) {
-        this.fileSpecThreads = fileSpecThreads;
+    public void setDeploymentThreads(int deploymentThreads) {
+        this.deploymentThreads = deploymentThreads;
     }
 
-    public int getFileSpecThreads() {
-        if (fileSpecThreads == null) {
-            fileSpecThreads = 3;
+    public int getDeploymentThreads() {
+        if (deploymentThreads == null) {
+            deploymentThreads = 3;
         }
-        return this.fileSpecThreads;
+        return this.deploymentThreads;
     }
 
     public List<String> getLocalRepositoryKeys(Credentials credentials) throws IOException {

@@ -175,7 +175,7 @@ public class GenericArtifactsDeployer {
                 // Option 1. Upload - Use file specs.
                 SpecsHelper specsHelper = new SpecsHelper(log);
                 try {
-                    return specsHelper.uploadArtifactsBySpec(spec, server.getFileSpecThreads(), workspace, buildProperties, clientBuilder);
+                    return specsHelper.uploadArtifactsBySpec(spec, server.getDeploymentThreads(), workspace, buildProperties, clientBuilder);
                 } catch (InterruptedException e) {
                     throw e;
                 } catch (Exception e) {
