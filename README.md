@@ -1,3 +1,5 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/01cimn54er7nna82?svg=true)](https://ci.appveyor.com/project/jfrog-ecosystem/jenkins-artifactory-plugin)
+
 # Artifactory Plugin for Jenkins
 
 ## General
