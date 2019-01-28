@@ -40,7 +40,7 @@ node {
             buildName: buildName,
             buildNumber: buildNumber,
             pom: 'declarative-maven-example/pom.xml',
-            goals: 'clean install',
+            goals: 'clean install -U',
             deployerId: "MAVEN_DEPLOYER",
             resolverId: "MAVEN_RESOLVER"
     )

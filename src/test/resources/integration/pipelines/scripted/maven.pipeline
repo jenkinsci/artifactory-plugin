@@ -20,7 +20,7 @@ node {
     FileUtils.copyDirectory(Paths.get("${MAVEN_PROJECT_PATH}").toFile(), Paths.get(pwd(), "scripted-maven-example").toFile())
 
     stage "Run maven"
-    rtMaven.run pom: "scripted-maven-example", goals: "clean install", buildInfo: buildInfo
+    rtMaven.run pom: "scripted-maven-example", goals: "clean install -U", buildInfo: buildInfo
 
     stage "Publish build info"
     rtServer.publishBuildInfo buildInfo
