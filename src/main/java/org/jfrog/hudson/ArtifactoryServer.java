@@ -62,6 +62,7 @@ public class ArtifactoryServer implements Serializable {
     // This object will be null instead of 0. In the ArtifactoryBuilder there is a check if the object is null then we are
     // setting to 3 that is the default.
     private Integer connectionRetry;
+    private Integer deploymentThreads;
     /**
      * List of repository keys, last time we checked. Copy on write semantics.
      */
@@ -86,7 +87,7 @@ public class ArtifactoryServer implements Serializable {
 
     @DataBoundConstructor
     public ArtifactoryServer(String serverId, String artifactoryUrl, CredentialsConfig deployerCredentialsConfig,
-                             CredentialsConfig resolverCredentialsConfig, int timeout, boolean bypassProxy, Integer connectionRetry) {
+                             CredentialsConfig resolverCredentialsConfig, int timeout, boolean bypassProxy, Integer connectionRetry, Integer deploymentThreads) {
         this.url = StringUtils.removeEnd(artifactoryUrl, "/");
         this.deployerCredentialsConfig = deployerCredentialsConfig;
         this.resolverCredentialsConfig = resolverCredentialsConfig;
@@ -94,6 +95,7 @@ public class ArtifactoryServer implements Serializable {
         this.bypassProxy = bypassProxy;
         this.id = serverId;
         this.connectionRetry = connectionRetry != null ? connectionRetry : 3;
+        this.deploymentThreads = deploymentThreads != null && deploymentThreads > 0 ? deploymentThreads : 3;
     }
 
     public String getName() {
@@ -138,6 +140,25 @@ public class ArtifactoryServer implements Serializable {
 
     public void setConnectionRetry(int connectionRetry) {
         this.connectionRetry = connectionRetry;
+    }
+
+
+    // To populate the dropdown list from the jelly
+    //  @global.jelly:      <j:forEach var="r" items="${server.deploymentsThreads}">
+    public List<Integer> getDeploymentsThreads() {
+        List<Integer> items = new ArrayList<Integer>();
+        for (int i = 1; i <= 10; i++) {
+            items.add(i);
+        }
+        return items;
+    }
+
+    // Jelly uses reflection here and the above method to get the data by the method and variable (matching) names
+    //  @global.jelly:      <f:option selected="${r==server.deploymentThreads}"
+    public void setDeploymentThreads(int deploymentThreads) { this.deploymentThreads = deploymentThreads; }
+
+    public int getDeploymentThreads() {
+        return deploymentThreads;
     }
 
     public List<String> getLocalRepositoryKeys(Credentials credentials) throws IOException {
