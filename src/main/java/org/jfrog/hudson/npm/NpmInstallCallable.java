@@ -1,5 +1,6 @@
 package org.jfrog.hudson.npm;
 
+import hudson.EnvVars;
 import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
 import org.apache.commons.lang3.StringUtils;
@@ -19,22 +20,29 @@ import java.util.Objects;
 public class NpmInstallCallable extends MasterToSlaveFileCallable<Build> {
 
     private ArtifactoryDependenciesClientBuilder dependenciesClientBuilder;
-    // Artifactory repository to download dependencies.
     private String resolutionRepository;
-    // npm executable path. Can be empty.
     private String executablePath;
-    // Npm install arguments
     private String args;
-    // Path to package.json or path to the directory that contains package.json.
     private String path;
+    private EnvVars env;
     private Log logger;
 
-    public NpmInstallCallable(ArtifactoryDependenciesClientBuilder dependenciesClientBuilder, String resolutionRepository, String executablePath, String args, String path, Log logger) {
+    /**
+     * @param dependenciesClientBuilder - Build Info client builder.
+     * @param resolutionRepository      - Artifactory repository to download dependencies.
+     * @param executablePath            - npm executable path. Can be empty.
+     * @param args                      - npm install arguments.
+     * @param path                      - Path to package.json or path to the directory that contains package.json.
+     * @param env                       - Environment variables to use during npm execution.
+     * @param logger                    - The logger.
+     */
+    public NpmInstallCallable(ArtifactoryDependenciesClientBuilder dependenciesClientBuilder, String resolutionRepository, String executablePath, String args, String path, EnvVars env, Log logger) {
         this.dependenciesClientBuilder = dependenciesClientBuilder;
         this.resolutionRepository = resolutionRepository;
         this.executablePath = executablePath;
         this.args = Objects.toString(args, "");
         this.path = path;
+        this.env = env;
         this.logger = logger;
     }
 
@@ -42,6 +50,6 @@ public class NpmInstallCallable extends MasterToSlaveFileCallable<Build> {
     public Build invoke(File file, VirtualChannel channel) {
         Path basePath = file.toPath();
         Path packagePath = StringUtils.isBlank(path) ? basePath : basePath.resolve(Utils.replaceTildeWithUserHome(path));
-        return new NpmInstall(dependenciesClientBuilder, resolutionRepository, args, executablePath, logger, packagePath).execute();
+        return new NpmInstall(dependenciesClientBuilder, resolutionRepository, args, executablePath, logger, packagePath, env).execute();
     }
 }
