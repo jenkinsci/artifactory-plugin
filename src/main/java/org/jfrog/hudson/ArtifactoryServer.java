@@ -53,6 +53,7 @@ public class ArtifactoryServer implements Serializable {
     private static final Logger log = Logger.getLogger(ArtifactoryServer.class.getName());
 
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;    // 5 Minutes
+    private static final int DEFAULT_DEPLOYMENT_THREADS_NUMBER = 3;
     private final String url;
     private final String id;
     // Network timeout in seconds to use both for connection establishment and for unanswered requests
@@ -95,7 +96,7 @@ public class ArtifactoryServer implements Serializable {
         this.bypassProxy = bypassProxy;
         this.id = serverId;
         this.connectionRetry = connectionRetry != null ? connectionRetry : 3;
-        this.deploymentThreads = deploymentThreads != null && deploymentThreads > 0 ? deploymentThreads : 3;
+        this.deploymentThreads = deploymentThreads != null && deploymentThreads > 0 ? deploymentThreads : DEFAULT_DEPLOYMENT_THREADS_NUMBER;
     }
 
     public String getName() {
@@ -142,23 +143,34 @@ public class ArtifactoryServer implements Serializable {
         this.connectionRetry = connectionRetry;
     }
 
-
-    // To populate the dropdown list from the jelly
-    //  @global.jelly:      <j:forEach var="r" items="${server.deploymentsThreads}">
+    /**
+     * Return number of deployment threads.
+     * To populate the dropdown list from the jelly:
+     * <j:forEach var="r" items="${server.deploymentsThreads}">
+     */
+    @SuppressWarnings("unused")
     public List<Integer> getDeploymentsThreads() {
-        List<Integer> items = new ArrayList<Integer>();
+        List<Integer> items = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
             items.add(i);
         }
         return items;
     }
 
-    // Jelly uses reflection here and the above method to get the data by the method and variable (matching) names
-    //  @global.jelly:      <f:option selected="${r==server.deploymentThreads}"
-    public void setDeploymentThreads(int deploymentThreads) { this.deploymentThreads = deploymentThreads; }
+    /**
+     * Set the number of deployment threads.
+     * Jelly uses reflection here and 'getDeploymentsThreads()' to get the data by the method and variable (matching) names
+     * <f:option selected="${r==server.deploymentThreads}"
+     *
+     * @param deploymentThreads - Deployment threads number
+     */
+    @SuppressWarnings("unused")
+    public void setDeploymentThreads(int deploymentThreads) {
+        this.deploymentThreads = deploymentThreads;
+    }
 
     public int getDeploymentThreads() {
-        return deploymentThreads;
+        return deploymentThreads == null ? DEFAULT_DEPLOYMENT_THREADS_NUMBER : deploymentThreads;
     }
 
     public List<String> getLocalRepositoryKeys(Credentials credentials) throws IOException {
