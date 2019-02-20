@@ -7,35 +7,31 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.SpecConfiguration;
 import org.jfrog.hudson.pipeline.common.Utils;
-import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.pipeline.common.executors.EditPropsExecutor;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
-import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.SpecUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
 
-/**
- * Use file spec to upload and download artifacts.
- * Allows to use input spec from string parameter or from file.
- */
-@SuppressWarnings("unused")
-public class GenericStep extends AbstractStepImpl {
+import static org.jfrog.build.extractor.clientConfiguration.util.EditPropertiesHelper.EditPropertiesActionType;
 
+@SuppressWarnings("unused")
+public class EditPropsStep extends AbstractStepImpl {
     protected String serverId;
     protected String spec;
-    private String customBuildNumber;
-    private String customBuildName;
+    private String props;
     private String specPath;
-    boolean failNoOp;
+    private boolean failNoOp;
+    private EditPropertiesActionType editType;
 
-    GenericStep(String serverId) {
+    EditPropsStep(String serverId, EditPropertiesActionType editType) {
         this.serverId = serverId;
+        this.editType = editType;
     }
 
     @DataBoundSetter
@@ -49,13 +45,8 @@ public class GenericStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
-    public void setBuildName(String buildName) {
-        this.customBuildName = buildName;
-    }
-
-    @DataBoundSetter
-    public void setBuildNumber(String buildNumber) {
-        this.customBuildNumber = buildNumber;
+    public void setProps(String props) {
+        this.props = props;
     }
 
     @DataBoundSetter
@@ -64,28 +55,27 @@ public class GenericStep extends AbstractStepImpl {
     }
 
     public static abstract class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
-        public static final long serialVersionUID = 1L;
+        private static final long serialVersionUID = 1L;
 
         @Inject(optional = true)
-        protected transient GenericStep step;
+        protected transient EditPropsStep step;
 
         protected ArtifactoryServer artifactoryServer;
-        protected BuildInfo buildInfo;
         protected String spec;
 
-        void setGenericParameters(TaskListener listener, Run build, FilePath ws, EnvVars env, GenericStep step, StepContext context) throws IOException, InterruptedException {
-            String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
+        void editPropsRun(Run build, TaskListener listener, EditPropsStep step, FilePath ws, EnvVars env) throws IOException, InterruptedException {
+            // Set Artifactory server
+            org.jfrog.hudson.pipeline.common.types.ArtifactoryServer pipelineServer = DeclarativePipelineUtils
+                    .getArtifactoryServer(build, ws, getContext(), step.serverId);
+            artifactoryServer = Utils.prepareArtifactoryServer(null, pipelineServer);
 
             // Set spec
             SpecConfiguration specConfiguration = new SpecConfiguration(step.spec, step.specPath);
             spec = SpecUtils.getSpecStringFromSpecConf(specConfiguration, env, ws, listener.getLogger());
 
-            // Set Build Info
-            buildInfo = DeclarativePipelineUtils.getBuildInfo(ws, build, step.customBuildName, step.customBuildNumber);
-
-            // Set Artifactory server
-            org.jfrog.hudson.pipeline.common.types.ArtifactoryServer pipelineServer = DeclarativePipelineUtils.getArtifactoryServer(build, ws, context, step.serverId);
-            artifactoryServer = Utils.prepareArtifactoryServer(null, pipelineServer);
+            EditPropsExecutor editPropsExecutor = new EditPropsExecutor(artifactoryServer, listener, build, ws, spec,
+                    step.editType, step.props, step.failNoOp);
+            editPropsExecutor.execute();
         }
     }
 }
