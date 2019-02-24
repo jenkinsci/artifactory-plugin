@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,13 +41,13 @@ public class BuildInfo implements Serializable {
     private String number; // Build number
     private Date startDate;
     private BuildRetention retention;
-    private List<BuildDependency> buildDependencies = Collections.synchronizedList(new ArrayList<>());
-    private List<Artifact> deployedArtifacts = Collections.synchronizedList(new ArrayList<>());
+    private List<BuildDependency> buildDependencies = new CopyOnWriteArrayList<>();
+    private List<Artifact> deployedArtifacts = new CopyOnWriteArrayList<>();
     // The candidates artifacts to be deployed in the 'deployArtifacts' step.
-    private List<DeployDetails> deployableArtifacts = Collections.synchronizedList(new ArrayList<>());
-    private List<Dependency> publishedDependencies = Collections.synchronizedList(new ArrayList<>());
+    private List<DeployDetails> deployableArtifacts = new CopyOnWriteArrayList<>();
+    private List<Dependency> publishedDependencies = new CopyOnWriteArrayList<>();
 
-    private List<Module> modules = Collections.synchronizedList(new ArrayList<>());
+    private List<Module> modules = new CopyOnWriteArrayList<>();
     private Env env = new Env();
     private String agentName;
 
