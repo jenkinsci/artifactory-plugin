@@ -13,6 +13,7 @@ import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by romang on 8/15/16.
@@ -20,7 +21,7 @@ import java.util.*;
 public class DockerAgentUtils implements Serializable {
     // Docker images cache. Every image which is intersepted by the Build-Info Proxy, is added to this cache,
     // so that it can be used to create the build-info in Artifactory.
-    private static final List<DockerImage> images = Collections.synchronizedList(new ArrayList<DockerImage>());
+    private static final List<DockerImage> images = new CopyOnWriteArrayList<>();
 
     /**
      * Registers an image to be captured by the build-info proxy.
