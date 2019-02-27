@@ -40,6 +40,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.jfrog.hudson.util.publisher.PublisherContext;
+
 /**
  * Freestyle Generic configurator
  *
@@ -59,6 +61,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final String resolvePattern;
     private final String deploymentProperties;
     private final boolean deployBuildInfo;
+    
+    private boolean deployArtifacts;
+    private final IncludesExcludes artifactDeploymentPatterns;    
+
     /**
      * Include environment variables in the generated build info
      */
@@ -67,6 +73,11 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private final boolean asyncBuildRetention;
+
+    private final boolean enableIssueTrackerIntegration;
+    private final boolean aggregateBuildIssues;
+    private boolean filterExcludedArtifactsFromBuild;
+
     private transient List<Dependency> publishedDependencies;
     private transient List<BuildDependency> buildDependencies;
     private String artifactoryCombinationFilter;
@@ -96,14 +107,17 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, ServerDetails deployerDetails, ServerDetails resolverDetails,
                                           CredentialsConfig deployerCredentialsConfig, CredentialsConfig resolverCredentialsConfig,
-                                          String deployPattern, String resolvePattern, String matrixParams, String deploymentProperties,
+                                          String deployPattern, String resolvePattern, IncludesExcludes artifactDeploymentPatterns,
+                                          String matrixParams, String deploymentProperties,
                                           boolean useSpecs, SpecConfiguration uploadSpec, SpecConfiguration downloadSpec,
                                           boolean deployBuildInfo,
                                           boolean includeEnvVars, IncludesExcludes envVarsPatterns,
                                           boolean discardOldBuilds,
                                           boolean discardBuildArtifacts,
                                           boolean asyncBuildRetention,
+                                          boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
                                           boolean multiConfProject,
+                                          boolean filterExcludedArtifactsFromBuild,
                                           String artifactoryCombinationFilter,
                                           String customBuildName,
                                           boolean overrideBuildName) {
@@ -123,6 +137,12 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.asyncBuildRetention = asyncBuildRetention;
+        this.artifactDeploymentPatterns = artifactDeploymentPatterns;
+
+        this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
+        this.aggregateBuildIssues = aggregateBuildIssues;
+        
+
         this.multiConfProject = multiConfProject;
         this.artifactoryCombinationFilter = artifactoryCombinationFilter;
         this.customBuildName = customBuildName;
@@ -204,6 +224,14 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return includeEnvVars;
     }
 
+    public boolean isDeployArtifacts() {
+        return deployArtifacts;
+    }
+
+        public IncludesExcludes getArtifactDeploymentPatterns() {
+        return artifactDeploymentPatterns;
+    }
+
     public IncludesExcludes getEnvVarsPatterns() {
         return envVarsPatterns;
     }
@@ -221,7 +249,12 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public boolean isEnableIssueTrackerIntegration() {
-        return false;
+//        return false;
+        return enableIssueTrackerIntegration;
+    }
+
+    public boolean isFilterExcludedArtifactsFromBuild() {
+        return filterExcludedArtifactsFromBuild;
     }
 
     public boolean isAggregateBuildIssues() {
@@ -379,6 +412,25 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         };
     }
 
+    private PublisherContext.Builder getBuilder() {
+        return new PublisherContext.Builder()
+                .artifactoryServer(getArtifactoryServer())
+                .deployerOverrider(ArtifactoryGenericConfigurator.this)
+                .discardOldBuilds(isDiscardOldBuilds())
+                .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
+                .skipBuildInfoDeploy(!isDeployBuildInfo())
+                .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
+                .discardBuildArtifacts(isDiscardBuildArtifacts()).asyncBuildRetention(isAsyncBuildRetention())
+                .deploymentProperties(getDeploymentProperties()).enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
+                .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
+                .deploymentProperties(getDeploymentProperties()).enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
+                .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
+                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
+                .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
+                .overrideBuildName(isOverrideBuildName())
+                .customBuildName(getCustomBuildName());
+    }
+    
     private boolean isMultiConfProject(AbstractBuild build) {
         return (build.getProject().getClass().equals(MatrixConfiguration.class));
     }
