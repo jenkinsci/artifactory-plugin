@@ -206,7 +206,7 @@
         </f:block>
 
         <f:section title="More Details">
-        <f:block>
+            <f:block>
                 <table style="width:100%">
                     <f:optionalBlock field="overrideBuildName"
                                   help="/plugin/artifactory/help/common/help-overrideBuildName.html"
@@ -271,7 +271,11 @@
                         </f:optionalBlock>
 
                     </f:optionalBlock>
+                 </table>   
+            </f:block>
 
+            <f:block>
+                <table style="width:100%">
                     <j:if test="${descriptor.jiraPluginEnabled}">
                         <f:optionalBlock name="enableIssueTrackerIntegration"
                                          checked="${instance.enableIssueTrackerIntegration}"
@@ -291,7 +295,6 @@
                             </f:optionalBlock>
                         </f:optionalBlock>
                     </j:if>
-
                 </table>
             </f:block>
 
