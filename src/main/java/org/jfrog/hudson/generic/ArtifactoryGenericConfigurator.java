@@ -40,8 +40,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.jfrog.hudson.util.publisher.PublisherContext;
-
 /**
  * Freestyle Generic configurator
  *
@@ -61,9 +59,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final String resolvePattern;
     private final String deploymentProperties;
     private final boolean deployBuildInfo;
-    private boolean deployArtifacts;
-    private final IncludesExcludes artifactDeploymentPatterns;    
-
     /**
      * Include environment variables in the generated build info
      */
@@ -75,7 +70,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private boolean enableIssueTrackerIntegration;
     private boolean aggregateBuildIssues;
     private String aggregationBuildStatus;
-    private boolean filterExcludedArtifactsFromBuild;
     private transient List<Dependency> publishedDependencies;
     private transient List<BuildDependency> buildDependencies;
     private String artifactoryCombinationFilter;
@@ -105,8 +99,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails details, ServerDetails deployerDetails, ServerDetails resolverDetails,
                                           CredentialsConfig deployerCredentialsConfig, CredentialsConfig resolverCredentialsConfig,
-                                          String deployPattern, String resolvePattern, IncludesExcludes artifactDeploymentPatterns,
-                                          String matrixParams, String deploymentProperties,
+                                          String deployPattern, String resolvePattern, String matrixParams, String deploymentProperties,
                                           boolean useSpecs, SpecConfiguration uploadSpec, SpecConfiguration downloadSpec,
                                           boolean deployBuildInfo,
                                           boolean includeEnvVars, IncludesExcludes envVarsPatterns,
@@ -115,7 +108,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                                           boolean asyncBuildRetention,
                                           boolean enableIssueTrackerIntegration, boolean aggregateBuildIssues,
                                           boolean multiConfProject,
-                                          boolean filterExcludedArtifactsFromBuild,
                                           String artifactoryCombinationFilter,
                                           String customBuildName,
                                           boolean overrideBuildName) {
@@ -135,7 +127,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.discardOldBuilds = discardOldBuilds;
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.asyncBuildRetention = asyncBuildRetention;
-        this.artifactDeploymentPatterns = artifactDeploymentPatterns;
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.aggregateBuildIssues = aggregateBuildIssues;
         this.aggregationBuildStatus = aggregationBuildStatus;
@@ -220,14 +211,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return includeEnvVars;
     }
 
-    public boolean isDeployArtifacts() {
-        return deployArtifacts;
-    }
-
-        public IncludesExcludes getArtifactDeploymentPatterns() {
-        return artifactDeploymentPatterns;
-    }
-
     public IncludesExcludes getEnvVarsPatterns() {
         return envVarsPatterns;
     }
@@ -249,10 +232,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return enableIssueTrackerIntegration;
     }
 
-    public boolean isFilterExcludedArtifactsFromBuild() {
-        return filterExcludedArtifactsFromBuild;
-    }
-
     public boolean isAggregateBuildIssues() {
 //        return false; #(6 years ago since 2019) Shay Yaakov: HAP-320 - Issue tracking doesn't work in Maven2
         return aggregateBuildIssues;    //We don't care about Maven2 anymore in 2019, do we?
@@ -261,7 +240,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     public String getAggregationBuildStatus() {
  //       return null; #(6 years ago since 2019) Shay Yaakov: HAP-320 - Issue tracking doesn't work in Maven2
         return aggregationBuildStatus;  //We don't care about Maven2 anymore in 2019, do we?
-
     }
 
     public String getArtifactoryCombinationFilter() {
@@ -309,7 +287,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     public Environment setUp(final AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, InterruptedException {
         listener.getLogger().println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
-        PublisherContext.Builder publisherBuilder = getBuilder();
         RepositoriesUtils.validateServerConfig(build, listener, getArtifactoryServer(), getArtifactoryUrl());
 
         if (StringUtils.isBlank(getArtifactoryName())) {
@@ -412,23 +389,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         };
     }
 
-    private PublisherContext.Builder getBuilder() {
-        return new PublisherContext.Builder()
-                .artifactoryServer(getArtifactoryServer())
-                .deployerOverrider(ArtifactoryGenericConfigurator.this)
-                .discardOldBuilds(isDiscardOldBuilds())
-                .deployArtifacts(isDeployArtifacts()).includesExcludes(getArtifactDeploymentPatterns())
-                .skipBuildInfoDeploy(!isDeployBuildInfo())
-                .includeEnvVars(isIncludeEnvVars()).envVarsPatterns(getEnvVarsPatterns())
-                .discardBuildArtifacts(isDiscardBuildArtifacts()).asyncBuildRetention(isAsyncBuildRetention())
-                .deploymentProperties(getDeploymentProperties()).enableIssueTrackerIntegration(isEnableIssueTrackerIntegration())
-                .aggregateBuildIssues(isAggregateBuildIssues()).aggregationBuildStatus(getAggregationBuildStatus())
-                .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
-                .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
-                .overrideBuildName(isOverrideBuildName())
-                .customBuildName(getCustomBuildName());
-    }
-    
     private boolean isMultiConfProject(AbstractBuild build) {
         return (build.getProject().getClass().equals(MatrixConfiguration.class));
     }
