@@ -61,7 +61,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final String resolvePattern;
     private final String deploymentProperties;
     private final boolean deployBuildInfo;
-    
     private boolean deployArtifacts;
     private final IncludesExcludes artifactDeploymentPatterns;    
 
@@ -73,11 +72,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     private final boolean discardOldBuilds;
     private final boolean discardBuildArtifacts;
     private final boolean asyncBuildRetention;
-
-    private final boolean enableIssueTrackerIntegration;
-    private final boolean aggregateBuildIssues;
+    private boolean enableIssueTrackerIntegration;
+    private boolean aggregateBuildIssues;
+    private String aggregationBuildStatus;
     private boolean filterExcludedArtifactsFromBuild;
-
     private transient List<Dependency> publishedDependencies;
     private transient List<BuildDependency> buildDependencies;
     private String artifactoryCombinationFilter;
@@ -138,11 +136,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.discardBuildArtifacts = discardBuildArtifacts;
         this.asyncBuildRetention = asyncBuildRetention;
         this.artifactDeploymentPatterns = artifactDeploymentPatterns;
-
         this.enableIssueTrackerIntegration = enableIssueTrackerIntegration;
         this.aggregateBuildIssues = aggregateBuildIssues;
-        
-
+        this.aggregationBuildStatus = aggregationBuildStatus;
         this.multiConfProject = multiConfProject;
         this.artifactoryCombinationFilter = artifactoryCombinationFilter;
         this.customBuildName = customBuildName;
@@ -258,11 +254,14 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public boolean isAggregateBuildIssues() {
-        return false;
+//        return false; #(6 years ago since 2019) Shay Yaakov: HAP-320 - Issue tracking doesn't work in Maven2
+        return aggregateBuildIssues;    //We don't care about Maven2 anymore in 2019, do we?
     }
 
     public String getAggregationBuildStatus() {
-        return null;
+ //       return null; #(6 years ago since 2019) Shay Yaakov: HAP-320 - Issue tracking doesn't work in Maven2
+        return aggregationBuildStatus;  //We don't care about Maven2 anymore in 2019, do we?
+
     }
 
     public String getArtifactoryCombinationFilter() {
