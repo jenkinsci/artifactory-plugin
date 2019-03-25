@@ -59,7 +59,7 @@ public class ArtifactoryTrigger extends Trigger {
             ItemLastModified itemLastModified = client.getItemLastModified(path);
             long responseLastModified = itemLastModified.getLastModified();
             if (responseLastModified > lastModified) {
-h                    this.lastModified = responseLastModified;
+                this.lastModified = responseLastModified;
                 if (job instanceof Project) {
                     AbstractProject<?, ?> project = ((Project) job).getRootProject();
                     saveAndSchedule(itemLastModified, project);
