@@ -38,8 +38,8 @@ public class CredentialsConfig implements Serializable {
         this.overridingCredentials = overridingCredentials == null ? false : overridingCredentials;
         if (overridingCredentials == null || overridingCredentials.equals(Boolean.TRUE)) {
             this.credentials = new Credentials(username, password);
-            this.credentialsId = credentialsId;
         }
+        this.credentialsId = credentialsId;
     }
 
     public CredentialsConfig(String username, String password, String credentialsId) {
