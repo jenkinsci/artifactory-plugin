@@ -78,8 +78,8 @@ public class MavenStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
-    public void setOptions(String options) {
-        mavenBuild.setOpts(options);
+    public void setOpts(String opts) {
+        mavenBuild.setOpts(opts);
     }
 
     public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
