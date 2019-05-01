@@ -81,7 +81,7 @@ public class XrayScanBuildStep extends AbstractStepImpl {
 
             if (xrayScanResult.isFoundVulnerable()) {
                 if (xrayScanConfig.getFailBuild()) {
-                    build.setResult(Result.FAILURE);
+                    throw new Exception("Violations were found by Xray: " + xrayScanResult.toString());
                 }
                 log.error(xrayScanResult.getScanMessage());
             } else {
