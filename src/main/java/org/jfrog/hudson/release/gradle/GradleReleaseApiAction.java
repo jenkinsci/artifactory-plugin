@@ -3,6 +3,7 @@ package org.jfrog.hudson.release.gradle;
 import hudson.model.AbstractProject;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class GradleReleaseApiAction extends BaseGradleReleaseAction {
     /**
      */
     @SuppressWarnings({"UnusedDeclaration"})
+    @RequirePOST
     public void doStaging(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         doApi(req, resp);
     }

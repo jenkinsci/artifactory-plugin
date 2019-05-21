@@ -39,6 +39,7 @@ import org.jfrog.hudson.release.scm.svn.SubversionManager;
 import org.jfrog.hudson.util.ErrorResponse;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -316,6 +317,7 @@ public abstract class ReleaseAction<P extends AbstractProject & BuildableItem,
      * Form submission is calling this method
      */
     @SuppressWarnings({"UnusedDeclaration"})
+    @RequirePOST
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         // Enforce release permissions
         project.checkPermission(ArtifactoryPlugin.RELEASE);
