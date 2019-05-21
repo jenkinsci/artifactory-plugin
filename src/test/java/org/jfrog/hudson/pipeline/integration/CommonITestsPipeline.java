@@ -4,6 +4,9 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.BuildImageCmd;
 import com.github.dockerjava.core.command.BuildImageResultCallback;
 import com.google.common.collect.Sets;
+
+import hudson.EnvVars;
+
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -362,7 +365,7 @@ public class CommonITestsPipeline extends PipelineTestBase {
             }
             String imageName = domainName + "jfrog_artifactory_jenkins_tests:2";
             String host = System.getenv("JENKINS_ARTIFACTORY_DOCKER_HOST");
-            DockerClient dockerClient = DockerUtils.getDockerClient(host);
+            DockerClient dockerClient = DockerUtils.getDockerClient(host, new EnvVars());
             String projectPath = getProjectPath("docker-example");
             // Build the docker image with the name provided from env.
             BuildImageCmd buildImageCmd = dockerClient.buildImageCmd(Paths.get(projectPath).toFile()).withTags(new HashSet<>(Arrays.asList(imageName)));

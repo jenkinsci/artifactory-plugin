@@ -1,6 +1,7 @@
 package org.jfrog.hudson.pipeline.common.docker.utils;
 
 import com.google.common.collect.ArrayListMultimap;
+import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.Node;
 import hudson.model.TaskListener;
@@ -26,18 +27,21 @@ public class DockerAgentUtils implements Serializable {
     /**
      * Registers an image to be captured by the build-info proxy.
      *
+     * @param launcher
      * @param imageTag
      * @param host
      * @param targetRepo
+     * @param artifactsProps
      * @param buildInfoId
+     * @param envVars
      * @throws IOException
      * @throws InterruptedException
      */
     public synchronized static void registerImagOnAgents(Launcher launcher, final String imageTag,
             final String host, final String targetRepo, final ArrayListMultimap<String, String> artifactsProps,
-                final int buildInfoId) throws IOException, InterruptedException {
+                final int buildInfoId, final EnvVars envVars) throws IOException, InterruptedException {
         // Master
-        final String imageId = getImageIdFromAgent(launcher, imageTag, host);
+        final String imageId = getImageIdFromAgent(launcher, imageTag, host, envVars);
         registerImage(imageId, imageTag, targetRepo, artifactsProps, buildInfoId);
 
         // Agents
@@ -169,11 +173,13 @@ public class DockerAgentUtils implements Serializable {
      * @param imageTag
      * @param username
      * @param password
-     * @param host     @return
+     * @param host     
+     * @param envVars
+     * @return 
      * @throws IOException
      * @throws InterruptedException
      */
-    public static boolean pushImage(Launcher launcher, final JenkinsBuildInfoLog log, final String imageTag, final String username, final String password, final String host)
+    public static boolean pushImage(Launcher launcher, final JenkinsBuildInfoLog log, final String imageTag, final String username, final String password, final String host, final EnvVars envVars)
             throws IOException, InterruptedException {
 
         return launcher.getChannel().call(new  MasterToSlaveCallable<Boolean, IOException>() {
@@ -184,7 +190,7 @@ public class DockerAgentUtils implements Serializable {
                 }
 
                 log.info(message);
-                DockerUtils.pushImage(imageTag, username, password, host);
+                DockerUtils.pushImage(imageTag, username, password, host, envVars);
                 return true;
             }
         });
@@ -198,16 +204,17 @@ public class DockerAgentUtils implements Serializable {
      * @param username
      * @param password
      * @param host
+     * @param envVars
      * @return
      * @throws IOException
      * @throws InterruptedException
      */
-    public static boolean pullImage(Launcher launcher, final String imageTag, final String username, final String password, final String host)
+    public static boolean pullImage(Launcher launcher, final String imageTag, final String username, final String password, final String host, final EnvVars envVars)
             throws IOException, InterruptedException {
 
         return launcher.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
             public Boolean call() throws IOException {
-                DockerUtils.pullImage(imageTag, username, password, host);
+                DockerUtils.pullImage(imageTag, username, password, host, envVars);
                 return true;
             }
         });
@@ -221,12 +228,13 @@ public class DockerAgentUtils implements Serializable {
      * @param imageTag
      * @param host
      * @param buildInfoId
+     * @param envVars
      * @return
      * @throws IOException
      * @throws InterruptedException
      */
-    public static boolean updateImageParentOnAgents(final JenkinsBuildInfoLog log, final String imageTag, final String host, final int buildInfoId) throws IOException, InterruptedException {
-        boolean parentUpdated = updateImageParent(log, imageTag, host, buildInfoId);
+    public static boolean updateImageParentOnAgents(final JenkinsBuildInfoLog log, final String imageTag, final String host, final int buildInfoId, final EnvVars envVars) throws IOException, InterruptedException {
+        boolean parentUpdated = updateImageParent(log, imageTag, host, buildInfoId, envVars);
         List<Node> nodes = Jenkins.getInstance().getNodes();
         for (Node node : nodes) {
             if (node == null || node.getChannel() == null) {
@@ -234,7 +242,7 @@ public class DockerAgentUtils implements Serializable {
             }
             boolean parentNodeUpdated = node.getChannel().call(new MasterToSlaveCallable<Boolean, IOException>() {
                 public Boolean call() throws IOException {
-                    return updateImageParent(log, imageTag, host, buildInfoId);
+                    return updateImageParent(log, imageTag, host, buildInfoId, envVars);
                 }
             });
             parentUpdated = parentUpdated ? parentUpdated : parentNodeUpdated;
@@ -249,14 +257,15 @@ public class DockerAgentUtils implements Serializable {
      * @param imageTag
      * @param host
      * @param buildInfoId
+     * @param envVars
      * @return
      * @throws IOException
      */
-    private static boolean updateImageParent(JenkinsBuildInfoLog log, String imageTag, String host, int buildInfoId) throws IOException {
+    private static boolean updateImageParent(JenkinsBuildInfoLog log, String imageTag, String host, int buildInfoId, EnvVars envVars) throws IOException {
         boolean parentUpdated = false;
         for (DockerImage image : getImagesByBuildId(buildInfoId)) {
             if (image.getImageTag().equals(imageTag)) {
-                String parentId = DockerUtils.getParentId(image.getImageId(), host);
+                String parentId = DockerUtils.getParentId(image.getImageId(), host, envVars);
                 if (StringUtils.isNotEmpty(parentId)) {
                     Properties properties = new Properties();
                     properties.setProperty("docker.image.parent", DockerUtils.getShaValue(parentId));
@@ -272,13 +281,16 @@ public class DockerAgentUtils implements Serializable {
     /**
      * Get image ID from imageTag on the current agent.
      *
+     * @param launcher
      * @param imageTag
+     * @param host
+     * @param envVars
      * @return
      */
-    public static String getImageIdFromAgent(Launcher launcher, final String imageTag, final String host) throws IOException, InterruptedException {
+    public static String getImageIdFromAgent(Launcher launcher, final String imageTag, final String host, final EnvVars envVars) throws IOException, InterruptedException {
         return launcher.getChannel().call(new MasterToSlaveCallable<String, IOException>() {
             public String call() throws IOException {
-                return DockerUtils.getImageIdFromTag(imageTag, host);
+                return DockerUtils.getImageIdFromTag(imageTag, host, envVars);
             }
         });
     }
@@ -286,13 +298,16 @@ public class DockerAgentUtils implements Serializable {
     /**
      * Get image parent ID from imageID on the current agent.
      *
+     * @param launcher
      * @param imageID
+     * @param host
+     * @param envVars
      * @return
      */
-    public static String getParentIdFromAgent(Launcher launcher, final String imageID, final String host) throws IOException, InterruptedException {
+    public static String getParentIdFromAgent(Launcher launcher, final String imageID, final String host, final EnvVars envVars) throws IOException, InterruptedException {
         return launcher.getChannel().call(new MasterToSlaveCallable<String, IOException>() {
             public String call() throws IOException {
-                return DockerUtils.getParentId(imageID, host);
+                return DockerUtils.getParentId(imageID, host, envVars);
             }
         });
     }
