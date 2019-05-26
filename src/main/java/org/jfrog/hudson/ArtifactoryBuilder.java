@@ -129,8 +129,8 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 @QueryParameter("connectionRetry") final int connectionRetry
 
         ) throws ServletException {
-            if (User.current() == null) {
-                return FormValidation.error("Testing the connection requires being logged in to Jenkins");
+            if (User.current() == null || !Jenkins.getInstance().getACL().hasPermission(Jenkins.getAuthentication(), Jenkins.ADMINISTER)) {
+                return FormValidation.error("Testing the connection requires a logged in user with 'Administer' permission");
             }
             if (StringUtils.isBlank(url)) {
                 return FormValidation.error("Please set a valid Artifactory URL");
