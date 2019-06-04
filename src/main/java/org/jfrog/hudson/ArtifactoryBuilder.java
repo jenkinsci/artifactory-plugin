@@ -70,6 +70,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         }
 
         @SuppressWarnings("unused")
+        @RequirePOST
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             return PluginsUtils.fillPluginCredentials(project, ACL.SYSTEM);
         }
