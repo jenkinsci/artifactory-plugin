@@ -120,7 +120,7 @@ public class RunCommandStep extends AbstractStepImpl {
             final String buildNumber = buildInfo.getNumber();
             final String revision = Utils.extractVcsRevision(ws);
             final long startTime = buildInfo.getStartDate().getTime();
-            buildProperties.touch(0);
+            buildProperties.touch(System.currentTimeMillis());
             buildProperties.act(new MasterToSlaveFileCallable<Boolean>() {
                 public Boolean invoke(File conanProperties, VirtualChannel channel) throws IOException, InterruptedException {
                     final String propsPrefix = "artifact_property_";

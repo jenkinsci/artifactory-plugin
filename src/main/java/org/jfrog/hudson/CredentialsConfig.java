@@ -36,7 +36,9 @@ public class CredentialsConfig implements Serializable {
     @DataBoundConstructor
     public CredentialsConfig(String username, String password, String credentialsId, Boolean overridingCredentials) {
         this.overridingCredentials = overridingCredentials == null ? false : overridingCredentials;
-        this.credentials = new Credentials(username, password);
+        if (overridingCredentials == null || overridingCredentials.equals(Boolean.TRUE)) {
+            this.credentials = new Credentials(username, password);
+        }
         this.credentialsId = credentialsId;
     }
 

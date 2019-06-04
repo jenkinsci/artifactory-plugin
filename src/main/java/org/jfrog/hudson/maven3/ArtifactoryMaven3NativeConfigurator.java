@@ -20,6 +20,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -207,6 +208,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         }
 
         @SuppressWarnings("unused")
+        @RequirePOST
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             return PluginsUtils.fillPluginCredentials(project);
         }

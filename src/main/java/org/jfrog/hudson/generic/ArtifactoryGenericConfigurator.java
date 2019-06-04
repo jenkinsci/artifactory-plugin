@@ -34,6 +34,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -263,8 +264,18 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public ArtifactoryServer getArtifactoryResolverServer() {
-        return RepositoriesUtils.getArtifactoryServer(getArtifactoryResolverName(),
+        String serverId = getArtifactoryResolverName();
+        if (serverId == null) {
+            throw new RuntimeException("Artifactory server for dependencies resolution is null");
+        }
+
+        ArtifactoryServer server = RepositoriesUtils.getArtifactoryServer(serverId,
                 getDescriptor().getArtifactoryServers());
+        if (server == null) {
+            throw new RuntimeException(String.format("The job is configured to use an Artifactory server with ID '%s' for dependencies resolution. This server however does not exist", serverId));
+        }
+
+        return server;
     }
 
     public List<Repository> getReleaseRepositoryList() {
@@ -467,6 +478,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         }
 
         @SuppressWarnings("unused")
+        @RequirePOST
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             return PluginsUtils.fillPluginCredentials(project);
         }

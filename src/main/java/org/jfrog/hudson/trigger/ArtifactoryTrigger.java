@@ -6,10 +6,11 @@ import hudson.maven.MavenModuleSet;
 import hudson.model.*;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
+import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.build.client.ItemLastModified;
+import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
@@ -44,41 +45,42 @@ public class ArtifactoryTrigger extends Trigger {
             return;
         }
 
-        ArtifactoryServer artifactoryServer = RepositoriesUtils.getArtifactoryServer(details.getArtifactoryName(), RepositoriesUtils.getArtifactoryServers());
-        if (artifactoryServer == null) {
-            logger.warning("Artifactory server " + details.getArtifactoryName() + " doesn't exists.");
+        ArtifactoryServer server = RepositoriesUtils.getArtifactoryServer(details.getArtifactoryName(), RepositoriesUtils.getArtifactoryServers());
+        if (server == null) {
+            logger.warning("Artifactory Trigger failed triggering the job, since Artifactory server " + details.getArtifactoryName() + " does not exist.");
             return;
         }
-        ArtifactoryHttpClient client = new ArtifactoryHttpClient(artifactoryServer.getUrl(),
-                artifactoryServer.getDeployerCredentialsConfig().provideUsername(job),
-                artifactoryServer.getDeployerCredentialsConfig().providePassword(job),
-                new NullLog());
-        try {
+
+        try (ArtifactoryBuildInfoClient client = server.createArtifactoryClient(
+                server.getDeployerCredentialsConfig().provideUsername(job),
+                server.getDeployerCredentialsConfig().providePassword(job),
+                server.createProxyConfiguration(Jenkins.getInstance().proxy),
+                new NullLog())) {
             ItemLastModified itemLastModified = client.getItemLastModified(path);
-                long responseLastModified = itemLastModified.getLastModified();
-                if (responseLastModified > lastModified) {
-                    this.lastModified = responseLastModified;
-                    if (job instanceof Project) {
-                        AbstractProject<?, ?> project = ((Project) job).getRootProject();
-                        saveAndSchedule(itemLastModified, project);
-                        return;
-                    }
-
-                    if (job instanceof MavenModuleSet) {
-                        AbstractProject project = ((MavenModuleSet)job).getRootProject();
-                        saveAndSchedule(itemLastModified, project);
-                        return;
-                    }
-
-                    if (job instanceof WorkflowJob) {
-                        WorkflowJob project = (WorkflowJob) job;
-                        logger.fine("Updating " + job.getName());
-                        project.save();
-                        project.scheduleBuild(new ArtifactoryCause(itemLastModified.getUri()));
-                    }
-                } else {
-                    logger.fine(String.format("Artifactory trigger did not trigger job %s, since last modified time: %d is earlier or equal than %d for path %s", job.getName(), responseLastModified, lastModified, path));
+            long responseLastModified = itemLastModified.getLastModified();
+            if (responseLastModified > lastModified) {
+                this.lastModified = responseLastModified;
+                if (job instanceof Project) {
+                    AbstractProject<?, ?> project = ((Project) job).getRootProject();
+                    saveAndSchedule(itemLastModified, project);
+                    return;
                 }
+
+                if (job instanceof MavenModuleSet) {
+                    AbstractProject project = ((MavenModuleSet)job).getRootProject();
+                    saveAndSchedule(itemLastModified, project);
+                    return;
+                }
+
+                if (job instanceof WorkflowJob) {
+                    WorkflowJob project = (WorkflowJob) job;
+                    logger.fine("Updating " + job.getName());
+                    project.save();
+                    project.scheduleBuild(new ArtifactoryCause(itemLastModified.getUri()));
+                }
+            } else {
+                logger.fine(String.format("Artifactory trigger did not trigger job %s, since last modified time: %d is earlier or equal than %d for path %s", job.getName(), responseLastModified, lastModified, path));
+            }
         } catch (IOException | ParseException e) {
             logger.severe("Received an error: " + e.getMessage());
             logger.fine("Received an error: " + e);

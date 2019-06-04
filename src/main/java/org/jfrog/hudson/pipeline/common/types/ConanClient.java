@@ -16,6 +16,7 @@ public class ConanClient implements Serializable {
     public final static String CONAN_LOG_FILE = "conan_log.log";
     private transient CpsScript cpsScript;
     private String userPath;
+    private boolean unixAgent;
     private ConanRemote remote = new ConanRemote();
 
     public ConanClient() {
@@ -24,6 +25,10 @@ public class ConanClient implements Serializable {
     public void setCpsScript(CpsScript cpsScript) {
         this.cpsScript = cpsScript;
         this.remote.setCpsScript(cpsScript);
+    }
+
+    public void setUnixAgent(boolean unixAgent) {
+        this.unixAgent = unixAgent;
     }
 
     @Whitelisted
@@ -37,10 +42,11 @@ public class ConanClient implements Serializable {
     }
 
     public String getLogFilePath() {
-        if (StringUtils.endsWith(getUserPath(), File.separator)) {
+        String separator = unixAgent ? "/" : "\\";
+        if (StringUtils.endsWith(getUserPath(), separator)) {
             return getUserPath() + CONAN_LOG_FILE;
         }
-        return getUserPath() + File.separator + CONAN_LOG_FILE;
+        return getUserPath() + separator + CONAN_LOG_FILE;
     }
 
     @Whitelisted

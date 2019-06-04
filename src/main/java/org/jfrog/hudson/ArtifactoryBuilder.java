@@ -17,10 +17,7 @@
 package org.jfrog.hudson;
 
 import hudson.Extension;
-import hudson.model.AbstractProject;
-import hudson.model.BuildableItemWithBuildWrappers;
-import hudson.model.Descriptor;
-import hudson.model.Item;
+import hudson.model.*;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
@@ -39,6 +36,7 @@ import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -72,6 +70,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         }
 
         @SuppressWarnings("unused")
+        @RequirePOST
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             return PluginsUtils.fillPluginCredentials(project, ACL.SYSTEM);
         }
@@ -119,6 +118,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             return FormValidation.ok();
         }
 
+        @RequirePOST
         public FormValidation doTestConnection(
                 @QueryParameter("artifactoryUrl") final String url,
                 @QueryParameter("artifactory.timeout") final String timeout,
@@ -130,11 +130,12 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 @QueryParameter("connectionRetry") final int connectionRetry
 
         ) throws ServletException {
-
+            if (!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+                return FormValidation.error("Testing the connection requires 'Administer' permission");
+            }
             if (StringUtils.isBlank(url)) {
                 return FormValidation.error("Please set a valid Artifactory URL");
             }
-
             if (connectionRetry < 0) {
                 return FormValidation.error("Connection Retries can not be less then 0");
             }

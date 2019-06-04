@@ -34,6 +34,7 @@ import org.jfrog.hudson.util.CredentialManager;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -276,6 +277,7 @@ public class UnifiedPromoteBuildAction extends TaskAction implements BuildBadgeA
      * Form submission is calling this method
      */
     @SuppressWarnings({"UnusedDeclaration"})
+    @RequirePOST
     public void doSubmit(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException {
         getACL().checkPermission(getPermission());
 

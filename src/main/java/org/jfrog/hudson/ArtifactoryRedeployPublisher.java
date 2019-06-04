@@ -48,6 +48,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -485,6 +486,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
 
         @SuppressWarnings("unused")
+        @RequirePOST
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
             this.item = project;
             return PluginsUtils.fillPluginCredentials(project);
