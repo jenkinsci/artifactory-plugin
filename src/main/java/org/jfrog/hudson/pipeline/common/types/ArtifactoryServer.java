@@ -45,11 +45,9 @@ public class ArtifactoryServer implements Serializable {
     public ArtifactoryServer() {
     }
 
-    public ArtifactoryServer(String artifactoryServerName, String url, String username, String password, int deploymentThreads) {
+    public ArtifactoryServer(String artifactoryServerName, String url, int deploymentThreads) {
         serverName = artifactoryServerName;
         this.url = url;
-        this.username = username;
-        this.password = password;
         this.deploymentThreads = deploymentThreads;
 
     }
