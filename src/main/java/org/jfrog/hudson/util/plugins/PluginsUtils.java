@@ -36,7 +36,7 @@ public class PluginsUtils {
     }
 
     public static ListBoxModel fillPluginCredentials(Item project, Authentication authentication) {
-        if (project != null && !project.hasPermission(Item.CONFIGURE)) {
+        if (project == null || !project.hasPermission(Item.CONFIGURE)) {
             return new StandardListBoxModel();
         }
         List<DomainRequirement> domainRequirements = Collections.emptyList();
