@@ -40,14 +40,16 @@ function populateDropDownList() {
         for (let i = 0; i < deploymentThreadsValue.length; i++) {
             if (deploymentThreadsValue[i].length === 0) {
                 // populate the selection fields and set 3 as default.
+                let index = 0;
                 for (let j = 1; j < DEFAULT_OPTIONS_NUMBER; j++) {
                     let el = document.createElement("option");
                     el.textContent = j;
                     el.value = j;
                     deploymentThreadsValue[i].appendChild(el);
                     if (j === 3) {
-                        deploymentThreadsValue[i].selectedIndex = j;
+                        deploymentThreadsValue[i].selectedIndex = index;
                     }
+                    index++;
                 }
             }
         }
