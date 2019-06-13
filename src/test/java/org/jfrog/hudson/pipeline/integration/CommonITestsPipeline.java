@@ -1,15 +1,21 @@
 package org.jfrog.hudson.pipeline.integration;
 
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.BuildImageCmd;
+import com.github.dockerjava.core.command.BuildImageResultCallback;
 import com.google.common.collect.Sets;
+import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.Module;
+import org.jfrog.hudson.pipeline.common.docker.utils.DockerUtils;
 import org.junit.Test;
 
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Set;
+import java.nio.file.Paths;
+import java.util.*;
 
 import static org.jfrog.hudson.pipeline.integration.ITestUtils.*;
 import static org.junit.Assert.*;
@@ -117,7 +123,7 @@ public class CommonITestsPipeline extends PipelineTestBase {
     /**
      * Upload a file to 2 different builds.
      * Verify that we don't download files with same sha and different build name and build number.
-     * */
+     */
     void downloadByShaAndBuildTest(String buildName) throws Exception {
         Set<String> expectedDependencies = Sets.newHashSet("a3");
         Set<String> unexpected = Sets.newHashSet("a4", "a5");
@@ -142,7 +148,7 @@ public class CommonITestsPipeline extends PipelineTestBase {
     /**
      * Upload a file to 2 different builds.
      * Verify that we don't download files with same sha and build name and different build number.
-     * */
+     */
     void downloadByShaAndBuildNameTest(String buildName) throws Exception {
         Set<String> expectedDependencies = Sets.newHashSet("a4");
         Set<String> unexpected = Sets.newHashSet("a3", "a5");
@@ -341,6 +347,66 @@ public class CommonITestsPipeline extends PipelineTestBase {
             assertModuleDependencies(module, expectedDependencies);
         } finally {
             deleteBuild(artifactoryClient, buildName);
+        }
+    }
+
+    void dockerPushTest(String buildName) throws Exception {
+        try {
+            // Get image name
+            String imageName = System.getenv("JENKINS_ARTIFACTORY_DOCKER_IMAGE");
+            if (StringUtils.isBlank(imageName)) {
+                throw new MissingArgumentException("Docker image name is not provided");
+            }
+            DockerClient dockerClient = DockerUtils.getDockerClient(System.getenv("JENKINS_ARTIFACTORY_DOCKER_HOST"));
+            String projectPath = getProjectPath("docker-example");
+            // Build the docker image with the name provided from env.
+            BuildImageCmd buildImageCmd = dockerClient.buildImageCmd(Paths.get(projectPath).toFile()).withTags(new HashSet<>(Arrays.asList(imageName)));
+            buildImageCmd.exec(new BuildImageResultCallback());
+            // Run pipeline
+            runPipeline("dockerPush");
+            String buildNumber = "3";
+
+            // Get build info
+            Build buildInfo = getBuildInfo(buildInfoClient, buildName, buildNumber);
+            assertEquals(1, buildInfo.getModules().size());
+            List<Module> modules = buildInfo.getModules();
+            Module module = modules.get(0);
+            assertEquals(7, module.getArtifacts().size());
+            assertEquals(5, module.getDependencies().size());
+        } finally {
+            deleteBuild(artifactoryClient, buildName);
+        }
+    }
+
+    void xrayScanTest(String buildName, boolean failBuild) throws Exception {
+        String str = String.valueOf(failBuild);
+        xrayScanTest(buildName, "xrayScanFailBuild"+str.substring(0, 1).toUpperCase() + str.substring(1), failBuild, false);
+    }
+
+    void xrayScanMockTest(String buildName, boolean failBuild) throws Exception {
+        String str = String.valueOf(failBuild);
+        xrayScanTest(buildName, "xrayScanMock"+str.substring(0, 1).toUpperCase() + str.substring(1), failBuild, true);
+    }
+
+    private void xrayScanTest(String buildName, String pipelineJobName, boolean failBuild, boolean useMock) throws Exception {
+        try {
+            // Start mock server if needed.
+            if (useMock) {
+                MockServer.start(pipelineJobName, pipelineType.toString());
+            }
+            runPipeline(pipelineJobName);
+            if (failBuild) {
+                fail("Job expected to fail");
+            }
+        } catch (AssertionError t) {
+            assertTrue(t.getMessage().contains("Violations were found by Xray:"));
+            assertTrue(t.getMessage().contains("Build " + pipelineType.toString() + ":" + pipelineJobName + " test number 3 was scanned by Xray and 1 Alerts were generated"));
+        } finally {
+            if (useMock) {
+                MockServer.stop();
+            } else {
+                deleteBuild(artifactoryClient, buildName);
+            }
         }
     }
 }
