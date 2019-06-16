@@ -16,6 +16,7 @@
 
 package org.jfrog.hudson;
 
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.Extension;
 import hudson.model.*;
 import hudson.security.ACL;
@@ -72,7 +73,11 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         @SuppressWarnings("unused")
         @RequirePOST
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project) {
-            return PluginsUtils.fillPluginCredentials(project, ACL.SYSTEM);
+            Jenkins jenkins = Jenkins.getInstance();
+            if (jenkins != null && jenkins.hasPermission(Jenkins.ADMINISTER)) {
+                return PluginsUtils.fillPluginCredentials(project, ACL.SYSTEM);
+            }
+            return new StandardListBoxModel();
         }
 
         /**
@@ -186,32 +191,36 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
         @SuppressWarnings({"unchecked"})
         @Override
         public boolean configure(StaplerRequest req, JSONObject o) throws FormException {
-            boolean useCredentialsPlugin = (Boolean)o.get("useCredentialsPlugin");
-            Object servers = o.get("artifactoryServer");    // an array or single object
-            List<ArtifactoryServer> artifactoryServers;
-            if (!JSONNull.getInstance().equals(servers)) {
-                artifactoryServers = req.bindJSONToList(ArtifactoryServer.class, servers);
-            } else {
-                artifactoryServers = null;
-            }
+            Jenkins jenkins = Jenkins.getInstance();
+            if (jenkins != null && jenkins.hasPermission(Jenkins.ADMINISTER)) {
+                boolean useCredentialsPlugin = (Boolean) o.get("useCredentialsPlugin");
+                Object servers = o.get("artifactoryServer");    // an array or single object
+                List<ArtifactoryServer> artifactoryServers;
+                if (!JSONNull.getInstance().equals(servers)) {
+                    artifactoryServers = req.bindJSONToList(ArtifactoryServer.class, servers);
+                } else {
+                    artifactoryServers = null;
+                }
 
-            if (!isServerIDConfigured(artifactoryServers)) {
-                throw new FormException("Please set the Artifactory server ID.", "ServerID");
-            }
+                if (!isServerIDConfigured(artifactoryServers)) {
+                    throw new FormException("Please set the Artifactory server ID.", "ServerID");
+                }
 
-            if (isServerDuplicated(artifactoryServers)) {
-                throw new FormException("The Artifactory server ID you have entered is already configured", "Server ID");
-            }
+                if (isServerDuplicated(artifactoryServers)) {
+                    throw new FormException("The Artifactory server ID you have entered is already configured", "Server ID");
+                }
 
-            setArtifactoryServers(artifactoryServers);
+                setArtifactoryServers(artifactoryServers);
 
-            if (useCredentialsPlugin && !this.useCredentialsPlugin) {
-                resetJobsCredentials();
-                resetServersCredentials();
+                if (useCredentialsPlugin && !this.useCredentialsPlugin) {
+                    resetJobsCredentials();
+                    resetServersCredentials();
+                }
+                this.useCredentialsPlugin = useCredentialsPlugin;
+                save();
+                return super.configure(req, o);
             }
-            this.useCredentialsPlugin = useCredentialsPlugin;
-            save();
-            return super.configure(req, o);
+            throw new FormException("User doesn't have permissions to save", "Server ID");
         }
 
         private void resetServersCredentials() {
@@ -227,7 +236,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
 
         private void resetJobsCredentials() {
             List<AbstractProject> jobs = Jenkins.getInstance().getAllItems(AbstractProject.class);
-            for(AbstractProject job : jobs) {
+            for (AbstractProject job : jobs) {
                 if (!(job instanceof BuildableItemWithBuildWrappers)) {
                     continue;
                 }
