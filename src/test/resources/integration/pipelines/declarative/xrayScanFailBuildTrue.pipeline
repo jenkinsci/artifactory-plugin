@@ -54,10 +54,8 @@ node {
     stage('Xray Scan')
     xrayScan(
             serverId: serverId,
-            params: [
-                    buildName  : buildName,
-                    buildNumber: buildNumber,
-                    'failBuild': true
-            ]
+            buildName  : buildName,
+            buildNumber: buildNumber,
+            failBuild: true
     )
 }
