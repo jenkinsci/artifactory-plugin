@@ -86,34 +86,34 @@ public class DeclarativeITest extends CommonITestsPipeline {
         super.deletePropsTest("declarative:deleteProps test");
     }
 
-    @Test
-    public void dockerPushTest() throws Exception {
-        super.dockerPushTest("declarative:dockerPush test");
-    }
-
-    @Test
-    public void xrayScanFailTrueTest() throws Exception {
-        if (!ITestUtils.shouldRunXrayTest()) {
-            return;
-        }
-        super.xrayScanTest("declarative:xrayScanFailBuildTrue test", true);
-    }
-
-    @Test
-    public void xrayScanFailFalseTest() throws Exception {
-        if (!ITestUtils.shouldRunXrayTest()) {
-            return;
-        }
-        super.xrayScanTest("declarative:xrayScanFailBuildFalse test", false);
-    }
-
-    @Test
-    public void xrayScanFailTrueMockTest() throws Exception {
-        super.xrayScanMockTest("declarative:xrayScanFailBuildTrue test", true);
-    }
-
-    @Test
-    public void xrayScanFailFalseMockTest() throws Exception {
-        super.xrayScanMockTest("declarative:xrayScanFailBuildFalse test", false);
-    }
+//    @Test
+//    public void dockerPushTest() throws Exception {
+//        super.dockerPushTest("declarative:dockerPush test");
+//    }
+//
+//    @Test
+//    public void xrayScanFailTrueTest() throws Exception {
+//        if (!ITestUtils.shouldRunXrayTest()) {
+//            return;
+//        }
+//        super.xrayScanTest("declarative:xrayScanFailBuildTrue test", true);
+//    }
+//
+//    @Test
+//    public void xrayScanFailFalseTest() throws Exception {
+//        if (!ITestUtils.shouldRunXrayTest()) {
+//            return;
+//        }
+//        super.xrayScanTest("declarative:xrayScanFailBuildFalse test", false);
+//    }
+//
+//    @Test
+//    public void xrayScanFailTrueMockTest() throws Exception {
+//        super.xrayScanMockTest("declarative:xrayScanFailBuildTrue test", true);
+//    }
+//
+//    @Test
+//    public void xrayScanFailFalseMockTest() throws Exception {
+//        super.xrayScanMockTest("declarative:xrayScanFailBuildFalse test", false);
+//    }
 }
