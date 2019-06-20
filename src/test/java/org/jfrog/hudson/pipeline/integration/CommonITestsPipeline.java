@@ -353,11 +353,16 @@ public class CommonITestsPipeline extends PipelineTestBase {
     void dockerPushTest(String buildName) throws Exception {
         try {
             // Get image name
-            String imageName = System.getenv("JENKINS_ARTIFACTORY_DOCKER_IMAGE");
-            if (StringUtils.isBlank(imageName)) {
-                throw new MissingArgumentException("Docker image name is not provided");
+            String domainName = System.getenv("JENKINS_ARTIFACTORY_DOCKER_DOMAIN");
+            if (StringUtils.isBlank(domainName)) {
+                throw new MissingArgumentException("The JENKINS_ARTIFACTORY_DOCKER_DOMAIN environment variable is not set.");
             }
-            DockerClient dockerClient = DockerUtils.getDockerClient(System.getenv("JENKINS_ARTIFACTORY_DOCKER_HOST"));
+            if (!StringUtils.endsWith(domainName, "/")) {
+                domainName += "/";
+            }
+            String imageName = domainName + "jfrog_artifactory_jenkins_tests:2";
+            String host = System.getenv("JENKINS_ARTIFACTORY_DOCKER_HOST");
+            DockerClient dockerClient = DockerUtils.getDockerClient(host);
             String projectPath = getProjectPath("docker-example");
             // Build the docker image with the name provided from env.
             BuildImageCmd buildImageCmd = dockerClient.buildImageCmd(Paths.get(projectPath).toFile()).withTags(new HashSet<>(Arrays.asList(imageName)));

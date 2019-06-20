@@ -1,5 +1,6 @@
 package org.jfrog.hudson.pipeline.integration;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
 
 /**
@@ -86,24 +87,27 @@ public class ScriptedITest extends CommonITestsPipeline {
         super.deletePropsTest("scripted:deleteProps test");
     }
 
-//    @Test
-//    public void dockerPushTest() throws Exception {
-//        super.dockerPushTest("scripted:dockerPush test");
-//    }
-//
-//    @Test
-//    public void xrayScanFailTrueTest() throws Exception {
-//        if (!ITestUtils.shouldRunXrayTest()) {
-//            return;
-//        }
-//        super.xrayScanTest("declarative:xrayScanFailBuildTrue test", true);
-//    }
-//
-//    @Test
-//    public void xrayScanFailFalseTest() throws Exception {
-//        if (!ITestUtils.shouldRunXrayTest()) {
-//            return;
-//        }
-//        super.xrayScanTest("declarative:xrayScanFailBuildFalse test", false);
-//    }
+    @Test
+    public void dockerPushTest() throws Exception {
+        if (SystemUtils.IS_OS_WINDOWS) {
+            return;
+        }
+        super.dockerPushTest("scripted:dockerPush test");
+    }
+
+  /*  @Test
+    public void xrayScanFailTrueTest() throws Exception {
+        if (!ITestUtils.shouldRunXrayTest()) {
+            return;
+        }
+        super.xrayScanTest("declarative:xrayScanFailBuildTrue test", true);
+    }
+
+    @Test
+    public void xrayScanFailFalseTest() throws Exception {
+        if (!ITestUtils.shouldRunXrayTest()) {
+            return;
+        }
+        super.xrayScanTest("declarative:xrayScanFailBuildFalse test", false);
+    }*/
 }
