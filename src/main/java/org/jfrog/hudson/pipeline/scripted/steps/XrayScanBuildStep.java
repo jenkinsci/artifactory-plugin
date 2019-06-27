@@ -4,24 +4,17 @@ import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.apache.commons.cli.MissingArgumentException;
-import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
-import org.jfrog.build.api.util.Log;
-import org.jfrog.build.client.ProxyConfiguration;
-import org.jfrog.build.client.artifactoryXrayResponse.ArtifactoryXrayResponse;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryXrayClient;
-import org.jfrog.hudson.CredentialsConfig;
-import org.jfrog.hudson.pipeline.common.Utils;
+import org.jfrog.hudson.pipeline.common.executors.XrayExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.XrayScanConfig;
 import org.jfrog.hudson.pipeline.common.types.XrayScanResult;
-import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+@SuppressWarnings("unused")
 public class XrayScanBuildStep extends AbstractStepImpl {
 
     private ArtifactoryServer server;
@@ -56,41 +49,10 @@ public class XrayScanBuildStep extends AbstractStepImpl {
         @Override
         protected XrayScanResult run() throws Exception {
             XrayScanConfig xrayScanConfig = step.getXrayScanConfig();
-
-            if (StringUtils.isEmpty(xrayScanConfig.getBuildName())) {
-                throw new MissingArgumentException("Xray scan build name is mandatory");
-            }
-
-            if (StringUtils.isEmpty(xrayScanConfig.getBuildNumber())) {
-                throw new MissingArgumentException("Xray scan build number is mandatory");
-            }
-
-            Log log = new JenkinsBuildInfoLog(listener);
             ArtifactoryServer server = step.getServer();
-            CredentialsConfig credentialsConfig = server.createCredentialsConfig();
-            ArtifactoryXrayClient client = new ArtifactoryXrayClient(server.getUrl(), credentialsConfig.provideUsername(build.getParent()),
-                    credentialsConfig.providePassword(build.getParent()), log);
-            ProxyConfiguration proxyConfiguration = Utils.getProxyConfiguration(Utils.prepareArtifactoryServer(null, server));
-            if (proxyConfiguration != null) {
-                client.setProxyConfiguration(proxyConfiguration);
-            }
-
-            ArtifactoryXrayResponse buildScanResult = client.xrayScanBuild(xrayScanConfig.getBuildName(), xrayScanConfig.getBuildNumber(), "jenkins");
-            XrayScanResult xrayScanResult = new XrayScanResult(buildScanResult);
-
-            if (xrayScanResult.isFoundVulnerable()) {
-                if (xrayScanConfig.getFailBuild()) {
-                    throw new XrayScanException(xrayScanResult);
-                }
-                log.error(xrayScanResult.getScanMessage());
-            } else {
-                log.info(xrayScanResult.getScanMessage());
-            }
-
-            if (StringUtils.isNotEmpty(xrayScanResult.getScanUrl())) {
-                log.info("Xray scan details are available at: " + xrayScanResult.getScanUrl());
-            }
-            return xrayScanResult;
+            XrayExecutor xrayExecutor = new XrayExecutor(xrayScanConfig, listener, server, build);
+            xrayExecutor.execute();
+            return xrayExecutor.getXrayScanResult();
         }
     }
 
@@ -115,18 +77,6 @@ public class XrayScanBuildStep extends AbstractStepImpl {
         @Override
         public boolean isAdvanced() {
             return true;
-        }
-    }
-
-    public static class XrayScanException extends Exception {
-
-        XrayScanException(XrayScanResult xrayScanResult) {
-            super("Violations were found by Xray: " + xrayScanResult, null, true, false);
-        }
-
-        @Override
-        public String toString() {
-            return getLocalizedMessage();
         }
     }
 }

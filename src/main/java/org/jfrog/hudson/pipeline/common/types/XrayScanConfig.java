@@ -11,6 +11,9 @@ public class XrayScanConfig implements Serializable {
     private String buildNumber;
     private Boolean failBuild;
 
+    public XrayScanConfig() {
+    }
+
     public XrayScanConfig(String buildName, String buildNumber, Boolean failBuild) {
         this.buildName = buildName;
         this.buildNumber = buildNumber;
@@ -27,5 +30,17 @@ public class XrayScanConfig implements Serializable {
 
     public boolean getFailBuild() {
         return failBuild == null || failBuild;
+    }
+
+    public void setBuildName(String buildName) {
+        this.buildName = buildName;
+    }
+
+    public void setBuildNumber(String buildNumber) {
+        this.buildNumber = buildNumber;
+    }
+
+    public void setFailBuild(Boolean failBuild) {
+        this.failBuild = failBuild;
     }
 }

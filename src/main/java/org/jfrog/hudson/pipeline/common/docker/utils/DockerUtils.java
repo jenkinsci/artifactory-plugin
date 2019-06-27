@@ -318,11 +318,13 @@ public class DockerUtils implements Serializable {
         return layersNum;
     }
 
-    private static DockerClient getDockerClient(String host) {
+    public static DockerClient getDockerClient(String host) {
         NettyDockerCmdExecFactory nettyDockerCmdExecFactory;
 
         nettyDockerCmdExecFactory = new NettyDockerCmdExecFactory();
-        if (StringUtils.isEmpty(host)) {
+        // If open JDK is used and the host is null
+        // then instead of a null reference, the host is the string "null".
+        if (StringUtils.isEmpty(host) || host.equalsIgnoreCase("null")) {
             return DockerClientBuilder.getInstance().withDockerCmdExecFactory(nettyDockerCmdExecFactory).build();
         }
 

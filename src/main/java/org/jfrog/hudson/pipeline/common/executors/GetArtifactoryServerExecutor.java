@@ -7,6 +7,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.util.RepositoriesUtils;
+import org.jfrog.hudson.util.plugins.PluginsUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +54,13 @@ public class GetArtifactoryServerExecutor implements Executor {
         }
         ArtifactoryServer server = artifactoryServers.get(0);
         artifactoryServer = new org.jfrog.hudson.pipeline.common.types.ArtifactoryServer(artifactoryServerID, server.getUrl(),
-                server.getResolvingCredentialsConfig().provideUsername(build.getParent()), server.getResolvingCredentialsConfig().providePassword(build.getParent()), server.getDeploymentThreads());
+                server.getDeploymentThreads());
+        if (PluginsUtils.isCredentialsPluginEnabled()) {
+            artifactoryServer.setCredentialsId(server.getResolvingCredentialsConfig().getCredentialsId());
+        } else {
+            artifactoryServer.setUsername(server.getResolvingCredentialsConfig().provideUsername(build.getParent()));
+            artifactoryServer.setPassword(server.getResolvingCredentialsConfig().providePassword(build.getParent()));
+        }
         artifactoryServer.setBypassProxy(server.isBypassProxy());
         artifactoryServer.getConnection().setRetry(server.getConnectionRetry());
         artifactoryServer.getConnection().setTimeout(server.getTimeout());

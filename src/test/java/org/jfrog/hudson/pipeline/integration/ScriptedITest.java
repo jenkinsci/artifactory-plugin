@@ -1,5 +1,7 @@
 package org.jfrog.hudson.pipeline.integration;
 
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -85,4 +87,26 @@ public class ScriptedITest extends CommonITestsPipeline {
     public void deletePropsTest() throws Exception {
         super.deletePropsTest("scripted:deleteProps test");
     }
+
+    @Test
+    public void dockerPushTest() throws Exception {
+        Assume.assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        super.dockerPushTest("scripted:dockerPush test");
+    }
+
+  /*  @Test
+    public void xrayScanFailTrueTest() throws Exception {
+        if (!ITestUtils.shouldRunXrayTest()) {
+            return;
+        }
+        super.xrayScanTest("declarative:xrayScanFailBuildTrue test", true);
+    }
+
+    @Test
+    public void xrayScanFailFalseTest() throws Exception {
+        if (!ITestUtils.shouldRunXrayTest()) {
+            return;
+        }
+        super.xrayScanTest("declarative:xrayScanFailBuildFalse test", false);
+    }*/
 }
