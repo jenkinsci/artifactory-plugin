@@ -24,7 +24,7 @@
 
                     <f:entry title="${%Custom staging configuration}"
                              help="/plugin/artifactory/help/release/common/help-stagingPlugin.html">
-                        <select class="setting-input" name="userPluginKey" id="customStagingConfiguration-${s.url}-${uniqueId"
+                        <select class="setting-input" name="userPluginKey" id="customStagingConfiguration-${s.url}-${uniqueId}"
                                 onchange="setStagingParamsSelectedValue(this)">
                             <j:choose>
                                 <j:when test="${s.name==instance.artifactoryName}">
@@ -37,7 +37,7 @@
                                 </j:when>
                             </j:choose>
                         </select>
-                        <div id="stagingParamsDiv">
+                        <div id="stagingParamsDiv-${uniqueId}">
                             <j:choose>
                                 <j:when test="${s.name==instance.artifactoryName}">
                                     <j:choose>
