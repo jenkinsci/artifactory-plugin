@@ -1,12 +1,10 @@
 package org.jfrog.hudson.pipeline.integration;
 
+import hudson.EnvVars;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.BuildImageCmd;
 import com.github.dockerjava.core.command.BuildImageResultCallback;
 import com.google.common.collect.Sets;
-
-import hudson.EnvVars;
-
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;

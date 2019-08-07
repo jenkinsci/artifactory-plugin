@@ -325,8 +325,7 @@ public class DockerUtils implements Serializable {
 
 
     public static DockerClient getDockerClient(String host, EnvVars envVars) {
-
-      if(envVars == null) {
+      if (envVars == null) {
           throw new IllegalStateException("envVars must not be null");
       }
 
