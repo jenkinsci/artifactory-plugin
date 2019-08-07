@@ -92,7 +92,7 @@ public class DockerPushStep extends AbstractStepImpl {
         protected Void run() throws Exception {
             BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(ws, build, step.buildName, step.buildNumber);
             org.jfrog.hudson.pipeline.common.types.ArtifactoryServer pipelineServer = DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), step.serverId);
-            DockerExecutor dockerExecutor = new DockerExecutor(pipelineServer, buildInfo, build, step.image, step.targetRepo, step.host, launcher, step.properties, listener);
+            DockerExecutor dockerExecutor = new DockerExecutor(pipelineServer, buildInfo, build, step.image, step.targetRepo, step.host, launcher, step.properties, listener, env);
             dockerExecutor.execute();
             DeclarativePipelineUtils.saveBuildInfo(dockerExecutor.getBuildInfo(), ws, build, new JenkinsBuildInfoLog(listener));
             return null;

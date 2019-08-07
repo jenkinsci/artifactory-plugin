@@ -2,6 +2,7 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.inject.Inject;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.Run;
@@ -82,6 +83,9 @@ public class DockerPushStep extends AbstractStepImpl {
         @StepContextParameter
         private transient Launcher launcher;
 
+        @StepContextParameter
+        private transient EnvVars envVars; 
+        
         @Override
         protected BuildInfo run() throws Exception {
             if (step.getImage() == null) {
@@ -96,7 +100,7 @@ public class DockerPushStep extends AbstractStepImpl {
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
 
             ArtifactoryServer server = step.getServer();
-            DockerExecutor dockerExecutor = new DockerExecutor(server, buildInfo, build, step.image, step.targetRepo, step.host, launcher, step.properties, listener);
+            DockerExecutor dockerExecutor = new DockerExecutor(server, buildInfo, build, step.image, step.targetRepo, step.host, launcher, step.properties, listener, envVars);
             dockerExecutor.execute();
             return dockerExecutor.getBuildInfo();
         }
