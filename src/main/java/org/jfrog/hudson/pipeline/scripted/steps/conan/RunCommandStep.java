@@ -93,7 +93,7 @@ public class RunCommandStep extends AbstractStepImpl {
         }
 
         // Conan collect buildInfo as part of the tasks execution.
-        // In order to transform the collected buildInfo into Artifctory buildInfo format we need to execute the conan_build_info command.
+        // In order to transform the collected buildInfo into Artifactory buildInfo format we need to execute the conan_build_info command.
         // The conan_build_info command expect to get a path for the output file.
         private FilePath execConanCollectBuildInfo(EnvVars extendedEnv) throws Exception {
             FilePath tempDir = ExtractorUtils.createAndGetTempDir(ws);
