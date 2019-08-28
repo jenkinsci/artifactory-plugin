@@ -65,7 +65,7 @@ public class InitConanClientStep extends AbstractStepImpl {
             args.addTokenized("conan config set");
             // We need to add quotation marks before we save the log file path
             args.add("log.trace_file=\"" + StringUtils.trim(logFilePath) + "\"");
-            Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
+            Utils.exeConan(args, ws, launcher, listener, extendedEnv);
             return true;
         }
 

@@ -103,7 +103,7 @@ public class RunCommandStep extends AbstractStepImpl {
             args.add(step.getBuildLogPath());
             args.add("--output");
             args.add(logFilePath.getRemote());
-            Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
+            Utils.exeConan(args, ws, launcher, listener, extendedEnv);
             return logFilePath;
         }
 
@@ -111,7 +111,7 @@ public class RunCommandStep extends AbstractStepImpl {
             ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("conan");
             args.addTokenized(step.getCommand());
-            Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
+            Utils.exeConan(args, ws, launcher, listener, extendedEnv);
         }
 
         private void persistBuildProperties(BuildInfo buildInfo, FilePath conanHomeDirectory) throws IOException, InterruptedException {

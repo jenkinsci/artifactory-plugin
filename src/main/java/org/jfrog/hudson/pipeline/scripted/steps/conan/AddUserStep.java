@@ -81,7 +81,7 @@ public class AddUserStep extends AbstractStepImpl {
             EnvVars extendedEnv = new EnvVars(env);
             extendedEnv.put(Utils.CONAN_USER_HOME, step.getConanHome());
             listener.getLogger().println("Adding conan user '" + username + "', server '" + serverName + "'");
-            Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
+            Utils.exeConan(args, ws, launcher, listener, extendedEnv);
             return true;
         }
     }
