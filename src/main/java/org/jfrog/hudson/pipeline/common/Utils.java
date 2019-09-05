@@ -222,7 +222,7 @@ public class Utils {
         });
     }
 
-    public static void exeConan(ArgumentListBuilder args, FilePath pwd, Launcher launcher, TaskListener listener, Run build, EnvVars env) {
+    public static void exeConan(ArgumentListBuilder args, FilePath pwd, Launcher launcher, TaskListener listener, EnvVars env) {
         boolean failed;
         try {
             if (!pwd.exists()) {
@@ -248,11 +248,9 @@ public class Utils {
             failed = (exitValue != 0);
         } catch (Exception e) {
             listener.error("Couldn't execute the conan client executable. " + e.getMessage());
-            build.setResult(Result.FAILURE);
             throw new Run.RunnerAbortedException();
         }
         if (failed) {
-            build.setResult(Result.FAILURE);
             throw new Run.RunnerAbortedException();
         }
     }
