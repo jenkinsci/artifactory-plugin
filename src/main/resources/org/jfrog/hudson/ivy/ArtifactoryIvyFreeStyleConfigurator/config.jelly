@@ -30,7 +30,7 @@
             </j:forEach>
         </f:dropdownList>
 
-        <r:credentials configurationFieldName="deployerCredentialsConfig-${uniqueId}"
+        <r:credentials configurationFieldName="deployerCredentialsConfig"
                        configurationObject="${instance.deployerCredentialsConfig}"
                        blockTitle="Override default deployer credentials"
                        elementId="overridingDeployerCredentials-ivy-${uniqueId}"/>
