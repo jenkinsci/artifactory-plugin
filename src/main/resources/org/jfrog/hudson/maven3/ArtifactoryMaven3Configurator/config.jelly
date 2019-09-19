@@ -54,7 +54,7 @@
             </j:forEach>
         </f:dropdownList>
 
-        <r:credentials configurationFieldName="deployerCredentialsConfig-${uniqueId}"
+        <r:credentials configurationFieldName="deployerCredentialsConfig"
                        configurationObject="${instance.deployerCredentialsConfig}"
                        blockTitle="Override default deployer credentials"
                        elementId="overridingDeployerCredentials-maven3-${uniqueId}"/>
@@ -108,7 +108,7 @@
                         </j:forEach>
                     </f:dropdownList>
 
-                    <r:credentials configurationFieldName="resolverCredentialsConfig-${uniqueId}"
+                    <r:credentials configurationFieldName="resolverCredentialsConfig"
                                    configurationObject="${instance.resolverCredentialsConfig}"
                                    blockTitle="Override default resolver credentials"
                                    elementId="overridingResolverCredentials-maven3-${uniqueId}"/>

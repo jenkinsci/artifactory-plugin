@@ -74,7 +74,7 @@
                 </f:dropdownList>
             </table>
 
-            <r:credentials configurationFieldName="deployerCredentialsConfig-${uniqueId}"
+            <r:credentials configurationFieldName="deployerCredentialsConfig"
                            configurationObject="${instance.deployerCredentialsConfig}"
                            blockTitle="Override default deployer credentials"
                            elementId="overridingDeployerCredentials-generic-${uniqueId}"/>
@@ -172,7 +172,7 @@
             </table>
         </f:block>
 
-        <r:credentials configurationFieldName="resolverCredentialsConfig-${uniqueId}"
+        <r:credentials configurationFieldName="resolverCredentialsConfig"
                        configurationObject="${instance.resolverCredentialsConfig}"
                        blockTitle="Override default download credentials"
                        elementId="overridingResolverCredentials-generic-${uniqueId}"/>
