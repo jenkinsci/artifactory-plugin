@@ -2,6 +2,7 @@ package org.jfrog.hudson.pipeline.integration;
 
 import hudson.EnvVars;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +19,7 @@ import org.jfrog.artifactory.client.impl.ArtifactoryRequestImpl;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
 import org.jvnet.hudson.test.JenkinsRule;
 
@@ -40,6 +42,7 @@ public class PipelineTestBase {
     public static JenkinsRule jenkins = new JenkinsRule();
     private Logger log = LogManager.getRootLogger();
     @Rule public TestName testName = new TestName();
+    @ClassRule public static TemporaryFolder testTemporaryFolder = new TemporaryFolder();
 
     private static final String ARTIFACTORY_URL = System.getenv("JENKINS_ARTIFACTORY_URL");
     private static final String ARTIFACTORY_USERNAME = System.getenv("JENKINS_ARTIFACTORY_USERNAME");
@@ -68,10 +71,11 @@ public class PipelineTestBase {
     }
 
     @Before
-    public void beforeTest() {
+    public void beforeTest() throws IOException {
         log.info("Running test: " + pipelineType + " / " + testName.getMethodName());
         // Create repositories
         Arrays.stream(TestRepository.values()).forEach(this::createRepo);
+        FileUtils.cleanDirectory(testTemporaryFolder.getRoot().getAbsoluteFile());
     }
 
     @After
@@ -143,7 +147,7 @@ public class PipelineTestBase {
             put("GRADLE_CI_PROJECT_PATH", getProjectPath("gradle-example-ci"));
             put("NPM_PROJECT_PATH", getProjectPath("npm-example"));
             put("DOCKER_PROJECT_PATH", getProjectPath("docker-example"));
-            put("COLLECT_ISSUES_PATH", getProjectPath("collectIssues-example"));
+            put("TEST_TEMP_FOLDER", testTemporaryFolder.getRoot().getAbsolutePath());
             put("LOCAL_REPO1", getRepoKey(TestRepository.LOCAL_REPO1));
             put("LOCAL_REPO2", getRepoKey(TestRepository.LOCAL_REPO2));
             put("JCENTER_REMOTE_REPO", getRepoKey(TestRepository.JCENTER_REMOTE_REPO));
