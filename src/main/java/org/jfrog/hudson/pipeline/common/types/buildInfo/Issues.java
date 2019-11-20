@@ -47,13 +47,13 @@ public class Issues implements Serializable {
     }
 
     public void convertAndAppend(org.jfrog.build.api.Issues issuesToAppend) {
-        append(convertToPipelineIssues(issuesToAppend));
+        append(toPipelineIssues(issuesToAppend));
     }
 
     /**
      * Converts Issues of type org.jfrog.build.api.Issues to pipeline Issues
      */
-    private Issues convertToPipelineIssues(org.jfrog.build.api.Issues issuesToConvert) {
+    static Issues toPipelineIssues(org.jfrog.build.api.Issues issuesToConvert) {
         if (issuesToConvert == null) {
             return null;
         }
@@ -162,6 +162,10 @@ public class Issues implements Serializable {
 
     public void setBuildName(String buildName) {
         this.buildName = buildName;
+    }
+
+    public CpsScript getCpsScript() {
+        return cpsScript;
     }
 
     public void setCpsScript(CpsScript cpsScript) {
