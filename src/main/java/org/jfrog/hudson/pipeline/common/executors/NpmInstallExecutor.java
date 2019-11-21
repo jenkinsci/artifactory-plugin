@@ -65,13 +65,9 @@ public class NpmInstallExecutor implements Executor {
     private ArtifactoryDependenciesClientBuilder createArtifactoryClientBuilder(NpmResolver resolver) {
         ArtifactoryServer server = resolver.getArtifactoryServer();
         CredentialsConfig preferredResolver = server.getResolvingCredentialsConfig();
-        return new ArtifactoryDependenciesClientBuilder()
-                .setArtifactoryUrl(server.getUrl())
-                .setUsername(preferredResolver.provideUsername(build.getParent()))
-                .setPassword(preferredResolver.providePassword(build.getParent()))
-                .setProxyConfiguration(ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy))
-                .setLog(logger)
-                .setConnectionRetry(server.getConnectionRetry())
-                .setConnectionTimeout(server.getTimeout());
+        return server.createDependenciesClientBuilder(preferredResolver.provideUsername(build.getParent()),
+                preferredResolver.providePassword(build.getParent()),
+                ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy),
+                logger);
     }
 }

@@ -155,7 +155,7 @@ public class GenericArtifactsDeployer {
             Log log = new JenkinsBuildInfoLog(listener);
 
             // Create ArtifactoryClientBuilder
-            ArtifactoryBuildInfoClientBuilder clientBuilder = server.createArtifactoryClientBuilder(credentials.getUsername(),
+            ArtifactoryBuildInfoClientBuilder clientBuilder = server.createBuildInfoClientBuilder(credentials.getUsername(),
                     credentials.getPassword(), proxyConfiguration, log);
 
             if (StringUtils.isNotEmpty(spec)) {

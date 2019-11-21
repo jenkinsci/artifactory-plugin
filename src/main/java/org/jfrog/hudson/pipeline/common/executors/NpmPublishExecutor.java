@@ -67,13 +67,9 @@ public class NpmPublishExecutor implements Executor {
     private ArtifactoryBuildInfoClientBuilder createArtifactoryClientBuilder(Deployer deployer) {
         ArtifactoryServer server = deployer.getArtifactoryServer();
         CredentialsConfig preferredDeployer = server.getDeployerCredentialsConfig();
-        return new ArtifactoryBuildInfoClientBuilder()
-                .setArtifactoryUrl(server.getUrl())
-                .setUsername(preferredDeployer.provideUsername(build.getParent()))
-                .setPassword(preferredDeployer.providePassword(build.getParent()))
-                .setProxyConfiguration(ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy))
-                .setLog(logger)
-                .setConnectionRetry(server.getConnectionRetry())
-                .setConnectionTimeout(server.getTimeout());
+        return server.createBuildInfoClientBuilder(preferredDeployer.provideUsername(build.getParent()),
+                preferredDeployer.providePassword(build.getParent()),
+                ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy),
+                logger);
     }
 }
