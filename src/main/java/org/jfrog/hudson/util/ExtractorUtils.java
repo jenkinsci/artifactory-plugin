@@ -162,7 +162,7 @@ public class ExtractorUtils {
     }
 
     public static ArtifactoryClientConfiguration getArtifactoryClientConfiguration(Map<String, String> env, Run build,
-                                                                                   BuildInfo pipelineBuildInfo, TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext) throws UnsupportedEncodingException {
+                                                                                   BuildInfo pipelineBuildInfo, TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext) throws IOException {
         ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
         if (build instanceof AbstractBuild) {
             addBuildRootIfNeeded((AbstractBuild) build, configuration);
@@ -215,7 +215,7 @@ public class ExtractorUtils {
     }
 
     private static void setResolverInfo(ArtifactoryClientConfiguration configuration, Run build,
-                                        ResolverContext context, Map<String, String> env) {
+                                        ResolverContext context, Map<String, String> env) throws java.io.IOException {
         configuration.setTimeout(context.getServer().getTimeout());
         setRetryParams(configuration, context.getServer());
         configuration.resolver.setContextUrl(context.getServerDetails().getArtifactoryUrl());
@@ -225,9 +225,13 @@ public class ExtractorUtils {
         replaceRepositoryInputForValues(configuration, build, inputDownloadReleaseKey, inputDownloadSnapshotKey, env);
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(context.getResolverOverrider(),
                 context.getServer());
-        if (StringUtils.isNotBlank(preferredResolver.provideUsername(build.getParent()))) {
-            configuration.resolver.setUsername(preferredResolver.provideUsername(build.getParent()));
-            configuration.resolver.setPassword(preferredResolver.providePassword(build.getParent()));
+        Credentials resolverCredentials = preferredResolver.provideCredentials(build.getParent());
+        if (StringUtils.isNotEmpty(resolverCredentials.getAccessToken())) {
+            resolverCredentials = resolverCredentials.convertAccessTokenToUsernamePassword();
+        }
+        if (StringUtils.isNotBlank(resolverCredentials.getUsername())) {
+            configuration.resolver.setUsername(resolverCredentials.getUsername());
+            configuration.resolver.setPassword(resolverCredentials.getPassword());
         }
     }
 
@@ -256,7 +260,7 @@ public class ExtractorUtils {
      * Set all the parameters relevant for publishing artifacts and build info
      */
     private static void setPublisherInfo(Map<String, String> env, Run build, BuildInfo pipelineBuildInfo, PublisherContext context,
-                                         ArtifactoryClientConfiguration configuration) {
+                                         ArtifactoryClientConfiguration configuration) throws IOException {
         configuration.setActivateRecorder(Boolean.TRUE);
         String buildName;
         String buildNumber;
@@ -323,9 +327,13 @@ public class ExtractorUtils {
         ArtifactoryServer artifactoryServer = context.getArtifactoryServer();
         if (artifactoryServer != null) {
             CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
-            if (StringUtils.isNotBlank(preferredDeployer.provideUsername(build.getParent()))) {
-                configuration.publisher.setUsername(preferredDeployer.provideUsername(build.getParent()));
-                configuration.publisher.setPassword(preferredDeployer.providePassword(build.getParent()));
+            Credentials deployerCredentials = preferredDeployer.provideCredentials(build.getParent());
+            if (StringUtils.isNotEmpty(deployerCredentials.getAccessToken())) {
+                deployerCredentials = deployerCredentials.convertAccessTokenToUsernamePassword();
+            }
+            if (StringUtils.isNotBlank(deployerCredentials.getUsername())) {
+                configuration.publisher.setUsername(deployerCredentials.getUsername());
+                configuration.publisher.setPassword(deployerCredentials.getPassword());
             }
             configuration.setTimeout(artifactoryServer.getTimeout());
             setRetryParams(configuration, artifactoryServer);

@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryDependenciesClientBuilder;
@@ -15,7 +16,10 @@ import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.NpmBuild;
 import org.jfrog.hudson.pipeline.common.types.resolvers.NpmResolver;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
+
+import java.io.IOException;
 
 /**
  * Created by Yahav Itzhak on 25 Nov 2018.
@@ -62,12 +66,13 @@ public class NpmInstallExecutor implements Executor {
         buildInfo.setAgentName(Utils.getAgentName(ws));
     }
 
-    private ArtifactoryDependenciesClientBuilder createArtifactoryClientBuilder(NpmResolver resolver) {
+    private ArtifactoryDependenciesClientBuilder createArtifactoryClientBuilder(NpmResolver resolver) throws IOException {
         ArtifactoryServer server = resolver.getArtifactoryServer();
         CredentialsConfig preferredResolver = server.getResolvingCredentialsConfig();
-        return server.createDependenciesClientBuilder(preferredResolver.provideUsername(build.getParent()),
-                preferredResolver.providePassword(build.getParent()),
-                ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy),
-                logger);
+        Credentials resolverCredentials = preferredResolver.provideCredentials(build.getParent());
+        if (StringUtils.isNotEmpty(resolverCredentials.getAccessToken())) {
+            resolverCredentials = resolverCredentials.convertAccessTokenToUsernamePassword();
+        }
+        return server.createDependenciesClientBuilder(resolverCredentials, ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy), logger);
     }
 }

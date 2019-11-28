@@ -75,7 +75,7 @@ public class GenericArtifactsDeployer {
         if (configurator.isUseSpecs()) {
             String spec = SpecUtils.getSpecStringFromSpecConf(configurator.getUploadSpec(), env, workingDir, listener.getLogger());
             artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, spec, artifactoryServer,
-                    credentialsConfig.getCredentials(build.getParent()), propertiesToAdd,
+                    credentialsConfig.provideCredentials(build.getParent()), propertiesToAdd,
                     ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
         } else {
             String deployPattern = Util.replaceMacro(configurator.getDeployPattern(), env);
@@ -87,7 +87,7 @@ public class GenericArtifactsDeployer {
             }
             String repositoryKey = Util.replaceMacro(configurator.getRepositoryKey(), env);
             artifactsToDeploy = workingDir.act(new FilesDeployerCallable(listener, pairs, artifactoryServer,
-                    credentialsConfig.getCredentials(build.getParent()), repositoryKey, propertiesToAdd,
+                    credentialsConfig.provideCredentials(build.getParent()), repositoryKey, propertiesToAdd,
                     ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy)));
         }
     }
@@ -141,8 +141,7 @@ public class GenericArtifactsDeployer {
         }
 
         public FilesDeployerCallable(TaskListener listener, Set<DeployDetails> deployableArtifacts,
-                                     ArtifactoryServer server, Credentials credentials,
-                                     ProxyConfiguration proxyConfiguration) {
+                                     ArtifactoryServer server, Credentials credentials, ProxyConfiguration proxyConfiguration) {
             this.listener = listener;
             this.deployableArtifacts = deployableArtifacts;
             this.server = server;
@@ -155,8 +154,7 @@ public class GenericArtifactsDeployer {
             Log log = new JenkinsBuildInfoLog(listener);
 
             // Create ArtifactoryClientBuilder
-            ArtifactoryBuildInfoClientBuilder clientBuilder = server.createBuildInfoClientBuilder(credentials.getUsername(),
-                    credentials.getPassword(), proxyConfiguration, log);
+            ArtifactoryBuildInfoClientBuilder clientBuilder = server.createBuildInfoClientBuilder(credentials, proxyConfiguration, log);
 
             if (StringUtils.isNotEmpty(spec)) {
                 // Option 1. Upload - Use file specs.

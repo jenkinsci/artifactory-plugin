@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Sets;
 
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.build.api.util.FileChecksumCalculator;
@@ -186,12 +187,11 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
         String agentName = Utils.getAgentName(ws);
         if (buildInfo.getAgentName().equals(agentName)) {
             org.jfrog.hudson.ArtifactoryServer artifactoryServer = Utils.prepareArtifactoryServer(null, server);
-            Credentials credentials = getDeployerCredentialsConfig().getCredentials(build.getParent());
-            // Credentials.EMPTY_CREDENTIALS can only be returned when credentialsId is used.
+            Credentials credentials = getDeployerCredentialsConfig().provideCredentials(build.getParent());
             if (credentials == Credentials.EMPTY_CREDENTIALS) {
                 throw new RuntimeException(String.format(
-                    "No matching credentials was found in Jenkins for the supplied credentialsId: '%s' ",
-                    getDeployerCredentialsConfig().getCredentialsId()));
+                        "No matching credentials was found in Jenkins for the supplied credentialsId: '%s' ",
+                        getDeployerCredentialsConfig().getCredentialsId()));
             }
             org.jfrog.build.client.ProxyConfiguration proxy = RepositoriesUtils.createProxyConfiguration(Jenkins.getInstance().proxy);
             Set<DeployDetails> deploySet = ws.act(new DeployDetailsCallable(buildInfo.getDeployableArtifacts(), listener, this));
