@@ -25,9 +25,7 @@ import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Properties;
 
 public class RunCommandStep extends AbstractStepImpl {
@@ -118,31 +116,23 @@ public class RunCommandStep extends AbstractStepImpl {
         }
 
         private void persistBuildProperties(BuildInfo buildInfo, FilePath conanHomeDirectory) throws IOException, InterruptedException {
-            FilePath buildProperties = new FilePath(conanHomeDirectory, ".conan").child("artifacts.properties");
-            final String buildName = buildInfo.getName();
-            final String buildNumber = buildInfo.getNumber();
+            FilePath buildProperties = new FilePath(conanHomeDirectory, ".conan").child("artifacts.properties");;
             final Vcs vcs = Utils.extractVcs(ws, new JenkinsBuildInfoLog(listener));
             final long startTime = buildInfo.getStartDate().getTime();
             buildProperties.touch(System.currentTimeMillis());
             buildProperties.act(new MasterToSlaveFileCallable<Boolean>() {
                 public Boolean invoke(File conanProperties, VirtualChannel channel) throws IOException, InterruptedException {
                     final String propsPrefix = "artifact_property_";
-                    Properties props = new Properties();
-                    props.setProperty(propsPrefix + BuildInfoFields.BUILD_NAME, buildName);
-                    props.setProperty(propsPrefix + BuildInfoFields.BUILD_NUMBER, buildNumber);
-                    props.setProperty(propsPrefix + BuildInfoFields.BUILD_TIMESTAMP, String.valueOf(startTime));
-                    if (StringUtils.isNotEmpty(vcs.getRevision())) {
-                        props.setProperty(propsPrefix + BuildInfoFields.VCS_REVISION, vcs.getRevision());
-                    }
-                    if (StringUtils.isNotEmpty(vcs.getUrl())) {
-                        props.setProperty(propsPrefix + BuildInfoFields.VCS_URL, vcs.getUrl());
-                    }
-                    FileOutputStream fos = null;
-                    try {
-                        fos = new FileOutputStream(conanProperties.getCanonicalFile());
-                        props.store(fos, "Build properties");
-                    } finally {
-                        IOUtils.closeQuietly(fos);
+                    try (PrintWriter pw = new PrintWriter(new FileWriter(conanProperties.getCanonicalFile()));) {
+                        pw.println(String.format("%s=%s", propsPrefix + BuildInfoFields.BUILD_NAME, buildInfo.getName()));
+                        pw.println(String.format("%s=%s", propsPrefix + BuildInfoFields.BUILD_NUMBER, buildInfo.getNumber()));
+                        pw.println(String.format("%s=%s", propsPrefix + BuildInfoFields.BUILD_TIMESTAMP, String.valueOf(startTime)));
+                        if (StringUtils.isNotEmpty(vcs.getRevision())) {
+                            pw.println(String.format("%s=%s", propsPrefix + BuildInfoFields.VCS_REVISION, vcs.getRevision()));
+                        }
+                        if (StringUtils.isNotEmpty(vcs.getUrl())) {
+                            pw.println(String.format("%s=%s", propsPrefix + BuildInfoFields.VCS_URL, vcs.getUrl()));
+                        }
                     }
                     return true;
                 }
