@@ -28,6 +28,7 @@ import org.jfrog.build.client.ArtifactoryHttpClient;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryBuildInfoClientBuilder;
+import org.jfrog.build.extractor.clientConfiguration.ArtifactoryDependenciesClientBuilder;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBaseClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
@@ -174,8 +175,7 @@ public class ArtifactoryServer implements Serializable {
     }
 
     public List<String> getLocalRepositoryKeys(Credentials credentials) throws IOException {
-        ArtifactoryBuildInfoClient client = createArtifactoryClient(credentials.getUsername(),
-                credentials.getPassword(), createProxyConfiguration(Jenkins.getInstance().proxy));
+        ArtifactoryBuildInfoClient client = createArtifactoryClient(credentials, createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             repositories = client.getLocalRepositoriesKeys();
         } catch (IOException e) {
@@ -194,7 +194,7 @@ public class ArtifactoryServer implements Serializable {
 
     public List<String> getReleaseRepositoryKeysFirst(DeployerOverrider deployerOverrider, Item item) throws IOException {
         CredentialsConfig credentialsConfig = CredentialManager.getPreferredDeployer(deployerOverrider, this);
-        List<String> repositoryKeys = getLocalRepositoryKeys(credentialsConfig.getCredentials(item));
+        List<String> repositoryKeys = getLocalRepositoryKeys(credentialsConfig.provideCredentials(item));
         if (repositoryKeys == null || repositoryKeys.isEmpty()) {
             return Lists.newArrayList();
         }
@@ -204,7 +204,7 @@ public class ArtifactoryServer implements Serializable {
 
     public List<String> getSnapshotRepositoryKeysFirst(DeployerOverrider deployerOverrider, Item item) throws IOException {
         CredentialsConfig credentialsConfig = CredentialManager.getPreferredDeployer(deployerOverrider, this);
-        List<String> repositoryKeys = getLocalRepositoryKeys(credentialsConfig.getCredentials(item));
+        List<String> repositoryKeys = getLocalRepositoryKeys(credentialsConfig.provideCredentials(item));
         if (repositoryKeys == null || repositoryKeys.isEmpty()) {
             return Lists.newArrayList();
         }
@@ -214,8 +214,8 @@ public class ArtifactoryServer implements Serializable {
 
     public Map getStagingStrategy(PluginSettings selectedStagingPlugin, String buildName, Item item) throws IOException {
         CredentialsConfig resolvingCredentialsConfig = getResolvingCredentialsConfig();
-        ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentialsConfig.provideUsername(item),
-                resolvingCredentialsConfig.providePassword(item), createProxyConfiguration(Jenkins.getInstance().proxy));
+        ArtifactoryBuildInfoClient client = createArtifactoryClient(resolvingCredentialsConfig.provideCredentials(item),
+                createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             return client.getStagingStrategy(selectedStagingPlugin.getPluginName(), buildName,
                     selectedStagingPlugin.getParamMap());
@@ -226,8 +226,8 @@ public class ArtifactoryServer implements Serializable {
 
     public List<VirtualRepository> getVirtualRepositoryKeys(ResolverOverrider resolverOverrider, Item item) {
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(resolverOverrider, this);
-        ArtifactoryBuildInfoClient client = createArtifactoryClient(preferredResolver.provideUsername(item),
-                preferredResolver.providePassword(item), createProxyConfiguration(Jenkins.getInstance().proxy));
+        ArtifactoryBuildInfoClient client = createArtifactoryClient(preferredResolver.provideCredentials(item),
+                createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             virtualRepositories = RepositoriesUtils.generateVirtualRepos(client);
         } catch (IOException e) {
@@ -247,9 +247,9 @@ public class ArtifactoryServer implements Serializable {
 
     public boolean isArtifactoryPro(DeployerOverrider deployerOverrider, Item item) {
         CredentialsConfig credentialsConfig = CredentialManager.getPreferredDeployer(deployerOverrider, this);
+        Credentials credentials = credentialsConfig.provideCredentials(item);
         try {
-            ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, credentialsConfig.provideUsername(item),
-                    credentialsConfig.providePassword(item), new NullLog());
+            ArtifactoryHttpClient client = new ArtifactoryHttpClient(url, credentials.getUsername(), credentials.getPassword(), new NullLog());
             ArtifactoryVersion version = client.getVersion();
             return version.hasAddons();
         } catch (IOException e) {
@@ -278,24 +278,31 @@ public class ArtifactoryServer implements Serializable {
     /**
      * This method might run on slaves, this is why we provide it with a proxy from the master config
      */
-    public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password,
-                                                              ProxyConfiguration proxyConfiguration) {
-        return createArtifactoryClient(userName, password, proxyConfiguration, new NullLog());
+    public ArtifactoryBuildInfoClient createArtifactoryClient(Credentials credentials, ProxyConfiguration proxyConfiguration) {
+        return createArtifactoryClient(credentials, proxyConfiguration, new NullLog());
     }
 
-    /**
-     * This method might run on slaves, this is why we provide it with a proxy from the master config
-     */
-    public ArtifactoryBuildInfoClient createArtifactoryClient(String userName, String password,
-                                                              ProxyConfiguration proxyConfiguration, Log logger) {
-        ArtifactoryBuildInfoClientBuilder clientBuilder = createArtifactoryClientBuilder(userName, password, proxyConfiguration, logger);
+    public ArtifactoryBuildInfoClient createArtifactoryClient(Credentials credentials, ProxyConfiguration proxyConfiguration, Log logger) {
+        ArtifactoryBuildInfoClientBuilder clientBuilder = createBuildInfoClientBuilder(credentials, proxyConfiguration, logger);
         return clientBuilder.build();
     }
 
-    public ArtifactoryBuildInfoClientBuilder createArtifactoryClientBuilder(String userName, String password, ProxyConfiguration proxyConfiguration, Log logger) {
+    public ArtifactoryBuildInfoClientBuilder createBuildInfoClientBuilder(Credentials credentials, ProxyConfiguration proxyConfiguration, Log logger) {
         ArtifactoryBuildInfoClientBuilder clientBuilder = new ArtifactoryBuildInfoClientBuilder();
-        clientBuilder.setArtifactoryUrl(url).setUsername(userName)
-                .setPassword(password).setLog(logger).setConnectionRetry(getConnectionRetry())
+        clientBuilder.setArtifactoryUrl(url).setUsername(credentials.getUsername()).setPassword(credentials.getPassword())
+                .setAccessToken(credentials.getAccessToken()).setLog(logger).setConnectionRetry(getConnectionRetry())
+                .setConnectionTimeout(timeout);
+        if (!bypassProxy) {
+            clientBuilder.setProxyConfiguration(proxyConfiguration);
+        }
+
+        return clientBuilder;
+    }
+
+    public ArtifactoryDependenciesClientBuilder createDependenciesClientBuilder(Credentials credentials, ProxyConfiguration proxyConfiguration, Log logger) {
+        ArtifactoryDependenciesClientBuilder clientBuilder = new ArtifactoryDependenciesClientBuilder();
+        clientBuilder.setArtifactoryUrl(url).setUsername(credentials.getUsername())
+                .setPassword(credentials.getPassword()).setLog(logger).setConnectionRetry(getConnectionRetry())
                 .setConnectionTimeout(timeout);
         if (!bypassProxy) {
             clientBuilder.setProxyConfiguration(proxyConfiguration);
@@ -329,10 +336,10 @@ public class ArtifactoryServer implements Serializable {
     /**
      * This method might run on slaves, this is why we provide it with a proxy from the master config
      */
-    public ArtifactoryDependenciesClient createArtifactoryDependenciesClient(String userName, String password,
-                                                                             ProxyConfiguration proxyConfiguration, TaskListener listener) {
-        ArtifactoryDependenciesClient client = new ArtifactoryDependenciesClient(url, userName, password,
-                new JenkinsBuildInfoLog(listener));
+    public ArtifactoryDependenciesClient createArtifactoryDependenciesClient(Credentials credentials, ProxyConfiguration proxyConfiguration, TaskListener listener) {
+
+        ArtifactoryDependenciesClient client = new ArtifactoryDependenciesClient(url, credentials.getUsername(),
+                credentials.getPassword(), credentials.getAccessToken(), new JenkinsBuildInfoLog(listener));
         client.setConnectionTimeout(timeout);
         setRetryParams(client);
         if (!bypassProxy && proxyConfiguration != null) {
@@ -361,8 +368,8 @@ public class ArtifactoryServer implements Serializable {
 
     private void gatherUserPluginInfo(List<UserPluginInfo> infosToReturn, String pluginKey, DeployerOverrider deployerOverrider, Item item) {
         CredentialsConfig credentialsConfig = CredentialManager.getPreferredDeployer(deployerOverrider, this);
-        ArtifactoryBuildInfoClient client = createArtifactoryClient(credentialsConfig.provideUsername(item),
-                credentialsConfig.providePassword(item), createProxyConfiguration(Jenkins.getInstance().proxy));
+        ArtifactoryBuildInfoClient client = createArtifactoryClient(credentialsConfig.provideCredentials(item),
+                createProxyConfiguration(Jenkins.getInstance().proxy));
         try {
             Map<String, List<Map>> userPluginInfo = client.getUserPluginInfo();
             if (userPluginInfo != null && userPluginInfo.containsKey(pluginKey)) {

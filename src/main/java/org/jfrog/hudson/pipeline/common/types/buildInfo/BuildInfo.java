@@ -12,8 +12,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.build.api.*;
-import org.jfrog.build.api.builder.ModuleBuilder;
-import org.jfrog.build.api.dependency.BuildDependency;
+import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.client.DeployableArtifactDetail;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
@@ -41,17 +40,13 @@ public class BuildInfo implements Serializable {
     private String number; // Build number
     private Date startDate;
     private BuildRetention retention;
-    private List<BuildDependency> buildDependencies = new CopyOnWriteArrayList<>();
-    private List<Artifact> deployedArtifacts = new CopyOnWriteArrayList<>();
     // The candidates artifacts to be deployed in the 'deployArtifacts' step.
     private List<DeployDetails> deployableArtifacts = new CopyOnWriteArrayList<>();
-    private List<Dependency> publishedDependencies = new CopyOnWriteArrayList<>();
-
+    private List<Vcs> vcs = new ArrayList<>();
     private List<Module> modules = new CopyOnWriteArrayList<>();
     private Env env = new Env();
+    private Issues issues = new Issues();
     private String agentName;
-
-    private transient DockerBuildInfoHelper dockerBuildInfoHelper = new DockerBuildInfoHelper(this);
 
     // Default constructor to allow serialization
     public BuildInfo() {
@@ -63,11 +58,13 @@ public class BuildInfo implements Serializable {
         this();
         this.name = BuildUniqueIdentifierHelper.getBuildName(build);
         this.number = BuildUniqueIdentifierHelper.getBuildNumber(build);
+        this.issues.setBuildName(name);
     }
 
     @Whitelisted
     public void setName(String name) {
         this.name = name;
+        this.issues.setBuildName(name);
     }
 
     @Whitelisted
@@ -97,23 +94,19 @@ public class BuildInfo implements Serializable {
 
     @Whitelisted
     public List<org.jfrog.hudson.pipeline.types.File> getArtifacts() {
-        Stream<Artifact> dependencyStream = Stream.concat(
-                // Add modules artifacts
-                modules.parallelStream().map(Module::getArtifacts).filter(Objects::nonNull).flatMap(List::stream),
-                // Add deployed artifact
-                deployedArtifacts.parallelStream()
-        );
+        Stream<Artifact> dependencyStream = modules.parallelStream()
+                .map(Module::getArtifacts)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream);
         return getBuildFilesList(dependencyStream);
     }
 
     @Whitelisted
     public List<org.jfrog.hudson.pipeline.types.File> getDependencies() {
-        Stream<Dependency> dependencyStream = Stream.concat(
-                // Add modules artifacts
-                modules.parallelStream().map(Module::getDependencies).filter(Objects::nonNull).flatMap(List::stream),
-                // Add deployed artifact
-                publishedDependencies.parallelStream()
-        );
+        Stream<Dependency> dependencyStream = modules.parallelStream()
+                .map(Module::getDependencies)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream);
         return getBuildFilesList(dependencyStream);
     }
 
@@ -134,44 +127,44 @@ public class BuildInfo implements Serializable {
 
     @Whitelisted
     public void append(BuildInfo other) {
-        this.modules.addAll(other.modules);
-        this.deployedArtifacts.addAll(other.deployedArtifacts);
         this.deployableArtifacts.addAll(other.deployableArtifacts);
-        this.publishedDependencies.addAll(other.publishedDependencies);
-        this.buildDependencies.addAll(other.buildDependencies);
-        this.dockerBuildInfoHelper.append(other.dockerBuildInfoHelper);
-
-        Env tempEnv = new Env();
-        tempEnv.append(this.env);
-        tempEnv.append(other.env);
-        this.env = tempEnv;
+        this.append(other.convertToBuild());
     }
 
     public void append(Build other) {
-        Properties properties = other.getProperties();
-        Env otherEnv = new Env();
+        Build appendedBuild = this.convertToBuild();
+        appendedBuild.append(other);
+
+        this.setModules(appendedBuild.getModules());
+
+        Issues appendedIssues = Issues.toPipelineIssues(appendedBuild.getIssues());
+        appendedIssues.setBuildName(this.getIssues().getBuildName());
+        appendedIssues.setCpsScript(this.getIssues().getCpsScript());
+        this.setIssues(appendedIssues);
+
+        Properties properties = appendedBuild.getProperties();
+        Env appendedEnv = new Env();
         if (properties != null) {
             for (String key : properties.stringPropertyNames()) {
                 boolean isEnvVar = StringUtils.startsWith(key, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX);
                 if (isEnvVar) {
-                    otherEnv.getEnvVars().put(StringUtils.substringAfter(key, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX), properties.getProperty(key));
+                    appendedEnv.getEnvVars().put(StringUtils.substringAfter(key, BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX), properties.getProperty(key));
                 } else {
-                    otherEnv.getSysVars().put(key, properties.getProperty(key));
+                    appendedEnv.getSysVars().put(key, properties.getProperty(key));
                 }
             }
-            this.env.append(otherEnv);
-        }
-        if (other.getModules() != null) {
-            other.getModules().forEach(this::addModule);
-        }
-        if (other.getBuildDependencies() != null) {
-            this.buildDependencies.addAll(other.getBuildDependencies());
+            this.setEnv(appendedEnv);
         }
     }
 
     @Whitelisted
     public Env getEnv() {
         return env;
+    }
+
+    @Whitelisted
+    public Issues getIssues() {
+        return issues;
     }
 
     @Whitelisted
@@ -191,13 +184,6 @@ public class BuildInfo implements Serializable {
         this.retention = mapper.convertValue(retentionArguments, BuildRetention.class);
     }
 
-    void appendDeployedArtifacts(List<Artifact> artifacts) {
-        if (artifacts == null) {
-            return;
-        }
-        deployedArtifacts.addAll(artifacts);
-    }
-
     public List<DeployDetails> getDeployableArtifacts() {
         return deployableArtifacts;
     }
@@ -215,24 +201,6 @@ public class BuildInfo implements Serializable {
         this.agentName = agentName;
     }
 
-    protected void appendBuildDependencies(List<BuildDependency> dependencies) {
-        if (dependencies == null) {
-            return;
-        }
-        buildDependencies.addAll(dependencies);
-    }
-
-    void appendPublishedDependencies(List<Dependency> dependencies) {
-        if (dependencies == null) {
-            return;
-        }
-        publishedDependencies.addAll(dependencies);
-    }
-
-    List<BuildDependency> getBuildDependencies() {
-        return buildDependencies;
-    }
-
     Map<String, String> getEnvVars() {
         return env.getEnvVars();
     }
@@ -241,30 +209,18 @@ public class BuildInfo implements Serializable {
         return env.getSysVars();
     }
 
+    org.jfrog.build.api.Issues getConvertedIssues() {
+        return this.issues.convertFromPipelineIssues();
+    }
+
     BuildInfoDeployer createDeployer(Run build, TaskListener listener, ArtifactoryConfigurator config, ArtifactoryBuildInfoClient client)
             throws InterruptedException, NoSuchAlgorithmException, IOException {
-        addDefaultModuleToModules(name);
         return new BuildInfoDeployer(config, client, build, listener, new BuildInfoAccessor(this));
-    }
-
-    private void addDockerBuildInfoModules(List<Module> dockerModules) {
-        modules.addAll(dockerModules);
-    }
-
-    private void addDefaultModuleToModules(String moduleId) {
-        if (deployedArtifacts.isEmpty() && publishedDependencies.isEmpty()) {
-            return;
-        }
-
-        ModuleBuilder moduleBuilder = new ModuleBuilder()
-                .id(moduleId)
-                .artifacts(deployedArtifacts)
-                .dependencies(publishedDependencies);
-        modules.add(moduleBuilder.build());
     }
 
     public void setCpsScript(CpsScript cpsScript) {
         this.env.setCpsScript(cpsScript);
+        this.issues.setCpsScript(cpsScript);
     }
 
     public List<Module> getModules() {
@@ -277,33 +233,8 @@ public class BuildInfo implements Serializable {
     }
 
     @SuppressWarnings("unused") // For serialization/deserialization
-    public void setBuildDependencies(List<BuildDependency> buildDependencies) {
-        this.buildDependencies = buildDependencies;
-    }
-
-    @SuppressWarnings("unused") // For serialization/deserialization
-    public List<Artifact> getDeployedArtifacts() {
-        return deployedArtifacts;
-    }
-
-    @SuppressWarnings("unused") // For serialization/deserialization
-    public void setDeployedArtifacts(List<Artifact> deployedArtifacts) {
-        this.deployedArtifacts = deployedArtifacts;
-    }
-
-    @SuppressWarnings("unused") // For serialization/deserialization
     public void setDeployableArtifacts(List<DeployDetails> deployableArtifacts) {
         this.deployableArtifacts = deployableArtifacts;
-    }
-
-    @SuppressWarnings("unused") // For serialization/deserialization
-    public List<Dependency> getPublishedDependencies() {
-        return publishedDependencies;
-    }
-
-    @SuppressWarnings("unused") // For serialization/deserialization
-    public void setPublishedDependencies(List<Dependency> publishedDependencies) {
-        this.publishedDependencies = publishedDependencies;
     }
 
     @SuppressWarnings("unused") // For serialization/deserialization
@@ -314,6 +245,11 @@ public class BuildInfo implements Serializable {
     @SuppressWarnings("unused") // For serialization/deserialization
     public void setEnv(Env env) {
         this.env = env;
+    }
+
+    @SuppressWarnings("unused") // For serialization/deserialization
+    public void setIssues(Issues issues) {
+        this.issues = issues;
     }
 
     private void addModule(Module other) {
@@ -372,5 +308,26 @@ public class BuildInfo implements Serializable {
             properties.put("build.timestamp", buildInfo.getStartDate().getTime() + "");
             return properties;
         }
+    }
+
+    public void appendVcs(Vcs vcs) {
+        if (vcs != null && !this.vcs.contains(vcs)) {
+            this.vcs.add(vcs);
+        }
+    }
+
+    public List<Vcs> getVcs() {
+        return vcs;
+    }
+
+    private Build convertToBuild() {
+        BuildInfoBuilder builder = new BuildInfoBuilder(name)
+                .number(number)
+                .started(Long.toString(startDate.getTime()))
+                .modules(modules)
+                .issues(getConvertedIssues())
+                .properties(env.toProperties());
+
+        return builder.build();
     }
 }

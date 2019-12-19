@@ -33,6 +33,7 @@ import org.apache.http.HttpEntity;
 import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.api.BuildRetention;
+import org.jfrog.build.api.Vcs;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
@@ -65,6 +66,7 @@ public class ExtractorUtils {
      */
     public static final String EXTRACTOR_USED = "extractor.used";
     public static final String GIT_COMMIT = "GIT_COMMIT";
+    public static final String GIT_URL = "GIT_URL";
 
     private ExtractorUtils() {
         // utility class
@@ -99,7 +101,7 @@ public class ExtractorUtils {
     public static String getVcsUrl(Map<String, String> env) {
         String url = env.get("SVN_URL");
         if (StringUtils.isBlank(url)) {
-            url = publicGitUrl(env.get("GIT_URL"));
+            url = publicGitUrl(env.get(GIT_URL));
         }
         if (StringUtils.isBlank(url)) {
             url = env.get("P4PORT");
@@ -107,10 +109,16 @@ public class ExtractorUtils {
         return url;
     }
 
+    public static void addVcsDetailsToEnv(FilePath filePath, EnvVars env, TaskListener listener) throws IOException, InterruptedException {
+        Vcs vcs = Utils.extractVcs(filePath, new JenkinsBuildInfoLog(listener));
+        env.put(GIT_COMMIT, StringUtils.defaultIfEmpty(vcs.getRevision(), ""));
+        env.put(GIT_URL, StringUtils.defaultIfEmpty(vcs.getUrl(), ""));
+    }
+
     /*
-    *   Git publish the repository credentials in the Url,
-    *   this method will discard it.
-    */
+     *   Git publish the repository credentials in the Url,
+     *   this method will discard it.
+     */
     private static String publicGitUrl(String gitUrl) {
         if (gitUrl != null && gitUrl.contains("https://") && gitUrl.contains("@")) {
             StringBuilder sb = new StringBuilder(gitUrl);
@@ -154,7 +162,7 @@ public class ExtractorUtils {
     }
 
     public static ArtifactoryClientConfiguration getArtifactoryClientConfiguration(Map<String, String> env, Run build,
-                                                                                   BuildInfo pipelineBuildInfo, TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext) throws UnsupportedEncodingException {
+                                                                                   BuildInfo pipelineBuildInfo, TaskListener listener, PublisherContext publisherContext, ResolverContext resolverContext) throws IOException {
         ArtifactoryClientConfiguration configuration = new ArtifactoryClientConfiguration(new NullLog());
         if (build instanceof AbstractBuild) {
             addBuildRootIfNeeded((AbstractBuild) build, configuration);
@@ -207,7 +215,7 @@ public class ExtractorUtils {
     }
 
     private static void setResolverInfo(ArtifactoryClientConfiguration configuration, Run build,
-                                        ResolverContext context, Map<String, String> env) {
+                                        ResolverContext context, Map<String, String> env) throws java.io.IOException {
         configuration.setTimeout(context.getServer().getTimeout());
         setRetryParams(configuration, context.getServer());
         configuration.resolver.setContextUrl(context.getServerDetails().getArtifactoryUrl());
@@ -217,9 +225,13 @@ public class ExtractorUtils {
         replaceRepositoryInputForValues(configuration, build, inputDownloadReleaseKey, inputDownloadSnapshotKey, env);
         CredentialsConfig preferredResolver = CredentialManager.getPreferredResolver(context.getResolverOverrider(),
                 context.getServer());
-        if (StringUtils.isNotBlank(preferredResolver.provideUsername(build.getParent()))) {
-            configuration.resolver.setUsername(preferredResolver.provideUsername(build.getParent()));
-            configuration.resolver.setPassword(preferredResolver.providePassword(build.getParent()));
+        Credentials resolverCredentials = preferredResolver.provideCredentials(build.getParent());
+        if (StringUtils.isNotEmpty(resolverCredentials.getAccessToken())) {
+            resolverCredentials = resolverCredentials.convertAccessTokenToUsernamePassword();
+        }
+        if (StringUtils.isNotBlank(resolverCredentials.getUsername())) {
+            configuration.resolver.setUsername(resolverCredentials.getUsername());
+            configuration.resolver.setPassword(resolverCredentials.getPassword());
         }
     }
 
@@ -248,7 +260,7 @@ public class ExtractorUtils {
      * Set all the parameters relevant for publishing artifacts and build info
      */
     private static void setPublisherInfo(Map<String, String> env, Run build, BuildInfo pipelineBuildInfo, PublisherContext context,
-                                         ArtifactoryClientConfiguration configuration) {
+                                         ArtifactoryClientConfiguration configuration) throws IOException {
         configuration.setActivateRecorder(Boolean.TRUE);
         String buildName;
         String buildNumber;
@@ -261,15 +273,15 @@ public class ExtractorUtils {
         }
 
         configuration.info.setBuildName(buildName);
-        configuration.publisher.addMatrixParam("build.name", buildName);
+        configuration.publisher.addMatrixParam(BuildInfoFields.BUILD_NAME, buildName);
         configuration.info.setBuildNumber(buildNumber);
-        configuration.publisher.addMatrixParam("build.number", buildNumber);
+        configuration.publisher.addMatrixParam(BuildInfoFields.BUILD_NUMBER, buildNumber);
         configuration.info.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
         Date buildStartDate = build.getTimestamp().getTime();
         configuration.info.setBuildStarted(buildStartDate.getTime());
         configuration.info.setBuildTimestamp(String.valueOf(build.getStartTimeInMillis()));
-        configuration.publisher.addMatrixParam("build.timestamp", String.valueOf(build.getStartTimeInMillis()));
+        configuration.publisher.addMatrixParam(BuildInfoFields.BUILD_TIMESTAMP, String.valueOf(build.getStartTimeInMillis()));
 
         String vcsRevision = getVcsRevision(env);
         if (StringUtils.isNotBlank(vcsRevision)) {
@@ -280,6 +292,7 @@ public class ExtractorUtils {
         String vcsUrl = getVcsUrl(env);
         if (StringUtils.isNotBlank(vcsUrl)) {
             configuration.info.setVcsUrl(vcsUrl);
+            configuration.publisher.addMatrixParam(BuildInfoFields.VCS_URL, vcsUrl);
         }
 
         if (StringUtils.isNotBlank(context.getArtifactsPattern())) {
@@ -314,9 +327,13 @@ public class ExtractorUtils {
         ArtifactoryServer artifactoryServer = context.getArtifactoryServer();
         if (artifactoryServer != null) {
             CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(context.getDeployerOverrider(), artifactoryServer);
-            if (StringUtils.isNotBlank(preferredDeployer.provideUsername(build.getParent()))) {
-                configuration.publisher.setUsername(preferredDeployer.provideUsername(build.getParent()));
-                configuration.publisher.setPassword(preferredDeployer.providePassword(build.getParent()));
+            Credentials deployerCredentials = preferredDeployer.provideCredentials(build.getParent());
+            if (StringUtils.isNotEmpty(deployerCredentials.getAccessToken())) {
+                deployerCredentials = deployerCredentials.convertAccessTokenToUsernamePassword();
+            }
+            if (StringUtils.isNotBlank(deployerCredentials.getUsername())) {
+                configuration.publisher.setUsername(deployerCredentials.getUsername());
+                configuration.publisher.setPassword(deployerCredentials.getPassword());
             }
             configuration.setTimeout(artifactoryServer.getTimeout());
             setRetryParams(configuration, artifactoryServer);
@@ -548,6 +565,7 @@ public class ExtractorUtils {
 
     /**
      * Converts the http entity to string. If entity is null, returns empty string.
+     *
      * @param entity
      * @return
      * @throws IOException
@@ -562,6 +580,7 @@ public class ExtractorUtils {
 
     /**
      * Validates that the String is not blank.
+     *
      * @param content
      * @throws IOException - If the string is empty.
      */

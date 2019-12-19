@@ -23,7 +23,7 @@
     </parent>
 
     <artifactId>artifactory</artifactId>
-    <version>3.3.x-SNAPSHOT</version>
+    <version>3.4.x-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Jenkins Artifactory Plugin</name>
     <description>Integrates Artifactory to Jenkins</description>
@@ -45,7 +45,7 @@
         <buildinfo.ivy.version>2.13.x-SNAPSHOT</buildinfo.ivy.version>
         <buildinfo.npm.version>2.13.x-SNAPSHOT</buildinfo.npm.version>
 
-    </properties>
+    </properties>   
 
     <developers>
         <developer>
@@ -163,7 +163,13 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials</artifactId>
-            <version>1.22</version>
+            <version>2.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>plain-credentials</artifactId>
+            <version>1.3</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -381,7 +387,7 @@
         <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java</artifactId>
-            <version>3.1.0</version>
+            <version>3.1.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -403,7 +409,6 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>jenkins-test-harness</artifactId>
-            <version>2.44</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -432,7 +437,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.10.3</version>
                 <configuration>
                     <additionalparam>-Xdoclint:none</additionalparam>
                 </configuration>
@@ -447,7 +451,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.1</version>
                 <configuration>
                     <systemPropertyVariables>
                         <!--This will disable JenkinsRule timeout-->
@@ -463,7 +466,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.22.1</version>
                 <configuration>
                     <systemPropertyVariables>
                         <!--This will disable JenkinsRule timeout-->

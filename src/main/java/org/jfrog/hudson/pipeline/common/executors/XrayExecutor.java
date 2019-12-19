@@ -7,12 +7,13 @@ import org.jfrog.build.api.util.Log;
 import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.client.artifactoryXrayResponse.ArtifactoryXrayResponse;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryXrayClient;
-import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.XrayScanConfig;
 import org.jfrog.hudson.pipeline.common.types.XrayScanResult;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
+import org.jfrog.hudson.XrayScanResultAction;
 
 /**
  * @author Alexei Vainshtein
@@ -22,7 +23,7 @@ public class XrayExecutor implements Executor {
     private XrayScanConfig xrayScanConfig;
     private TaskListener listener;
     private ArtifactoryServer server;
-    private Run build;
+    private final Run build;
     private XrayScanResult xrayScanResult;
 
     public XrayExecutor(XrayScanConfig xrayScanConfig, TaskListener listener, ArtifactoryServer server, Run build) {
@@ -35,9 +36,9 @@ public class XrayExecutor implements Executor {
     @Override
     public void execute() throws Exception {
         Log log = new JenkinsBuildInfoLog(listener);
-        CredentialsConfig credentialsConfig = server.createCredentialsConfig();
-        ArtifactoryXrayClient client = new ArtifactoryXrayClient(server.getUrl(), credentialsConfig.provideUsername(build.getParent()),
-                credentialsConfig.providePassword(build.getParent()), log);
+        Credentials credentials = server.createCredentialsConfig().provideCredentials(build.getParent());
+        ArtifactoryXrayClient client = new ArtifactoryXrayClient(server.getUrl(), credentials.getUsername(),
+                credentials.getPassword(), log);
         ProxyConfiguration proxyConfiguration = Utils.getProxyConfiguration(Utils.prepareArtifactoryServer(null, server));
         if (proxyConfiguration != null) {
             client.setProxyConfiguration(proxyConfiguration);
@@ -46,6 +47,7 @@ public class XrayExecutor implements Executor {
         xrayScanResult = new XrayScanResult(buildScanResult);
 
         if (xrayScanResult.isFoundVulnerable()) {
+            addXrayResultAction(xrayScanResult.getScanUrl());
             if (xrayScanConfig.getFailBuild()) {
                 throw new XrayScanException(xrayScanResult);
             }
@@ -61,6 +63,13 @@ public class XrayExecutor implements Executor {
 
     public XrayScanResult getXrayScanResult() {
         return xrayScanResult;
+    }
+
+    private void addXrayResultAction(String xrayUrl) {
+        synchronized (build) {
+            XrayScanResultAction action = new XrayScanResultAction(xrayUrl, build);
+            build.addAction(action);
+        }
     }
 
     public static class XrayScanException extends Exception {

@@ -1,6 +1,7 @@
 package org.jfrog.hudson.pipeline.integration;
 
 import hudson.FilePath;
+import hudson.model.Slave;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -16,7 +17,6 @@ import org.jfrog.build.api.Build;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.Module;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
-import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -26,6 +26,9 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.jfrog.artifactory.client.model.impl.RepositoryTypeImpl.*;
@@ -35,6 +38,9 @@ import static org.junit.Assert.*;
  * @author yahavi
  */
 class ITestUtils {
+
+    private static Pattern REPO_PATTERN = Pattern.compile("^jenkins-artifactory-tests(-\\w*)+-(\\d*)$");
+    private static long currentTime = System.currentTimeMillis();
 
     /**
      * Get the integration tests dir.
@@ -72,9 +78,35 @@ class ITestUtils {
      */
     private static void cleanUpRepositoryType(Artifactory artifactoryClient, RepositoryType repositoryType) {
         artifactoryClient.repositories().list(repositoryType).stream()
+                // Get repository key
                 .map(LightweightRepository::getKey)
-                .filter(repoKey -> org.apache.commons.lang3.StringUtils.startsWithAny(repoKey, TestRepository.toArray()))
-                .forEach(repoKey -> artifactoryClient.repository(repoKey).delete());
+
+                // Match repository
+                .map(REPO_PATTERN::matcher)
+                .filter(Matcher::matches)
+
+                // Filter repositories newer than 2 hours
+                .filter(ITestUtils::isRepositoryOld)
+
+                // Get repository key
+                .map(Matcher::group)
+
+                // Create repository handle
+                .map(artifactoryClient::repository)
+
+                // Delete repository
+                .forEach(RepositoryHandle::delete);
+    }
+
+    /**
+     * Return true if the repository was created more than 2 hours ago.
+     *
+     * @param repoMatcher - Repo regex matcher on REPO_PATTERN
+     * @return true if the repository was created more than 2 hours ago
+     */
+    private static boolean isRepositoryOld(Matcher repoMatcher) {
+        long repoTimestamp = Long.parseLong(repoMatcher.group(2));
+        return TimeUnit.MILLISECONDS.toHours(currentTime - repoTimestamp) >= 2;
     }
 
     /**
@@ -98,14 +130,14 @@ class ITestUtils {
     /**
      * Return true if the file exists in the workspace under the input directory.
      *
-     * @param jenkins  - Jenkins instance
+     * @param slave    - Jenkins slave
      * @param build    - Jenkins job
      * @param dir      - Directory under workspace
      * @param fileName - File name to search
      * @return true if the file exists in the workspace under the input directory
      */
-    static boolean isExistInWorkspace(JenkinsRule jenkins, WorkflowRun build, String dir, String fileName) throws IOException, InterruptedException {
-        FilePath ws = jenkins.getInstance().getWorkspaceFor(build.getParent());
+    static boolean isExistInWorkspace(Slave slave, WorkflowRun build, String dir, String fileName) throws IOException, InterruptedException {
+        FilePath ws = slave.getWorkspaceFor(build.getParent());
         if (ws == null) {
             throw new IOException("Workspace for " + build.getDisplayName() + " not found");
         }
@@ -136,7 +168,7 @@ class ITestUtils {
      * @return build info for the specified build name and number
      */
     static Build getBuildInfo(ArtifactoryBuildInfoClient buildInfoClient, String buildName, String buildNumber) throws IOException {
-        return buildInfoClient.getBuildInfo(encodeBuildName(buildName), buildNumber);
+        return buildInfoClient.getBuildInfo(buildName, buildNumber);
     }
 
     /**
@@ -239,10 +271,5 @@ class ITestUtils {
 
     private static String encodeBuildName(String buildName) throws UnsupportedEncodingException {
         return URLEncoder.encode(buildName, "UTF-8").replace("+", "%20");
-    }
-
-    static Boolean shouldRunXrayTest() {
-        String xrayDisable = System.getenv("JENKINS_XRAY_TEST_ENABLE");
-        return xrayDisable == null ? true : Boolean.valueOf(xrayDisable);
     }
 }

@@ -12,6 +12,7 @@ import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfoAccessor;
 import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
 import java.io.IOException;
 import java.util.List;
@@ -45,14 +46,16 @@ public class GenericUploadExecutor implements Executor {
     }
 
     public void execute() throws IOException, InterruptedException {
-        Credentials credentials = new Credentials(server.getDeployerCredentialsConfig().provideUsername(build.getParent()),
-                server.getDeployerCredentialsConfig().providePassword(build.getParent()));
+        Credentials credentials = server.getDeployerCredentialsConfig().provideCredentials(build.getParent());
         ProxyConfiguration proxyConfiguration = Utils.getProxyConfiguration(server);
+
+        new BuildInfoAccessor(buildInfo).appendVcs(Utils.extractVcs(ws, new JenkinsBuildInfoLog(listener)));
+
         List<Artifact> deployedArtifacts = ws.act(new GenericArtifactsDeployer.FilesDeployerCallable(listener, spec,
                 server, credentials, Utils.getPropertiesMap(buildInfo, build, context), proxyConfiguration));
         if (failNoOp && deployedArtifacts.isEmpty()) {
             throw new RuntimeException("Fail-no-op: No files were affected in the upload process.");
         }
-        new BuildInfoAccessor(buildInfo).appendDeployedArtifacts(deployedArtifacts);
+        new BuildInfoAccessor(buildInfo).appendArtifacts(deployedArtifacts);
     }
 }

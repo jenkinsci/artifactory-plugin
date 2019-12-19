@@ -1,6 +1,7 @@
 package org.jfrog.hudson.pipeline.scripted.steps;
 
 import com.google.inject.Inject;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.Run;
@@ -15,6 +16,7 @@ import org.jfrog.hudson.pipeline.common.docker.utils.DockerAgentUtils;
 import org.jfrog.hudson.pipeline.common.docker.utils.DockerUtils;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -68,6 +70,9 @@ public class DockerPullStep extends AbstractStepImpl {
         @StepContextParameter
         private transient Launcher launcher;
 
+        @StepContextParameter
+        private transient EnvVars envVars; 
+        
         @Override
         protected BuildInfo run() throws Exception {
             if (step.getImage() == null) {
@@ -82,10 +87,9 @@ public class DockerPullStep extends AbstractStepImpl {
             }
 
             ArtifactoryServer server = step.getServer();
-            String username = server.createCredentialsConfig().provideUsername(build.getParent());
-            String password = server.createCredentialsConfig().providePassword(build.getParent());
+            Credentials serverCredentials = server.createCredentialsConfig().provideCredentials(build.getParent());
 
-            DockerAgentUtils.pullImage(launcher, imageTag, username, password, step.getHost());
+            DockerAgentUtils.pullImage(launcher, imageTag, serverCredentials, step.getHost(), envVars);
             JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
             log.info("Successfully pulled docker image: " + imageTag);
             return buildInfo;

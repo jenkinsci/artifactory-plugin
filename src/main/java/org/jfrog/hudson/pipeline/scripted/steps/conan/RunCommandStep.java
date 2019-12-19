@@ -17,9 +17,12 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.build.api.Build;
+import org.jfrog.build.api.BuildInfoFields;
+import org.jfrog.build.api.Vcs;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.util.ExtractorUtils;
+import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.File;
@@ -93,7 +96,7 @@ public class RunCommandStep extends AbstractStepImpl {
         }
 
         // Conan collect buildInfo as part of the tasks execution.
-        // In order to transform the collected buildInfo into Artifctory buildInfo format we need to execute the conan_build_info command.
+        // In order to transform the collected buildInfo into Artifactory buildInfo format we need to execute the conan_build_info command.
         // The conan_build_info command expect to get a path for the output file.
         private FilePath execConanCollectBuildInfo(EnvVars extendedEnv) throws Exception {
             FilePath tempDir = ExtractorUtils.createAndGetTempDir(ws);
@@ -103,7 +106,7 @@ public class RunCommandStep extends AbstractStepImpl {
             args.add(step.getBuildLogPath());
             args.add("--output");
             args.add(logFilePath.getRemote());
-            Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
+            Utils.exeConan(args, ws, launcher, listener, extendedEnv);
             return logFilePath;
         }
 
@@ -111,25 +114,28 @@ public class RunCommandStep extends AbstractStepImpl {
             ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("conan");
             args.addTokenized(step.getCommand());
-            Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
+            Utils.exeConan(args, ws, launcher, listener, extendedEnv);
         }
 
         private void persistBuildProperties(BuildInfo buildInfo, FilePath conanHomeDirectory) throws IOException, InterruptedException {
             FilePath buildProperties = new FilePath(conanHomeDirectory, ".conan").child("artifacts.properties");
             final String buildName = buildInfo.getName();
             final String buildNumber = buildInfo.getNumber();
-            final String revision = Utils.extractVcsRevision(ws);
+            final Vcs vcs = Utils.extractVcs(ws, new JenkinsBuildInfoLog(listener));
             final long startTime = buildInfo.getStartDate().getTime();
             buildProperties.touch(System.currentTimeMillis());
             buildProperties.act(new MasterToSlaveFileCallable<Boolean>() {
                 public Boolean invoke(File conanProperties, VirtualChannel channel) throws IOException, InterruptedException {
                     final String propsPrefix = "artifact_property_";
                     Properties props = new Properties();
-                    props.setProperty(propsPrefix + "build.name", buildName);
-                    props.setProperty(propsPrefix + "build.number", buildNumber);
-                    props.setProperty(propsPrefix + "build.timestamp", String.valueOf(startTime));
-                    if (StringUtils.isNotEmpty(revision)) {
-                        props.setProperty(propsPrefix + "vcs.revision", revision);
+                    props.setProperty(propsPrefix + BuildInfoFields.BUILD_NAME, buildName);
+                    props.setProperty(propsPrefix + BuildInfoFields.BUILD_NUMBER, buildNumber);
+                    props.setProperty(propsPrefix + BuildInfoFields.BUILD_TIMESTAMP, String.valueOf(startTime));
+                    if (StringUtils.isNotEmpty(vcs.getRevision())) {
+                        props.setProperty(propsPrefix + BuildInfoFields.VCS_REVISION, vcs.getRevision());
+                    }
+                    if (StringUtils.isNotEmpty(vcs.getUrl())) {
+                        props.setProperty(propsPrefix + BuildInfoFields.VCS_URL, vcs.getUrl());
                     }
                     FileOutputStream fos = null;
                     try {

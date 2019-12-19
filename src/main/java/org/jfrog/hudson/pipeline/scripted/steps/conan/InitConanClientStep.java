@@ -65,7 +65,7 @@ public class InitConanClientStep extends AbstractStepImpl {
             args.addTokenized("conan config set");
             // We need to add quotation marks before we save the log file path
             args.add("log.trace_file=\"" + StringUtils.trim(logFilePath) + "\"");
-            Utils.exeConan(args, ws, launcher, listener, build, extendedEnv);
+            Utils.exeConan(args, ws, launcher, listener, extendedEnv);
             return true;
         }
 
@@ -77,9 +77,10 @@ public class InitConanClientStep extends AbstractStepImpl {
                 conanHomeDirectory = env.containsKey(Utils.CONAN_USER_HOME) ? new FilePath(new File(env.get(Utils.CONAN_USER_HOME))) : createConanTempHome();
             } else {
                 conanHomeDirectory = new FilePath(launcher.getChannel(), conanClient.getUserPath());
-                if (!conanHomeDirectory.exists()) {
-                    conanHomeDirectory.mkdirs();
-                }
+            }
+
+            if (!conanHomeDirectory.exists()) {
+                conanHomeDirectory.mkdirs();
             }
 
             conanClient.setUserPath(conanHomeDirectory.getRemote());

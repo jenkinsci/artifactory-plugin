@@ -34,19 +34,21 @@ public class ConanRemote implements Serializable {
             throw new IllegalArgumentException("server and repo are mandatory arguments.");
         }
         ArtifactoryServer server = (ArtifactoryServer) args.get("server");
-        String serverName = UUID.randomUUID().toString();
+        String serverName = args.containsKey("remoteName") ? args.get("remoteName").toString() : UUID.randomUUID().toString();
         String repo = (String) args.get("repo");
-        cpsScript.invokeMethod("conanAddRemote", getAddRemoteExecutionArguments(server, serverName, repo));
+        boolean force = args.containsKey("force") && (boolean) args.get("force");
+        cpsScript.invokeMethod("conanAddRemote", getAddRemoteExecutionArguments(server, serverName, repo, force));
         cpsScript.invokeMethod("conanAddUser", getAddUserExecutionArguments(server, serverName));
         return serverName;
     }
 
-    private Map<String, Object> getAddRemoteExecutionArguments(ArtifactoryServer server, String serverName, String repo) {
+    private Map<String, Object> getAddRemoteExecutionArguments(ArtifactoryServer server, String serverName, String repo, boolean force) {
         String serverUrl = buildConanRemoteUrl(server, repo);
         Map<String, Object> stepVariables = Maps.newLinkedHashMap();
         stepVariables.put("serverUrl", serverUrl);
         stepVariables.put("serverName", serverName);
         stepVariables.put("conanHome", conanHome);
+        stepVariables.put("force", force);
         return stepVariables;
     }
 

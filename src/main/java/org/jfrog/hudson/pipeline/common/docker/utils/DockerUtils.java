@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.AuthConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
+import com.github.dockerjava.core.DefaultDockerClientConfig.Builder;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.command.PullImageResultCallback;
@@ -11,6 +12,7 @@ import com.github.dockerjava.core.command.PushImageResultCallback;
 import com.github.dockerjava.netty.NettyDockerCmdExecFactory;
 import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
+import hudson.EnvVars;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.hudson.pipeline.common.Utils;
 
@@ -25,16 +27,17 @@ import java.util.List;
 public class DockerUtils implements Serializable {
 
     /**
-     * Get image Id from imageTag using DockerBuildInfoHelper client.
+     * Get image Id from imageTag using DockerClient.
      *
      * @param imageTag
      * @param host
+     * @param envVars
      * @return
      */
-    public static String getImageIdFromTag(String imageTag, String host) throws IOException {
+    public static String getImageIdFromTag(String imageTag, String host, EnvVars envVars) throws IOException {
         DockerClient dockerClient = null;
         try {
-            dockerClient = getDockerClient(host);
+            dockerClient = getDockerClient(host, envVars);
             return dockerClient.inspectImageCmd(imageTag).exec().getId();
         } finally {
             closeQuietly(dockerClient);
@@ -48,15 +51,16 @@ public class DockerUtils implements Serializable {
      * @param username
      * @param password
      * @param host
+     * @param envVars
      */
-    public static void pushImage(String imageTag, String username, String password, String host) throws IOException {
+    public static void pushImage(String imageTag, String username, String password, String host, EnvVars envVars) throws IOException {
         final AuthConfig authConfig = new AuthConfig();
         authConfig.withUsername(username);
         authConfig.withPassword(password);
 
         DockerClient dockerClient = null;
         try {
-            dockerClient = getDockerClient(host);
+            dockerClient = getDockerClient(host, envVars);
             dockerClient.pushImageCmd(imageTag).withAuthConfig(authConfig).exec(new PushImageResultCallback()).awaitSuccess();
         } finally {
             closeQuietly(dockerClient);
@@ -71,14 +75,14 @@ public class DockerUtils implements Serializable {
      * @param password
      * @param host
      */
-    public static void pullImage(String imageTag, String username, String password, String host) throws IOException {
+    public static void pullImage(String imageTag, String username, String password, String host, EnvVars envVars) throws IOException {
         final AuthConfig authConfig = new AuthConfig();
         authConfig.withUsername(username);
         authConfig.withPassword(password);
 
         DockerClient dockerClient = null;
         try {
-            dockerClient = getDockerClient(host);
+            dockerClient = getDockerClient(host, envVars);
             dockerClient.pullImageCmd(imageTag).withAuthConfig(authConfig).exec(new PullImageResultCallback()).awaitSuccess();
         } finally {
             closeQuietly(dockerClient);
@@ -90,12 +94,13 @@ public class DockerUtils implements Serializable {
      *
      * @param digest
      * @param host
+     * @param envVars
      * @return
      */
-    public static String getParentId(String digest, String host) throws IOException {
+    public static String getParentId(String digest, String host, EnvVars envVars) throws IOException {
         DockerClient dockerClient = null;
         try {
-            dockerClient = getDockerClient(host);
+            dockerClient = getDockerClient(host, envVars);
             return dockerClient.inspectImageCmd(digest).exec().getParent();
         } finally {
             closeQuietly(dockerClient);
@@ -318,20 +323,32 @@ public class DockerUtils implements Serializable {
         return layersNum;
     }
 
-    public static DockerClient getDockerClient(String host) {
-        NettyDockerCmdExecFactory nettyDockerCmdExecFactory;
 
-        nettyDockerCmdExecFactory = new NettyDockerCmdExecFactory();
-        // If open JDK is used and the host is null
-        // then instead of a null reference, the host is the string "null".
-        if (StringUtils.isEmpty(host) || host.equalsIgnoreCase("null")) {
-            return DockerClientBuilder.getInstance().withDockerCmdExecFactory(nettyDockerCmdExecFactory).build();
-        }
+    public static DockerClient getDockerClient(String host, EnvVars envVars) {
+      if (envVars == null) {
+          throw new IllegalStateException("envVars must not be null");
+      }
 
-        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost(host)
-                .build();
-        return DockerClientBuilder.getInstance(config).withDockerCmdExecFactory(nettyDockerCmdExecFactory).build();
+      Builder configBuilder = DefaultDockerClientConfig.createDefaultConfigBuilder();
+
+      if (envVars.containsKey(DefaultDockerClientConfig.DOCKER_HOST)) {
+          configBuilder.withDockerHost(envVars.get(DefaultDockerClientConfig.DOCKER_HOST));
+      } else {
+          // If open JDK is used and the host is null
+          // then instead of a null reference, the host is the string "null".
+          if (!StringUtils.isEmpty(host) && !host.equalsIgnoreCase("null")) {
+              configBuilder.withDockerHost(host);
+          }
+      }
+      if (envVars.containsKey(DefaultDockerClientConfig.DOCKER_TLS_VERIFY)) {
+          configBuilder.withDockerTlsVerify(envVars.get(DefaultDockerClientConfig.DOCKER_TLS_VERIFY));
+      }
+      if (envVars.containsKey(DefaultDockerClientConfig.DOCKER_CERT_PATH)) {
+          configBuilder.withDockerCertPath(envVars.get(DefaultDockerClientConfig.DOCKER_CERT_PATH));
+      }
+
+      DockerClientConfig config = configBuilder.build();
+      return DockerClientBuilder.getInstance(config).withDockerCmdExecFactory(new NettyDockerCmdExecFactory()).build();      
     }
 
     private static void closeQuietly(DockerClient dockerClient) {

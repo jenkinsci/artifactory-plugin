@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.util.Log;
@@ -17,7 +18,10 @@ import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.deployers.Deployer;
 import org.jfrog.hudson.pipeline.common.types.deployers.NpmDeployer;
 import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.NpmBuild;
+import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
+
+import java.io.IOException;
 
 /**
  * Created by Yahav Itzhak on 25 Nov 2018.
@@ -64,16 +68,13 @@ public class NpmPublishExecutor implements Executor {
         buildInfo.setAgentName(Utils.getAgentName(ws));
     }
 
-    private ArtifactoryBuildInfoClientBuilder createArtifactoryClientBuilder(Deployer deployer) {
+    private ArtifactoryBuildInfoClientBuilder createArtifactoryClientBuilder(Deployer deployer) throws IOException {
         ArtifactoryServer server = deployer.getArtifactoryServer();
         CredentialsConfig preferredDeployer = server.getDeployerCredentialsConfig();
-        return new ArtifactoryBuildInfoClientBuilder()
-                .setArtifactoryUrl(server.getUrl())
-                .setUsername(preferredDeployer.provideUsername(build.getParent()))
-                .setPassword(preferredDeployer.providePassword(build.getParent()))
-                .setProxyConfiguration(ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy))
-                .setLog(logger)
-                .setConnectionRetry(server.getConnectionRetry())
-                .setConnectionTimeout(server.getTimeout());
+        Credentials deployerCredentials = preferredDeployer.provideCredentials(build.getParent());
+        if (StringUtils.isNotEmpty(deployerCredentials.getAccessToken())) {
+            deployerCredentials = deployerCredentials.convertAccessTokenToUsernamePassword();
+        }
+        return server.createBuildInfoClientBuilder(deployerCredentials, ArtifactoryServer.createProxyConfiguration(Jenkins.getInstance().proxy), logger);
     }
 }

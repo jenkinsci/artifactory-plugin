@@ -4,9 +4,12 @@ import hudson.EnvVars;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.Module;
+import org.jfrog.build.api.Vcs;
+import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -32,8 +35,21 @@ public class BuildInfoAccessor {
         this.buildInfo = buildInfo;
     }
 
-    public void appendPublishedDependencies(List<Dependency> resolvedDependencies) {
-        this.buildInfo.appendPublishedDependencies(resolvedDependencies);
+    public void appendDependencies(List<Dependency> dependencies) {
+        Module defaultModule = new ModuleBuilder()
+                .id(buildInfo.getName())
+                .dependencies(dependencies)
+                .build();
+        Module currentModule = buildInfo.getModules().stream()
+                // Check if the default module already exists.
+                .filter(module -> StringUtils.equals(module.getId(), getBuildName()))
+                .findAny()
+                .orElse(null);
+        if (currentModule != null) {
+            currentModule.append(defaultModule);
+        } else {
+            buildInfo.getModules().add(defaultModule);
+        }
     }
 
     public Map<String, String> getEnvVars() {
@@ -44,8 +60,8 @@ public class BuildInfoAccessor {
         return this.buildInfo.getSysVars();
     }
 
-    public List<BuildDependency> getBuildDependencies() {
-        return this.buildInfo.getBuildDependencies();
+    public org.jfrog.build.api.Issues getIssues() {
+        return this.buildInfo.getConvertedIssues();
     }
 
     public Date getStartDate() {
@@ -71,14 +87,27 @@ public class BuildInfoAccessor {
         }
     }
 
-    public void appendDeployedArtifacts(List<Artifact> artifacts) {
-        this.buildInfo.appendDeployedArtifacts(artifacts);
+    public void appendArtifacts(List<Artifact> artifacts) {
+        Module defaultModule = new ModuleBuilder()
+                .id(buildInfo.getName())
+                .artifacts(artifacts)
+                .build();
+        Module currentModule = buildInfo.getModules().stream()
+                // Check if the default module already exists.
+                .filter(module -> StringUtils.equals(module.getId(), getBuildName()))
+                .findAny()
+                .orElse(null);
+        if (currentModule != null) {
+            currentModule.append(defaultModule);
+        } else {
+            buildInfo.getModules().add(defaultModule);
+        }
     }
 
     public ArtifactoryBuildInfoClient createArtifactoryClient(ArtifactoryServer server, Run build, TaskListener listener) {
         CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(new ArtifactoryConfigurator(server), server);
-        return server.createArtifactoryClient(preferredDeployer.provideUsername(build.getParent()),
-                preferredDeployer.providePassword(build.getParent()), server.createProxyConfiguration(Jenkins.getInstance().proxy), new JenkinsBuildInfoLog(listener));
+        return server.createArtifactoryClient(preferredDeployer.provideCredentials(build.getParent()),
+                server.createProxyConfiguration(Jenkins.getInstance().proxy), new JenkinsBuildInfoLog(listener));
     }
 
     public BuildInfoDeployer createDeployer(Run build, TaskListener listener, ArtifactoryServer server, ArtifactoryBuildInfoClient client)
@@ -88,5 +117,13 @@ public class BuildInfoAccessor {
 
     public List<Module> getModules() {
         return this.buildInfo.getModules();
+    }
+
+    public void appendVcs(Vcs vcs) {
+        this.buildInfo.appendVcs(vcs);
+    }
+
+    public List<Vcs> getVcs() {
+        return this.buildInfo.getVcs();
     }
 }
