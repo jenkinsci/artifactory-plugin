@@ -17,8 +17,8 @@ import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.NpmPublishExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.common.types.deployers.NpmDeployer;
-import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.NpmBuild;
+import org.jfrog.hudson.pipeline.common.types.deployers.NpmGoDeployer;
+import org.jfrog.hudson.pipeline.common.types.builds.NpmBuild;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
@@ -119,7 +119,7 @@ public class NpmPublishStep extends AbstractStepImpl {
             if (buildDataFile == null) {
                 throw new IOException("Deployer " + step.deployerId + " doesn't exist!");
             }
-            NpmDeployer deployer = Utils.mapper().treeToValue(buildDataFile.get(NpmDeployerStep.STEP_NAME), NpmDeployer.class);
+            NpmGoDeployer deployer = Utils.mapper().treeToValue(buildDataFile.get(NpmDeployerStep.STEP_NAME), NpmGoDeployer.class);
             deployer.setServer(getArtifactoryServer(buildNumber, buildDataFile));
             step.npmBuild.setDeployer(deployer);
             addProperties(buildDataFile);
