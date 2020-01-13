@@ -91,13 +91,13 @@ public class Maven3Builder extends Builder {
             listener.error("Couldn't find Maven home: " + mavenHome.getRemote());
             throw new Run.RunnerAbortedException();
         }
-        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher, mavenHome, ws, ws);
-        String[] cmds = cmdLine.toCommandArray();
-        return RunMaven(build, launcher, listener, env, workDir, cmds);
+        ArgumentListBuilder args = buildMavenCmdLine(build, listener, env, launcher, mavenHome, ws, ws);
+        RunMaven(launcher, listener, env, workDir, args);
+        return true;
     }
 
     // Used by Pipeline jobs only
-    public boolean perform(Run<?, ?> build, Launcher launcher, TaskListener listener, EnvVars env, FilePath workDir, FilePath tempDir)
+    public void perform(Run<?, ?> build, Launcher launcher, TaskListener listener, EnvVars env, FilePath workDir, FilePath tempDir)
             throws InterruptedException, IOException {
         listener.getLogger().println("Jenkins Artifactory Plugin version: " + ActionableHelper.getArtifactoryPluginVersion());
         FilePath mavenHome = getMavenHome(listener, env, launcher);
@@ -106,21 +106,13 @@ public class Maven3Builder extends Builder {
             listener.getLogger().println("Couldn't find Maven home at " + mavenHome.getRemote() + " on agent " + Utils.getAgentName(workDir) +
                     ". This could be because this build is running inside a Docker container.");
         }
-        ArgumentListBuilder cmdLine = buildMavenCmdLine(build, listener, env, launcher, mavenHome, workDir, tempDir);
-        String[] cmds = cmdLine.toCommandArray();
-        return RunMaven(build, launcher, listener, env, workDir, cmds);
+        ArgumentListBuilder args = buildMavenCmdLine(build, listener, env, launcher, mavenHome, workDir, tempDir);
+        RunMaven(launcher, listener, env, workDir, args);
     }
 
-    private boolean RunMaven(Run<?, ?> build, Launcher launcher, TaskListener listener, EnvVars env, FilePath workDir, String[] cmds) throws InterruptedException, IOException {
+    private void RunMaven(Launcher launcher, TaskListener listener, EnvVars env, FilePath workDir, ArgumentListBuilder args) throws IOException {
         try {
-            int exitValue = launcher.launch().cmds(cmds).envs(env).stdout(listener).stderr(listener.getLogger()).pwd(workDir).join();
-            boolean success = (exitValue == 0);
-            build.setResult(success ? Result.SUCCESS : Result.FAILURE);
-            return success;
-        } catch (IOException e) {
-            Util.displayIOException(e, listener);
-            e.printStackTrace(listener.fatalError("command execution failed"));
-            return false;
+            Utils.launch("Maven", launcher, args, env, listener, workDir);
         } finally {
             ActionableHelper.deleteFilePath(workDir, classworldsConfPath);
         }
@@ -136,7 +128,7 @@ public class Maven3Builder extends Builder {
             throws IOException, InterruptedException {
 
         ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add(getJavaPathBuilder(env.get("PATH+JDK"), launcher));
+        args.add(Utils.getJavaPathBuilder(env.get("PATH+JDK"), launcher));
 
         // classpath
         String fileSeparator = getFileSeparator(launcher);
@@ -186,18 +178,6 @@ public class Maven3Builder extends Builder {
             fileSeparator = "\\";
         }
         return fileSeparator;
-    }
-
-    private String getJavaPathBuilder(String jdkBinPath, Launcher launcher) {
-        StringBuilder javaPathBuilder = new StringBuilder();
-        if (StringUtils.isNotBlank(jdkBinPath)) {
-            javaPathBuilder.append(jdkBinPath).append("/");
-        }
-        javaPathBuilder.append("java");
-        if (!launcher.isUnix()) {
-            javaPathBuilder.append(".exe");
-        }
-        return javaPathBuilder.toString();
     }
 
     private void addArtifactoryIntegrationArgs(ArgumentListBuilder args, String buildInfoPropertiesFile, FilePath ws, EnvVars env) throws IOException, InterruptedException {

@@ -1,4 +1,4 @@
-package org.jfrog.hudson.pipeline.declarative.steps.maven;
+package org.jfrog.hudson.pipeline.declarative.steps.go;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
@@ -14,12 +14,11 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jfrog.hudson.pipeline.common.Utils;
-import org.jfrog.hudson.pipeline.common.executors.MavenExecutor;
+import org.jfrog.hudson.pipeline.common.executors.GoRunExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.common.types.deployers.MavenDeployer;
-import org.jfrog.hudson.pipeline.common.types.builds.MavenBuild;
-import org.jfrog.hudson.pipeline.common.types.resolvers.MavenResolver;
+import org.jfrog.hudson.pipeline.common.types.resolvers.NpmGoResolver;
+import org.jfrog.hudson.pipeline.common.types.builds.GoBuild;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
@@ -29,27 +28,23 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
- * Run Maven-Artifactory task.
+ * Run go-run task.
  */
 @SuppressWarnings("unused")
-public class MavenStep extends AbstractStepImpl {
+public class GoRunStep extends AbstractStepImpl {
 
-    private MavenBuild mavenBuild;
+    private GoBuild goBuild;
     private String customBuildNumber;
     private String customBuildName;
-    private String deployerId;
     private String resolverId;
-    private String goals;
-    private String pom;
+    private String path;
+    private String args;
 
     @DataBoundConstructor
-    public MavenStep(String pom, String goals) {
-        mavenBuild = new MavenBuild();
-        this.goals = Objects.toString(goals, "");
-        this.pom = Objects.toString(pom, "");
+    public GoRunStep() {
+        this.goBuild = new GoBuild();
     }
 
     @DataBoundSetter
@@ -63,30 +58,22 @@ public class MavenStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
-    public void setDeployerId(String deployerId) {
-        this.deployerId = deployerId;
-    }
-
-    @DataBoundSetter
     public void setResolverId(String resolverId) {
         this.resolverId = resolverId;
     }
 
     @DataBoundSetter
-    public void setTool(String tool) {
-        mavenBuild.setTool(tool);
+    public void setPath(String path) {
+        this.path = path;
     }
 
     @DataBoundSetter
-    public void setOpts(String opts) {
-        mavenBuild.setOpts(opts);
+    public void setArgs(String args) {
+        this.args = args;
     }
 
     public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
         private static final long serialVersionUID = 1L;
-
-        @StepContextParameter
-        private transient Run build;
 
         @StepContextParameter
         private transient TaskListener listener;
@@ -100,58 +87,41 @@ public class MavenStep extends AbstractStepImpl {
         @StepContextParameter
         private transient EnvVars env;
 
+        @StepContextParameter
+        private transient Run build;
+
         @Inject(optional = true)
-        private transient MavenStep step;
+        private transient GoRunStep step;
 
         @Override
         protected Void run() throws Exception {
             BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(ws, build, step.customBuildName, step.customBuildNumber);
-            setMavenBuild();
-            MavenExecutor mavenExecutor = new MavenExecutor(listener, launcher, build, ws, env, step.mavenBuild, step.pom, step.goals, buildInfo);
-            mavenExecutor.execute();
-            buildInfo = mavenExecutor.getBuildInfo();
-            DeclarativePipelineUtils.saveBuildInfo(buildInfo, ws, build, new JenkinsBuildInfoLog(listener));
+            setResolver(BuildUniqueIdentifierHelper.getBuildNumber(build));
+            GoRunExecutor goRunExecutor = new GoRunExecutor(getContext(), buildInfo, step.goBuild, step.path, step.args, ws, listener, env, build);
+            goRunExecutor.execute();
+            DeclarativePipelineUtils.saveBuildInfo(goRunExecutor.getBuildInfo(), ws, build, new JenkinsBuildInfoLog(listener));
             return null;
-        }
-
-        private void setMavenBuild() throws IOException, InterruptedException {
-            String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
-            setDeployer(buildNumber);
-            setResolver(buildNumber);
-        }
-
-        private void setDeployer(String buildNumber) throws IOException, InterruptedException {
-            if (StringUtils.isBlank(step.deployerId)) {
-                return;
-            }
-            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, MavenDeployerStep.STEP_NAME, step.deployerId);
-            if (buildDataFile == null) {
-                throw new IOException("Deployer " + step.deployerId + " doesn't exist!");
-            }
-            MavenDeployer deployer = Utils.mapper().treeToValue(buildDataFile.get(MavenDeployerStep.STEP_NAME), MavenDeployer.class);
-            deployer.setServer(getArtifactoryServer(buildNumber, buildDataFile));
-            step.mavenBuild.setDeployer(deployer);
-            addProperties(buildDataFile);
-        }
-
-        private void addProperties(BuildDataFile buildDataFile) {
-            JsonNode propertiesNode = buildDataFile.get("properties");
-            if (propertiesNode != null) {
-                step.mavenBuild.getDeployer().getProperties().putAll(PropertyUtils.getDeploymentPropertiesMap(propertiesNode.asText(), env));
-            }
         }
 
         private void setResolver(String buildNumber) throws IOException, InterruptedException {
             if (StringUtils.isBlank(step.resolverId)) {
                 return;
             }
-            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, MavenResolverStep.STEP_NAME, step.resolverId);
+            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, GoResolverStep.STEP_NAME, step.resolverId);
             if (buildDataFile == null) {
                 throw new IOException("Resolver " + step.resolverId + " doesn't exist!");
             }
-            MavenResolver resolver = Utils.mapper().treeToValue(buildDataFile.get(MavenResolverStep.STEP_NAME), MavenResolver.class);
+            NpmGoResolver resolver = Utils.mapper().treeToValue(buildDataFile.get(GoResolverStep.STEP_NAME), NpmGoResolver.class);
             resolver.setServer(getArtifactoryServer(buildNumber, buildDataFile));
-            step.mavenBuild.setResolver(resolver);
+            step.goBuild.setResolver(resolver);
+            addProperties(buildDataFile);
+        }
+
+        private void addProperties(BuildDataFile buildDataFile) {
+            JsonNode propertiesNode = buildDataFile.get("properties");
+            if (propertiesNode != null) {
+                step.goBuild.getDeployer().getProperties().putAll(PropertyUtils.getDeploymentPropertiesMap(propertiesNode.asText(), env));
+            }
         }
 
         private ArtifactoryServer getArtifactoryServer(String buildNumber, BuildDataFile buildDataFile) throws IOException, InterruptedException {
@@ -167,17 +137,17 @@ public class MavenStep extends AbstractStepImpl {
     public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
 
         public DescriptorImpl() {
-            super(MavenStep.Execution.class);
+            super(GoRunStep.Execution.class);
         }
 
         @Override
         public String getFunctionName() {
-            return "rtMavenRun";
+            return "rtGoRun";
         }
 
         @Override
         public String getDisplayName() {
-            return "run Artifactory maven";
+            return "run Artifactory Go publish";
         }
 
         @Override

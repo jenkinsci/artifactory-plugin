@@ -11,31 +11,25 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
-import org.jfrog.hudson.pipeline.common.Utils;
-import org.jfrog.hudson.pipeline.common.executors.NpmInstallExecutor;
+import org.jfrog.hudson.pipeline.common.executors.GoPublishExecutor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.common.types.builds.NpmBuild;
+import org.jfrog.hudson.pipeline.common.types.builds.GoBuild;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- * Created by Yahav Itzhak on 25 Nov 2018.
- */
 @SuppressWarnings("unused")
-public class NpmInstallStep extends AbstractStepImpl {
+public class GoPublishStep extends AbstractStepImpl {
 
     private BuildInfo buildInfo;
-    private NpmBuild npmBuild;
-    private String javaArgs;
+    private GoBuild goBuild;
     private String path;
-    private String args;
+    private String version;
 
     @DataBoundConstructor
-    public NpmInstallStep(BuildInfo buildInfo, NpmBuild npmBuild, String javaArgs, String path, String args) {
+    public GoPublishStep(BuildInfo buildInfo, GoBuild goBuild, String path, String version, String args) {
         this.buildInfo = buildInfo;
-        this.npmBuild = npmBuild;
-        this.javaArgs = javaArgs;
+        this.goBuild = goBuild;
         this.path = path;
-        this.args = args;
+        this.version = version;
     }
 
     public static class Execution extends AbstractSynchronousNonBlockingStepExecution<BuildInfo> {
@@ -57,14 +51,13 @@ public class NpmInstallStep extends AbstractStepImpl {
         private transient Run build;
 
         @Inject(optional = true)
-        private transient NpmInstallStep step;
+        private transient GoPublishStep step;
 
         @Override
         protected BuildInfo run() throws Exception {
-            String npmExe = Utils.getNpmExe(ws, listener, env, launcher, step.npmBuild.getTool());
-            NpmInstallExecutor npmInstallExecutor = new NpmInstallExecutor(step.buildInfo, launcher, step.npmBuild, step.javaArgs, npmExe, step.args, ws, step.path, env, listener, build);
-            npmInstallExecutor.execute();
-            return npmInstallExecutor.getBuildInfo();
+            GoPublishExecutor goPublishExecutor = new GoPublishExecutor(getContext(), step.buildInfo, step.goBuild, step.path, step.version, ws, listener, build);
+            goPublishExecutor.execute();
+            return goPublishExecutor.getBuildInfo();
         }
     }
 
@@ -72,17 +65,17 @@ public class NpmInstallStep extends AbstractStepImpl {
     public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
 
         public DescriptorImpl() {
-            super(NpmInstallStep.Execution.class);
+            super(GoPublishStep.Execution.class);
         }
 
         @Override
         public String getFunctionName() {
-            return "artifactoryNpmInstall";
+            return "artifactoryGoPublish";
         }
 
         @Override
         public String getDisplayName() {
-            return "Run Artifactory npm install";
+            return "Run Artifactory Go Publish command";
         }
 
         @Override

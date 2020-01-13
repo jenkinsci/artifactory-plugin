@@ -1,4 +1,4 @@
-package org.jfrog.hudson.pipeline.declarative.steps.npm;
+package org.jfrog.hudson.pipeline.declarative.steps.common;
 
 import com.google.inject.Inject;
 import hudson.FilePath;
@@ -16,16 +16,16 @@ import org.kohsuke.stapler.DataBoundSetter;
 import static org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils.writeBuildDataFile;
 
 /**
- * Base class for npm deployer and resolver.
+ * Base class for npm/Go deployer and resolver.
  *
  * @author yahavi
  */
-public class NpmDeployerResolver extends AbstractStepImpl {
+public class NpmGoDeployerResolver extends AbstractStepImpl {
 
-    BuildDataFile buildDataFile;
+    protected BuildDataFile buildDataFile;
 
     @DataBoundConstructor
-    public NpmDeployerResolver(String stepName, String stepId, String serverId) {
+    public NpmGoDeployerResolver(String stepName, String stepId, String serverId) {
         buildDataFile = new BuildDataFile(stepName, stepId).put("serverId", serverId);
     }
 
@@ -47,7 +47,7 @@ public class NpmDeployerResolver extends AbstractStepImpl {
         private transient Run build;
 
         @Inject(optional = true)
-        private transient NpmDeployerResolver step;
+        private transient NpmGoDeployerResolver step;
 
         @Override
         protected Void run() throws Exception {
