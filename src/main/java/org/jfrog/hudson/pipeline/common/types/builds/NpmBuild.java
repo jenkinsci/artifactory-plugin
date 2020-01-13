@@ -1,10 +1,10 @@
-package org.jfrog.hudson.pipeline.common.types.packageManagerBuilds;
+package org.jfrog.hudson.pipeline.common.types.builds;
 
 import com.google.common.collect.Maps;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.common.types.deployers.NpmDeployer;
-import org.jfrog.hudson.pipeline.common.types.resolvers.NpmResolver;
+import org.jfrog.hudson.pipeline.common.types.deployers.NpmGoDeployer;
+import org.jfrog.hudson.pipeline.common.types.resolvers.NpmGoResolver;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,13 +20,13 @@ import static org.jfrog.hudson.pipeline.common.Utils.appendBuildInfo;
 public class NpmBuild extends PackageManagerBuild {
 
     public NpmBuild() {
-        deployer = new NpmDeployer();
-        resolver = new NpmResolver();
+        deployer = new NpmGoDeployer();
+        resolver = new NpmGoResolver();
     }
 
     @Whitelisted
     public void install(Map<String, Object> args) {
-        Map<String, Object> stepVariables = prepareNpmStep(args, Arrays.asList("path", "args", "buildInfo"));
+        Map<String, Object> stepVariables = prepareNpmStep(args, Arrays.asList("path", "javaArgs", "args", "buildInfo"));
         stepVariables.put("args", args.get("args"));
         // Throws CpsCallableInvocation - Must be the last line in this method
         cpsScript.invokeMethod("artifactoryNpmInstall", stepVariables);
@@ -34,7 +34,7 @@ public class NpmBuild extends PackageManagerBuild {
 
     @Whitelisted
     public void publish(Map<String, Object> args) {
-        Map<String, Object> stepVariables = prepareNpmStep(args, Arrays.asList("path", "buildInfo"));
+        Map<String, Object> stepVariables = prepareNpmStep(args, Arrays.asList("path", "javaArgs", "buildInfo"));
         // Throws CpsCallableInvocation - Must be the last line in this method
         cpsScript.invokeMethod("artifactoryNpmPublish", stepVariables);
     }
@@ -48,6 +48,7 @@ public class NpmBuild extends PackageManagerBuild {
         deployer.setCpsScript(cpsScript);
         Map<String, Object> stepVariables = getRunArguments((String) args.get("path"), (BuildInfo) args.get("buildInfo"));
         appendBuildInfo(cpsScript, stepVariables);
+        stepVariables.put("javaArgs", args.get("javaArgs")); // Added to allow java remote debugging
         return stepVariables;
     }
 

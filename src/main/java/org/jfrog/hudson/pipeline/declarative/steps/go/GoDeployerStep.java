@@ -1,4 +1,4 @@
-package org.jfrog.hudson.pipeline.declarative.steps.npm;
+package org.jfrog.hudson.pipeline.declarative.steps.go;
 
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
@@ -9,25 +9,22 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.List;
 
-/**
- * @author yahavi
- */
-public class NpmDeployerStep extends NpmGoDeployerResolver {
+public class GoDeployerStep extends NpmGoDeployerResolver {
 
-    static final String STEP_NAME = "rtNpmDeployer";
-    private NpmGoDeployer npmDeployer;
+    static final String STEP_NAME = "rtGoDeployer";
+    private NpmGoDeployer goDeployer;
 
     @DataBoundConstructor
-    public NpmDeployerStep(String id, String serverId, String repo) {
+    public GoDeployerStep(String id, String serverId, String repo) {
         super(STEP_NAME, id, serverId);
-        npmDeployer = new NpmGoDeployer();
-        npmDeployer.setRepo(repo);
-        buildDataFile.putPOJO(npmDeployer);
+        goDeployer = new NpmGoDeployer();
+        goDeployer.setRepo(repo);
+        buildDataFile.putPOJO(goDeployer);
     }
 
     @DataBoundSetter
     public void setCustomBuildName(String customBuildName) {
-        npmDeployer.setCustomBuildName(customBuildName);
+        goDeployer.setCustomBuildName(customBuildName);
     }
 
     @DataBoundSetter
@@ -49,7 +46,7 @@ public class NpmDeployerStep extends NpmGoDeployerResolver {
 
         @Override
         public String getDisplayName() {
-            return "set npm deployer";
+            return "set go deployer";
         }
 
         @Override

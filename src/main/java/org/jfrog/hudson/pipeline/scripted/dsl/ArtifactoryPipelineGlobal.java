@@ -11,9 +11,10 @@ import org.jfrog.hudson.pipeline.common.types.ConanClient;
 import org.jfrog.hudson.pipeline.common.types.Docker;
 import org.jfrog.hudson.pipeline.common.types.MavenDescriptor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.GradleBuild;
-import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.MavenBuild;
-import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.NpmBuild;
+import org.jfrog.hudson.pipeline.common.types.builds.GoBuild;
+import org.jfrog.hudson.pipeline.common.types.builds.GradleBuild;
+import org.jfrog.hudson.pipeline.common.types.builds.MavenBuild;
+import org.jfrog.hudson.pipeline.common.types.builds.NpmBuild;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -124,6 +125,13 @@ public class ArtifactoryPipelineGlobal implements Serializable {
         NpmBuild npmBuild = (NpmBuild) cpsScript.invokeMethod("newNpmBuild", Maps.newLinkedHashMap());
         npmBuild.setCpsScript(cpsScript);
         return npmBuild;
+    }
+
+    @Whitelisted
+    public GoBuild newGoBuild() {
+        GoBuild goBuild = (GoBuild) cpsScript.invokeMethod("newGoBuild", Maps.newLinkedHashMap());
+        goBuild.setCpsScript(cpsScript);
+        return goBuild;
     }
 
     @Whitelisted

@@ -13,7 +13,7 @@ import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.deployers.Deployer;
 import org.jfrog.hudson.pipeline.common.types.deployers.MavenDeployer;
-import org.jfrog.hudson.pipeline.common.types.packageManagerBuilds.MavenBuild;
+import org.jfrog.hudson.pipeline.common.types.builds.MavenBuild;
 import org.jfrog.hudson.util.ExtractorUtils;
 
 public class MavenExecutor implements Executor {
@@ -51,7 +51,7 @@ public class MavenExecutor implements Executor {
         EnvVars extendedEnv = new EnvVars(env);
         ExtractorUtils.addVcsDetailsToEnv(new FilePath(ws, pom), extendedEnv, listener);
         FilePath tempDir = ExtractorUtils.createAndGetTempDir(ws);
-        MavenGradleEnvExtractor envExtractor = new MavenGradleEnvExtractor(build,
+        EnvExtractor envExtractor = new MavenGradleEnvExtractor(build,
                 buildInfo, deployer, mavenBuild.getResolver(), listener, launcher, tempDir, extendedEnv);
         envExtractor.execute();
         String stepOpts = mavenBuild.getOpts();
@@ -66,10 +66,7 @@ public class MavenExecutor implements Executor {
         }
         Maven3Builder maven3Builder = new Maven3Builder(mavenBuild.getTool(), pom, goals, mavenOpts);
         convertJdkPath(launcher, extendedEnv);
-        boolean buildResult = maven3Builder.perform(build, launcher, listener, extendedEnv, ws, tempDir);
-        if (!buildResult) {
-            throw new RuntimeException("Maven build failed");
-        }
+        maven3Builder.perform(build, launcher, listener, extendedEnv, ws, tempDir);
         String generatedBuildPath = extendedEnv.get(BuildInfoFields.GENERATED_BUILD_INFO);
         buildInfo.append(Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath));
         buildInfo.appendDeployableArtifacts(extendedEnv.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS), tempDir, listener);
