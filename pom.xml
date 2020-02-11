@@ -573,13 +573,13 @@
                 <repository>
                     <id>central</id>
                     <name>jfrog-dependencies</name>
-                    <url>http://oss.jfrog.org/artifactory/jfrog-dependencies</url>
+                    <url>https://oss.jfrog.org/artifactory/jfrog-dependencies</url>
                 </repository>
                 <repository>
                     <snapshots />
                     <id>snapshots</id>
                     <name>libs-snapshot</name>
-                    <url>http://oss.jfrog.org/artifactory/libs-snapshot</url>
+                    <url>https://oss.jfrog.org/artifactory/libs-snapshot</url>
                 </repository>
             </repositories>
             <pluginRepositories>
@@ -589,13 +589,13 @@
                     </snapshots>
                     <id>central</id>
                     <name>jfrog-dependencies</name>
-                    <url>http://oss.jfrog.org/artifactory/jfrog-dependencies</url>
+                    <url>https://oss.jfrog.org/artifactory/jfrog-dependencies</url>
                 </pluginRepository>
                 <pluginRepository>
                     <snapshots />
                     <id>snapshots</id>
                     <name>plugins-snapshot</name>
-                    <url>http://oss.jfrog.org/artifactory/plugins-snapshot</url>
+                    <url>https://oss.jfrog.org/artifactory/plugins-snapshot</url>
                 </pluginRepository>
             </pluginRepositories>
         </profile>
@@ -604,7 +604,7 @@
     <distributionManagement>
         <repository>
             <id>maven.jenkins-ci.org</id>
-            <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
+            <url>https://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
         </repository>
     </distributionManagement>
 </project>
