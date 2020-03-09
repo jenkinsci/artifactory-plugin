@@ -81,11 +81,7 @@ public class AddRemoteStep extends AbstractStepImpl {
             }
             args.add(step.getServerName());
             args.add(step.getServerUrl());
-            if(step.getVerifySSL()) {
-            	args.add("True");
-            } else {
-            	args.add("False");
-            }
+            args.add(step.getVerifySSL() ? "True" : "False");
             EnvVars extendedEnv = new EnvVars(env);
             extendedEnv.put(Utils.CONAN_USER_HOME, step.getConanHome());
             Utils.exeConan(args, ws, launcher, listener, extendedEnv);
