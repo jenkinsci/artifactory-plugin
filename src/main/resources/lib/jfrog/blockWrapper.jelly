@@ -7,16 +7,20 @@
     <st:attribute name="id">
       ID to add to the wrapper
     </st:attribute>
+    <st:attribute name="style">
+      Inline style to pass to the wrapper tag
+    </st:attribute>
+    
   </st:documentation>
   
   <j:choose>
     <j:when test="${divBasedFormLayout}">
-      <div id="${attrs.id}">
+      <div id="${attrs.id}" style="${attrs.style}">
         <d:invokeBody/>
       </div>
     </j:when>
     <j:otherwise>
-      <table id="${attrs.id}">
+      <table id="${attrs.id}" style="${attrs.style}">
         <d:invokeBody/>
       </table>
     </j:otherwise>
