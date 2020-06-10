@@ -27,7 +27,7 @@
     <packaging>hpi</packaging>
     <name>Jenkins Artifactory Plugin</name>
     <description>Integrates Artifactory to Jenkins</description>
-    <url>http://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin</url>
 
     <properties>
         <!-- Minimal version required by Pipeline dependencies in 2.14.0 -->
@@ -61,18 +61,18 @@
 
     <organization>
         <name>JFrog</name>
-        <url>http://www.jfrog.org</url>
+        <url>https://jfrog.com</url>
     </organization>
 
     <issueManagement>
         <system>jira</system>
-        <url>http://issues.jfrog.org/jira/browse/HAP</url>
+        <url>https://www.jfrog.com/jira/browse/HAP</url>
     </issueManagement>
 
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -620,13 +620,13 @@
                 <repository>
                     <id>central</id>
                     <name>jfrog-dependencies</name>
-                    <url>http://oss.jfrog.org/artifactory/jfrog-dependencies</url>
+                    <url>https://oss.jfrog.org/artifactory/jfrog-dependencies</url>
                 </repository>
                 <repository>
                     <snapshots />
                     <id>snapshots</id>
                     <name>libs-snapshot</name>
-                    <url>http://oss.jfrog.org/artifactory/libs-snapshot</url>
+                    <url>https://oss.jfrog.org/artifactory/libs-snapshot</url>
                 </repository>
             </repositories>
             <pluginRepositories>
@@ -636,22 +636,15 @@
                     </snapshots>
                     <id>central</id>
                     <name>jfrog-dependencies</name>
-                    <url>http://oss.jfrog.org/artifactory/jfrog-dependencies</url>
+                    <url>https://oss.jfrog.org/artifactory/jfrog-dependencies</url>
                 </pluginRepository>
                 <pluginRepository>
                     <snapshots />
                     <id>snapshots</id>
                     <name>plugins-snapshot</name>
-                    <url>http://oss.jfrog.org/artifactory/plugins-snapshot</url>
+                    <url>https://oss.jfrog.org/artifactory/plugins-snapshot</url>
                 </pluginRepository>
             </pluginRepositories>
         </profile>
     </profiles>
-
-    <distributionManagement>
-        <repository>
-            <id>maven.jenkins-ci.org</id>
-            <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
-        </repository>
-    </distributionManagement>
 </project>
