@@ -1,7 +1,9 @@
 package org.jfrog.hudson.pipeline.declarative.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.Run;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
@@ -10,6 +12,7 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.hudson.pipeline.common.executors.GetArtifactoryServerExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
+import org.jfrog.hudson.pipeline.common.types.ConanClient;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
 import org.jfrog.hudson.pipeline.declarative.steps.BuildInfoStep;
@@ -203,5 +206,19 @@ public class DeclarativePipelineUtils {
         } catch (IOException | InterruptedException e) {
             logger.error("Failed while attempting to delete build data dir for build number " + buildNumber, e);
         }
+    }
+
+    public static ConanClient buildConanClient(String clientId, String buildNumber, String stepName, Launcher launcher, FilePath ws, EnvVars env) throws Exception {
+        ConanClient conanClient = new ConanClient();
+        conanClient.setUnixAgent(launcher.isUnix());
+        BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, stepName, clientId);
+        if (buildDataFile == null) {
+            throw new IOException("Conan client " + clientId + " doesn't exist.");
+        }
+        String userHome = buildDataFile.get("userHome") == null ? "" : buildDataFile.get("userHome").asText();
+        FilePath conanHomeDirectory = Utils.getConanHomeDirectory(userHome, env, launcher, ws);
+
+        conanClient.setUserPath(conanHomeDirectory.getRemote());
+        return conanClient;
     }
 }
