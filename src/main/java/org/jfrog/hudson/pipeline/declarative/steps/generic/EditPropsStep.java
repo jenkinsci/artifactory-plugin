@@ -6,14 +6,14 @@ import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.SpecConfiguration;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.EditPropsExecutor;
+import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.SpecUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
@@ -54,14 +54,17 @@ public class EditPropsStep extends AbstractStepImpl {
         this.failNoOp = failNoOp;
     }
 
-    public static abstract class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
-        private static final long serialVersionUID = 1L;
+    public static abstract class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        @Inject(optional = true)
         protected transient EditPropsStep step;
-
         protected ArtifactoryServer artifactoryServer;
         protected String spec;
+
+        @Inject
+        public Execution(EditPropsStep step, StepContext context) throws IOException, InterruptedException {
+            super(context);
+            this.step = step;
+        }
 
         void editPropsRun(Run build, TaskListener listener, EditPropsStep step, FilePath ws, EnvVars env) throws IOException, InterruptedException {
             // Set Artifactory server

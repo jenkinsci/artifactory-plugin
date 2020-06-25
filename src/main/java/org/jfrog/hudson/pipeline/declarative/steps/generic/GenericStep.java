@@ -6,16 +6,15 @@ import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.SpecConfiguration;
 import org.jfrog.hudson.pipeline.common.Utils;
+import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.SpecUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
@@ -69,15 +68,18 @@ public class GenericStep extends AbstractStepImpl {
         this.module = module;
     }
 
-    public static abstract class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
-        public static final long serialVersionUID = 1L;
+    public static abstract class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        @Inject(optional = true)
         protected transient GenericStep step;
-
         protected ArtifactoryServer artifactoryServer;
         protected BuildInfo buildInfo;
         protected String spec;
+
+        @Inject
+        public Execution(GenericStep step, StepContext context) throws IOException, InterruptedException {
+            super(context);
+            this.step = step;
+        }
 
         void setGenericParameters(TaskListener listener, Run build, FilePath ws, EnvVars env, GenericStep step, StepContext context) throws IOException, InterruptedException {
             String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
