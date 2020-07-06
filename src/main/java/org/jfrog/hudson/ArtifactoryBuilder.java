@@ -22,6 +22,7 @@ import hudson.model.BuildableItem;
 import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Descriptor;
 import hudson.model.Item;
+import hudson.util.Secret;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
@@ -123,7 +124,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 @QueryParameter("artifactoryUrl") final String url,
                 @QueryParameter("artifactory.timeout") final String timeout,
                 @QueryParameter("artifactory.bypassProxy") final boolean bypassProxy,
-                @QueryParameter("useCredentialsPlugin") final boolean useLegacyCredentials,
+                @QueryParameter("useCredentialsPlugin") final boolean useCredentialsPlugin,
                 @QueryParameter("credentialsId") final String deployerCredentialsId,
                 @QueryParameter("username") final String deployerCredentialsUsername,
                 @QueryParameter("password") final String deployerCredentialsPassword,
@@ -141,13 +142,19 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             String accessToken = StringUtils.EMPTY;
             String username = StringUtils.EMPTY;
             String password = StringUtils.EMPTY;
+            
             StringCredentialsImpl accessTokenCredentials = PluginsUtils.accessTokenCredentialsLookup(deployerCredentialsId, null);
             if (accessTokenCredentials != null) {
                 accessToken = accessTokenCredentials.getSecret().getPlainText();
             } else {
-                Credentials credentials = PluginsUtils.usernamePasswordCredentialsLookup(deployerCredentialsId, null);
-                username = useLegacyCredentials ? credentials.getUsername() : deployerCredentialsUsername;
-                password = useLegacyCredentials ? credentials.getPassword() : deployerCredentialsPassword;
+                if (useCredentialsPlugin) {
+                    Credentials credentials = PluginsUtils.usernamePasswordCredentialsLookup(deployerCredentialsId, null);
+                    username = credentials.getUsername();
+                    password = credentials.getPassword();
+                } else {
+                    username = deployerCredentialsUsername;
+                    password = Secret.fromString(deployerCredentialsPassword).getPlainText();
+                }
             }
 
             ArtifactoryBuildInfoClient client;
