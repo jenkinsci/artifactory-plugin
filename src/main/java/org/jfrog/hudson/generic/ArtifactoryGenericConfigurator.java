@@ -134,7 +134,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
     public String getArtifactoryUrl() {
         ArtifactoryServer server = getArtifactoryServer();
-        return server != null ? server.getArtifactoryUrl() : null;
+        return server != null ? server.getUrl() : null;
     }
 
     public boolean isOverridingDefaultDeployer() {
@@ -305,7 +305,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                         build.getExecutor().getCurrentWorkspace(), listener.getLogger());
                 FilePath workspace = build.getExecutor().getCurrentWorkspace();
                 publishedDependencies = workspace.act(new FilesResolverCallable(new JenkinsBuildInfoLog(listener),
-                        resolverCredentials, resolverServer.getArtifactoryUrl(), spec, proxyConfiguration));
+                        resolverCredentials, resolverServer.getUrl(), spec, proxyConfiguration));
             } else {
                 dependenciesClient = resolverServer.createArtifactoryDependenciesClient(resolverCredentials, proxyConfiguration, listener);
                 GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener, dependenciesClient);

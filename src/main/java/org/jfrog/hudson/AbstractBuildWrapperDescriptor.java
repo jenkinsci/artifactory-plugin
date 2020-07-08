@@ -170,7 +170,7 @@ public abstract class AbstractBuildWrapperDescriptor extends BuildWrapperDescrip
 
     private List<VirtualRepository> refreshVirtualRepositories(ArtifactoryServer artifactoryServer,
                                                                CredentialsConfig credentialsConfig) throws IOException {
-        List<VirtualRepository> virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getArtifactoryUrl(),
+        List<VirtualRepository> virtualRepositories = RepositoriesUtils.getVirtualRepositoryKeys(artifactoryServer.getUrl(),
                 credentialsConfig, artifactoryServer, item);
         Collections.sort(virtualRepositories);
         return virtualRepositories;
@@ -178,7 +178,7 @@ public abstract class AbstractBuildWrapperDescriptor extends BuildWrapperDescrip
 
     private List<Repository> refreshRepositories(ArtifactoryServer artifactoryServer, CredentialsConfig credentialsConfig)
             throws IOException {
-        List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getArtifactoryUrl(),
+        List<String> releaseRepositoryKeysFirst = RepositoriesUtils.getLocalRepositories(artifactoryServer.getUrl(),
                 credentialsConfig, artifactoryServer, item);
         Collections.sort(releaseRepositoryKeysFirst);
         return RepositoriesUtils.createRepositoriesList(releaseRepositoryKeysFirst);

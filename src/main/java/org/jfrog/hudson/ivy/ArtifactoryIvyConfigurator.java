@@ -216,7 +216,7 @@ public class ArtifactoryIvyConfigurator extends AntIvyBuildWrapper implements De
 
     public String getArtifactoryUrl() {
         ArtifactoryServer server = getArtifactoryServer();
-        return server != null ? server.getArtifactoryUrl() : null;
+        return server != null ? server.getUrl() : null;
     }
 
     public boolean isEnableIssueTrackerIntegration() {

@@ -38,7 +38,7 @@ public class PromotionInfo implements Serializable {
     }
 
     public String getUrl() {
-        return this.configurator.getArtifactoryServer().getArtifactoryUrl();
+        return this.configurator.getArtifactoryServer().getUrl();
     }
 
     public String getId() {

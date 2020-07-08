@@ -108,7 +108,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
             }
             int countServersByValueAsName = 0;
             for (ArtifactoryServer server : artifactoryServers) {
-                if (server.getServerId().equals(value)) {
+                if (server.getName().equals(value)) {
                     countServersByValueAsName++;
                     if (countServersByValueAsName > 1) {
                         return FormValidation.error("Duplicated server ID");
@@ -358,7 +358,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 return false;
             }
             for (ArtifactoryServer server : artifactoryServers) {
-                String name = server.getServerId();
+                String name = server.getName();
                 if (serversNames.contains(name)) {
                     return true;
                 }
@@ -372,7 +372,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 return true;
             }
             for (ArtifactoryServer server : artifactoryServers) {
-                String name = server.getServerId();
+                String name = server.getName();
                 if (StringUtils.isBlank(name)) {
                     return false;
                 }

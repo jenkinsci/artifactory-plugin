@@ -109,7 +109,7 @@ public class ArtifactsDeployer {
     }
 
     public void deploy() throws IOException, InterruptedException, NoSuchAlgorithmException {
-        listener.getLogger().println("Deploying artifacts to " + artifactoryServer.getArtifactoryUrl());
+        listener.getLogger().println("Deploying artifacts to " + artifactoryServer.getUrl());
         Map<MavenModule, MavenBuild> mavenBuildMap = mavenModuleSetBuild.getModuleLastBuilds();
 
         for (Map.Entry<MavenModule, MavenBuild> mavenBuildEntry : mavenBuildMap.entrySet()) {
@@ -209,7 +209,7 @@ public class ArtifactsDeployer {
 
     private void logDeploymentPath(DeployDetails deployDetails, String artifactPath) {
         String deploymentPath =
-                artifactoryServer.getArtifactoryUrl() + "/" + deployDetails.getTargetRepository() + "/" + artifactPath;
+                artifactoryServer.getUrl() + "/" + deployDetails.getTargetRepository() + "/" + artifactPath;
         listener.getLogger().println("Deploying artifact: " + deploymentPath);
     }
 
