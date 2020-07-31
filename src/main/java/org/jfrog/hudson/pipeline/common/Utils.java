@@ -115,7 +115,10 @@ public class Utils {
                 String sha1 = data.getLastBuiltRevision().getSha1String();
                 Iterator<String> iterator = data.getRemoteUrls().iterator();
                 if (iterator.hasNext()) {
-                    result.add(new Vcs(iterator.next(), sha1));
+                    Vcs vcs = new Vcs(iterator.next(), sha1);
+                    if (!vcs.isEmpty()) {
+                        result.add(vcs);
+                    }
                 }
             }
         }
