@@ -9,31 +9,24 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.resolvers.Resolver;
 
-/**
- * Created by Bar Belity on 07/07/2020.
- */
-public class PipEnvExtractor extends EnvExtractor {
-
+public class NugetEnvExtractor extends EnvExtractor {
     private String args;
-    private String path;
     private String module;
-    private String envActivation;
+    private boolean useDotnetCli;
 
-    public PipEnvExtractor(Run build, BuildInfo buildInfo, Resolver resolver,
-                           TaskListener buildListener, Launcher launcher, FilePath tempDir,
-                           EnvVars env, String args, String path, String envActivation, String module) {
+    public NugetEnvExtractor(Run build, BuildInfo buildInfo, Resolver resolver,
+                             TaskListener buildListener, Launcher launcher, FilePath tempDir,
+                             EnvVars env, String args, String module, boolean useDotnetCli) {
         super(build, buildInfo, null, resolver, buildListener, launcher, tempDir, env);
         this.args = args;
-        this.path = path;
         this.module = module;
-        this.envActivation = envActivation;
+        this.useDotnetCli = useDotnetCli;
     }
 
     @Override
     protected void addExtraConfiguration(ArtifactoryClientConfiguration configuration) {
         configuration.packageManagerHandler.setArgs(args);
-        configuration.packageManagerHandler.setPath(path);
         configuration.packageManagerHandler.setModule(module);
-        configuration.pipHandler.setEnvActivation(envActivation);
+        configuration.dotnetHandler.setUseDotnetCli(useDotnetCli);
     }
 }

@@ -46,6 +46,7 @@
         <buildinfo.npm.version>2.18.x-SNAPSHOT</buildinfo.npm.version>
         <buildinfo.go.version>2.18.x-SNAPSHOT</buildinfo.go.version>
         <buildinfo.pip.version>2.18.x-SNAPSHOT</buildinfo.pip.version>
+        <buildinfo.nuget.version>2.18.x-SNAPSHOT</buildinfo.nuget.version>
 
     </properties>
 
@@ -370,6 +371,11 @@
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-pip</artifactId>
             <version>${buildinfo.pip.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-extractor-nuget</artifactId>
+            <version>${buildinfo.nuget.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
