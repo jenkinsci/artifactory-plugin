@@ -79,4 +79,10 @@ public class PluginDependencyHelper {
         }
     }
 
+    public static String copyExtractorJars(EnvVars env, FilePath tempDir) throws IOException, InterruptedException {
+        File extractorJar = getExtractorJar(env);
+        FilePath dependencyDir = getActualDependencyDirectory(extractorJar, tempDir);
+        String absoluteDependencyDirPath = dependencyDir.getRemote();
+        return absoluteDependencyDirPath.replace("\\", "/");
+    }
 }

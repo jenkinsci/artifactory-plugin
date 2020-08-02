@@ -45,6 +45,7 @@
         <buildinfo.ivy.version>2.18.x-SNAPSHOT</buildinfo.ivy.version>
         <buildinfo.npm.version>2.18.x-SNAPSHOT</buildinfo.npm.version>
         <buildinfo.go.version>2.18.x-SNAPSHOT</buildinfo.go.version>
+        <buildinfo.pip.version>2.18.x-SNAPSHOT</buildinfo.pip.version>
 
     </properties>
 
@@ -364,6 +365,11 @@
             <groupId>org.jfrog.buildinfo</groupId>
             <artifactId>build-info-extractor-go</artifactId>
             <version>${buildinfo.go.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfrog.buildinfo</groupId>
+            <artifactId>build-info-extractor-pip</artifactId>
+            <version>${buildinfo.pip.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>

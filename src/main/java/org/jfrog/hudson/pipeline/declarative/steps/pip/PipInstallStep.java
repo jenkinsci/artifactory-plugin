@@ -1,21 +1,22 @@
-package org.jfrog.hudson.pipeline.declarative.steps.go;
+package org.jfrog.hudson.pipeline.declarative.steps.pip;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import hudson.Extension;
 import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.workflow.steps.*;
-import org.jfrog.hudson.pipeline.common.executors.GoRunExecutor;
-import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
+import org.jfrog.hudson.pipeline.common.executors.PipInstallExecutor;
+import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.common.types.builds.GoBuild;
+import org.jfrog.hudson.pipeline.common.types.builds.PipBuild;
 import org.jfrog.hudson.pipeline.common.types.resolvers.CommonResolver;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
-import org.jfrog.hudson.util.PropertyUtils;
 import org.jfrog.hudson.util.SerializationUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -23,22 +24,22 @@ import org.kohsuke.stapler.DataBoundSetter;
 import java.io.IOException;
 
 /**
- * Run go-run task.
+ * Created by Bar Belity on 08/07/2020.
  */
-@SuppressWarnings("unused")
-public class GoRunStep extends AbstractStepImpl {
+public class PipInstallStep extends AbstractStepImpl {
 
-    private GoBuild goBuild;
+    private PipBuild pipBuild;
     private String customBuildNumber;
     private String customBuildName;
     private String resolverId;
-    private String path;
+    private String javaArgs; // Added to allow java remote debugging
     private String args;
+    private String envActivation;
     private String module;
 
     @DataBoundConstructor
-    public GoRunStep() {
-        this.goBuild = new GoBuild();
+    public PipInstallStep() {
+        this.pipBuild = new PipBuild();
     }
 
     @DataBoundSetter
@@ -57,13 +58,13 @@ public class GoRunStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
-    public void setPath(String path) {
-        this.path = path;
+    public void setJavaArgs(String javaArgs) {
+        this.javaArgs = javaArgs;
     }
 
     @DataBoundSetter
-    public void setArgs(String args) {
-        this.args = args;
+    public void setEnvActivation(String envActivation) {
+        this.envActivation = envActivation;
     }
 
     @DataBoundSetter
@@ -71,12 +72,17 @@ public class GoRunStep extends AbstractStepImpl {
         this.module = module;
     }
 
+    @DataBoundSetter
+    public void setArgs(String args) {
+        this.args = args;
+    }
+
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        private transient GoRunStep step;
+        private transient PipInstallStep step;
 
         @Inject
-        public Execution(GoRunStep step, StepContext context) throws IOException, InterruptedException {
+        public Execution(PipInstallStep step, StepContext context) throws IOException, InterruptedException {
             super(context);
             this.step = step;
         }
@@ -85,9 +91,9 @@ public class GoRunStep extends AbstractStepImpl {
         protected Void run() throws Exception {
             BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(ws, build, step.customBuildName, step.customBuildNumber);
             setResolver(BuildUniqueIdentifierHelper.getBuildNumber(build));
-            GoRunExecutor goRunExecutor = new GoRunExecutor(getContext(), buildInfo, step.goBuild, step.path, step.args, step.module, ws, listener, env, build);
-            goRunExecutor.execute();
-            DeclarativePipelineUtils.saveBuildInfo(goRunExecutor.getBuildInfo(), ws, build, new JenkinsBuildInfoLog(listener));
+            PipInstallExecutor pipInstallExecutor = new PipInstallExecutor(buildInfo, launcher, step.pipBuild, step.javaArgs, step.args, ws, step.envActivation, step.module, env, listener, build);
+            pipInstallExecutor.execute();
+            DeclarativePipelineUtils.saveBuildInfo(pipInstallExecutor.getBuildInfo(), ws, build, new JenkinsBuildInfoLog(listener));
             return null;
         }
 
@@ -95,24 +101,16 @@ public class GoRunStep extends AbstractStepImpl {
             if (StringUtils.isBlank(step.resolverId)) {
                 return;
             }
-            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, GoResolverStep.STEP_NAME, step.resolverId);
+            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, PipResolverStep.STEP_NAME, step.resolverId);
             if (buildDataFile == null) {
                 throw new IOException("Resolver " + step.resolverId + " doesn't exist!");
             }
-            CommonResolver resolver = SerializationUtils.createMapper().treeToValue(buildDataFile.get(GoResolverStep.STEP_NAME), CommonResolver.class);
-            resolver.setServer(getArtifactoryServer(buildNumber, buildDataFile));
-            step.goBuild.setResolver(resolver);
-            addProperties(buildDataFile);
+            CommonResolver resolver = SerializationUtils.createMapper().treeToValue(buildDataFile.get(PipResolverStep.STEP_NAME), CommonResolver.class);
+            resolver.setServer(getArtifactoryServer(buildDataFile));
+            step.pipBuild.setResolver(resolver);
         }
 
-        private void addProperties(BuildDataFile buildDataFile) {
-            JsonNode propertiesNode = buildDataFile.get("properties");
-            if (propertiesNode != null) {
-                step.goBuild.getDeployer().getProperties().putAll(PropertyUtils.getDeploymentPropertiesMap(propertiesNode.asText(), env));
-            }
-        }
-
-        private ArtifactoryServer getArtifactoryServer(String buildNumber, BuildDataFile buildDataFile) throws IOException, InterruptedException {
+        private ArtifactoryServer getArtifactoryServer(BuildDataFile buildDataFile) throws IOException, InterruptedException {
             JsonNode serverId = buildDataFile.get("serverId");
             if (serverId.isNull()) {
                 throw new IllegalArgumentException("server ID is missing");
@@ -125,17 +123,17 @@ public class GoRunStep extends AbstractStepImpl {
     public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
 
         public DescriptorImpl() {
-            super(GoRunStep.Execution.class);
+            super( PipInstallStep.Execution.class);
         }
 
         @Override
         public String getFunctionName() {
-            return "rtGoRun";
+            return "rtPipInstall";
         }
 
         @Override
         public String getDisplayName() {
-            return "run Artifactory Go publish";
+            return "run Artifactory pip install";
         }
 
         @Override

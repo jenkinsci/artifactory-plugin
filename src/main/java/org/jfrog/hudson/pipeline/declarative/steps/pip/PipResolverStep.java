@@ -1,21 +1,24 @@
-package org.jfrog.hudson.pipeline.declarative.steps.go;
+package org.jfrog.hudson.pipeline.declarative.steps.pip;
 
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
-import org.jfrog.hudson.pipeline.declarative.steps.common.DeployerResolverBase;
 import org.jfrog.hudson.pipeline.common.types.resolvers.CommonResolver;
+import org.jfrog.hudson.pipeline.declarative.steps.common.DeployerResolverBase;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class GoResolverStep extends DeployerResolverBase {
+/**
+ * Created by Bar Belity on 08/07/2020.
+ */
+public class PipResolverStep extends DeployerResolverBase {
 
-    static final String STEP_NAME = "rtGoResolver";
+    static final String STEP_NAME = "rtPipResolver";
 
     @DataBoundConstructor
-    public GoResolverStep(String id, String serverId, String repo) {
+    public PipResolverStep(String id, String serverId, String repo) {
         super(STEP_NAME, id, serverId);
-        CommonResolver goResolver = new CommonResolver();
-        goResolver.setRepo(repo);
-        buildDataFile.putPOJO(goResolver);
+        CommonResolver pipResolver = new CommonResolver();
+        pipResolver.setRepo(repo);
+        buildDataFile.putPOJO(pipResolver);
     }
 
     @Extension
@@ -32,7 +35,7 @@ public class GoResolverStep extends DeployerResolverBase {
 
         @Override
         public String getDisplayName() {
-            return "set Go resolver";
+            return "set pip resolver";
         }
 
         @Override
