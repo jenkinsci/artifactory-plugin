@@ -42,6 +42,7 @@ import java.util.*;
 
 import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.BUILD_NAME;
 import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.BUILD_NUMBER;
+import static org.jfrog.hudson.util.SerializationUtils.createMapper;
 
 /**
  * Created by romang on 4/24/16.
@@ -166,7 +167,7 @@ public class Utils {
     }
 
     public static org.jfrog.build.api.Build getGeneratedBuildInfo(Run build, TaskListener listener, Launcher launcher, String jsonBuildPath) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = createMapper();
         FilePath generatedBuildInfoFilePath = null;
         InputStream inputStream = null;
         try {
@@ -474,7 +475,7 @@ public class Utils {
     public static FilePath getConanHomeDirectory(String userPath, EnvVars env, Launcher launcher, FilePath ws) throws Exception {
         FilePath conanHomeDirectory;
         if (StringUtils.isEmpty(userPath)) {
-            conanHomeDirectory = env.containsKey(Utils.CONAN_USER_HOME) ? new FilePath(new File(env.get(Utils.CONAN_USER_HOME))) : createConanTempHome(ws);
+            conanHomeDirectory = env.containsKey(Utils.CONAN_USER_HOME) ? new FilePath(launcher.getChannel(), env.get(Utils.CONAN_USER_HOME)) : createConanTempHome(ws);
         } else {
             conanHomeDirectory = new FilePath(launcher.getChannel(), userPath);
         }
