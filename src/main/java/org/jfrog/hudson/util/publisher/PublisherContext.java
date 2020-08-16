@@ -22,6 +22,8 @@ import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.util.IncludesExcludes;
 
+import java.util.List;
+
 /**
  * Container class for build context fields
  *
@@ -57,6 +59,7 @@ public class PublisherContext {
     private String customBuildName;
     private boolean overrideBuildName;
     private int connectionRetry;
+    private List<String> gradlePublications;
 
     private PublisherContext() {
     }
@@ -179,6 +182,10 @@ public class PublisherContext {
 
     public void setArtifactoryPluginVersion(String artifactoryPluginVersion) {
         this.artifactoryPluginVersion = artifactoryPluginVersion;
+    }
+
+    public List<String> getGradlePublications() {
+        return this.gradlePublications;
     }
 
     public static class Builder {
@@ -328,6 +335,11 @@ public class PublisherContext {
 
         public Builder connectionRetry(int connectionRetry){
             publisher.connectionRetry = connectionRetry;
+            return this;
+        }
+
+        public Builder publications(List<String> publications) {
+            publisher.gradlePublications = publications;
             return this;
         }
     }

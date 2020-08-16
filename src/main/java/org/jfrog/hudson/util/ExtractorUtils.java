@@ -399,6 +399,11 @@ public class ExtractorUtils {
             configuration.setEnvVarsIncludePatterns(Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env));
             configuration.setEnvVarsExcludePatterns(Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env));
         }
+        List<String> gradlePublications = context.getGradlePublications();
+        if (gradlePublications != null) {
+            String publications = String.join(",", gradlePublications);
+            configuration.publisher.setPublications(publications);
+        }
         addDeploymentProperties(context, configuration.publisher, env);
     }
 
