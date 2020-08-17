@@ -305,7 +305,7 @@ public class CommonITestsPipeline extends PipelineTestBase {
     }
 
     void gradleCiServerPublicationTest(String buildName) throws Exception {
-        Set<String> expectedArtifacts = Sets.newHashSet(pipelineType.toString() + "-gradle-example-ci-server-publication-1.0.jar", pipelineType.toString() + "-gradle-example-ci-server-publication-1.0.pom");
+        Set<String> expectedArtifacts = Sets.newHashSet(pipelineType.toString() + "-gradle-example-ci-server-publication-1.0.jar", pipelineType.toString() + "-gradle-example-ci-server-publication-1.0.pom", pipelineType.toString() + "-gradle-example-ci-server-publication-1.0.module");
         String buildNumber = "3";
         try {
             runPipeline("gradleCiServerPublication", false);
