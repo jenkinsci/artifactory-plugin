@@ -23,7 +23,7 @@
     </parent>
 
     <artifactId>artifactory</artifactId>
-    <version>3.7.x-SNAPSHOT	</version>
+    <version>3.8.0</version>
     <packaging>hpi</packaging>
     <name>Jenkins Artifactory Plugin</name>
     <description>Integrates Artifactory to Jenkins</description>
@@ -635,7 +635,7 @@
                     <url>https://oss.jfrog.org/artifactory/jfrog-dependencies</url>
                 </repository>
                 <repository>
-                    <snapshots/>
+                    <snapshots />
                     <id>snapshots</id>
                     <name>libs-snapshot</name>
                     <url>https://oss.jfrog.org/artifactory/libs-snapshot</url>
@@ -651,7 +651,7 @@
                     <url>https://oss.jfrog.org/artifactory/jfrog-dependencies</url>
                 </pluginRepository>
                 <pluginRepository>
-                    <snapshots/>
+                    <snapshots />
                     <id>snapshots</id>
                     <name>plugins-snapshot</name>
                     <url>https://oss.jfrog.org/artifactory/plugins-snapshot</url>
