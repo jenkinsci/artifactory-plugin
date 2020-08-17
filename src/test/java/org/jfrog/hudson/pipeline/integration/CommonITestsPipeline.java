@@ -1,9 +1,6 @@
 package org.jfrog.hudson.pipeline.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.BuildImageCmd;
-import com.github.dockerjava.core.command.BuildImageResultCallback;
 import com.google.common.collect.Sets;
 import hudson.EnvVars;
 import hudson.model.Result;
@@ -16,8 +13,11 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jfrog.build.api.Build;
 import org.jfrog.build.api.Module;
+import org.jfrog.build.extractor.docker.DockerJavaWrapper;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.jfpipelines.JFrogPipelinesServer;
-import org.jfrog.hudson.pipeline.common.docker.utils.DockerUtils;
+import org.jfrog.hudson.trigger.ArtifactoryTrigger;
+import org.jfrog.hudson.util.RepositoriesUtils;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -27,9 +27,7 @@ import org.mockserver.model.JsonBody;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -306,6 +304,27 @@ public class CommonITestsPipeline extends PipelineTestBase {
         }
     }
 
+    void gradleCiServerPublicationTest(String buildName) throws Exception {
+        Set<String> expectedArtifacts = Sets.newHashSet(pipelineType.toString() + "-gradle-example-ci-server-publication-1.0.jar", pipelineType.toString() + "-gradle-example-ci-server-publication-1.0.pom", pipelineType.toString() + "-gradle-example-ci-server-publication-1.0.module");
+        String buildNumber = "3";
+        try {
+            runPipeline("gradleCiServerPublication", false);
+            Build buildInfo = getBuildInfo(buildInfoClient, buildName, buildNumber);
+            assertEquals(5, buildInfo.getModules().size());
+
+            Module module = getAndAssertModule(buildInfo, "org.jfrog.example.gradle:" + pipelineType.toString() + "-gradle-example-ci-server-publication:1.0");
+            assertModuleArtifacts(module, expectedArtifacts);
+            assertTrue(CollectionUtils.isEmpty(module.getDependencies()));
+
+            assertModuleContainsArtifacts(buildInfo, "org.jfrog.example.gradle:services:1.0");
+            assertModuleContainsArtifacts(buildInfo, "org.jfrog.example.gradle:api:1.0");
+            assertModuleContainsArtifacts(buildInfo, "org.jfrog.example.gradle:shared:1.0");
+            assertModuleContainsArtifactsAndDependencies(buildInfo, "org.jfrog.example.gradle:webservice:1.0");
+        } finally {
+            deleteBuild(artifactoryClient, buildName);
+        }
+    }
+
     void npmTest(String pipelineName, String buildName, String moduleName) throws Exception {
         Set<String> expectedArtifact = Sets.newHashSet("package-name1:0.0.1");
         Set<String> expectedDependencies = Sets.newHashSet("big-integer-1.6.40.tgz", "is-number-7.0.0.tgz");
@@ -471,11 +490,7 @@ public class CommonITestsPipeline extends PipelineTestBase {
             }
             String imageName = domainName + "jfrog_artifactory_jenkins_tests:2";
             String host = System.getenv("JENKINS_ARTIFACTORY_DOCKER_HOST");
-            DockerClient dockerClient = DockerUtils.getDockerClient(host, new EnvVars());
-            String projectPath = getProjectPath("docker-example");
-            // Build the docker image with the name provided from env.
-            BuildImageCmd buildImageCmd = dockerClient.buildImageCmd(Paths.get(projectPath).toFile()).withTags(new HashSet<>(Arrays.asList(imageName)));
-            buildImageCmd.exec(new BuildImageResultCallback()).awaitImageId();
+            DockerJavaWrapper.buildImage(imageName, host, new EnvVars(), getProjectPath("docker-example"));
             // Run pipeline
             runPipeline("dockerPush", false);
             String buildNumber = "3";
@@ -637,5 +652,30 @@ public class CommonITestsPipeline extends PipelineTestBase {
                 assertFalse(requestTree.has("outputResources"));
             }
         }
+    }
+
+    public void buildTriggerGlobalServerTest() throws Exception {
+        // Run pipeline
+        WorkflowRun run = runPipeline("buildTriggerGlobalServer", false);
+
+        // Check trigger
+        ArtifactoryTrigger artifactoryTrigger = checkArtifactoryTrigger(run);
+
+        // Change something in Artifactory server
+        ArtifactoryServer server = RepositoriesUtils.getArtifactoryServer("LOCAL", RepositoriesUtils.getArtifactoryServers());
+        server.setConnectionRetry(4);
+
+        // Make sure the change took place
+        server = artifactoryTrigger.getArtifactoryServer();
+        assertNotNull(server);
+        assertEquals(4, server.getConnectionRetry());
+    }
+
+    public void buildTriggerNewServerTest() throws Exception {
+        // Run pipeline
+        WorkflowRun run = runPipeline("buildTriggerNewServer", false);
+
+        // Check trigger
+        checkArtifactoryTrigger(run);
     }
 }

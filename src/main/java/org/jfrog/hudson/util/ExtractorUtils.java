@@ -399,6 +399,11 @@ public class ExtractorUtils {
             configuration.setEnvVarsIncludePatterns(Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env));
             configuration.setEnvVarsExcludePatterns(Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env));
         }
+        List<String> gradlePublications = context.getGradlePublications();
+        if (gradlePublications != null) {
+            String publications = String.join(",", gradlePublications);
+            configuration.publisher.setPublications(publications);
+        }
         addDeploymentProperties(context, configuration.publisher, env);
     }
 
@@ -483,25 +488,6 @@ public class ExtractorUtils {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    public static String buildPropertiesString(ArrayListMultimap<String, String> properties) {
-        StringBuilder props = new StringBuilder();
-        List<String> keys = new ArrayList<String>(properties.keySet());
-        for (int i = 0; i < keys.size(); i++) {
-            props.append(keys.get(i)).append("=");
-            List<String> values = properties.get(keys.get(i));
-            for (int j = 0; j < values.size(); j++) {
-                props.append(values.get(j));
-                if (j != values.size() - 1) {
-                    props.append(",");
-                }
-            }
-            if (i != keys.size() - 1) {
-                props.append(";");
-            }
-        }
-        return props.toString();
     }
 
     private static Computer getComputer(hudson.Launcher launcher) {

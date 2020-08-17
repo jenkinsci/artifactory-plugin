@@ -77,6 +77,11 @@ public class ScriptedITest extends CommonITestsPipeline {
     }
 
     @Test
+    public void gradleCiServerPublicationTest() throws Exception {
+        super.gradleCiServerPublicationTest("scripted:gradle-ci-publication test");
+    }
+
+    @Test
     public void npmTest() throws Exception {
         super.npmTest("npm", "scripted:npm test", "package-name1:0.0.1");
     }
@@ -149,5 +154,15 @@ public class ScriptedITest extends CommonITestsPipeline {
     @Test
     public void appendBuildInfoTest() throws Exception {
         super.appendBuildInfoTest("scripted:appendBuildInfo test");
+    }
+
+    @Test
+    public void buildTriggerGlobalServerTest() throws Exception {
+        super.buildTriggerGlobalServerTest();
+    }
+
+    @Test
+    public void buildTriggerNewServerTest() throws Exception {
+        super.buildTriggerNewServerTest();
     }
 }

@@ -77,6 +77,11 @@ public class DeclarativeITest extends CommonITestsPipeline {
     }
 
     @Test
+    public void gradleCiServerPublicationTest() throws Exception {
+        super.gradleCiServerPublicationTest("declarative:gradle-ci-publication test");
+    }
+
+    @Test
     public void npmTest() throws Exception {
         super.npmTest("npm", "declarative:npm test", "package-name1:0.0.1");
     }
@@ -154,5 +159,15 @@ public class DeclarativeITest extends CommonITestsPipeline {
     @Test
     public void jfPipelinesReportStatusTest() throws Exception {
         super.jfPipelinesReportStatusTest();
+    }
+
+    @Test
+    public void buildTriggerGlobalServerTest() throws Exception {
+        super.buildTriggerGlobalServerTest();
+    }
+
+    @Test
+    public void buildTriggerNewServerTest() throws Exception {
+        super.buildTriggerNewServerTest();
     }
 }

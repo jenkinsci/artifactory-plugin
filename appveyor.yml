@@ -55,7 +55,7 @@ before_test:
   - sh: curl -s "https://get.sdkman.io" | bash
   - sh: source "/home/appveyor/.sdkman/bin/sdkman-init.sh"
   - sh: export MAVEN_HOME=/home/appveyor/.sdkman/candidates/maven/current && sdk use maven 3.3.9 || sdk install maven 3.3.9
-  - sh: export GRADLE_HOME=/home/appveyor/.sdkman/candidates/gradle/current && sdk default gradle || sdk install gradle
+  - sh: export GRADLE_HOME=/home/appveyor/.sdkman/candidates/gradle/current && sdk use gradle 6.5.1 || sdk install gradle 6.5.1
   - sh: export PYTHON=$HOME/venv3.7.7
   - sh: python -m venv pip-venv
   - sh: source /home/appveyor/projects/jenkins-artifactory-plugin/pip-venv/bin/activate
