@@ -223,15 +223,16 @@ public class Utils {
      */
     public static void launch(String taskName, Launcher launcher, ArgumentListBuilder args, EnvVars env, TaskListener listener, FilePath ws) {
         boolean failed;
+        int exitValue = 0;
         try {
-            int exitValue = launcher.launch().cmds(args).envs(env).stdout(listener).stderr(listener.getLogger()).pwd(ws).join();
+            exitValue = launcher.launch().cmds(args).envs(env).stdout(listener).stderr(listener.getLogger()).pwd(ws).join();
             failed = (exitValue != 0);
         } catch (Exception e) {
             listener.error("Couldn't execute " + taskName + " task. " + ExceptionUtils.getMessage(e));
             failed = true;
         }
         if (failed) {
-            throw new RuntimeException(taskName + " build failed");
+            throw new RuntimeException(taskName + " build failed with exit value " + exitValue);
         }
     }
 
