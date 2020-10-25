@@ -7,6 +7,9 @@ import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.util.EntityUtils;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.hudson.CredentialsConfig;
@@ -181,8 +184,17 @@ public class JFrogPipelinesServer implements Serializable {
      * @param logger  - The build logger
      */
     public void report(JobStatusPayload payload, Log logger) throws IOException {
+        HttpResponse response = null;
         try (JFrogPipelinesHttpClient client = createHttpClient(logger)) {
-            client.sendStatus(payload);
+            response = client.sendStatus(payload);
+            if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+                logger.error("Failed to report status to JFrog Pipelines. Received: " + response.getStatusLine());
+                return;
+            }
+        } finally {
+            if (response != null) {
+                EntityUtils.consume(response.getEntity());
+            }
         }
         logger.info("Successfully reported status '" + payload.getStatus() + "' to JFrog Pipelines.");
     }
