@@ -2,8 +2,11 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 
 import com.google.inject.Inject;
 import hudson.Extension;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
+import org.jfrog.hudson.pipeline.common.executors.CollectEnvExecutor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.Env;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -25,7 +28,7 @@ public class CollectEnvStep extends AbstractStepImpl {
         return env;
     }
 
-    public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Boolean> {
+    public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
         private transient CollectEnvStep step;
 
@@ -36,9 +39,10 @@ public class CollectEnvStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Boolean run() throws Exception {
-            step.getEnv().collectVariables(env, build, listener);
-            return true;
+        protected Void run() throws Exception {
+            CollectEnvExecutor collectEnvExecutor = new CollectEnvExecutor(build, listener, ws, step.getEnv(), env);
+            collectEnvExecutor.execute();
+            return null;
         }
     }
 
