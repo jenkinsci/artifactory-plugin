@@ -21,18 +21,6 @@ skip_tags: true
 environment:
   APPVEYOR_SAVE_CACHE_ON_ERROR: true
   GRADLE_OPTS: -Dorg.gradle.daemon=false
-  JENKINS_ARTIFACTORY_URL:
-    secure: RIh0gGFDn2JAnLUEEqLsQnZ5H3XFWg1s+Qq8Z4i+Xu+FtQf6Tsu2AnfY4/6AaXJ8
-  JENKINS_ARTIFACTORY_USERNAME:
-    secure: YEB5Wiv9a2vNpUhy+MfL+A==
-  JENKINS_ARTIFACTORY_PASSWORD:
-    secure: Um8o75MQIieSavIemF4ySA==
-  JENKINS_ARTIFACTORY_DOCKER_DOMAIN:
-    ecosysjfrog-docker-jenkins-tests.jfrog.io
-  JENKINS_ARTIFACTORY_DOCKER_REPO:
-    docker-jenkins-tests
-  JENKINS_DOCKER_TEST_ENABLE:
-    false
   USE_UNSUPPORTED_CONAN_WITH_PYTHON_2: true
 
   matrix:

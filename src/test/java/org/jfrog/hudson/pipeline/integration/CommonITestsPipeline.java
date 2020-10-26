@@ -11,7 +11,9 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
+import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.Module;
 import org.jfrog.build.extractor.docker.DockerJavaWrapper;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -482,12 +484,11 @@ public class CommonITestsPipeline extends PipelineTestBase {
 
     void dockerPushTest(String buildName) throws Exception {
         Assume.assumeFalse("Skipping Docker tests", SystemUtils.IS_OS_WINDOWS);
-        Assume.assumeTrue("Skipping Xray tests", JENKINS_DOCKER_TEST_ENABLE == null || Boolean.parseBoolean(JENKINS_DOCKER_TEST_ENABLE));
         try {
             // Get image name
-            String domainName = System.getenv("JENKINS_ARTIFACTORY_DOCKER_DOMAIN");
+            String domainName = System.getenv("JENKINS_ARTIFACTORY_DOCKER_PUSH_DOMAIN");
             if (StringUtils.isBlank(domainName)) {
-                throw new MissingArgumentException("The JENKINS_ARTIFACTORY_DOCKER_DOMAIN environment variable is not set.");
+                throw new MissingArgumentException("The JENKINS_ARTIFACTORY_DOCKER_PUSH_DOMAIN environment variable is not set.");
             }
             if (!StringUtils.endsWith(domainName, "/")) {
                 domainName += "/";
@@ -506,9 +507,48 @@ public class CommonITestsPipeline extends PipelineTestBase {
             Module module = modules.get(0);
             assertEquals(7, module.getArtifacts().size());
             assertEquals(5, module.getDependencies().size());
+
+            // Verify image's id exists in build-info.
+            List<Artifact> deps = module.getArtifacts();
+            assertFalse(deps.isEmpty());
+            String imageId = getImageId(imageName, host, null).replace(":", "__");
+            assertTrue(deps.stream().anyMatch(dep -> dep.getName().equals(imageId)));
         } finally {
             deleteBuild(artifactoryClient, buildName);
         }
+    }
+
+    void dockerPullTest(String buildName) throws Exception {
+        Assume.assumeFalse("Skipping Docker tests", SystemUtils.IS_OS_WINDOWS);
+        // Assert 'JENKINS_ARTIFACTORY_DOCKER_PULL_DOMAIN' environment variable exist
+        String domainName = System.getenv("JENKINS_ARTIFACTORY_DOCKER_PULL_DOMAIN");
+        if (StringUtils.isBlank(domainName)) {
+            throw new MissingArgumentException("The JENKINS_ARTIFACTORY_DOCKER_PULL_DOMAIN environment variable is not set.");
+        }
+        domainName = StringUtils.appendIfMissing(domainName, "/");
+        String imageName = domainName + "hello-world:latest";
+        String host = System.getenv("JENKINS_ARTIFACTORY_DOCKER_HOST");
+        // Run pipeline
+        runPipeline("dockerPull", false);
+
+        // Check that the actual image exist
+        assertNotEquals(StringUtils.EMPTY, DockerJavaWrapper.getImageIdFromTag(imageName, host, new EnvVars(), null));
+
+        //Check build info
+        String buildNumber = "1";
+
+        // Get build info
+        Build buildInfo = getBuildInfo(buildInfoClient, buildName, buildNumber);
+        assertEquals(1, buildInfo.getModules().size());
+        List<Module> modules = buildInfo.getModules();
+        Module module = modules.get(0);
+        assertNull(module.getArtifacts());
+
+        // Verify image's id exists in build-info.
+        List<Dependency> deps = module.getDependencies();
+        assertFalse(deps.isEmpty());
+        String imageId = getImageId(imageName, host, null).replace(":", "__");
+        assertTrue(deps.stream().anyMatch(dep -> dep.getId().equals(imageId)));
     }
 
     void xrayScanTest(String buildName, boolean failBuild) throws Exception {
