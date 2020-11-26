@@ -66,18 +66,7 @@ public class MavenDependenciesRecorder extends MavenReporter {
     @Override
     public boolean postBuild(MavenBuildProxy build, MavenProject pom, BuildListener listener)
             throws InterruptedException, IOException {
-        build.executeAsync(new BuildCallable<Void, IOException>() {
-            // record is transient, so needs to make a copy first
-            private final Set<MavenDependency> d = dependencies;
-
-            public Void call(MavenBuild build) throws IOException, InterruptedException {
-                // add the action
-                //TODO: [by yl] These actions are persisted into the build.xml of each build run - we need another
-                //context to store these actions
-                build.getActions().add(new MavenDependenciesRecord(build, d));
-                return null;
-            }
-        });
+        build.executeAsync(new PostBuildCallable());
         return true;
     }
 
@@ -105,4 +94,17 @@ public class MavenDependenciesRecorder extends MavenReporter {
     }
 
     private static final long serialVersionUID = 1L;
+
+    private class PostBuildCallable implements BuildCallable<Void, IOException> {
+        // record is transient, so needs to make a copy first
+        private final Set<MavenDependency> d = dependencies;
+
+        public Void call(MavenBuild build) throws IOException, InterruptedException {
+            // add the action
+            //TODO: [by yl] These actions are persisted into the build.xml of each build run - we need another
+            //context to store these actions
+            build.getActions().add(new MavenDependenciesRecord(build, d));
+            return null;
+        }
+    }
 }
