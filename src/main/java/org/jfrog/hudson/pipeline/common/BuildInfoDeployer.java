@@ -6,6 +6,7 @@ import jenkins.model.Jenkins;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.*;
+import org.jfrog.build.api.Module;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
@@ -78,7 +79,7 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
     }
 
     private List<Vcs> getVcsFromGitPlugin(Run build) {
-        if (Jenkins.getInstance().getPlugin(PluginsUtils.GIT_PLUGIN_ID) == null) {
+        if (Jenkins.get().getPlugin(PluginsUtils.GIT_PLUGIN_ID) == null) {
             return new ArrayList<>();
         }
         List<Vcs> vcsList = Utils.extractVcsBuildData(build);
@@ -95,11 +96,11 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
     }
 
     private void addBuildInfoResultAction(String artifactoryUrl) {
-        synchronized (build.getActions()) {
+        synchronized (build.getAllActions()) {
             BuildInfoResultAction action = build.getAction(BuildInfoResultAction.class);
             if (action == null) {
                 action = new BuildInfoResultAction(build);
-                build.getActions().add(action);
+                build.addAction(action);
             }
             action.addBuildInfoResults(artifactoryUrl, buildInfo);
         }

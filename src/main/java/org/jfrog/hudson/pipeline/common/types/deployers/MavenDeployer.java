@@ -156,12 +156,12 @@ public class MavenDeployer extends Deployer {
      * If such action was not initialized yet, initialize a new one.
      */
     public static void addDeployedArtifactsAction(Run build, String artifactoryUrl, List<Artifact> mavenArtifacts) {
-        synchronized (build.getActions()) {
+        synchronized (build.getAllActions()) {
             DeployedMavenArtifactsAction action = build.getAction(DeployedMavenArtifactsAction.class);
             // Initialize action if haven't done so yet.
             if (action == null) {
                 action = new DeployedMavenArtifactsAction(build);
-                build.getActions().add(action);
+                build.addAction(action);
             }
             action.addDeployedMavenArtifacts(artifactoryUrl, mavenArtifacts);
         }

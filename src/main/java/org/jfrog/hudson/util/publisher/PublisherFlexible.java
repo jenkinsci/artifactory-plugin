@@ -34,8 +34,8 @@ public class PublisherFlexible<T extends Publisher> implements PublisherFind<T> 
 
         List<ConditionalPublisher> conditions = ((FlexiblePublisher) flexiblePublisher).getPublishers();
         for (ConditionalPublisher condition : conditions) {
-            if (type.isInstance(condition.getPublisher())) {
-                return type.cast(condition.getPublisher());
+            if (type.isInstance(condition.getPublisherList().get(0))) {
+                return type.cast(condition.getPublisherList().get(0));
             }
         }
 
@@ -50,7 +50,7 @@ public class PublisherFlexible<T extends Publisher> implements PublisherFind<T> 
      */
     public T find(AbstractProject<?, ?> project, Class<T> type) {
         // First check that the Flexible Publish plugin is installed:
-        if (Jenkins.getInstance().getPlugin(FLEXIBLE_PUBLISH_PLUGIN) != null) {
+        if (Jenkins.get().getPlugin(FLEXIBLE_PUBLISH_PLUGIN) != null) {
             // Iterate all the project's publishers and find the flexible publisher:
             for (Publisher publisher : project.getPublishersList()) {
                 // Found the flexible publisher:

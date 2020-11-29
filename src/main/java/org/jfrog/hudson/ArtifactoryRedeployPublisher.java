@@ -363,9 +363,9 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
     }
 
     private void addJobActions(AbstractBuild build, String buildName) {
-        build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
+        build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
         if (isAllowPromotionOfNonStagedBuilds()) {
-            build.getActions().add(new UnifiedPromoteBuildAction(build, this));
+            build.addAction(new UnifiedPromoteBuildAction(build, this));
         }
     }
 
@@ -550,7 +550,7 @@ public class ArtifactoryRedeployPublisher extends Recorder implements DeployerOv
         }
 
         public boolean isJiraPluginEnabled() {
-            return (Jenkins.getInstance().getPlugin("jira") != null);
+            return (Jenkins.get().getPlugin("jira") != null);
         }
 
         public boolean isUseCredentialsPlugin() {

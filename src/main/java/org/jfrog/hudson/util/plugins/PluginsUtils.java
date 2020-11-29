@@ -47,17 +47,17 @@ public class PluginsUtils {
     public static ListBoxModel fillPluginCredentials(Item project, Authentication authentication) {
         List<DomainRequirement> domainRequirements = Collections.emptyList();
         return new StandardListBoxModel()
-                .withEmptySelection()
-                .withMatching(
+                .includeEmptyValue()
+                .includeMatchingAs(
+                        authentication,
+                        project,
+                        StandardCredentials.class,
+                        domainRequirements,
                         CredentialsMatchers.anyOf(
                                 CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class),
                                 CredentialsMatchers.instanceOf(StringCredentials.class),
                                 CredentialsMatchers.instanceOf(StandardCertificateCredentials.class)
-                        ),
-                        CredentialsProvider.lookupCredentials(StandardCredentials.class,
-                                project,
-                                authentication,
-                                domainRequirements)
+                        )                        
                 );
     }
 
@@ -101,7 +101,7 @@ public class PluginsUtils {
 
     private static ArtifactoryBuilder.DescriptorImpl getDescriptor() {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
-                Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
+                Hudson.get().getDescriptor(ArtifactoryBuilder.class);
         if (descriptor != null) {
             return descriptor;
         }
