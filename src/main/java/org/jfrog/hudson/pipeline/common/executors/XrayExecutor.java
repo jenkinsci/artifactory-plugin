@@ -7,6 +7,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.client.artifactoryXrayResponse.ArtifactoryXrayResponse;
+import org.jfrog.build.extractor.buildScanTable.BuildScanTableHelper;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryXrayClient;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
@@ -50,6 +51,11 @@ public class XrayExecutor implements Executor {
 
         if (xrayScanResult.isFoundVulnerable()) {
             addXrayResultAction(xrayScanResult.getScanUrl(), xrayScanConfig.getBuildName(), xrayScanConfig.getBuildNumber());
+
+            if (xrayScanConfig.getPrintTable()) {
+                new BuildScanTableHelper().PrintTable(buildScanResult, log);
+            }
+
             if (xrayScanConfig.getFailBuild()) {
                 throw new XrayScanException(xrayScanResult);
             }
