@@ -1,5 +1,6 @@
 node('java') {
-    cleanWs()
+    //jenkins ci server does not have this plugin installed
+    //cleanWs()
     def jdktool = tool name: "1.8.0_102"
     env.JAVA_HOME = jdktool
 
