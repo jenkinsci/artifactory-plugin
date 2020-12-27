@@ -39,7 +39,7 @@ pipelines:
             - ./jfrog rt c ojo --url $int_ojo_rt_url --access-token=$int_ojo_rt_token
             - ./jfrog rt mvnc
               --server-id-resolve ojo --repo-resolve-releases libs-release --repo-resolve-snapshots libs-snapshot
-              --server-id-deploy ojo --repo-deploy-releases libs-release-local --repo-deploy-snapshots libs-snapshot-local
+              --server-id-deploy ojo --repo-deploy-releases oss-release-local --repo-deploy-snapshots oss-snapshot-local
 
             # Run install and publish
             - >
