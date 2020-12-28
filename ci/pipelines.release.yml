@@ -41,7 +41,7 @@ pipelines:
             # Configure git
             - git checkout master
             - git remote set-url origin https://$int_github_generic_token@github.com/jfrog/jenkins-artifactory-plugin.git
-            - ssh-add ~/.ssh/jenkins_id_rsa
+            - eval "$(ssh-agent)" && ssh-add ~/.ssh/jenkins_id_rsa
             - git remote add upstream git@github.com:jenkinsci/artifactory-plugin.git
 
             # Make sure versions provided
