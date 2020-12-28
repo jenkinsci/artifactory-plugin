@@ -39,8 +39,10 @@ pipelines:
             - export JFROG_CLI_BUILD_NUMBER=$run_number
 
             # Configure git
+            - git config --global user.user eco-system
+            - git config --global user.email eco-system@jfrog.com
             - git checkout master
-            - git remote set-url origin https://il-automation:$int_github_generic_token@github.com/jfrog/jenkins-artifactory-plugin.git
+            - git remote set-url origin https://$int_github_generic_token@github.com/jfrog/jenkins-artifactory-plugin.git
             - eval "$(ssh-agent)" && ssh-add ~/.ssh/jenkins_id_rsa
             - git remote add upstream git@github.com:jenkinsci/artifactory-plugin.git
 
