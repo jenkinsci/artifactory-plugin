@@ -86,6 +86,7 @@ pipelines:
             # Push changes to JFrog and Jenkins Git
             - git push
             - git push upstream master
+            - git push upstream master --tags
 
           onComplete:
             # Show tests in the *Tests* tab
