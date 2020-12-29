@@ -83,7 +83,8 @@ pipelines:
             - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME mvn versions:set -DnewVersion=$NEXT_DEVELOPMENT_VERSION -B
             - git commit -am "[artifactory-release] Next development version [skipRun]"
 
-            # Push changes to Jenkins Git
+            # Push changes to JFrog and Jenkins Git
+            - git push
             - git push upstream master
 
           onComplete:
