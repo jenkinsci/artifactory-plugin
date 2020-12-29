@@ -23,6 +23,7 @@ pipelines:
             - name: jenkinsReleaseGit
           integrations:
             - name: ojo
+            - name: jenkins_artifactory
             - name: github_generic
             - name: jenkins_id_rsa
         execution:
@@ -39,8 +40,6 @@ pipelines:
             - export JFROG_CLI_BUILD_NUMBER=$run_number
 
             # Configure git
-            - git config --global user.user eco-system
-            - git config --global user.email eco-system@jfrog.com
             - git checkout master
             - git remote set-url origin https://$int_github_generic_token@github.com/jfrog/jenkins-artifactory-plugin.git
             - eval "$(ssh-agent)" && ssh-add ~/.ssh/jenkins_id_rsa
@@ -56,9 +55,10 @@ pipelines:
 
             # Configure JFrog CLI
             - ./jfrog rt c ojo --url $int_ojo_rt_url --access-token=$int_ojo_rt_token
+            - ./jfrog rt c jenkins_artifactory --url $int_jenkins_artifactory_rt_url --user=$int_jenkins_artifactory_rt_user --password=$int_jenkins_artifactory_rt_password
             - ./jfrog rt mvnc
               --server-id-resolve ojo --repo-resolve-releases jfrog-dependencies --repo-resolve-snapshots jfrog-dependencies
-              --server-id-deploy ojo --repo-deploy-releases releases --repo-deploy-snapshots snapshots
+              --server-id-deploy jenkins_artifactory --repo-deploy-releases releases --repo-deploy-snapshots snapshots
 
             # Sync changes with upstream
             - git pull upstream master
