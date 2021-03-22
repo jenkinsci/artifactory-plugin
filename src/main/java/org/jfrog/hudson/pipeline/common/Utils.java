@@ -21,7 +21,11 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jenkinsci.plugins.workflow.actions.WorkspaceAction;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
+import org.jenkinsci.plugins.workflow.graph.FlowGraphWalker;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.build.api.BuildInfoFields;
@@ -67,12 +71,41 @@ public class Utils {
      * @throws InterruptedException if context.get fails.
      */
     public static FilePath extractRootWorkspace(StepContext context, WorkflowRun build, FilePath cwd) throws IOException, InterruptedException {
+        FilePath flowWorkspace = extractRootWorkspaceFromFlow(build.getExecution());
+        if (flowWorkspace != null) {
+            return flowWorkspace;
+        }
         Node node = context.get(Node.class);
         if (node == null) {
             return cwd;
         }
         FilePath ws = node.getWorkspaceFor(build.getParent());
         return ObjectUtils.defaultIfNull(ws, cwd);
+    }
+
+    /**
+     * Walk all flow nodes and find the top most workspace action. This
+     * action would represent the root workspace for the workflow run.
+     *
+     * @param execution the execution of the workflow run.
+     * @return the root workspace from the flow node tree, or null if none exist.
+     */
+    private static FilePath extractRootWorkspaceFromFlow(FlowExecution execution) {
+        if (execution == null) {
+            return null;
+        }
+        FlowGraphWalker flowWalker = new FlowGraphWalker(execution);
+        FilePath rootPath = null;
+        for (FlowNode node : flowWalker) {
+            WorkspaceAction workspaceAction = node.getAction(WorkspaceAction.class);
+            if (workspaceAction != null) {
+                FilePath rootWorkspace = workspaceAction.getWorkspace();
+                if (rootWorkspace != null) {
+                    rootPath = rootWorkspace;
+                }
+            }
+        }
+        return rootPath;
     }
 
     /**
