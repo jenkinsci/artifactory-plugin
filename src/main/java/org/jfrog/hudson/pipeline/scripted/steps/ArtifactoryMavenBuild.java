@@ -3,10 +3,13 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 import com.google.inject.Inject;
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.*;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.executors.MavenExecutor;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.builds.MavenBuild;
+import org.jfrog.hudson.pipeline.common.types.deployers.Deployer;
+import org.jfrog.hudson.pipeline.common.types.resolvers.Resolver;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -15,7 +18,7 @@ import java.io.IOException;
  * Created by Tamirh on 04/08/2016.
  */
 public class ArtifactoryMavenBuild extends AbstractStepImpl {
-
+    static final String STEP_NAME = "artifactoryMavenBuild";
     private MavenBuild mavenBuild;
     private String goals;
     private String pom;
@@ -62,6 +65,24 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
             mavenExecutor.execute();
             return mavenExecutor.getBuildInfo();
         }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() {
+            Deployer deployer = step.mavenBuild.getDeployer();
+            if (deployer != null) {
+                return deployer.getArtifactoryServer();
+            }
+            Resolver resolver = step.mavenBuild.getResolver();
+            if (resolver != null) {
+                return resolver.getArtifactoryServer();
+            }
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
+        }
     }
 
     @Extension
@@ -73,7 +94,7 @@ public class ArtifactoryMavenBuild extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "artifactoryMavenBuild";
+            return STEP_NAME;
         }
 
         @Override

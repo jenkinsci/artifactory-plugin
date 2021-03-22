@@ -3,6 +3,7 @@ package org.jfrog.hudson.pipeline.declarative.steps.maven;
 import com.google.inject.Inject;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
@@ -17,7 +18,6 @@ import java.io.IOException;
  */
 @SuppressWarnings("unused")
 public class MavenDeployerResolver extends AbstractStepImpl {
-
     BuildDataFile buildDataFile;
 
     @DataBoundConstructor
@@ -40,6 +40,16 @@ public class MavenDeployerResolver extends AbstractStepImpl {
             String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
             BuildDataFile buildDataFile = step.buildDataFile;
             DeclarativePipelineUtils.writeBuildDataFile(rootWs, buildNumber, buildDataFile, new JenkinsBuildInfoLog(listener));
+            return null;
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
             return null;
         }
     }

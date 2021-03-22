@@ -10,6 +10,7 @@ import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.builds.MavenBuild;
+import org.jfrog.hudson.pipeline.common.types.deployers.Deployer;
 import org.jfrog.hudson.pipeline.common.types.deployers.MavenDeployer;
 import org.jfrog.hudson.pipeline.common.types.resolvers.MavenResolver;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
@@ -30,7 +31,7 @@ import static org.jfrog.hudson.util.SerializationUtils.createMapper;
  */
 @SuppressWarnings("unused")
 public class MavenStep extends AbstractStepImpl {
-
+    static final String STEP_NAME = "rtMavenRun";
     private final MavenBuild mavenBuild;
     private final String goals;
     private final String pom;
@@ -95,6 +96,24 @@ public class MavenStep extends AbstractStepImpl {
             buildInfo = mavenExecutor.getBuildInfo();
             DeclarativePipelineUtils.saveBuildInfo(buildInfo, rootWs, build, new JenkinsBuildInfoLog(listener));
             return null;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            Deployer deployer = step.mavenBuild.getDeployer();
+            if (deployer != null) {
+                return deployer.getArtifactoryServer();
+            }
+            MavenResolver resolver = step.mavenBuild.getResolver();
+            if (resolver != null) {
+                return resolver.getArtifactoryServer();
+            }
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
 
         private void setMavenBuild() throws IOException, InterruptedException {

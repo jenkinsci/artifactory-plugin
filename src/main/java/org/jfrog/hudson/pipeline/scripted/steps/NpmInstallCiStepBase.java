@@ -3,11 +3,13 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 import com.google.inject.Inject;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.NpmInstallCiExecutor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.builds.NpmBuild;
+import org.jfrog.hudson.pipeline.common.types.resolvers.Resolver;
 
 import java.io.IOException;
 
@@ -34,6 +36,8 @@ abstract public class NpmInstallCiStepBase extends AbstractStepImpl {
         this.isCiCommand = isCiCommand;
     }
 
+    public abstract String getUsageReportFeatureName();
+
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<BuildInfo> {
 
         private transient NpmInstallCiStepBase step;
@@ -50,6 +54,20 @@ abstract public class NpmInstallCiStepBase extends AbstractStepImpl {
             NpmInstallCiExecutor npmInstallCiExecutor = new NpmInstallCiExecutor(step.buildInfo, launcher, step.npmBuild, step.javaArgs, step.args, ws, step.path, step.module, env, listener, build, step.isCiCommand);
             npmInstallCiExecutor.execute();
             return npmInstallCiExecutor.getBuildInfo();
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() {
+            Resolver resolver = step.npmBuild.getResolver();
+            if (resolver != null) {
+                return resolver.getArtifactoryServer();
+            }
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return step.getUsageReportFeatureName();
         }
     }
 }

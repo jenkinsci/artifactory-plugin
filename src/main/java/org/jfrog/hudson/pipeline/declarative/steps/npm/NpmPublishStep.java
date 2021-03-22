@@ -14,6 +14,7 @@ import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.builds.NpmBuild;
 import org.jfrog.hudson.pipeline.common.types.deployers.CommonDeployer;
+import org.jfrog.hudson.pipeline.common.types.resolvers.Resolver;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
@@ -32,6 +33,7 @@ import java.io.IOException;
  */
 @SuppressWarnings("unused")
 public class NpmPublishStep extends AbstractStepImpl {
+    static final String STEP_NAME = "rtNpmPublish";
 
     private final NpmBuild npmBuild;
     private String customBuildNumber;
@@ -102,6 +104,21 @@ public class NpmPublishStep extends AbstractStepImpl {
             return null;
         }
 
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            setDeployer(BuildUniqueIdentifierHelper.getBuildNumber(build));
+            Resolver resolver = step.npmBuild.getResolver();
+            if (resolver != null) {
+                return resolver.getArtifactoryServer();
+            }
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
+        }
+
         private void setDeployer(String buildNumber) throws IOException, InterruptedException {
             if (StringUtils.isBlank(step.deployerId)) {
                 return;
@@ -141,7 +158,7 @@ public class NpmPublishStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "rtNpmPublish";
+            return STEP_NAME;
         }
 
         @Override
