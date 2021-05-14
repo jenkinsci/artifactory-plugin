@@ -11,7 +11,6 @@ import jenkins.MasterToSlaveFileCallable;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
-import org.jfrog.build.api.Module;
 import org.jfrog.build.api.*;
 import org.jfrog.build.api.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
@@ -41,6 +40,7 @@ public class BuildInfo implements Serializable {
 
     private String name; // Build name
     private String number; // Build number
+    private String project; // Project in Artifactory
     private Date startDate;
     private BuildRetention retention;
     // The candidates artifacts to be deployed in the 'deployArtifacts' step, sorted by module name.
@@ -76,6 +76,12 @@ public class BuildInfo implements Serializable {
     }
 
     @Whitelisted
+    public void setProject(String project) {
+            this.project = project;
+            this.issues.setProject(project);
+    }
+
+    @Whitelisted
     public String getName() {
         return name;
     }
@@ -83,6 +89,11 @@ public class BuildInfo implements Serializable {
     @Whitelisted
     public String getNumber() {
         return number;
+    }
+
+    @Whitelisted
+    public String getProject() {
+        return project;
     }
 
     @Whitelisted
