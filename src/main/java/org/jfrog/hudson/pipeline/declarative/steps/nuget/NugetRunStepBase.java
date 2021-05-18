@@ -71,6 +71,9 @@ abstract public class NugetRunStepBase extends AbstractStepImpl {
         this.args = args;
     }
 
+    @DataBoundSetter
+    public void setApiProtocol(String apiProtocol) { nugetBuild.setApiProtocol(apiProtocol); }
+
     public abstract String getUsageReportFeatureName();
 
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
