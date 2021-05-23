@@ -38,7 +38,7 @@ import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.client.ArtifactoryVersion;
 import org.jfrog.build.client.ProxyConfiguration;
 import org.jfrog.build.client.Version;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.client.artifactory.ArtifactoryManager;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.jfpipelines.JFrogPipelinesHttpClient;
 import org.jfrog.hudson.jfpipelines.JFrogPipelinesServer;
@@ -170,26 +170,26 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 }
             }
 
-            ArtifactoryBuildInfoClient client;
+            ArtifactoryManager artifactoryManager;
             if (StringUtils.isNotEmpty(username) || StringUtils.isNotEmpty(accessToken)) {
-                client = new ArtifactoryBuildInfoClient(targetArtUrl, username, password, accessToken, new NullLog());
+                artifactoryManager = new ArtifactoryManager(url, username, password, accessToken, new NullLog());
             } else {
-                client = new ArtifactoryBuildInfoClient(targetArtUrl, new NullLog());
+                artifactoryManager = new ArtifactoryManager(url, new NullLog());
             }
 
             try {
                 if (!bypassProxy && Jenkins.get().proxy != null) {
-                    client.setProxyConfiguration(createProxyConfiguration());
+                    artifactoryManager.setProxyConfiguration(createProxyConfiguration());
                 }
 
                 if (StringUtils.isNotBlank(timeout)) {
-                    client.setConnectionTimeout(Integer.parseInt(timeout));
+                    artifactoryManager.setConnectionTimeout(Integer.parseInt(timeout));
                 }
-                RepositoriesUtils.setRetryParams(connectionRetry, client);
+                RepositoriesUtils.setRetryParams(connectionRetry, artifactoryManager);
 
                 ArtifactoryVersion version;
                 try {
-                    version = client.verifyCompatibleArtifactoryVersion();
+                    version = artifactoryManager.getVersion();
                 } catch (UnsupportedOperationException uoe) {
                     return FormValidation.warning(uoe.getMessage());
                 } catch (Exception e) {
@@ -197,7 +197,7 @@ public class ArtifactoryBuilder extends GlobalConfiguration {
                 }
                 return FormValidation.ok("Found Artifactory " + version.toString() + " on " + targetArtUrl);
             } finally {
-                client.close();
+                artifactoryManager.close();
             }
         }
 
