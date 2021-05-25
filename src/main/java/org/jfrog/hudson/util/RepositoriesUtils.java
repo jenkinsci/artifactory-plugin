@@ -126,7 +126,7 @@ public abstract class RepositoriesUtils {
     public static ArtifactoryServer getArtifactoryServer(String key) {
         JFrogPlatformInstance JFrogPlatformInstance = getJFrogPlatformInstances(key);
         if (JFrogPlatformInstance != null) {
-            return JFrogPlatformInstance.getArtifactoryServer();
+            return JFrogPlatformInstance.getArtifactory();
         }
         return null;
     }
@@ -141,7 +141,7 @@ public abstract class RepositoriesUtils {
         List<JFrogPlatformInstance> jfrogInstances = getJFrogPlatformInstances();
         if (jfrogInstances != null && jfrogInstances.size() > 0) {
             for (JFrogPlatformInstance JFrogPlatformInstance : jfrogInstances) {
-                if (JFrogPlatformInstance.getArtifactoryServer().getArtifactoryUrl().equals(key) || JFrogPlatformInstance.getArtifactoryServer().getServerId().equals(key)) {
+                if (JFrogPlatformInstance.getArtifactory().getArtifactoryUrl().equals(key) || JFrogPlatformInstance.getArtifactory().getServerId().equals(key)) {
                     return JFrogPlatformInstance;
                 }
             }
