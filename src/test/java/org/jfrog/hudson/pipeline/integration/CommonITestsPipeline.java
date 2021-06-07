@@ -258,11 +258,11 @@ public class CommonITestsPipeline extends PipelineTestBase {
         }
     }
 
-    void mavenTest(String buildName) throws Exception {
+    void mavenTest(String buildName, boolean useWrapper) throws Exception {
         Set<String> expectedArtifacts = Sets.newHashSet("multi-3.7-SNAPSHOT.pom");
         String buildNumber = "3";
         try {
-            runPipeline("maven", false);
+            runPipeline(useWrapper ? "mavenWrapper" : "maven", false);
             Build buildInfo = getBuildInfo(artifactoryManager, buildName, buildNumber);
             assertFilteredProperties(buildInfo);
             assertEquals(4, buildInfo.getModules().size());

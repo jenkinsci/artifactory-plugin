@@ -58,7 +58,7 @@ public class ScriptedITest extends CommonITestsPipeline {
 
     @Test
     public void uploadWithProjectTest() throws Exception {
-        super.uploadTest("scripted:project upload test","jit", "uploadWithProject");
+        super.uploadTest("scripted:project upload test", "jit", "uploadWithProject");
     }
 
     @Test
@@ -78,7 +78,12 @@ public class ScriptedITest extends CommonITestsPipeline {
 
     @Test
     public void mavenTest() throws Exception {
-        super.mavenTest("scripted:maven test");
+        super.mavenTest("scripted:maven test", false);
+    }
+
+    @Test
+    public void mavenWrapperTest() throws Exception {
+        super.mavenTest("scripted:mavenWrapper test", true);
     }
 
     @Test
