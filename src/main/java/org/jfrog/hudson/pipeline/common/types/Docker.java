@@ -103,4 +103,29 @@ public class Docker implements Serializable {
         // Throws CpsCallableInvocation - Must be the last line in this method
         cpsScript.invokeMethod("dockerPullStep", dockerArguments);
     }
+
+    @Whitelisted
+    public void createDockerBuild(String sourceRepo, String kanikoImageFile, String jibImageFiles) {
+        createDockerBuild(sourceRepo, kanikoImageFile, jibImageFiles, null);
+    }
+
+    @Whitelisted
+    public void createDockerBuild(String sourceRepo, String kanikoImageFile, String jibImageFiles, BuildInfo providedBuildInfo) {
+        Map<String, Object> dockerArguments = Maps.newLinkedHashMap();
+        dockerArguments.put("kanikoImageFile", kanikoImageFile);
+        dockerArguments.put("jibImageFiles", jibImageFiles);
+        dockerArguments.put("sourceRepo", sourceRepo);
+        dockerArguments.put(BUILD_INFO, providedBuildInfo);
+        createDockerBuild(dockerArguments);
+    }
+
+    @Whitelisted
+    public void createDockerBuild(Map<String, Object> dockerArguments) {
+        dockerArguments.put("server", server);
+        dockerArguments.put("javaArgs", javaArgs);
+        appendBuildInfo(cpsScript, dockerArguments);
+        // Throws CpsCallableInvocation - Must be the last line in this method
+        cpsScript.invokeMethod("createDockerBuildStep", dockerArguments);
+    }
+
 }

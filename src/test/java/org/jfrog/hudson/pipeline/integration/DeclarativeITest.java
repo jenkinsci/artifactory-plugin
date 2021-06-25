@@ -87,6 +87,11 @@ public class DeclarativeITest extends CommonITestsPipeline {
     }
 
     @Test
+    public void mavenJibTest() throws Exception {
+        super.mavenJibTest("declarative:mavenJib test");
+    }
+
+    @Test
     public void gradleTest() throws Exception {
         super.gradleTest("declarative:gradle test");
     }
