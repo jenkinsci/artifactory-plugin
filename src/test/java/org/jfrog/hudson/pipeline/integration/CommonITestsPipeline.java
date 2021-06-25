@@ -758,6 +758,7 @@ public class CommonITestsPipeline extends PipelineTestBase {
 
         // Change something in Artifactory server
         ArtifactoryServer server = RepositoriesUtils.getArtifactoryServer("LOCAL");
+        assertNotNull(server);
         server.setConnectionRetry(4);
 
         // Make sure the change took place

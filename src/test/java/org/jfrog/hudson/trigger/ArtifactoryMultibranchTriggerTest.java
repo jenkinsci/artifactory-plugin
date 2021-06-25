@@ -37,7 +37,7 @@ public class ArtifactoryMultibranchTriggerTest {
         jobs.add(new WorkflowJob(null, "branch1"));
         jobs.add(new WorkflowJob(null, "branch2"));
         jobsToTrigger = multibranchTrigger.getJobsToTrigger(jobs);
-        assertEquals(1, jobsToTrigger.size());
+        assertEquals(2, jobsToTrigger.size());
     }
 
     @Test
