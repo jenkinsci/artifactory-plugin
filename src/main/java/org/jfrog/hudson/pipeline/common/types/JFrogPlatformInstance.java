@@ -1,6 +1,7 @@
 package org.jfrog.hudson.pipeline.common.types;
 
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 
 import java.io.Serializable;
@@ -9,23 +10,40 @@ import java.io.Serializable;
  * Represents an instance of JFrog Platform from pipeline script.
  */
 public class JFrogPlatformInstance implements Serializable {
-    private final ArtifactoryServer artifactoryServer;
+    private final ArtifactoryServer artifactory;
+    private final DistributionServer distribution;
     private String id;
     private String url;
-    private CpsScript cpsScript;
 
-    public JFrogPlatformInstance(ArtifactoryServer artifactoryServer, String url, String id) {
-        this.id = id;
-        this.url = StringUtils.removeEnd(url, "/");
-        this.artifactoryServer = artifactoryServer;
+    public JFrogPlatformInstance() {
+        artifactory = new ArtifactoryServer();
+        distribution = new DistributionServer();
     }
 
-    public ArtifactoryServer getArtifactoryServer() {
-        return artifactoryServer;
+    public JFrogPlatformInstance(ArtifactoryServer artifactory, DistributionServer distribution, String url, String id) {
+        this.id = id;
+        this.url = StringUtils.removeEnd(url, "/");
+        this.artifactory = artifactory;
+        this.distribution = distribution;
+    }
+
+    @Whitelisted
+    public ArtifactoryServer getArtifactory() {
+        return artifactory;
+    }
+
+    @Whitelisted
+    public DistributionServer getDistribution() {
+        return distribution;
     }
 
     public void setCpsScript(CpsScript cpsScript) {
-        this.cpsScript = cpsScript;
+        if (artifactory != null) {
+            artifactory.setCpsScript(cpsScript);
+        }
+        if (distribution != null) {
+            distribution.setCpsScript(cpsScript);
+        }
     }
 
     public String getUrl() {
