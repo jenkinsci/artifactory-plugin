@@ -28,7 +28,7 @@ pipelines:
         execution:
           onStart:
             - *UPDATE_COMMIT_STATUS
-            - restore_cache_files m2_home ${HOME}/.m2
+#            - restore_cache_files m2_home ${HOME}/.m2
           onExecute:
             - cd $res_jenkinsReleaseGit_resourcePath
 
@@ -53,8 +53,7 @@ pipelines:
             - curl -fL https://getcli.jfrog.io | sh && chmod +x jfrog
 
             # Configure JFrog CLI
-            - ./jfrog c add jenkins_artifactory --url $int_jenkins_artifactory_rt_url --user=$int_jenkins_artifactory_rt_user --password=$int_jenkins_artifactory_rt_password --enc-password=false
-            - ./jfrog c add releases --artifactory-url=https://releases.jfrog.io/artifactory
+            - ./jfrog c add jenkins_artifactory --artifactory-url $int_jenkins_artifactory_rt_url --user=$int_jenkins_artifactory_rt_user --password=$int_jenkins_artifactory_rt_password --enc-password=false
             - ./jfrog rt mvnc --server-id-deploy jenkins_artifactory --repo-deploy-releases releases --repo-deploy-snapshots snapshots
 
             # Sync changes with upstream
@@ -92,4 +91,4 @@ pipelines:
             - *UPDATE_COMMIT_STATUS
 
             # Save .m2 cache
-            - add_cache_files ${HOME}/.m2 m2_home
+#            - add_cache_files ${HOME}/.m2 m2_home
