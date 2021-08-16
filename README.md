@@ -32,10 +32,11 @@ To run unit tests execute the following command:
 ### Integration tests
 #### Running integration tests
 Before running the integration tests, set the following environment variables.
+See [here](https://www.jfrog.com/confluence/display/JFROG/Access+Tokens#AccessTokens-GeneratingAdminTokens) how to generate a Platform Admin Token.
 
 *JENKINS_PLATFORM_URL*<br>
-*JENKINS_ARTIFACTORY_USERNAME*<br>
-*JENKINS_ARTIFACTORY_PASSWORD*<br>
+*JENKINS_PLATFORM_USERNAME*<br>
+*JENKINS_PLATFORM_ADMIN_TOKEN*<br>
 *JENKINS_ARTIFACTORY_DOCKER_PUSH_DOMAIN* (For example, server-docker-local.jfrog.io)<br>
 *JENKINS_ARTIFACTORY_DOCKER_PULL_DOMAIN* (For example, server-docker-remote.jfrog.io)<br>
 *JENKINS_ARTIFACTORY_DOCKER_PUSH_REPO* (For example, docker-local)<br>
