@@ -1,18 +1,21 @@
 package org.jfrog.hudson.pipeline.common.types.deployers;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import hudson.model.Run;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jfrog.build.extractor.clientConfiguration.util.DeploymentUrlUtils;
 import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.pipeline.action.DeployedArtifact;
+import org.jfrog.hudson.pipeline.action.DeployedGradleArtifactsAction;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.GradlePublications;
-import org.jfrog.hudson.util.ExtractorUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by Tamirh on 16/08/2016.
@@ -184,5 +187,21 @@ public class GradleDeployer extends Deployer {
                 .deploymentProperties(DeploymentUrlUtils.buildMatrixParamsString(getProperties(), false))
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
                 .publications(getPublications().getPublications());
+    }
+
+    /**
+     * Adds the provided artifacts to the Deployed Gradle Artifacts Summary Action.
+     * If such action was not initialized yet, initialize a new one.
+     */
+    public static void addDeployedGradleArtifactsToAction(Run<?, ?> build, List<DeployedArtifact> gradleArtifacts) {
+        synchronized (build.getAllActions()) {
+            DeployedGradleArtifactsAction action = build.getAction(DeployedGradleArtifactsAction.class);
+            // Initialize action if we haven't done so yet.
+            if (action == null) {
+                action = new DeployedGradleArtifactsAction(build);
+                build.addAction(action);
+            }
+            action.appendDeployedArtifacts(gradleArtifacts);
+        }
     }
 }

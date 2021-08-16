@@ -2,7 +2,10 @@ package org.jfrog.hudson.pipeline.action;
 
 import java.io.Serializable;
 
-public class DeployedMavenArtifact implements Serializable {
+/**
+ * Deployed artifact to display as part of the pipeline's summary.
+ */
+public class DeployedArtifact implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final String artifactoryUrl;
@@ -10,7 +13,7 @@ public class DeployedMavenArtifact implements Serializable {
     private final String remotePath;
     private final String name;
 
-    public DeployedMavenArtifact(String artifactoryUrl, String repository, String remotePath, String name) {
+    public DeployedArtifact(String artifactoryUrl, String repository, String remotePath, String name) {
         this.artifactoryUrl = artifactoryUrl;
         this.repository = repository;
         this.remotePath = remotePath;

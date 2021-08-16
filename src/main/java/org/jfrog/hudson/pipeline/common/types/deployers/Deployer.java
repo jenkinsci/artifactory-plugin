@@ -8,8 +8,12 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
+import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.io.FilenameUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
+import org.jfrog.build.api.Artifact;
+import org.jfrog.build.api.Module;
 import org.jfrog.build.api.util.FileChecksumCalculator;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.client.ProxyConfiguration;
@@ -21,6 +25,7 @@ import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.pipeline.action.DeployedArtifact;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.Filter;
@@ -39,6 +44,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static org.jfrog.build.extractor.ModuleParallelDeployHelper.DEFAULT_DEPLOYMENT_THREADS;
+import static org.jfrog.hudson.pipeline.common.types.deployers.GradleDeployer.addDeployedGradleArtifactsToAction;
+import static org.jfrog.hudson.pipeline.common.types.deployers.MavenDeployer.addDeployedMavenArtifactsToAction;
 
 /**
  * Created by Tamirh on 04/08/2016.
@@ -211,10 +218,60 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
             }
             if (!deployableArtifactsByModule.isEmpty()) {
                 ws.act(new LateDeployCallable(listener, deployableArtifactsByModule, artifactoryServer, credentials, proxy, getThreads()));
-                MavenDeployer.addDeployedArtifactsActionFromDetails(build, artifactoryServer.getArtifactoryUrl(), deployableArtifactsByModule);
+                addDeployedArtifactsActionFromDetails(build, artifactoryServer.getArtifactoryUrl(), deployableArtifactsByModule);
             }
         } else {
             throw new RuntimeException("Cannot deploy the files from agent: " + agentName + " since they were built on agent: " + buildInfo.getAgentName());
+        }
+    }
+
+    /**
+     * Adds artifacts from the provided DeployDetails map to the Deployed Artifacts Summary Action.
+     */
+    public static void addDeployedArtifactsActionFromDetails(Run<?, ?> build, String artifactoryUrl, Map<String, Set<DeployDetails>> deployableArtifactsByModule) {
+        deployableArtifactsByModule.forEach((module, detailsSet) -> {
+            List<DeployedArtifact> curArtifacts = Lists.newArrayList();
+            DeployDetails.PackageType packageType = DeployDetails.PackageType.MAVEN;
+            for (DeployDetails curDetails : detailsSet) {
+                DeployedArtifact deployedArtifact = new DeployedArtifact(artifactoryUrl, curDetails.getTargetRepository(),
+                        curDetails.getArtifactPath(), FilenameUtils.getName(curDetails.getArtifactPath()));
+                packageType = curDetails.getPackageType();
+                curArtifacts.add(deployedArtifact);
+            }
+            addDeployedArtifactsToAction(build, curArtifacts, packageType);
+        });
+    }
+
+    /**
+     * Adds artifacts from the provided modules to the Deployed Artifacts Summary Action.
+     * All modules are expected to be of the same package type.
+     */
+    public static void addDeployedArtifactsActionFromModules(Run<?, ?> build, String artifactoryUrl, List<Module> modules, DeployDetails.PackageType packageType) {
+        List<DeployedArtifact> curArtifacts = Lists.newArrayList();
+        for (Module module : modules) {
+            if (module.getArtifacts() == null) {
+                continue;
+            }
+            for (Artifact artifact : module.getArtifacts()) {
+                curArtifacts.add(new DeployedArtifact(artifactoryUrl, module.getRepository(),
+                        artifact.getRemotePath(), artifact.getName()));
+            }
+        }
+        addDeployedArtifactsToAction(build, curArtifacts, packageType);
+
+    }
+
+    public static void addDeployedArtifactsToAction(Run<?, ?> build, List<DeployedArtifact> artifacts, DeployDetails.PackageType packageType) {
+        if (artifacts.isEmpty()) {
+            return;
+        }
+        switch (packageType) {
+            case MAVEN:
+                addDeployedMavenArtifactsToAction(build, artifacts);
+                break;
+            case GRADLE:
+                addDeployedGradleArtifactsToAction(build, artifacts);
+                break;
         }
     }
 
