@@ -18,12 +18,12 @@ public class ScriptedITest extends CommonITestsPipeline {
 
     @Test
     public void downloadDuplicationsPart1Test() throws Exception {
-        super.downloadDuplications("scripted:downloadDuplicationsPart1 test","downloadDuplicationsPart1");
+        super.downloadDuplicationsTest("scripted:downloadDuplicationsPart1 test","downloadDuplicationsPart1");
     }
 
     @Test
     public void downloadDuplicationsPart2Test() throws Exception {
-        super.downloadDuplications("scripted:downloadDuplicationsPart2 test","downloadDuplicationsPart2");
+        super.downloadDuplicationsTest("scripted:downloadDuplicationsPart2 test","downloadDuplicationsPart2");
     }
 
     @Test
