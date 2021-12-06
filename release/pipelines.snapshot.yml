@@ -1,5 +1,3 @@
-updateCommitStatus: &UPDATE_COMMIT_STATUS update_commit_status jenkinsSnapshotGit --context "$step_name"
-
 pipelines:
   - name: create_artifactory_jenkins_plugin_snapshot
     configuration:
@@ -21,7 +19,6 @@ pipelines:
             - name: entplus_deployer
         execution:
           onStart:
-            - *UPDATE_COMMIT_STATUS
             # Save gradle cache
             - restore_cache_files m2_home ${HOME}/.m2
           onExecute:
@@ -59,8 +56,6 @@ pipelines:
             - ./jf ds rbd artifactory-jenkins-plugin-snapshot $run_number --site="releases.jfrog.io" --sync
 
           onComplete:
-            - *UPDATE_COMMIT_STATUS
-
             # Show tests in the *Tests* tab
             - save_tests $res_jenkinsSnapshotGit_resourcePath/target/surefire-reports/
 

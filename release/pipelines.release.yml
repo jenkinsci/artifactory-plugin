@@ -1,5 +1,3 @@
-updateCommitStatus: &UPDATE_COMMIT_STATUS update_commit_status jenkinsReleaseGit --context "$step_name"
-
 pipelines:
   - name: release_jenkins
     configuration:
@@ -52,7 +50,6 @@ pipelines:
             - curl -fL https://getcli.jfrog.io/v2-jf | sh && chmod +x jf
             - ./jf c rm --quiet
             - ./jf c add internal --url=$int_entplus_deployer_url --user=$int_entplus_deployer_user --password=$int_entplus_deployer_apikey
-            - ./jf c add jenkins --url=$int_jenkins_artifactory_url --user=$int_jenkins_artifactory_user --password=$int_jenkins_artifactory_apikey
             - ./jf mvnc --repo-resolve-releases ecosys-jenkins-repos --repo-resolve-snapshots ecosys-releases-snapshots --repo-deploy-snapshots ecosys-oss-snapshot-local --repo-deploy-releases ecosys-oss-release-local
 
             # Update version
@@ -78,6 +75,7 @@ pipelines:
             - ./jf ds rbd artifactory-jenkins-plugin $NEXT_VERSION --site="releases.jfrog.io" --sync
 
             # Upload plugin to Jenkins Artifactory server
+            - ./jf c add jenkins --url=$int_jenkins_artifactory_url --user=$int_jenkins_artifactory_user --password=$int_jenkins_artifactory_password --enc-password=false
             - ./jf mvnc --server-id-deploy jenkins --repo-deploy-releases releases --repo-deploy-snapshots snapshots
             - >
               env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME
@@ -95,5 +93,3 @@ pipelines:
           onComplete:
             # Show tests in the *Tests* tab
             - save_tests $res_jenkinsReleaseGit_resourcePath/target/surefire-reports/
-
-            - *UPDATE_COMMIT_STATUS
