@@ -68,7 +68,7 @@ pipelines:
               JFROG_CLI_BUILD_NAME=$JFROG_CLI_BUILD_NAME
               JFROG_CLI_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
               JFROG_CLI_BUILD_PROJECT=$JFROG_CLI_BUILD_PROJECT
-              ./jf rt mvn clean install -U -B
+              ./jf mvn clean install -U -B
             - ./jf rt bag && ./jf rt bce
             - ./jf rt bp
             # - ./jf bs --fail=false
