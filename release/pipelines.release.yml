@@ -52,6 +52,9 @@ pipelines:
             - ./jf c add internal --url=$int_entplus_deployer_url --user=$int_entplus_deployer_user --password=$int_entplus_deployer_apikey
             - ./jf mvnc --repo-resolve-releases ecosys-jenkins-repos --repo-resolve-snapshots ecosys-releases-snapshots --repo-deploy-snapshots ecosys-oss-snapshot-local --repo-deploy-releases ecosys-oss-release-local
 
+            # Run audit
+            - ./jf am --project $JFROG_CLI_BUILD_PROJECT
+
             # Update version
             - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME mvn versions:set -DnewVersion="${NEXT_VERSION}" -B
             - git commit -am "[artifactory-release] Release version ${NEXT_VERSION} [skipRun]" --allow-empty
@@ -68,7 +71,6 @@ pipelines:
               ./jf mvn clean install -U -B
             - ./jf rt bag && ./jf rt bce
             - ./jf rt bp
-            # - ./jf bs --fail=false
 
             # Distribute release bundle
             - ./jf ds rbc artifactory-jenkins-plugin $NEXT_VERSION --spec=./release/specs/prod-rbc-filespec.json --spec-vars="version=$NEXT_VERSION" --sign
