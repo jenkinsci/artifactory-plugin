@@ -56,7 +56,7 @@ pipelines:
             # - ./jf am --project $JFROG_CLI_BUILD_PROJECT
 
             # Update version
-            - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME mvn versions:set -DnewVersion="${NEXT_VERSION}" -B
+            - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME ./jf mvn versions:set -DnewVersion="${NEXT_VERSION}" -B
             - git commit -am "[artifactory-release] Release version ${NEXT_VERSION} [skipRun]" --allow-empty
             - git tag artifactory-${NEXT_VERSION}
             - git push
@@ -81,11 +81,10 @@ pipelines:
             - ./jf mvnc
               --server-id-resolve internal --repo-resolve-releases ecosys-jenkins-repos --repo-resolve-snapshots ecosys-releases-snapshots
               --server-id-deploy jenkins --repo-deploy-releases releases --repo-deploy-snapshots snapshots
-              env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME
-              ./jf mvn clean install -U -B
+            - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME ./jf mvn clean install -U -B
 
             # Update next development version
-            - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME mvn versions:set -DnewVersion=$NEXT_DEVELOPMENT_VERSION -B
+            - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME ./jf mvn versions:set -DnewVersion=$NEXT_DEVELOPMENT_VERSION -B
             - git commit -am "[artifactory-release] Next development version [skipRun]"
 
             # Push changes
