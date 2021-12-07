@@ -53,7 +53,7 @@ pipelines:
             - ./jf mvnc --repo-resolve-releases ecosys-jenkins-repos --repo-resolve-snapshots ecosys-releases-snapshots --repo-deploy-snapshots ecosys-oss-snapshot-local --repo-deploy-releases ecosys-oss-release-local
 
             # Run audit
-            - ./jf am --project $JFROG_CLI_BUILD_PROJECT
+            # - ./jf am --project $JFROG_CLI_BUILD_PROJECT
 
             # Update version
             - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME mvn versions:set -DnewVersion="${NEXT_VERSION}" -B
@@ -78,8 +78,9 @@ pipelines:
 
             # Upload plugin to Jenkins Artifactory server
             - ./jf c add jenkins --url=$int_jenkins_artifactory_url --user=$int_jenkins_artifactory_user --password=$int_jenkins_artifactory_password --enc-password=false
-            - ./jf mvnc --server-id-deploy jenkins --repo-deploy-releases releases --repo-deploy-snapshots snapshots
-            - >
+            - ./jf mvnc
+              --server-id-resolve internal --repo-resolve-releases ecosys-jenkins-repos --repo-resolve-snapshots ecosys-releases-snapshots
+              --server-id-deploy jenkins --repo-deploy-releases releases --repo-deploy-snapshots snapshots
               env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME
               ./jf mvn clean install -U -B
 
