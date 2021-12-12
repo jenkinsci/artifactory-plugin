@@ -4,7 +4,7 @@ import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.apache.commons.lang3.StringUtils;
-import org.jfrog.build.api.Dependency;
+import org.jfrog.build.extractor.ci.Dependency;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.generic.FilesResolverCallable;
