@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson.gradle;
 
-import com.google.common.collect.Iterables;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -604,7 +603,9 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private Gradle getLastGradleBuild(AbstractProject project) {
         if (project instanceof Project) {
             List<Gradle> gradles = ActionableHelper.getBuilder((Project) project, Gradle.class);
-            return Iterables.getLast(gradles, null);
+           if (gradles != null && !gradles.isEmpty()) {
+                return gradles.get(gradles.size()-1);
+            }
         }
         return null;
     }

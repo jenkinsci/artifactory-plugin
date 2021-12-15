@@ -2,7 +2,6 @@ package org.jfrog.hudson.pipeline.common.types.deployers;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Sets;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -43,6 +42,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -299,7 +299,7 @@ public abstract class Deployer implements DeployerOverrider, Serializable {
                 String module = entry.getKey();
                 List<DeployDetails> paths = entry.getValue();
                 try {
-                    Set<DeployDetails> deployDetails = Sets.newLinkedHashSet();
+                    Set<DeployDetails> deployDetails = new LinkedHashSet<>();
                     for (DeployDetails artifact : paths) {
                         String artifactPath = artifact.getArtifactPath();
                         if (PatternMatcher.pathConflicts(artifactPath, deployer.getArtifactDeploymentPatterns().getPatternFilter())) {

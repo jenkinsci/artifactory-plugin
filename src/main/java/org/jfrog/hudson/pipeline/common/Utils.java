@@ -2,7 +2,6 @@ package org.jfrog.hudson.pipeline.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -67,6 +66,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -408,7 +408,7 @@ public class Utils {
     public static void appendBuildInfo(CpsScript cpsScript, Map<String, Object> stepVariables) {
         BuildInfo buildInfo = (BuildInfo) stepVariables.get(BUILD_INFO);
         if (buildInfo == null) {
-            buildInfo = (BuildInfo) cpsScript.invokeMethod("newBuildInfo", Maps.newLinkedHashMap());
+            buildInfo = (BuildInfo) cpsScript.invokeMethod("newBuildInfo", new LinkedHashMap<>());
             stepVariables.put(BUILD_INFO, buildInfo);
         }
         buildInfo.setCpsScript(cpsScript);
