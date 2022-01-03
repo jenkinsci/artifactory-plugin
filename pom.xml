@@ -25,7 +25,7 @@
     </parent>
 
     <artifactId>artifactory</artifactId>
-    <version>3.15.0</version>
+    <version>3.15.x-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Jenkins Artifactory Plugin</name>
     <description>Integrates Artifactory to Jenkins</description>
