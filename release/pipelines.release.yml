@@ -59,8 +59,6 @@ pipelines:
             - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME jf mvn versions:set -DnewVersion="${NEXT_VERSION}" -B
             - git commit -am "[artifactory-release] Release version ${NEXT_VERSION} [skipRun]" --allow-empty
             - git tag artifactory-${NEXT_VERSION}
-            - git push
-            - git push --tags
 
             # Run install and publish
             - >
@@ -89,6 +87,7 @@ pipelines:
 
             # Push changes
             - git push
+            - git push --tags
             - git push upstream master
             - git push upstream master --tags
 
