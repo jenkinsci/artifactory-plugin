@@ -7,14 +7,14 @@ import java.nio.file.Paths
 node("TestSlave") {
     def serverId = "Artifactory-1"
     def buildName = "declarative:conan test"
-    def buildNumber = "7"
+    def buildNumber = "${BUILD_NUMBER}"
 
     stage "Configure Artifactory"
     rtServer(
             id: serverId,
-            url: "${env.JENKINS_ARTIFACTORY_URL}",
-            username: "${env.JENKINS_ARTIFACTORY_USERNAME}",
-            password: "${env.JENKINS_ARTIFACTORY_PASSWORD}"
+            url: "${env.JENKINS_PLATFORM_URL}".replaceFirst('/*$', '')+'/artifactory',
+            username: "${env.JENKINS_PLATFORM_USERNAME}",
+            password: "${env.JENKINS_PLATFORM_ADMIN_TOKEN}"
     )
 
     stage "Configure Conan Client"
@@ -29,17 +29,20 @@ node("TestSlave") {
         clientId: "myConanClient"
     )
 
+    stage "Copy project example"
+    FileUtils.copyDirectory(Paths.get("${CONAN_PROJECT_PATH}").toFile(), Paths.get(pwd(), "declarative-conan-example").toFile())
+
     stage "Conan Install"
     rtConanRun(
         clientId: "myConanClient",
-        command: "install zlib/1.2.11@conan/stable --build missing",
+        command: "install ./declarative-conan-example --build missing",
         buildName: buildName,
         buildNumber: buildNumber
     )
 
     rtConanRun(
         clientId: "myConanClient",
-        command: "upload zlib/1.2.11@conan/stable --all -r conanTestRemote --confirm",
+        command: "upload fmt/8.0.1 --all -r conanTestRemote --confirm",
         buildName: buildName,
         buildNumber: buildNumber
     )

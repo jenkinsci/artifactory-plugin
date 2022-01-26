@@ -6,6 +6,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
+import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.BuildTriggerExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
@@ -18,7 +19,6 @@ import java.io.IOException;
  */
 @SuppressWarnings("unused")
 public class BuildTriggerStep extends AbstractStepImpl {
-
     public static final String STEP_NAME = "rtBuildTrigger";
     private final String serverId;
     private final String paths;
@@ -42,10 +42,21 @@ public class BuildTriggerStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
-            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), step.serverId);
+        protected Void runStep() throws Exception {
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
             new BuildTriggerExecutor(build, listener, server, step.paths, step.spec).execute();
             return null;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
+            return Utils.prepareArtifactoryServer(null, server);
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 

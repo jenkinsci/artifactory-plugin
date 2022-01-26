@@ -3,9 +3,10 @@ package org.jfrog.hudson.pipeline.declarative.steps;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.model.Result;
-import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.*;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.jfpipelines.JFrogPipelinesJobInfo;
 import org.jfrog.hudson.jfpipelines.JFrogPipelinesServer;
 import org.jfrog.hudson.jfpipelines.OutputResource;
@@ -28,7 +29,6 @@ import static org.jfrog.hudson.jfpipelines.Utils.*;
 
 @SuppressWarnings("unused")
 public class JfPipelinesStep extends AbstractStepImpl {
-
     public static final String STEP_NAME = "jfPipelines";
     public static final List<String> ACCEPTABLE_RESULTS;
     private String outputResources;
@@ -65,7 +65,7 @@ public class JfPipelinesStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
+        protected Void runStep() throws Exception {
             JenkinsBuildInfoLog logger = new JenkinsBuildInfoLog(listener);
             JobStartedPayload payload = getJobStartedPayload(build, listener);
             if (payload == null || StringUtils.isBlank(payload.getStepId())) {
@@ -98,6 +98,16 @@ public class JfPipelinesStep extends AbstractStepImpl {
             if (saveJobInfo) {
                 saveJobInfo(jobInfo, logger);
             }
+            return null;
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() throws Exception {
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
             return null;
         }
 

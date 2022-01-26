@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson.maven2;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import hudson.maven.MavenBuild;
 import hudson.maven.MavenModule;
@@ -26,20 +25,23 @@ import hudson.maven.reporters.MavenArtifactRecord;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.tasks.Fingerprinter;
-import org.jfrog.build.api.Artifact;
-import org.jfrog.build.api.Build;
-import org.jfrog.build.api.Module;
-import org.jfrog.build.api.builder.ArtifactBuilder;
-import org.jfrog.build.api.builder.DependencyBuilder;
-import org.jfrog.build.api.builder.ModuleBuilder;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.builder.ArtifactBuilder;
+import org.jfrog.build.extractor.builder.DependencyBuilder;
+import org.jfrog.build.extractor.builder.ModuleBuilder;
+import org.jfrog.build.extractor.ci.Artifact;
+import org.jfrog.build.extractor.ci.BuildInfo;
+import org.jfrog.build.extractor.ci.Module;
+import org.jfrog.build.extractor.clientConfiguration.client.artifactory.ArtifactoryManager;
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
 import org.jfrog.hudson.BuildInfoAwareConfigurator;
+import org.jfrog.hudson.JFrogPlatformInstance;
 import org.jfrog.hudson.MavenDependenciesRecord;
 import org.jfrog.hudson.MavenDependency;
 import org.jfrog.hudson.action.ActionableHelper;
+import org.jfrog.hudson.util.RepositoriesUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,26 +53,26 @@ import java.util.Set;
  */
 public class MavenBuildInfoDeployer extends AbstractBuildInfoDeployer {
 
-    private final Build buildInfo;
+    private final BuildInfo buildInfo;
     private BuildInfoAwareConfigurator configurator;
 
-    public MavenBuildInfoDeployer(BuildInfoAwareConfigurator configurator, ArtifactoryBuildInfoClient client,
-            MavenModuleSetBuild build, TaskListener listener) throws IOException, InterruptedException {
-        super(configurator, build, listener, client);
+    public MavenBuildInfoDeployer(BuildInfoAwareConfigurator configurator, ArtifactoryManager artifactoryManager,
+                                  MavenModuleSetBuild build, TaskListener listener) throws IOException, InterruptedException {
+        super(configurator, build, listener, artifactoryManager);
         this.configurator = configurator;
         buildInfo = createBuildInfo("Maven", build.getParent().getMaven().getName());
         gatherModuleAndDependencyInfo(build);
     }
 
     public void deploy() throws IOException {
-        String url = configurator.getArtifactoryServer().getArtifactoryUrl() + "/api/build";
-        listener.getLogger().println("Deploying build info to: " + url);
-        client.sendBuildInfo(buildInfo);
+        JFrogPlatformInstance jfrogServer = RepositoriesUtils.getJFrogPlatformInstances(configurator.getArtifactoryServer().getServerId());
+        listener.getLogger().println("Deploying build info to: " + jfrogServer.getArtifactory().getArtifactoryUrl() + "/api/build");
+        artifactoryManager.publishBuildInfo(buildInfo, jfrogServer.getUrl());
     }
 
     private void gatherModuleAndDependencyInfo(MavenModuleSetBuild mavenModulesBuild) {
         Map<MavenModule, MavenBuild> mavenBuildMap = mavenModulesBuild.getModuleLastBuilds();
-        List<Module> modules = Lists.newArrayList();
+        List<Module> modules = new ArrayList<>();
         for (Map.Entry<MavenModule, MavenBuild> moduleBuild : mavenBuildMap.entrySet()) {
             MavenModule mavenModule = moduleBuild.getKey();
             MavenBuild mavenBuild = moduleBuild.getValue();
@@ -112,7 +114,7 @@ public class MavenBuildInfoDeployer extends AbstractBuildInfoDeployer {
                 moduleBuilder.addDependency(dependencyBuilder.build());
             }
             // delete them once used
-            build.getActions().removeAll(build.getActions(MavenDependenciesRecord.class));
+            build.removeActions(MavenDependenciesRecord.class);
         }
     }
 

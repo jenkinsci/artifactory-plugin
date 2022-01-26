@@ -1,8 +1,8 @@
 package org.jfrog.hudson.pipeline.scripted.steps;
 
 import com.google.inject.Inject;
+import hudson.AbortException;
 import hudson.Extension;
-import org.apache.commons.cli.MissingArgumentException;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -21,21 +21,22 @@ import java.io.IOException;
  * Created by romang on 5/2/16.
  */
 public class DockerPullStep extends AbstractStepImpl {
-
+    static final String STEP_NAME = "dockerPullStep";
     private final String image;
     private final ArtifactoryServer server;
     private final BuildInfo buildInfo;
-    private String host;
-    private String javaArgs;
-
+    private final String host;
+    private final String javaArgs;
+    private String sourceRepo;
 
     @DataBoundConstructor
-    public DockerPullStep(String image, String host, String javaArgs, BuildInfo buildInfo, ArtifactoryServer server) {
+    public DockerPullStep(String image, String host, String sourceRepo, String javaArgs, BuildInfo buildInfo, ArtifactoryServer server) {
         this.image = image;
         this.host = host;
         this.buildInfo = buildInfo;
         this.server = server;
         this.javaArgs = javaArgs;
+        this.sourceRepo = sourceRepo;
     }
 
     public BuildInfo getBuildInfo() {
@@ -50,6 +51,10 @@ public class DockerPullStep extends AbstractStepImpl {
         return server;
     }
 
+    public String getSourceRepo() {
+        return sourceRepo;
+    }
+
     public String getHost() {
         return host;
     }
@@ -60,7 +65,7 @@ public class DockerPullStep extends AbstractStepImpl {
 
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<BuildInfo> {
 
-        private transient DockerPullStep step;
+        private final transient DockerPullStep step;
 
         @Inject
         public Execution(DockerPullStep step, StepContext context) throws IOException, InterruptedException {
@@ -69,24 +74,35 @@ public class DockerPullStep extends AbstractStepImpl {
         }
 
         @Override
-        protected BuildInfo run() throws Exception {
+        protected BuildInfo runStep() throws Exception {
             if (step.getImage() == null) {
-                getContext().onFailure(new MissingArgumentException("Missing 'image' parameter"));
+                getContext().onFailure(new AbortException("Missing 'image' parameter"));
                 return null;
             }
-
+            if (step.getSourceRepo() == null) {
+                getContext().onFailure(new AbortException("Missing 'sourceRepo' parameter"));
+                return null;
+            }
             BuildInfo buildInfo = Utils.prepareBuildinfo(build, step.getBuildInfo());
             String imageTag = step.getImage();
             if (!DockerUtils.isImageVersioned(imageTag)) {
                 imageTag += ":latest";
             }
-
-            ArtifactoryServer server = step.getServer();
-            DockerPullExecutor dockerExecutor = new DockerPullExecutor(server, buildInfo, build, step.image, step.host, step.javaArgs, launcher, listener, ws, env);
+            DockerPullExecutor dockerExecutor = new DockerPullExecutor(step.getServer(), buildInfo, build, step.image, step.sourceRepo, step.host, step.javaArgs, launcher, listener, ws, env);
             dockerExecutor.execute();
             JenkinsBuildInfoLog log = new JenkinsBuildInfoLog(listener);
             log.info("Successfully pulled docker image: " + imageTag);
             return dockerExecutor.getBuildInfo();
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(null, step.getServer());
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 
@@ -99,7 +115,7 @@ public class DockerPullStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "dockerPullStep";
+            return STEP_NAME;
         }
 
         @Override

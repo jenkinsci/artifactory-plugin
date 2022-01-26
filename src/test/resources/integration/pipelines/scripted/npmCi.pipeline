@@ -1,0 +1,38 @@
+package integration.pipelines.scripted
+
+import org.apache.commons.io.FileUtils
+
+import java.nio.file.Paths
+
+env.DONT_COLLECT='FOO'
+env.COLLECT='BAR'
+node("TestSlave") {
+    stage "Configure Artifactory"
+    def rtServer = Artifactory.newServer url: "${env.JENKINS_PLATFORM_URL}".replaceFirst('/*$', '')+'/artifactory', username: "${env.JENKINS_PLATFORM_USERNAME}", password: "${env.JENKINS_PLATFORM_ADMIN_TOKEN}"
+    def buildInfo = Artifactory.newBuildInfo()
+    buildInfo.env.capture = true
+    buildInfo.env.filter.addExclude("DONT_COLLECT")
+    buildInfo.name = "scripted:npm ci test"
+    buildInfo.number = ${BUILD_NUMBER}
+
+    stage "Configure npm build"
+    def rtNpm = Artifactory.newNpmBuild()
+    rtNpm.deployer repo: "${NPM_LOCAL}", server: rtServer
+    rtNpm.resolver repo: "${NPM_REMOTE}", server: rtServer
+
+    def npmProjectPath = Paths.get(pwd(), "scripted-npm-example").toFile()
+
+    stage "Copy project example"
+    FileUtils.copyDirectory(Paths.get("${NPM_PROJECT_PATH}").toFile(), npmProjectPath)
+
+    stage "Rum npm ci"
+    // Run install with -cache argument to download the artifacts from Artifactory
+    // This done to be sure the artifacts exist in Artifactory
+    rtNpm.ci buildInfo: buildInfo, path: "scripted-npm-example", args: "-cache="+npmProjectPath.toString()
+
+    stage "Publish npm"
+    rtNpm.publish buildInfo: buildInfo, path: "scripted-npm-example"
+
+    stage "Publish build info"
+    rtServer.publishBuildInfo buildInfo
+}

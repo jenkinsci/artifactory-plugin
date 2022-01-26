@@ -4,9 +4,11 @@
 *.iws
 .DS_Store
 .classpath
+.factorypath
 .idea
 .project
 .settings
 build
 target
 work
+tests.log

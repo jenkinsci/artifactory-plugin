@@ -7,14 +7,18 @@ import hudson.model.Cause;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.*;
-import org.jfrog.build.api.builder.BuildInfoBuilder;
+import org.apache.commons.lang3.StringUtils;
+import org.jfrog.build.extractor.builder.BuildInfoBuilder;
 import org.jfrog.build.api.builder.PromotionStatusBuilder;
+import org.jfrog.build.extractor.ci.Agent;
+import org.jfrog.build.extractor.ci.BuildAgent;
+import org.jfrog.build.extractor.ci.BuildInfo;
+import org.jfrog.build.extractor.ci.BuildInfoProperties;
+import org.jfrog.build.extractor.ci.Vcs;
 import org.jfrog.build.api.release.Promotion;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.client.artifactory.ArtifactoryManager;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
@@ -23,7 +27,11 @@ import org.jfrog.hudson.util.IncludesExcludes;
 import org.jfrog.hudson.util.IssuesTrackerHelper;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * Handles build info creation and deployment
@@ -33,20 +41,20 @@ import java.util.*;
 public class AbstractBuildInfoDeployer {
     protected Run build;
     protected TaskListener listener;
-    protected ArtifactoryBuildInfoClient client;
+    protected ArtifactoryManager artifactoryManager;
     private BuildInfoAwareConfigurator configurator;
     private EnvVars env;
 
     public AbstractBuildInfoDeployer(BuildInfoAwareConfigurator configurator, Run build,
-                                     TaskListener listener, ArtifactoryBuildInfoClient client) throws IOException, InterruptedException {
+                                     TaskListener listener, ArtifactoryManager artifactoryManager) throws IOException, InterruptedException {
         this.configurator = configurator;
         this.build = build;
         this.listener = listener;
-        this.client = client;
+        this.artifactoryManager = artifactoryManager;
         this.env = build.getEnvironment(listener);
     }
 
-    protected Build createBuildInfo(String buildAgentName, String buildAgentVersion) {
+    protected BuildInfo createBuildInfo(String buildAgentName, String buildAgentVersion) {
         String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(configurator, build);
         BuildInfoBuilder builder = new BuildInfoBuilder(buildName)
                 .number(BuildUniqueIdentifierHelper.getBuildNumber(build))
@@ -94,7 +102,7 @@ public class AbstractBuildInfoDeployer {
         if (StringUtils.isNotBlank(url)) {
             builder.vcsUrl(url);
         }
-        Vcs vcs = new Vcs(url, revision);
+        Vcs vcs = new Vcs(url, revision, ExtractorUtils.getVcsBranch(env), ExtractorUtils.getVcsMessage(env));
         if (!vcs.isEmpty()) {
             ArrayList<Vcs> vcsList = new ArrayList<>();
             vcsList.add(vcs);
@@ -103,7 +111,7 @@ public class AbstractBuildInfoDeployer {
 
         addBuildInfoProperties(builder);
 
-        if ((Jenkins.getInstance().getPlugin("jira") != null) && configurator.isEnableIssueTrackerIntegration()) {
+        if ((Jenkins.get().getPlugin("jira") != null) && configurator.isEnableIssueTrackerIntegration()) {
             new IssuesTrackerHelper(build, listener, configurator.isAggregateBuildIssues(),
                     configurator.getAggregationBuildStatus()).setIssueTrackerInfo(builder);
         }
@@ -122,10 +130,10 @@ public class AbstractBuildInfoDeployer {
                     .ciUser(userCause).user(artifactoryPrincipal).build());
         }
 
-        Build buildInfo = builder.build();
+        BuildInfo buildInfo = builder.build();
         // for backwards compatibility for Artifactory 2.2.3
         if (parent != null) {
-            buildInfo.setParentBuildId(parent.getUpstreamProject());
+            buildInfo.setParentName(parent.getUpstreamProject());
         }
 
         return buildInfo;

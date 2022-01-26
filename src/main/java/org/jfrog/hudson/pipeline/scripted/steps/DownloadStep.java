@@ -9,13 +9,12 @@ import org.jfrog.hudson.pipeline.common.executors.GenericDownloadExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfoAccessor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
 
 public class DownloadStep extends AbstractStepImpl {
-
+    static final String STEP_NAME = "artifactoryDownload";
     private BuildInfo buildInfo;
     private boolean failNoOp;
     private String spec;
@@ -62,13 +61,23 @@ public class DownloadStep extends AbstractStepImpl {
         }
 
         @Override
-        protected BuildInfo run() throws Exception {
+        protected BuildInfo runStep() throws Exception {
             GenericDownloadExecutor genericDownloadExecutor = new GenericDownloadExecutor(Utils.prepareArtifactoryServer(null, step.getServer()),
                     this.listener, this.build, this.ws, step.getBuildInfo(), Util.replaceMacro(step.getSpec(), env), step.getFailNoOp(), step.getModule());
             genericDownloadExecutor.execute();
             BuildInfo buildInfo = genericDownloadExecutor.getBuildInfo();
-            new BuildInfoAccessor(buildInfo).captureVariables(env, build, listener);
+            buildInfo.captureVariables(env, build, listener);
             return buildInfo;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(null, step.getServer());
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 
@@ -82,7 +91,7 @@ public class DownloadStep extends AbstractStepImpl {
         @Override
         // The step is invoked by ArtifactoryServer by the step name
         public String getFunctionName() {
-            return "artifactoryDownload";
+            return STEP_NAME;
         }
 
         @Override

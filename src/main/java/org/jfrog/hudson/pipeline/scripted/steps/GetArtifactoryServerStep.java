@@ -2,10 +2,13 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 
 import com.google.inject.Inject;
 import hudson.Extension;
-import org.jenkinsci.plugins.workflow.steps.*;
-import org.jfrog.hudson.pipeline.common.executors.GetArtifactoryServerExecutor;
-import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousStepExecution;
+import org.jfrog.hudson.pipeline.common.Utils;
+import org.jfrog.hudson.pipeline.common.executors.GetJFrogPlatformInstancesExecutor;
+import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -14,7 +17,9 @@ import java.io.IOException;
  * Created by romang on 4/21/16.
  */
 public class GetArtifactoryServerStep extends AbstractStepImpl {
-    private String artifactoryServerID;
+    static final String STEP_NAME = "getArtifactoryServer";
+    private final String artifactoryServerID;
+    private ArtifactoryServer artifactoryServer;
 
     @DataBoundConstructor
     public GetArtifactoryServerStep(String artifactoryServerID) {
@@ -27,7 +32,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
 
     public static class Execution extends ArtifactorySynchronousStepExecution<ArtifactoryServer> {
 
-        private transient GetArtifactoryServerStep step;
+        private transient final GetArtifactoryServerStep step;
 
         @Inject
         public Execution(GetArtifactoryServerStep step, StepContext context) throws IOException, InterruptedException {
@@ -36,11 +41,23 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
         }
 
         @Override
-        protected org.jfrog.hudson.pipeline.common.types.ArtifactoryServer run() throws Exception {
+        protected ArtifactoryServer runStep() throws Exception {
             String artifactoryServerID = step.getArtifactoryServerID();
-            GetArtifactoryServerExecutor getArtifactoryServerExecutor = new GetArtifactoryServerExecutor(build, getContext(), artifactoryServerID);
-            getArtifactoryServerExecutor.execute();
-            return getArtifactoryServerExecutor.getArtifactoryServer();
+            // JFrogInstancesID is the same as its ArtifactoryServerID
+            GetJFrogPlatformInstancesExecutor getJFrogPlatformInstancesExecutor = new GetJFrogPlatformInstancesExecutor(build, artifactoryServerID);
+            getJFrogPlatformInstancesExecutor.execute();
+            step.artifactoryServer = getJFrogPlatformInstancesExecutor.getJFrogPlatformInstance().getArtifactory();
+            return step.artifactoryServer;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(null, step.artifactoryServer);
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 
@@ -53,7 +70,7 @@ public class GetArtifactoryServerStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "getArtifactoryServer";
+            return STEP_NAME;
         }
 
         @Override

@@ -16,14 +16,20 @@
 
 package org.jfrog.hudson;
 
-import hudson.Util;
 import hudson.model.BuildBadgeAction;
 import hudson.model.Run;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.Build;
+import org.apache.commons.lang3.StringUtils;
+import org.jfrog.build.extractor.ci.BuildInfo;
+import org.jfrog.build.extractor.clientConfiguration.client.JFrogService;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
+
+import java.text.ParseException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.jfrog.build.extractor.clientConfiguration.client.artifactory.services.PublishBuildInfo.createBuildInfoUrl;
 
 /**
  * Result of the redeploy publisher. Currently only a link to Artifactory build info.
@@ -31,7 +37,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Yossi Shaul
  */
 public class BuildInfoResultAction implements BuildBadgeAction {
-
+    private static final Logger log = Logger.getLogger(BuildInfoResultAction.class.getName());
     private List<PublishedBuildDetails> publishedBuildsDetails = new CopyOnWriteArrayList<>();
     private final Run build;
     @Deprecated
@@ -49,11 +55,11 @@ public class BuildInfoResultAction implements BuildBadgeAction {
     public BuildInfoResultAction(String artifactoryUrl, Run build, String buildName) {
         this(build);
         String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
-        publishedBuildsDetails.add(createBuildInfoIdentifier(artifactoryUrl, buildName, buildNumber));
+        publishedBuildsDetails.add(createBuildInfoIdentifier(artifactoryUrl, buildName, buildNumber, "", "", ""));
     }
 
-    public void addBuildInfoResults(String artifactoryUrl, Build buildInfo) {
-        publishedBuildsDetails.add(createBuildInfoIdentifier(artifactoryUrl, build, buildInfo));
+    public void addBuildInfoResults(String artifactoryUrl, String platformUrl, BuildInfo buildInfo) {
+        publishedBuildsDetails.add(createBuildInfoIdentifier(artifactoryUrl, build, buildInfo, platformUrl));
     }
 
     public Run getBuild() {
@@ -79,16 +85,20 @@ public class BuildInfoResultAction implements BuildBadgeAction {
             String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(artifactoryRedeployPublisher, build);
             return generateUrl(artifactoryRedeployPublisher.getArtifactoryName(), build, buildName);
         } else if (publishedBuildsDetails.size() == 1) {
-            return publishedBuildsDetails.get(0).getBuildInfoUrl();
+            try {
+                return publishedBuildsDetails.get(0).getBuildInfoUrl();
+            } catch (ParseException e) {
+                log.log(Level.WARNING, "could not create build info URL", e);
+            }
         }
         return "published_builds";
     }
 
-    private PublishedBuildDetails createBuildInfoIdentifier(String artifactoryUrl, String buildName, String buildNumber) {
-        return new PublishedBuildDetails(artifactoryUrl, Util.rawEncode(buildName), Util.rawEncode(buildNumber));
+    private PublishedBuildDetails createBuildInfoIdentifier(String artifactoryUrl, String buildName, String buildNumber, String platformUrl, String startedBuildTimestamp, String project) {
+        return new PublishedBuildDetails(artifactoryUrl, JFrogService.encodeUrl(buildName), JFrogService.encodeUrl(buildNumber), platformUrl, startedBuildTimestamp, project);
     }
 
-    private PublishedBuildDetails createBuildInfoIdentifier(String artifactoryUrl, Run build, Build buildInfo) {
+    private PublishedBuildDetails createBuildInfoIdentifier(String artifactoryUrl, Run build, BuildInfo buildInfo, String platformUrl) {
         String buildName;
         String buildNumber;
         if (StringUtils.isNotEmpty(buildInfo.getName())) {
@@ -101,12 +111,11 @@ public class BuildInfoResultAction implements BuildBadgeAction {
         } else {
             buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
         }
-        return createBuildInfoIdentifier(artifactoryUrl, buildName, buildNumber);
+        return createBuildInfoIdentifier(artifactoryUrl, buildName, buildNumber, platformUrl, String.valueOf(buildInfo.getStartedMillis()), buildInfo.getProject());
     }
 
     private String generateUrl(String artifactoryUrl, Run build, String buildName) {
-        return artifactoryUrl + "/webapp/builds/" + Util.rawEncode(buildName) + "/"
-                + Util.rawEncode(BuildUniqueIdentifierHelper.getBuildNumber(build));
+        return createBuildInfoUrl(artifactoryUrl, buildName, BuildUniqueIdentifierHelper.getBuildNumber(build), true);
     }
 
     /**

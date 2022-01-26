@@ -1,12 +1,12 @@
 package org.jfrog.hudson.pipeline.common.types.builds;
 
-import com.google.common.collect.Maps;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.deployers.MavenDeployer;
 import org.jfrog.hudson.pipeline.common.types.resolvers.MavenResolver;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.jfrog.hudson.pipeline.common.Utils.appendBuildInfo;
@@ -15,6 +15,7 @@ import static org.jfrog.hudson.pipeline.common.Utils.appendBuildInfo;
  * Created by Tamirh on 04/08/2016.
  */
 public class MavenBuild extends PackageManagerBuild {
+    private boolean useWrapper;
     private String opts = "";
 
     public MavenBuild() {
@@ -35,6 +36,16 @@ public class MavenBuild extends PackageManagerBuild {
     @Whitelisted
     public void setTool(String tool) {
         this.tool = tool;
+    }
+
+    @Whitelisted
+    public boolean isUseWrapper() {
+        return useWrapper;
+    }
+
+    @Whitelisted
+    public void setUseWrapper(boolean useWrapper) {
+        this.useWrapper = useWrapper;
     }
 
     @Whitelisted
@@ -71,7 +82,7 @@ public class MavenBuild extends PackageManagerBuild {
     }
 
     private Map<String, Object> getExecutionArguments(String pom, String goals, BuildInfo buildInfo) {
-        Map<String, Object> stepVariables = Maps.newLinkedHashMap();
+        Map<String, Object> stepVariables = new LinkedHashMap<>();
         stepVariables.put("mavenBuild", this);
         stepVariables.put("pom", pom);
         stepVariables.put("goals", goals);

@@ -17,6 +17,16 @@ public class ScriptedITest extends CommonITestsPipeline {
     }
 
     @Test
+    public void downloadDuplicationsPart1Test() throws Exception {
+        super.downloadDuplicationsTest("scripted:downloadDuplicationsPart1 test","downloadDuplicationsPart1");
+    }
+
+    @Test
+    public void downloadDuplicationsPart2Test() throws Exception {
+        super.downloadDuplicationsTest("scripted:downloadDuplicationsPart2 test","downloadDuplicationsPart2");
+    }
+
+    @Test
     public void downloadByAqlTest() throws Exception {
         super.downloadByAqlTest("scripted:downloadByAql test");
     }
@@ -48,7 +58,32 @@ public class ScriptedITest extends CommonITestsPipeline {
 
     @Test
     public void uploadTest() throws Exception {
-        super.uploadTest("scripted:upload test");
+        super.uploadTest("scripted:upload test", null, "upload");
+    }
+
+    @Test
+    public void uploadDuplicationsPart1Test() throws Exception {
+        super.uploadDuplicationsTest("scripted:uploadDuplicationsPart1 test", null, "uploadDuplicationsPart1");
+    }
+
+    @Test
+    public void uploadDuplicationsPart2Test() throws Exception {
+        super.uploadDuplicationsTest("scripted:uploadDuplicationsPart2 test", null, "uploadDuplicationsPart2");
+    }
+
+    @Test
+    public void platformUploadTest() throws Exception {
+        super.uploadTest("scripted:platform upload test", null, "uploadUsingPlatformConfig");
+    }
+
+    @Test
+    public void uploadWithProjectTest() throws Exception {
+        super.uploadTest("scripted:project upload test", "jit", "uploadWithProject");
+    }
+
+    @Test
+    public void uploadWithPropsTest() throws Exception {
+        super.uploadWithPropsTest();
     }
 
     @Test
@@ -63,7 +98,17 @@ public class ScriptedITest extends CommonITestsPipeline {
 
     @Test
     public void mavenTest() throws Exception {
-        super.mavenTest("scripted:maven test");
+        super.mavenTest("scripted:maven test", false);
+    }
+
+    @Test
+    public void mavenWrapperTest() throws Exception {
+        super.mavenTest("scripted:mavenWrapper test", true);
+    }
+
+    @Test
+    public void mavenJibTest() throws Exception {
+        super.mavenJibTest("scripted:mavenJib test");
     }
 
     @Test
@@ -82,8 +127,13 @@ public class ScriptedITest extends CommonITestsPipeline {
     }
 
     @Test
-    public void npmTest() throws Exception {
-        super.npmTest("npm", "scripted:npm test", "package-name1:0.0.1");
+    public void npmInstallTest() throws Exception {
+        super.npmTest("npmInstall", "scripted:npm install test", "package-name1:0.0.1");
+    }
+
+    @Test
+    public void npmCiTest() throws Exception {
+        super.npmTest("npmCi", "scripted:npm ci test", "package-name1:0.0.1");
     }
 
     @Test
@@ -137,13 +187,18 @@ public class ScriptedITest extends CommonITestsPipeline {
     }
 
     @Test
+    public void dockerPullTest() throws Exception {
+        super.dockerPullTest("scripted:dockerPull test");
+    }
+
+    @Test
     public void xrayScanFailTrueTest() throws Exception {
-        super.xrayScanTest("scripted:xrayScanFailBuildTrue test", true);
+        super.xrayScanTest("scripted:xrayScanFailBuildTrue test", true, false);
     }
 
     @Test
     public void xrayScanFailFalseTest() throws Exception {
-        super.xrayScanTest("scripted:xrayScanFailBuildFalse test", false);
+        super.xrayScanTest("scripted:xrayScanFailBuildFalse test", false, true);
     }
 
     @Test
@@ -164,5 +219,30 @@ public class ScriptedITest extends CommonITestsPipeline {
     @Test
     public void buildTriggerNewServerTest() throws Exception {
         super.buildTriggerNewServerTest();
+    }
+
+    @Test
+    public void buildAppendTest() throws Exception {
+        super.buildAppendTest("scripted:buildAppend test");
+    }
+
+    @Test
+    public void rbCreateUpdateSign() throws Exception {
+        super.rbCreateUpdateSign("scripted:createUpdateSign");
+    }
+
+    @Test
+    public void rbCreateDistDel() throws Exception {
+        super.rbCreateDistDel("scripted:createDistributeDelete");
+    }
+
+    @Test
+    public void buildInfoProjects() throws Exception {
+        super.buildInfoProjects("scripted:buildInfoProjects");
+    }
+
+    @Test
+    public void buildRetention() throws Exception {
+        super.buildRetention("scripted:buildRetention");
     }
 }

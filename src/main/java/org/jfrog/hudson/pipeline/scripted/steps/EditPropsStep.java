@@ -15,6 +15,7 @@ import java.io.IOException;
 import static org.jfrog.build.extractor.clientConfiguration.util.EditPropertiesHelper.EditPropertiesActionType;
 
 public class EditPropsStep extends AbstractStepImpl {
+    static final String STEP_NAME = "artifactoryEditProps";
     private ArtifactoryServer server;
     private String spec;
     private EditPropertiesActionType editType;
@@ -62,11 +63,21 @@ public class EditPropsStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Boolean run() throws Exception {
+        protected Boolean runStep() throws Exception {
             new EditPropsExecutor(Utils.prepareArtifactoryServer(null, step.getServer()),
                     this.listener, this.build, this.ws, Util.replaceMacro(step.getSpec(), env), step.getEditType(),
                     step.getProps(), step.getFailNoOp()).execute();
             return true;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(null, step.getServer());
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 
@@ -80,7 +91,7 @@ public class EditPropsStep extends AbstractStepImpl {
         @Override
         // The step is invoked by ArtifactoryServer by the step name
         public String getFunctionName() {
-            return "artifactoryEditProps";
+            return STEP_NAME;
         }
 
         @Override

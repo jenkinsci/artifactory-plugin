@@ -17,6 +17,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import java.io.IOException;
 
 public class AddUserStep extends AbstractStepImpl {
+    static final String STEP_NAME = "conanAddUser";
     private ArtifactoryServer server;
     private String serverName;
     private String conanHome;
@@ -51,7 +52,7 @@ public class AddUserStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Boolean run() throws Exception {
+        protected Boolean runStep() throws Exception {
             org.jfrog.hudson.ArtifactoryServer artifactoryServer = Utils.prepareArtifactoryServer(null, step.getServer());
             ArtifactoryConfigurator configurator = new ArtifactoryConfigurator(artifactoryServer);
             CredentialsConfig deployerConfig = CredentialManager.getPreferredDeployer(configurator, artifactoryServer);
@@ -61,6 +62,16 @@ public class AddUserStep extends AbstractStepImpl {
             ConanExecutor executor = new ConanExecutor(step.getConanHome(), ws, launcher, listener, env, build);
             executor.execUserAdd(username, password, serverName);
             return true;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(null, step.getServer());
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 
@@ -73,7 +84,7 @@ public class AddUserStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "conanAddUser";
+            return STEP_NAME;
         }
 
         @Override

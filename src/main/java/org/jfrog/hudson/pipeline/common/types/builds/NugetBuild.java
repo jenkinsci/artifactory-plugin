@@ -1,11 +1,11 @@
 package org.jfrog.hudson.pipeline.common.types.builds;
 
-import com.google.common.collect.Maps;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.resolvers.CommonResolver;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +18,7 @@ public class NugetBuild extends PackageManagerBuild {
     public static final String JAVA_ARGS = "javaArgs";
 
     private boolean useDotnetCli = false;
+    private String apiProtocol = "v2";
 
     public NugetBuild() {
         resolver = new CommonResolver();
@@ -44,6 +45,16 @@ public class NugetBuild extends PackageManagerBuild {
         return useDotnetCli;
     }
 
+    @Whitelisted
+    public void setApiProtocol(String apiProtocol) {
+        this.apiProtocol = apiProtocol;
+    }
+
+    @Whitelisted
+    public String getApiProtocol() {
+        return apiProtocol;
+    }
+
     private Map<String, Object> prepareNugetStep(Map<String, Object> args, List<String> keysAsList) {
         Set<String> nugetArgumentsSet = args.keySet();
         if (!keysAsList.containsAll(nugetArgumentsSet)) {
@@ -59,7 +70,7 @@ public class NugetBuild extends PackageManagerBuild {
 
 
     private Map<String, Object> getRunArguments(String module, BuildInfo buildInfo) {
-        Map<String, Object> stepVariables = Maps.newLinkedHashMap();
+        Map<String, Object> stepVariables = new LinkedHashMap<>();
         stepVariables.put(NUGET_BUILD, this);
         stepVariables.put(MODULE, module);
         stepVariables.put(BUILD_INFO, buildInfo);

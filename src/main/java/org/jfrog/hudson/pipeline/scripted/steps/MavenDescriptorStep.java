@@ -5,13 +5,15 @@ import hudson.Extension;
 import hudson.FilePath;
 import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.collections.map.HashedMap;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.jfrog.build.extractor.maven.reader.ModuleName;
 import org.jfrog.build.extractor.maven.transformer.PomTransformer;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
+import org.jfrog.hudson.pipeline.ArtifactorySynchronousStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.BufferedReader;
@@ -25,6 +27,7 @@ import java.util.Map;
  * Created by tamirh on 20/11/2016.
  */
 public class MavenDescriptorStep extends AbstractStepImpl {
+    static final String STEP_NAME = "MavenDescriptorStep";
     private String pomFile = "pom.xml";
     private String version = "";
     private Map<String, String> versionPerModule = new HashedMap();
@@ -61,7 +64,7 @@ public class MavenDescriptorStep extends AbstractStepImpl {
         return versionPerModule;
     }
 
-    public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Boolean> {
+    public static class Execution extends ArtifactorySynchronousStepExecution<Boolean> {
 
         private transient MavenDescriptorStep step;
         private String pomFile;
@@ -78,7 +81,7 @@ public class MavenDescriptorStep extends AbstractStepImpl {
 
 
         @Override
-        protected Boolean run() throws Exception {
+        protected Boolean runStep() throws Exception {
             pomFile = new FilePath(ws, step.getPomFile()).getRemote();
             failOnSnapshot = step.isFailOnSnapshot();
             dryRun = step.isDryRun();
@@ -90,6 +93,16 @@ public class MavenDescriptorStep extends AbstractStepImpl {
                 }
             });
             return call;
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() {
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return null;
         }
 
         public boolean transformPoms() {
@@ -187,7 +200,7 @@ public class MavenDescriptorStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "MavenDescriptorStep";
+            return STEP_NAME;
         }
 
         @Override

@@ -1,27 +1,47 @@
 package org.jfrog.hudson.generic;
 
-import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.matrix.MatrixConfiguration;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Action;
+import hudson.model.BuildListener;
+import hudson.model.Item;
+import hudson.model.Result;
 import hudson.tasks.BuildWrapper;
 import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.Artifact;
-import org.jfrog.build.api.Dependency;
+import org.apache.commons.lang3.StringUtils;
+import org.jfrog.build.extractor.ci.Artifact;
+import org.jfrog.build.extractor.ci.Dependency;
 import org.jfrog.build.api.dependency.BuildDependency;
 import org.jfrog.build.client.ProxyConfiguration;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryDependenciesClient;
-import org.jfrog.hudson.*;
+import org.jfrog.build.extractor.clientConfiguration.client.artifactory.ArtifactoryManager;
+import org.jfrog.hudson.AbstractBuildWrapperDescriptor;
+import org.jfrog.hudson.ArtifactoryServer;
+import org.jfrog.hudson.BuildInfoAwareConfigurator;
+import org.jfrog.hudson.BuildInfoResultAction;
+import org.jfrog.hudson.CredentialsConfig;
+import org.jfrog.hudson.DeployerOverrider;
+import org.jfrog.hudson.MultiConfigurationAware;
+import org.jfrog.hudson.Repository;
+import org.jfrog.hudson.ResolverOverrider;
+import org.jfrog.hudson.ServerDetails;
+import org.jfrog.hudson.SpecConfiguration;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
-import org.jfrog.hudson.util.*;
-import org.jfrog.hudson.util.converters.DeployerResolverOverriderConverter;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
+import org.jfrog.hudson.util.CredentialManager;
+import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.IncludesExcludes;
+import org.jfrog.hudson.util.JenkinsBuildInfoLog;
+import org.jfrog.hudson.util.RefreshServerResponse;
+import org.jfrog.hudson.util.RepositoriesUtils;
+import org.jfrog.hudson.util.SpecUtils;
+import org.jfrog.hudson.util.converters.GenericDeployerResolverOverriderConverter;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 import org.kohsuke.stapler.AncestorInPath;
@@ -30,6 +50,7 @@ import org.kohsuke.stapler.bind.JavaScriptMethod;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -43,31 +64,40 @@ import static org.jfrog.hudson.util.ProxyUtils.createProxyConfiguration;
 public class ArtifactoryGenericConfigurator extends BuildWrapper implements DeployerOverrider, ResolverOverrider,
         BuildInfoAwareConfigurator, MultiConfigurationAware {
 
-    private final ServerDetails deployerDetails;
-    private final ServerDetails resolverDetails;
-    private final CredentialsConfig deployerCredentialsConfig;
-    private final CredentialsConfig resolverCredentialsConfig;
-    private final Boolean useSpecs;
-    private final SpecConfiguration uploadSpec;
-    private final SpecConfiguration downloadSpec;
-    private final String deployPattern;
-    private final String resolvePattern;
-    private final String deploymentProperties;
-    private final boolean deployBuildInfo;
+    // Artifactory deployer server configured to be used by the provided upload spec
+    private final ServerDetails specsDeployerDetails;
+    // Artifactory resolver server configured to be used by the provided download spec
+    private final ServerDetails specsResolverDetails;
+    // Artifactory deployer server configured to be used by the provided legacy published artifacts
+    private final ServerDetails legacyDeployerDetails;
+    // Artifactory resolver server configured to be used by the provided legacy download artifacts
+    private final ServerDetails legacyResolverDetails;
+
+    private CredentialsConfig deployerCredentialsConfig;
+    private CredentialsConfig resolverCredentialsConfig;
+    private SpecConfiguration uploadSpec;
+    private SpecConfiguration downloadSpec;
+    private String deployPattern;
+    private String resolvePattern;
+    private String deploymentProperties;
+    private boolean deployBuildInfo;
     /**
      * Include environment variables in the generated build info
      */
-    private final boolean includeEnvVars;
-    private final IncludesExcludes envVarsPatterns;
-    private final boolean discardOldBuilds;
-    private final boolean discardBuildArtifacts;
-    private final boolean asyncBuildRetention;
+    private boolean includeEnvVars;
+    private IncludesExcludes envVarsPatterns;
+    private boolean discardOldBuilds;
+    private boolean discardBuildArtifacts;
+    private boolean asyncBuildRetention;
     private transient List<Dependency> publishedDependencies;
     private transient List<BuildDependency> buildDependencies;
     private String artifactoryCombinationFilter;
     private boolean multiConfProject;
     private String customBuildName;
     private boolean overrideBuildName;
+
+    @Deprecated
+    private Boolean useSpecs;
 
     /**
      * @deprecated: Use org.jfrog.hudson.generic.ArtifactoryGenericConfigurator#getDeployerCredentials()()
@@ -84,12 +114,17 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
      * @deprecated: The following deprecated variables have corresponding converters to the variables replacing them
      */
     @Deprecated
-    private final ServerDetails details = null;
+    private ServerDetails details;
+    @Deprecated
+    private ServerDetails deployerDetails;
+    @Deprecated
+    private ServerDetails resolverDetails;
     @Deprecated
     private final String matrixParams = null;
 
     @DataBoundConstructor
-    public ArtifactoryGenericConfigurator(ServerDetails details, ServerDetails deployerDetails, ServerDetails resolverDetails,
+    public ArtifactoryGenericConfigurator(ServerDetails specsDeployerDetails, ServerDetails specsResolverDetails,
+                                          ServerDetails legacyDeployerDetails, ServerDetails legacyResolverDetails,
                                           CredentialsConfig deployerCredentialsConfig, CredentialsConfig resolverCredentialsConfig,
                                           String deployPattern, String resolvePattern, String matrixParams, String deploymentProperties,
                                           boolean useSpecs, SpecConfiguration uploadSpec, SpecConfiguration downloadSpec,
@@ -102,8 +137,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                                           String artifactoryCombinationFilter,
                                           String customBuildName,
                                           boolean overrideBuildName) {
-        this.deployerDetails = deployerDetails;
-        this.resolverDetails = resolverDetails;
+        this.specsDeployerDetails = specsDeployerDetails;
+        this.specsResolverDetails = specsResolverDetails;
+        this.legacyDeployerDetails = legacyDeployerDetails;
+        this.legacyResolverDetails = legacyResolverDetails;
         this.deployerCredentialsConfig = deployerCredentialsConfig;
         this.resolverCredentialsConfig = resolverCredentialsConfig;
         this.deployPattern = deployPattern;
@@ -124,12 +161,37 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.overrideBuildName = overrideBuildName;
     }
 
+    /**
+     * Constructor for the DeployerResolverOverriderConverterTest
+     *
+     * @param details               - Old server details
+     * @param deployerDetails       - Old deployer details
+     * @param resolverDetails       - Old resolver details
+     * @param specsDeployerDetails  - New file spec deployer details
+     * @param specsResolverDetails  - New file spec resolver details
+     * @param legacyDeployerDetails - New legacy patterns deployer details
+     * @param legacyResolverDetails - New legacy patterns resolver details
+     */
+    public ArtifactoryGenericConfigurator(ServerDetails details, ServerDetails deployerDetails, ServerDetails resolverDetails,
+                                          ServerDetails specsDeployerDetails, ServerDetails specsResolverDetails,
+                                          ServerDetails legacyDeployerDetails, ServerDetails legacyResolverDetails) {
+        this.details = details;
+        this.deployerDetails = deployerDetails;
+        this.resolverDetails = resolverDetails;
+        this.specsDeployerDetails = specsDeployerDetails;
+        this.specsResolverDetails = specsResolverDetails;
+        this.legacyDeployerDetails = legacyDeployerDetails;
+        this.legacyResolverDetails = legacyResolverDetails;
+    }
+
     public String getArtifactoryName() {
-        return getDeployerDetails() != null ? getDeployerDetails().artifactoryName : null;
+        ServerDetails deployerDetails = isUseSpecs() ? specsDeployerDetails : legacyDeployerDetails;
+        return deployerDetails != null ? deployerDetails.getArtifactoryName() : null;
     }
 
     public String getArtifactoryResolverName() {
-        return resolverDetails != null ? resolverDetails.artifactoryName : null;
+        ServerDetails resolverDetails = isUseSpecs() ? specsResolverDetails : legacyResolverDetails;
+        return resolverDetails != null ? resolverDetails.getArtifactoryName() : null;
     }
 
     public String getArtifactoryUrl() {
@@ -137,27 +199,23 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return server != null ? server.getArtifactoryUrl() : null;
     }
 
+    @Override
     public boolean isOverridingDefaultDeployer() {
         return deployerCredentialsConfig != null && deployerCredentialsConfig.isCredentialsProvided();
     }
 
+    @Override
     public String getRepositoryKey() {
-        return getDeployerDetails().getDeployReleaseRepository().getRepoKey();
+        return legacyDeployerDetails.getDeployReleaseRepository().getRepoKey();
     }
 
+    @Override
     public String getDefaultPromotionTargetRepository() {
         //Not implemented
         return null;
     }
 
-    public ServerDetails getDeployerDetails() {
-        return deployerDetails;
-    }
-
-    public ServerDetails getResolverDetails() {
-        return resolverDetails;
-    }
-
+    @Override
     public Credentials getOverridingDeployerCredentials() {
         return overridingDeployerCredentials;
     }
@@ -175,7 +233,6 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public boolean isUseSpecs() {
-        // useSpecs may be null in Jenkins Job DSL
         return useSpecs == null || useSpecs;
     }
 
@@ -243,8 +300,48 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return overrideBuildName;
     }
 
+    /**
+     * Get specs deployer details. Used by the Jelly.
+     *
+     * @return deployer details
+     */
+    @SuppressWarnings("unused")
+    public ServerDetails getSpecsDeployerDetails() {
+        return specsDeployerDetails;
+    }
+
+    /**
+     * Get specs resolver details. Used by the Jelly.
+     *
+     * @return resolver details
+     */
+    @SuppressWarnings("unused")
+    public ServerDetails getSpecsResolverDetails() {
+        return specsResolverDetails;
+    }
+
+    /**
+     * Get legacy patterns deployer details. Used by the Jelly.
+     *
+     * @return deployer details
+     */
+    @SuppressWarnings("unused")
+    public ServerDetails getLegacyDeployerDetails() {
+        return legacyDeployerDetails;
+    }
+
+    /**
+     * Get legacy patterns resolver details. Used by the Jelly.
+     *
+     * @return deployer details
+     */
+    @SuppressWarnings("unused")
+    public ServerDetails getLegacyResolverDetails() {
+        return legacyResolverDetails;
+    }
+
     public ArtifactoryServer getArtifactoryServer() {
-        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName());
     }
 
     public ArtifactoryServer getArtifactoryResolverServer() {
@@ -253,8 +350,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
             throw new RuntimeException("Artifactory server for dependencies resolution is null");
         }
 
-        ArtifactoryServer server = RepositoriesUtils.getArtifactoryServer(serverId,
-                getDescriptor().getArtifactoryServers());
+        ArtifactoryServer server = RepositoriesUtils.getArtifactoryServer(serverId);
         if (server == null) {
             throw new RuntimeException(String.format("The job is configured to use an Artifactory server with ID '%s' for dependencies resolution. This server however does not exist", serverId));
         }
@@ -263,10 +359,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     }
 
     public List<Repository> getReleaseRepositoryList() {
-        if (getDeployerDetails().getDeploySnapshotRepository() == null) {
-            return Lists.newArrayList();
+        if (legacyDeployerDetails.getDeploySnapshotRepository() == null) {
+            return new ArrayList<>();
         }
-        return RepositoriesUtils.collectRepositories(getDeployerDetails().getDeploySnapshotRepository().getKeyFromSelect());
+        return RepositoriesUtils.collectRepositories(legacyDeployerDetails.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
     @Override
@@ -297,27 +393,21 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         if (Jenkins.get().proxy != null && !resolverServer.isBypassProxy()) {
             proxyConfiguration = createProxyConfiguration();
         }
-
-        ArtifactoryDependenciesClient dependenciesClient = null;
-        try {
-            if (isUseSpecs()) {
-                String spec = SpecUtils.getSpecStringFromSpecConf(downloadSpec, build.getEnvironment(listener),
-                        build.getExecutor().getCurrentWorkspace(), listener.getLogger());
-                FilePath workspace = build.getExecutor().getCurrentWorkspace();
-                publishedDependencies = workspace.act(new FilesResolverCallable(new JenkinsBuildInfoLog(listener),
-                        resolverCredentials, resolverServer.getArtifactoryUrl(), spec, proxyConfiguration));
-            } else {
-                dependenciesClient = resolverServer.createArtifactoryDependenciesClient(resolverCredentials, proxyConfiguration, listener);
-                GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener, dependenciesClient);
+        if (isUseSpecs()) {
+            String spec = SpecUtils.getSpecStringFromSpecConf(downloadSpec, build.getEnvironment(listener),
+                    build.getExecutor().getCurrentWorkspace(), listener.getLogger());
+            FilePath workspace = build.getExecutor().getCurrentWorkspace();
+            publishedDependencies = workspace.act(new FilesResolverCallable(new JenkinsBuildInfoLog(listener),
+                    resolverCredentials, resolverServer.getArtifactoryUrl(), spec, proxyConfiguration));
+        } else {
+            try (ArtifactoryManager artifactoryManager = resolverServer.createArtifactoryManager(resolverCredentials, proxyConfiguration, listener)) {
+                GenericArtifactsResolver artifactsResolver = new GenericArtifactsResolver(build, listener, artifactoryManager);
                 publishedDependencies = artifactsResolver.retrievePublishedDependencies(resolvePattern);
                 buildDependencies = artifactsResolver.retrieveBuildDependencies(resolvePattern);
             }
-            return createEnvironmentOnSuccessfulSetup();
-        } finally {
-            if (dependenciesClient != null) {
-                dependenciesClient.close();
-            }
+
         }
+        return createEnvironmentOnSuccessfulSetup();
     }
 
     private Environment createEnvironmentOnSuccessfulSetup() {
@@ -331,10 +421,9 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
                 ArtifactoryServer server = getArtifactoryServer();
                 CredentialsConfig preferredDeployer = CredentialManager.getPreferredDeployer(ArtifactoryGenericConfigurator.this, server);
-                ArtifactoryBuildInfoClient client = server.createArtifactoryClient(preferredDeployer.provideCredentials(build.getProject()),
-                        createProxyConfiguration());
-                server.setLog(listener, client);
-                try {
+
+                try (ArtifactoryManager artifactoryManager = server.createArtifactoryManager(preferredDeployer.provideCredentials(build.getProject()), createProxyConfiguration())) {
+                    server.setLog(listener, artifactoryManager);
                     boolean isFiltered = false;
                     if (isMultiConfProject(build)) {
                         if (multiConfProject && StringUtils.isBlank(getArtifactoryCombinationFilter())) {
@@ -352,20 +441,18 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
 
                         List<Artifact> deployedArtifacts = artifactsDeployer.getDeployedArtifacts();
                         if (deployBuildInfo) {
-                            new GenericBuildInfoDeployer(ArtifactoryGenericConfigurator.this, client, build,
+                            new GenericBuildInfoDeployer(ArtifactoryGenericConfigurator.this, artifactoryManager, build,
                                     listener, deployedArtifacts, buildDependencies, publishedDependencies).deploy();
                             String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(ArtifactoryGenericConfigurator.this, build);
                             // add the result action (prefer always the same index)
-                            build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
-                            build.getActions().add(new UnifiedPromoteBuildAction(build, ArtifactoryGenericConfigurator.this));
+                            build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
+                            build.addAction(new UnifiedPromoteBuildAction(build, ArtifactoryGenericConfigurator.this));
                         }
                     }
 
                     return true;
                 } catch (Exception e) {
                     e.printStackTrace(listener.error(e.getMessage()));
-                } finally {
-                    client.close();
                 }
 
                 // failed
@@ -422,7 +509,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     /**
      * Page Converter
      */
-    public static final class ConverterImpl extends DeployerResolverOverriderConverter {
+    public static final class ConverterImpl extends GenericDeployerResolverOverriderConverter {
         public ConverterImpl(XStream2 xstream) {
             super(xstream);
         }

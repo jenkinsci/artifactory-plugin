@@ -1,14 +1,13 @@
 package org.jfrog.hudson.pipeline.common.types;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Maps;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.jfrog.hudson.pipeline.common.Utils.BUILD_INFO;
@@ -57,15 +56,15 @@ public class Docker implements Serializable {
     }
 
     @Whitelisted
-    public void push(String imageTag, String targetRepository) {
-        push(imageTag, targetRepository, null);
+    public void push(String imageTag, String targetRepo) {
+        push(imageTag, targetRepo, null);
     }
 
     @Whitelisted
-    public void push(String imageTag, String targetRepository, BuildInfo providedBuildInfo) {
-        Map<String, Object> dockerArguments = Maps.newLinkedHashMap();
+    public void push(String imageTag, String targetRepo, BuildInfo providedBuildInfo) {
+        Map<String, Object> dockerArguments = new LinkedHashMap<>();
         dockerArguments.put("image", imageTag);
-        dockerArguments.put("targetRepo", targetRepository);
+        dockerArguments.put("targetRepo", targetRepo);
         dockerArguments.put(BUILD_INFO, providedBuildInfo);
         push(dockerArguments);
     }
@@ -82,14 +81,15 @@ public class Docker implements Serializable {
     }
 
     @Whitelisted
-    public void pull(String imageTag) {
-        pull(imageTag, null);
+    public void pull(String imageTag, String sourceRepo) {
+        pull(imageTag, sourceRepo, null);
     }
 
     @Whitelisted
-    public void pull(String imageTag, BuildInfo providedBuildInfo) {
-        Map<String, Object> dockerArguments = Maps.newLinkedHashMap();
+    public void pull(String imageTag, String sourceRepo, BuildInfo providedBuildInfo) {
+        Map<String, Object> dockerArguments = new LinkedHashMap<>();
         dockerArguments.put("image", imageTag);
+        dockerArguments.put("sourceRepo", sourceRepo);
         dockerArguments.put(BUILD_INFO, providedBuildInfo);
         pull(dockerArguments);
     }
@@ -103,4 +103,29 @@ public class Docker implements Serializable {
         // Throws CpsCallableInvocation - Must be the last line in this method
         cpsScript.invokeMethod("dockerPullStep", dockerArguments);
     }
+
+    @Whitelisted
+    public void createDockerBuild(String sourceRepo, String kanikoImageFile, String jibImageFiles) {
+        createDockerBuild(sourceRepo, kanikoImageFile, jibImageFiles, null);
+    }
+
+    @Whitelisted
+    public void createDockerBuild(String sourceRepo, String kanikoImageFile, String jibImageFiles, BuildInfo providedBuildInfo) {
+        Map<String, Object> dockerArguments = new LinkedHashMap<>();
+        dockerArguments.put("kanikoImageFile", kanikoImageFile);
+        dockerArguments.put("jibImageFiles", jibImageFiles);
+        dockerArguments.put("sourceRepo", sourceRepo);
+        dockerArguments.put(BUILD_INFO, providedBuildInfo);
+        createDockerBuild(dockerArguments);
+    }
+
+    @Whitelisted
+    public void createDockerBuild(Map<String, Object> dockerArguments) {
+        dockerArguments.put("server", server);
+        dockerArguments.put("javaArgs", javaArgs);
+        appendBuildInfo(cpsScript, dockerArguments);
+        // Throws CpsCallableInvocation - Must be the last line in this method
+        cpsScript.invokeMethod("createDockerBuildStep", dockerArguments);
+    }
+
 }

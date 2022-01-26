@@ -30,7 +30,7 @@ import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
 import hudson.security.ACL;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -67,7 +67,7 @@ public class GitManager extends AbstractScmManager<GitSCM> {
 
         debuggingLogger.fine(String.format("Checkout Branch '%s' with create=%s", branch, create));
         if (create) {
-            client.checkout(null, branch);
+            client.checkoutBranch(branch, null);
         } else {
             client.checkout(branch);
         }

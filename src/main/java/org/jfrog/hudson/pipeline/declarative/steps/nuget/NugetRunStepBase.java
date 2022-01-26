@@ -2,7 +2,7 @@ package org.jfrog.hudson.pipeline.declarative.steps.nuget;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
@@ -21,10 +21,10 @@ import org.kohsuke.stapler.DataBoundSetter;
 import java.io.IOException;
 
 abstract public class NugetRunStepBase extends AbstractStepImpl {
-
     protected NugetBuild nugetBuild;
     private String customBuildNumber;
     private String customBuildName;
+    private String project;
     private String resolverId;
     private String javaArgs; // Added to allow java remote debugging
     private String args;
@@ -47,6 +47,11 @@ abstract public class NugetRunStepBase extends AbstractStepImpl {
     }
 
     @DataBoundSetter
+    public void setProject(String customProject) {
+        this.project = customProject;
+    }
+
+    @DataBoundSetter
     public void setResolverId(String resolverId) {
         this.resolverId = resolverId;
     }
@@ -66,9 +71,14 @@ abstract public class NugetRunStepBase extends AbstractStepImpl {
         this.args = args;
     }
 
+    @DataBoundSetter
+    public void setApiProtocol(String apiProtocol) { nugetBuild.setApiProtocol(apiProtocol); }
+
+    public abstract String getUsageReportFeatureName();
+
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        private transient NugetRunStepBase step;
+        private transient final NugetRunStepBase step;
 
         @Inject
         public Execution(NugetRunStepBase step, StepContext context) throws IOException, InterruptedException {
@@ -77,26 +87,38 @@ abstract public class NugetRunStepBase extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
-            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(ws, build, step.customBuildName, step.customBuildNumber);
-            setResolver(BuildUniqueIdentifierHelper.getBuildNumber(build));
+        protected Void runStep() throws Exception {
+            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(rootWs, build, step.customBuildName, step.customBuildNumber, step.project);
+            CommonResolver resolver = getResolver(BuildUniqueIdentifierHelper.getBuildNumber(build));
+            step.nugetBuild.setResolver(resolver);
             NugetRunExecutor nugetRunExecutor = new NugetRunExecutor(buildInfo, launcher, step.nugetBuild, step.javaArgs, step.args, ws, step.module, env, listener, build);
             nugetRunExecutor.execute();
-            DeclarativePipelineUtils.saveBuildInfo(nugetRunExecutor.getBuildInfo(), ws, build, new JenkinsBuildInfoLog(listener));
+            DeclarativePipelineUtils.saveBuildInfo(nugetRunExecutor.getBuildInfo(), rootWs, build, new JenkinsBuildInfoLog(listener));
             return null;
         }
 
-        private void setResolver(String buildNumber) throws IOException, InterruptedException {
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            CommonResolver resolver = getResolver(BuildUniqueIdentifierHelper.getBuildNumber(build));
+            return resolver.getArtifactoryServer();
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return step.getUsageReportFeatureName();
+        }
+
+        private CommonResolver getResolver(String buildNumber) throws IOException, InterruptedException {
             if (StringUtils.isBlank(step.resolverId)) {
-                return;
+                return null;
             }
-            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, step.getResolverStepName(), step.resolverId);
+            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(rootWs, buildNumber, step.getResolverStepName(), step.resolverId);
             if (buildDataFile == null) {
                 throw new IOException("Resolver " + step.resolverId + " doesn't exist!");
             }
             CommonResolver resolver = SerializationUtils.createMapper().treeToValue(buildDataFile.get(step.getResolverStepName()), CommonResolver.class);
             resolver.setServer(getArtifactoryServer(buildDataFile));
-            step.nugetBuild.setResolver(resolver);
+            return resolver;
         }
 
         private ArtifactoryServer getArtifactoryServer(BuildDataFile buildDataFile) throws IOException, InterruptedException {
@@ -104,7 +126,7 @@ abstract public class NugetRunStepBase extends AbstractStepImpl {
             if (serverId.isNull()) {
                 throw new IllegalArgumentException("server ID is missing");
             }
-            return DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), serverId.asText());
+            return DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, serverId.asText(), true);
         }
     }
 }

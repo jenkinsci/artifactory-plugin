@@ -6,11 +6,9 @@ import hudson.model.Slave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -19,10 +17,13 @@ import org.jfrog.artifactory.client.ArtifactoryClientBuilder;
 import org.jfrog.artifactory.client.ArtifactoryRequest;
 import org.jfrog.artifactory.client.impl.ArtifactoryRequestImpl;
 import org.jfrog.build.api.util.NullLog;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.client.access.AccessManager;
+import org.jfrog.build.extractor.clientConfiguration.client.artifactory.ArtifactoryManager;
+import org.jfrog.build.extractor.clientConfiguration.client.distribution.DistributionManager;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
+import org.jfrog.hudson.JFrogPlatformInstance;
 import org.jfrog.hudson.jfpipelines.JFrogPipelinesServer;
 import org.jfrog.hudson.jfpipelines.Utils;
 import org.junit.*;
@@ -37,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.jfrog.hudson.pipeline.integration.ITestUtils.*;
@@ -50,23 +52,31 @@ public class PipelineTestBase {
     @ClassRule // The Jenkins instance
     public static JenkinsRule jenkins = new JenkinsRule();
     static Slave slave;
-    private static final Logger log = LogManager.getRootLogger();
+    private static final Logger log = Logger.getLogger(PipelineTestBase.class.getName());
     @Rule
     public TestName testName = new TestName();
     @ClassRule
     public static TemporaryFolder testTemporaryFolder = new TemporaryFolder();
 
     private static final String SLAVE_LABEL = "TestSlave";
-    private static final String ARTIFACTORY_URL = System.getenv("JENKINS_ARTIFACTORY_URL");
-    private static final String ARTIFACTORY_USERNAME = System.getenv("JENKINS_ARTIFACTORY_USERNAME");
-    private static final String ARTIFACTORY_PASSWORD = System.getenv("JENKINS_ARTIFACTORY_PASSWORD");
+    private static final String PLATFORM_URL = System.getenv("JENKINS_PLATFORM_URL");
+    private static final String ARTIFACTORY_URL = StringUtils.removeEnd(PLATFORM_URL, "/") + "/artifactory";
+    private static final String DISTRIBUTION_URL = StringUtils.removeEnd(PLATFORM_URL, "/") + "/distribution";
+    private static final String ACCESS_URL = StringUtils.removeEnd(PLATFORM_URL, "/") + "/access";
+    private static final String ARTIFACTORY_USERNAME = System.getenv("JENKINS_PLATFORM_USERNAME");
+    private static final String ACCESS_TOKEN = System.getenv("JENKINS_PLATFORM_ADMIN_TOKEN");
     static final String JENKINS_XRAY_TEST_ENABLE = System.getenv("JENKINS_XRAY_TEST_ENABLE");
-    static final String JENKINS_DOCKER_TEST_ENABLE = System.getenv("JENKINS_DOCKER_TEST_ENABLE");
+    static final String JENKINS_DOCKER_TEST_DISABLE = System.getenv("JENKINS_DOCKER_TEST_DISABLE");
     static final Path FILES_PATH = getIntegrationDir().resolve("files").toAbsolutePath();
+    public static final String BUILD_NUMBER = String.valueOf(System.currentTimeMillis());
+    public static final String PROJECT_KEY = "j" + StringUtils.right(String.valueOf(System.currentTimeMillis()), 5);
+    public static final String PROJECT_CONFIGURATION_FILE_NAME = "jenkins-artifactory-tests-project-conf";
 
     private static long currentTime;
     private static StrSubstitutor pipelineSubstitution;
-    static ArtifactoryBuildInfoClient buildInfoClient;
+    static ArtifactoryManager artifactoryManager;
+    static DistributionManager distributionManager;
+    static AccessManager accessManager;
     static Artifactory artifactoryClient;
 
     private static final ClassLoader classLoader = PipelineTestBase.class.getClassLoader();
@@ -88,6 +98,7 @@ public class PipelineTestBase {
         createPipelineSubstitution();
         // Create repositories
         Arrays.stream(TestRepository.values()).forEach(PipelineTestBase::createRepo);
+        createProject();
     }
 
     @Before
@@ -97,7 +108,7 @@ public class PipelineTestBase {
     }
 
     @After
-    public void cleanRepos() {
+    public void afterTests() {
         // Remove the content of all local repositories
         Arrays.stream(TestRepository.values()).filter(repository -> repository.getRepoType() == TestRepository.RepoType.LOCAL)
                 .forEach(repository -> artifactoryClient.repository(getRepoKey(repository)).delete(StringUtils.EMPTY));
@@ -107,11 +118,19 @@ public class PipelineTestBase {
     public static void tearDown() {
         // Remove repositories - need to remove virtual repositories first
         Stream.concat(
-                Arrays.stream(TestRepository.values()).filter(repository -> repository.getRepoType() == TestRepository.RepoType.VIRTUAL),
-                Arrays.stream(TestRepository.values()).filter(repository -> repository.getRepoType() != TestRepository.RepoType.VIRTUAL))
+                        Arrays.stream(TestRepository.values()).filter(repository -> repository.getRepoType() == TestRepository.RepoType.VIRTUAL),
+                        Arrays.stream(TestRepository.values()).filter(repository -> repository.getRepoType() != TestRepository.RepoType.VIRTUAL))
                 .forEach(repository -> artifactoryClient.repository(getRepoKey(repository)).delete());
-        buildInfoClient.close();
+        // Remove project.
+        try {
+            accessManager.deleteProject(PROJECT_KEY);
+        } catch (Exception e) {
+            fail(ExceptionUtils.getRootCauseMessage(e));
+        }
+        artifactoryManager.close();
+        distributionManager.close();
         artifactoryClient.close();
+        accessManager.close();
     }
 
     /**
@@ -142,13 +161,7 @@ public class PipelineTestBase {
      */
     private static void createRepo(TestRepository repository) {
         try {
-            String repositorySettingsPath = Paths.get("integration", "settings", repository.getRepoName() + ".json").toString();
-            InputStream inputStream = classLoader.getResourceAsStream(repositorySettingsPath);
-            if (inputStream == null) {
-                throw new IOException(repositorySettingsPath + " not found");
-            }
-            String repositorySettings = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            repositorySettings = pipelineSubstitution.replace(repositorySettings);
+            String repositorySettings = readConfigurationWithSubstitution(repository.getRepoName());
             artifactoryClient.restCall(new ArtifactoryRequestImpl()
                     .method(ArtifactoryRequest.Method.PUT)
                     .requestType(ArtifactoryRequest.ContentType.JSON)
@@ -160,15 +173,49 @@ public class PipelineTestBase {
     }
 
     /**
+     * Read repository or project configuration and replace placeholders with their corresponding values.
+     *
+     * @param repoOrProject - Name of configuration in resources.
+     * @return The configuration after substitution.
+     */
+    private static String readConfigurationWithSubstitution(String repoOrProject) {
+        try {
+            String repositorySettingsPath = Paths.get("integration", "settings", repoOrProject + ".json").toString();
+            InputStream inputStream = classLoader.getResourceAsStream(repositorySettingsPath);
+            if (inputStream == null) {
+                throw new IOException(repositorySettingsPath + " not found");
+            }
+            String repositorySettings = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            return pipelineSubstitution.replace(repositorySettings);
+        } catch (Exception e) {
+            fail(ExceptionUtils.getRootCauseMessage(e));
+        }
+        return null;
+    }
+
+    /**
+     * Creates a project in platform.
+     */
+    private static void createProject() {
+        try {
+            String projectConf = readConfigurationWithSubstitution(PROJECT_CONFIGURATION_FILE_NAME);
+            accessManager.createProject(projectConf);
+        } catch (Exception e) {
+            fail(ExceptionUtils.getRootCauseMessage(e));
+        }
+    }
+
+    /**
      * Creates build-info and Artifactory Java clients.
      */
     private static void createClients() {
-        buildInfoClient = new ArtifactoryBuildInfoClient(ARTIFACTORY_URL, ARTIFACTORY_USERNAME, ARTIFACTORY_PASSWORD, new NullLog());
+        artifactoryManager = new ArtifactoryManager(ARTIFACTORY_URL, ACCESS_TOKEN, new NullLog());
+        distributionManager = new DistributionManager(DISTRIBUTION_URL, ACCESS_TOKEN, new NullLog());
         artifactoryClient = ArtifactoryClientBuilder.create()
                 .setUrl(ARTIFACTORY_URL)
-                .setUsername(ARTIFACTORY_USERNAME)
-                .setPassword(ARTIFACTORY_PASSWORD)
+                .setAccessToken(ACCESS_TOKEN)
                 .build();
+        accessManager = new AccessManager(ACCESS_URL, ACCESS_TOKEN, new NullLog());
     }
 
     /**
@@ -181,10 +228,12 @@ public class PipelineTestBase {
         JFrogPipelinesServer server = new JFrogPipelinesServer("http://127.0.0.1:1080", CredentialsConfig.EMPTY_CREDENTIALS_CONFIG, 300, false, 3);
         artifactoryBuilder.setJfrogPipelinesServer(server);
         CredentialsConfig cred = new CredentialsConfig("admin", "password", "cred1");
-        List<ArtifactoryServer> artifactoryServers = new ArrayList<ArtifactoryServer>() {{
-            add(new ArtifactoryServer("LOCAL", "http://127.0.0.1:8081/artifactory", cred, cred, 0, false, 3, null));
+        CredentialsConfig platformCred = new CredentialsConfig(ARTIFACTORY_USERNAME, ACCESS_TOKEN, null);
+        List<JFrogPlatformInstance> artifactoryServers = new ArrayList<JFrogPlatformInstance>() {{
+            add(new JFrogPlatformInstance(new ArtifactoryServer("LOCAL", "http://127.0.0.1:8081/artifactory", cred, cred, 0, false, 3, null)));
+            add(new JFrogPlatformInstance("PLATFORM", PLATFORM_URL, ARTIFACTORY_URL, DISTRIBUTION_URL, platformCred, platformCred, 0, false, 3, null));
         }};
-        artifactoryBuilder.setArtifactoryServers(artifactoryServers);
+        artifactoryBuilder.setJfrogInstances(artifactoryServers);
     }
 
     /**
@@ -193,9 +242,10 @@ public class PipelineTestBase {
      */
     private static void createPipelineSubstitution() {
         pipelineSubstitution = new StrSubstitutor(new HashMap<String, String>() {{
-            put("FILES_DIR", fixWindowsPath(FILES_PATH.toString() + File.separator + "*"));
-            put("FILES_DIR_1", fixWindowsPath(FILES_PATH.toString() + File.separator + "1" + File.separator + "*"));
+            put("FILES_DIR", fixWindowsPath(FILES_PATH + File.separator + "*"));
+            put("FILES_DIR_1", fixWindowsPath(FILES_PATH + File.separator + "1" + File.separator + "*"));
             put("MAVEN_PROJECT_PATH", getProjectPath("maven-example"));
+            put("MAVEN_JIB_PROJECT_PATH", getProjectPath("maven-jib-example"));
             put("GRADLE_PROJECT_PATH", getProjectPath("gradle-example"));
             put("GRADLE_CI_PROJECT_PATH", getProjectPath("gradle-example-ci"));
             put("GRADLE_CI_PUBLICATION_PROJECT_PATH", getProjectPath("gradle-example-ci-publications"));
@@ -219,6 +269,8 @@ public class PipelineTestBase {
             put("PIP_VIRTUAL", getRepoKey(TestRepository.PIP_VIRTUAL));
             put("CONAN_LOCAL", getRepoKey(TestRepository.CONAN_LOCAL));
             put("NUGET_REMOTE", getRepoKey(TestRepository.NUGET_REMOTE));
+            put("BUILD_NUMBER", BUILD_NUMBER);
+            put("PROJECT_KEY", PROJECT_KEY);
         }});
     }
 
@@ -271,17 +323,17 @@ public class PipelineTestBase {
     }
 
     /**
-     * Verify ARTIFACTORY_URL, ARTIFACTORY_USERNAME and ARTIFACTORY_PASSWORD
+     * Verify ARTIFACTORY_URL, ARTIFACTORY_USERNAME and ACCESS_TOKEN
      */
     private static void verifyEnvironment() {
-        if (StringUtils.isBlank(ARTIFACTORY_URL)) {
-            throw new IllegalArgumentException("JENKINS_ARTIFACTORY_URL is not set");
+        if (StringUtils.isBlank(PLATFORM_URL)) {
+            throw new IllegalArgumentException("JENKINS_PLATFORM_URL is not set");
         }
         if (StringUtils.isBlank(ARTIFACTORY_USERNAME)) {
-            throw new IllegalArgumentException("JENKINS_ARTIFACTORY_USERNAME is not set");
+            throw new IllegalArgumentException("JENKINS_PLATFORM_USERNAME is not set");
         }
-        if (StringUtils.isBlank(ARTIFACTORY_PASSWORD)) {
-            throw new IllegalArgumentException("JENKINS_ARTIFACTORY_PASSWORD is not set");
+        if (StringUtils.isBlank(ACCESS_TOKEN)) {
+            throw new IllegalArgumentException("JENKINS_PLATFORM_ADMIN_TOKEN is not set");
         }
     }
 

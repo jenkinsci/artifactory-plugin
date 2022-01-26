@@ -2,8 +2,11 @@ package org.jfrog.hudson.pipeline.declarative.steps;
 
 import com.google.inject.Inject;
 import hudson.Extension;
-import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousStepExecution;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
@@ -21,9 +24,8 @@ import java.util.List;
  */
 @SuppressWarnings("unused")
 public class BuildInfoStep extends AbstractStepImpl {
-
     public static final String STEP_NAME = "rtBuildInfo";
-    private BuildInfo buildInfo;
+    private final BuildInfo buildInfo;
 
     @DataBoundConstructor
     public BuildInfoStep() {
@@ -38,6 +40,11 @@ public class BuildInfoStep extends AbstractStepImpl {
     @DataBoundSetter
     public void setBuildNumber(String buildNumber) {
         buildInfo.setNumber(buildNumber);
+    }
+
+    @DataBoundSetter
+    public void setProject(String project) {
+        buildInfo.setProject(project);
     }
 
     @DataBoundSetter
@@ -87,7 +94,7 @@ public class BuildInfoStep extends AbstractStepImpl {
 
     public static class Execution extends ArtifactorySynchronousStepExecution<Void> {
 
-        private transient BuildInfoStep step;
+        private transient final BuildInfoStep step;
 
         @Inject
         public Execution(BuildInfoStep step, StepContext context) throws IOException, InterruptedException {
@@ -96,12 +103,26 @@ public class BuildInfoStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
+        protected Void runStep() throws Exception {
             String buildName = StringUtils.isBlank(step.buildInfo.getName()) ? BuildUniqueIdentifierHelper.getBuildName(build) : step.buildInfo.getName();
             String buildNumber = StringUtils.isBlank(step.buildInfo.getNumber()) ? BuildUniqueIdentifierHelper.getBuildNumber(build) : step.buildInfo.getNumber();
+            String project = step.buildInfo.getProject();
             step.buildInfo.setName(buildName);
             step.buildInfo.setNumber(buildNumber);
-            DeclarativePipelineUtils.saveBuildInfo(step.buildInfo, ws, build, new JenkinsBuildInfoLog(listener));
+            step.buildInfo.setProject(project);
+            BuildInfo currentBuildInfo = DeclarativePipelineUtils.getBuildInfo(rootWs, build, buildName, buildNumber, project);
+            step.buildInfo.append(currentBuildInfo);
+            DeclarativePipelineUtils.saveBuildInfo(step.buildInfo, rootWs, build, new JenkinsBuildInfoLog(listener));
+            return null;
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() throws Exception {
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
             return null;
         }
     }

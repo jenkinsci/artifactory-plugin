@@ -40,7 +40,7 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
      */
     @Deprecated
     private Credentials overridingResolverCredentials;
-    private final CredentialsConfig resolverCredentialsConfig;
+    private CredentialsConfig resolverCredentialsConfig;
 
     /**
      * @deprecated: The following deprecated variables have corresponding converters to the variables replacing them
@@ -52,6 +52,17 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     public ArtifactoryMaven3NativeConfigurator(ServerDetails details, ServerDetails resolverDetails, CredentialsConfig resolverCredentialsConfig) {
         this.resolverDetails = resolverDetails;
         this.resolverCredentialsConfig = resolverCredentialsConfig;
+    }
+
+    /**
+     * Constructor for the DeployerResolverOverriderConverterTest
+     *
+     * @param details         - Old server details
+     * @param resolverDetails - new resolver details
+     */
+    public ArtifactoryMaven3NativeConfigurator(ServerDetails details, ServerDetails resolverDetails) {
+        this.details = details;
+        this.resolverDetails = resolverDetails;
     }
 
     public ServerDetails getDeployerDetails() {
@@ -119,10 +130,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
     }
 
     public ArtifactoryServer getArtifactoryServer() {
-        List<ArtifactoryServer> servers = getDescriptor().getArtifactoryServers();
-        for (ArtifactoryServer server : servers) {
-            if (server.getServerId().equals(getArtifactoryName())) {
-                return server;
+        List<JFrogPlatformInstance> jfrogInstances = getDescriptor().getJfrogInstances();
+        for (JFrogPlatformInstance JFrogPlatformInstance : jfrogInstances) {
+            if (JFrogPlatformInstance.getId().equals(getArtifactoryName())) {
+                return JFrogPlatformInstance.getArtifactory();
             }
         }
         return null;
@@ -132,10 +143,10 @@ public class ArtifactoryMaven3NativeConfigurator extends BuildWrapper implements
         String releaseRepoKey = getDeployerDetails().getResolveReleaseRepository().getKeyFromSelect();
         String snapshotRepoKey = getDeployerDetails().getResolveSnapshotRepository().getKeyFromSelect();
 
-        // Add the releases repo to the reposities list, in case it is not there:
+        // Add the releases repo to the repositories list, in case it is not there:
         List<VirtualRepository> repos = RepositoriesUtils.collectVirtualRepositories(null, releaseRepoKey);
 
-        // Add the snapshots repo to the reposities list, in case it is not there:
+        // Add the snapshots repo to the repositories list, in case it is not there:
         return RepositoriesUtils.collectVirtualRepositories(repos, snapshotRepoKey);
     }
 

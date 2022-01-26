@@ -6,7 +6,6 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.pipeline.common.executors.GenericUploadExecutor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfoAccessor;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -15,6 +14,7 @@ import java.io.IOException;
 
 @SuppressWarnings("unused")
 public class UploadStep extends GenericStep {
+    static final String STEP_NAME = "rtUpload";
 
     @DataBoundConstructor
     public UploadStep(String serverId) {
@@ -28,14 +28,18 @@ public class UploadStep extends GenericStep {
             super(step, context);
         }
 
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
+        }
+
         @Override
-        protected Void run() throws Exception {
-            setGenericParameters(listener, build, ws, env, step, getContext());
+        protected Void runStep() throws Exception {
+            setGenericParameters(step, getContext());
             GenericUploadExecutor genericUploadExecutor = new GenericUploadExecutor(artifactoryServer, listener, build, ws, buildInfo, getContext(), spec, step.failNoOp, step.module);
             genericUploadExecutor.execute();
             BuildInfo buildInfo = genericUploadExecutor.getBuildInfo();
-            new BuildInfoAccessor(buildInfo).captureVariables(env, build, listener);
-            DeclarativePipelineUtils.saveBuildInfo(buildInfo, ws, build, new JenkinsBuildInfoLog(listener));
+            buildInfo.captureVariables(env, build, listener);
+            DeclarativePipelineUtils.saveBuildInfo(buildInfo, rootWs, build, new JenkinsBuildInfoLog(listener));
             return null;
         }
     }
@@ -49,7 +53,7 @@ public class UploadStep extends GenericStep {
 
         @Override
         public String getFunctionName() {
-            return "rtUpload";
+            return STEP_NAME;
         }
 
         @Override

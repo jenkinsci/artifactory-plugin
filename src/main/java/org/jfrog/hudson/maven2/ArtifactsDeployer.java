@@ -23,15 +23,19 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.maven.reporters.MavenArtifact;
 import hudson.maven.reporters.MavenArtifactRecord;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
+import hudson.model.Cause;
+import hudson.model.Hudson;
+import hudson.model.Result;
 import hudson.util.VersionNumber;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.jfrog.build.api.BuildInfoFields;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.jfrog.build.extractor.ci.BuildInfoFields;
 import org.jfrog.build.api.util.FileChecksumCalculator;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.client.artifactory.ArtifactoryManager;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
 import org.jfrog.hudson.ArtifactoryRedeployPublisher;
 import org.jfrog.hudson.ArtifactoryServer;
@@ -61,7 +65,7 @@ public class ArtifactsDeployer {
     private final ArtifactoryServer artifactoryServer;
     private final String targetReleasesRepository;
     private final String targetSnapshotsRepository;
-    private final ArtifactoryBuildInfoClient client;
+    private final ArtifactoryManager artifactoryManager;
     private final MavenModuleSetBuild mavenModuleSetBuild;
     private final BuildListener listener;
     private final IncludeExcludePatterns patterns;
@@ -71,10 +75,10 @@ public class ArtifactsDeployer {
     private final String[] deploymentProperties;
     private final AbstractBuild<?, ?> rootBuild;
 
-    public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryBuildInfoClient client,
+    public ArtifactsDeployer(ArtifactoryRedeployPublisher artifactoryPublisher, ArtifactoryManager artifactoryManager,
                              MavenModuleSetBuild mavenModuleSetBuild, BuildListener listener)
             throws IOException, InterruptedException {
-        this.client = client;
+        this.artifactoryManager = artifactoryManager;
         this.mavenModuleSetBuild = mavenModuleSetBuild;
         this.listener = listener;
         this.env = mavenModuleSetBuild.getEnvironment(listener);
@@ -189,10 +193,18 @@ public class ArtifactsDeployer {
         if (StringUtils.isNotBlank(url)) {
             builder.addProperty(BuildInfoFields.VCS_URL, url);
         }
+        String branch = ExtractorUtils.getVcsBranch(env);
+        if (StringUtils.isNotBlank(branch)) {
+            builder.addProperty(BuildInfoFields.VCS_BRANCH, branch);
+        }
+        String message = ExtractorUtils.getVcsMessage(env);
+        if (StringUtils.isNotBlank(url)) {
+            builder.addProperty(BuildInfoFields.VCS_MESSAGE, message);
+        }
         addDeploymentProperties(builder);
         DeployDetails deployDetails = builder.build();
         logDeploymentPath(deployDetails, artifactPath);
-        client.deployArtifact(deployDetails);
+        artifactoryManager.upload(deployDetails);
     }
 
     private void addDeploymentProperties(DeployDetails.Builder builder) {

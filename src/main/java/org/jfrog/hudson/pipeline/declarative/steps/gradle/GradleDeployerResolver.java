@@ -3,6 +3,7 @@ package org.jfrog.hudson.pipeline.declarative.steps.gradle;
 import com.google.inject.Inject;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
@@ -34,7 +35,7 @@ public class GradleDeployerResolver extends AbstractStepImpl {
 
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        private transient GradleDeployerResolver step;
+        private transient final GradleDeployerResolver step;
 
         @Inject
         public Execution(GradleDeployerResolver step, StepContext context) throws IOException, InterruptedException {
@@ -43,10 +44,20 @@ public class GradleDeployerResolver extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
+        protected Void runStep() throws Exception {
             String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
             BuildDataFile buildDataFile = step.buildDataFile;
-            writeBuildDataFile(ws, buildNumber, buildDataFile, new JenkinsBuildInfoLog(listener));
+            writeBuildDataFile(rootWs, buildNumber, buildDataFile, new JenkinsBuildInfoLog(listener));
+            return null;
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
             return null;
         }
     }

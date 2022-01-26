@@ -1,14 +1,9 @@
 package org.jfrog.hudson.pipeline.declarative.steps.generic;
 
 import com.google.inject.Inject;
-import hudson.EnvVars;
 import hudson.Extension;
-import hudson.FilePath;
-import hudson.model.Run;
-import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -17,6 +12,7 @@ import static org.jfrog.build.extractor.clientConfiguration.util.EditPropertiesH
 
 @SuppressWarnings("unused")
 public class DeletePropsStep extends EditPropsStep {
+    static final String STEP_NAME = "rtDeleteProps";
 
     @DataBoundConstructor
     public DeletePropsStep(String serverId) {
@@ -31,9 +27,14 @@ public class DeletePropsStep extends EditPropsStep {
         }
 
         @Override
-        protected Void run() throws Exception {
-            super.editPropsRun(build, listener, step, ws, env);
+        protected Void runStep() throws Exception {
+            super.editPropsRun();
             return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 
@@ -46,7 +47,7 @@ public class DeletePropsStep extends EditPropsStep {
 
         @Override
         public String getFunctionName() {
-            return "rtDeleteProps";
+            return STEP_NAME;
         }
 
         @Override

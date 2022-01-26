@@ -23,7 +23,7 @@ import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
@@ -55,28 +55,28 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
      */
     private final ServerDetails deployerDetails;
     private final ServerDetails resolverDetails;
-    private final CredentialsConfig deployerCredentialsConfig;
-    private final CredentialsConfig resolverCredentialsConfig;
+    private CredentialsConfig deployerCredentialsConfig;
+    private CredentialsConfig resolverCredentialsConfig;
 
     /**
      * If checked (default) deploy maven artifacts
      */
-    private final boolean deployArtifacts;
-    private final IncludesExcludes artifactDeploymentPatterns;
+    private boolean deployArtifacts;
+    private IncludesExcludes artifactDeploymentPatterns;
 
     /**
      * Include environment variables in the generated build info
      */
-    private final boolean includeEnvVars;
+    private boolean includeEnvVars;
 
-    private final boolean deployBuildInfo;
-    private final boolean discardOldBuilds;
-    private final boolean discardBuildArtifacts;
-    private final boolean asyncBuildRetention;
-    private final String deploymentProperties;
-    private final boolean enableIssueTrackerIntegration;
-    private final boolean filterExcludedArtifactsFromBuild;
-    private final boolean enableResolveArtifacts;
+    private boolean deployBuildInfo;
+    private boolean discardOldBuilds;
+    private boolean discardBuildArtifacts;
+    private boolean asyncBuildRetention;
+    private String deploymentProperties;
+    private boolean enableIssueTrackerIntegration;
+    private boolean filterExcludedArtifactsFromBuild;
+    private boolean enableResolveArtifacts;
     private IncludesExcludes envVarsPatterns;
     private boolean aggregateBuildIssues;
     private String aggregationBuildStatus;
@@ -140,6 +140,19 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
         this.enableResolveArtifacts = enableResolveArtifacts;
         this.customBuildName = customBuildName;
         this.overrideBuildName = overrideBuildName;
+    }
+
+    /**
+     * Constructor for the DeployerResolverOverriderConverterTest
+     *
+     * @param details         - Old server details
+     * @param deployerDetails - New deployer details
+     * @param resolverDetails - new resolver details
+     */
+    public ArtifactoryMaven3Configurator(ServerDetails details, ServerDetails deployerDetails, ServerDetails resolverDetails) {
+        this.details = details;
+        this.deployerDetails = deployerDetails;
+        this.resolverDetails = resolverDetails;
     }
 
     public ServerDetails getDeployerDetails() {
@@ -227,7 +240,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public ArtifactoryServer getArtifactoryServer() {
-        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName());
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -297,7 +310,7 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
     }
 
     public ArtifactoryServer getArtifactoryServer(String artifactoryServerName) {
-        return RepositoriesUtils.getArtifactoryServer(artifactoryServerName, getDescriptor().getArtifactoryServers());
+        return RepositoriesUtils.getArtifactoryServer(artifactoryServerName);
     }
 
     public List<Repository> getReleaseRepositoryList() {
@@ -393,8 +406,8 @@ public class ArtifactoryMaven3Configurator extends BuildWrapper implements Deplo
                 Result result = build.getResult();
                 if (deployBuildInfo && result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(ArtifactoryMaven3Configurator.this, build);
-                    build.getActions().add(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
-                    build.getActions().add(new UnifiedPromoteBuildAction(build, ArtifactoryMaven3Configurator.this));
+                    build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
+                    build.addAction(new UnifiedPromoteBuildAction(build, ArtifactoryMaven3Configurator.this));
                 }
                 return true;
             }

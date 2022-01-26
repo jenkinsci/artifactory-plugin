@@ -5,7 +5,6 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.*;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.model.Hudson;
 import hudson.model.Item;
@@ -14,19 +13,20 @@ import hudson.model.queue.Tasks;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
 import org.acegisecurity.Authentication;
-import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.util.Credentials;
-import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 
 public class PluginsUtils {
@@ -47,17 +47,17 @@ public class PluginsUtils {
     public static ListBoxModel fillPluginCredentials(Item project, Authentication authentication) {
         List<DomainRequirement> domainRequirements = Collections.emptyList();
         return new StandardListBoxModel()
-                .withEmptySelection()
-                .withMatching(
+                .includeEmptyValue()
+                .includeMatchingAs(
+                        authentication,
+                        project,
+                        StandardCredentials.class,
+                        domainRequirements,
                         CredentialsMatchers.anyOf(
                                 CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class),
-                                CredentialsMatchers.instanceOf(StringCredentialsImpl.class),
+                                CredentialsMatchers.instanceOf(StringCredentials.class),
                                 CredentialsMatchers.instanceOf(StandardCertificateCredentials.class)
-                        ),
-                        CredentialsProvider.lookupCredentials(StandardCredentials.class,
-                                project,
-                                authentication,
-                                domainRequirements)
+                        )
                 );
     }
 
@@ -67,8 +67,8 @@ public class PluginsUtils {
                         UsernamePasswordCredentials.class,
                         item,
                         item instanceof Queue.Task
-                            ? Tasks.getAuthenticationOf((Queue.Task) item)
-                            : ACL.SYSTEM,
+                                ? Tasks.getAuthenticationOf((Queue.Task) item)
+                                : ACL.SYSTEM,
                         Collections.<DomainRequirement>emptyList()),
                 CredentialsMatchers.withId(credentialsId)
         );
@@ -80,10 +80,10 @@ public class PluginsUtils {
         return Credentials.EMPTY_CREDENTIALS;
     }
 
-    public static StringCredentialsImpl accessTokenCredentialsLookup(String credentialsId, Item item) {
-        StringCredentialsImpl accessTokenPasswordCredentials = CredentialsMatchers.firstOrNull(
+    public static StringCredentials accessTokenCredentialsLookup(String credentialsId, Item item) {
+        StringCredentials accessTokenPasswordCredentials = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
-                        StringCredentialsImpl.class,
+                        StringCredentials.class,
                         item,
                         item instanceof Queue.Task
                                 ? Tasks.getAuthenticationOf((Queue.Task) item)
@@ -101,7 +101,7 @@ public class PluginsUtils {
 
     private static ArtifactoryBuilder.DescriptorImpl getDescriptor() {
         ArtifactoryBuilder.DescriptorImpl descriptor = (ArtifactoryBuilder.DescriptorImpl)
-                Hudson.getInstance().getDescriptor(ArtifactoryBuilder.class);
+                Hudson.get().getDescriptor(ArtifactoryBuilder.class);
         if (descriptor != null) {
             return descriptor;
         }
@@ -128,16 +128,21 @@ public class PluginsUtils {
      * @throws IOException
      */
     public static String getJiraVersion(URL jiraBaseUrl) {
+        HttpResponse response = null;
         HttpClient client = new DefaultHttpClient();
         try {
             URL requestUrl = new URL(jiraBaseUrl + JIRA_REST_SERVERINFO_ENDPOINT);
-            HttpResponse response = client.execute(new HttpGet(requestUrl.toURI()));
+            response = client.execute(new HttpGet(requestUrl.toURI()));
             lazyInitMapper();
             Map<String, Object> responseMap = mapper.readValue(response.getEntity().getContent(), new TypeReference<Map<String, Object>>() {
             });
             return ((String) responseMap.get("version"));
         } catch (Exception e) {
             throw new RuntimeException("Error while trying to get Jira Issue Tracker version: " + e.getMessage());
+        } finally {
+            if (response != null) {
+                EntityUtils.consumeQuietly(response.getEntity());
+            }
         }
     }
 

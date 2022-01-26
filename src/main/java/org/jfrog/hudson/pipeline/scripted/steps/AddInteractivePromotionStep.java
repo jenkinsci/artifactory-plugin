@@ -3,10 +3,10 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 import com.google.inject.Inject;
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.*;
+import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.ArtifactoryConfigurator;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
-import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.types.PromotionConfig;
 import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -18,6 +18,7 @@ import java.io.IOException;
  */
 
 public class AddInteractivePromotionStep extends AbstractStepImpl {
+    static final String STEP_NAME = "addInteractivePromotion";
     private ArtifactoryServer server;
     private PromotionConfig promotionConfig;
     private String displayName;
@@ -52,21 +53,31 @@ public class AddInteractivePromotionStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Boolean run() throws Exception {
+        protected Boolean runStep() throws Exception {
             ArtifactoryConfigurator configurator = new ArtifactoryConfigurator(Utils.prepareArtifactoryServer(null, step.getServer()));
             addPromotionAction(configurator);
             return true;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(null, step.getServer());
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
 
         private void addPromotionAction(ArtifactoryConfigurator configurator) {
             PromotionConfig pipelinePromotionConfig = step.getPromotionConfig();
             org.jfrog.hudson.release.promotion.PromotionConfig promotionConfig = Utils.convertPromotionConfig(pipelinePromotionConfig);
 
-            synchronized (build.getActions()) {
+            synchronized (build.getAllActions()) {
                 UnifiedPromoteBuildAction action = build.getAction(UnifiedPromoteBuildAction.class);
                 if (action == null) {
                     action = new UnifiedPromoteBuildAction(this.build);
-                    build.getActions().add(action);
+                    build.addAction(action);
                 }
                 action.addPromotionCandidate(promotionConfig, configurator, step.getDisplayName());
             }
@@ -82,7 +93,7 @@ public class AddInteractivePromotionStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "addInteractivePromotion";
+            return STEP_NAME;
         }
 
         @Override

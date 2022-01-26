@@ -3,14 +3,13 @@ package org.jfrog.hudson.pipeline.common.executors;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.Dependency;
+import org.apache.commons.lang3.StringUtils;
+import org.jfrog.build.extractor.ci.Dependency;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.generic.FilesResolverCallable;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
-import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfoAccessor;
 import org.jfrog.hudson.util.Credentials;
 import org.jfrog.hudson.util.JenkinsBuildInfoLog;
 
@@ -29,6 +28,7 @@ public class GenericDownloadExecutor implements Executor {
     private TaskListener listener;
     private String spec;
     private String moduleName;
+    public static String FAIL_NO_OP_ERROR_MESSAGE = "Fail-no-op: No files were affected in the download process.";
 
     public GenericDownloadExecutor(ArtifactoryServer server, TaskListener listener, Run build, FilePath ws, BuildInfo buildInfo, String spec, boolean failNoOp, String moduleName) {
         this.build = build;
@@ -52,9 +52,9 @@ public class GenericDownloadExecutor implements Executor {
                 ws.act(new FilesResolverCallable(new JenkinsBuildInfoLog(listener),
                         resolverCredentials, server.getArtifactoryUrl(), spec, Utils.getProxyConfiguration(server)));
         if (failNoOp && resolvedDependencies.isEmpty()) {
-            throw new RuntimeException("Fail-no-op: No files were affected in the download process.");
+            throw new RuntimeException(FAIL_NO_OP_ERROR_MESSAGE);
         }
         String moduleId = StringUtils.isNotBlank(moduleName) ? moduleName : buildInfo.getName();
-        new BuildInfoAccessor(this.buildInfo).appendDependencies(resolvedDependencies, moduleId);
+        this.buildInfo.appendDependencies(resolvedDependencies, moduleId);
     }
 }

@@ -10,8 +10,9 @@ import hudson.plugins.gradle.Gradle;
 import hudson.plugins.gradle.GradleInstallation;
 import hudson.util.ArgumentListBuilder;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.BuildInfoFields;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jfrog.build.extractor.ci.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
 import org.jfrog.hudson.action.ActionableHelper;
 import org.jfrog.hudson.gradle.GradleInitScriptWriter;
@@ -23,6 +24,8 @@ import org.jfrog.hudson.util.ExtractorUtils;
 
 import java.io.IOException;
 import java.util.Objects;
+
+import static org.jfrog.hudson.pipeline.common.types.deployers.Deployer.addDeployedArtifactsActionFromModules;
 
 public class GradleExecutor implements Executor {
 
@@ -66,8 +69,16 @@ public class GradleExecutor implements Executor {
         envExtractor.execute();
         ArgumentListBuilder args = getGradleExecutor();
         Utils.launch("Gradle", launcher, args, extendedEnv, listener, ws);
+
         String generatedBuildPath = extendedEnv.get(BuildInfoFields.GENERATED_BUILD_INFO);
-        buildInfo.append(Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath));
+        org.jfrog.build.extractor.ci.BuildInfo generatedBuild = Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath);
+        // Add action only if artifacts were actually deployed and the build info was generated.
+        // The build info gets generated only after running the "artifactoryPublish" task.
+        if (deployer.isDeployArtifacts() && !deployer.isEmpty() && CollectionUtils.isNotEmpty(generatedBuild.getModules())) {
+            addDeployedArtifactsActionFromModules(this.build, deployer.getArtifactoryServer().getArtifactoryUrl(), generatedBuild.getModules(), DeployDetails.PackageType.GRADLE);
+        }
+        buildInfo.append(generatedBuild);
+
         ActionableHelper.deleteFilePath(tempDir, initScriptPath);
         // Read the deployable artifacts map from the 'json' file in the agent and append them to the buildInfo object.
         buildInfo.getAndAppendDeployableArtifactsByModule(extendedEnv.get(BuildInfoFields.DEPLOYABLE_ARTIFACTS),
@@ -120,7 +131,7 @@ public class GradleExecutor implements Executor {
         if (!gradleBuild.isUsesPlugin()) {
             try {
                 initScriptPath = createInitScript();
-                switches += " --init-script " + initScriptPath;
+                switches += " --init-script \"" + initScriptPath + "\"";
             } catch (Exception e) {
                 listener.getLogger().println("Error occurred while writing Gradle Init Script: " + e.getMessage());
                 throw new Run.RunnerAbortedException();
@@ -131,7 +142,7 @@ public class GradleExecutor implements Executor {
 
     private GradleInstallation getGradleInstallation() {
         if (!StringUtils.isEmpty(gradleBuild.getTool())) {
-            GradleInstallation[] installations = Jenkins.getInstance().getDescriptorByType(Gradle.DescriptorImpl.class).getInstallations();
+            GradleInstallation[] installations = Jenkins.get().getDescriptorByType(Gradle.DescriptorImpl.class).getInstallations();
             for (GradleInstallation i : installations) {
                 if (gradleBuild.getTool().equals(i.getName())) {
                     return i;

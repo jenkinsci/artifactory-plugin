@@ -4,12 +4,16 @@ import org.apache.commons.io.FileUtils
 
 import java.nio.file.Paths
 
+env.DONT_COLLECT='FOO'
+env.COLLECT='BAR'
 node("TestSlave") {
     stage "Configure Artifactory"
-    def rtServer = Artifactory.newServer url: "${env.JENKINS_ARTIFACTORY_URL}", username: "${env.JENKINS_ARTIFACTORY_USERNAME}", password: "${env.JENKINS_ARTIFACTORY_PASSWORD}"
+    def rtServer = Artifactory.newServer url: "${env.JENKINS_PLATFORM_URL}".replaceFirst('/*$', '')+'/artifactory', username: "${env.JENKINS_PLATFORM_USERNAME}", password: "${env.JENKINS_PLATFORM_ADMIN_TOKEN}"
     def buildInfo = Artifactory.newBuildInfo()
+    buildInfo.env.capture = true
+    buildInfo.env.filter.addExclude("DONT_COLLECT")
     buildInfo.name = "scripted:pip test"
-    buildInfo.number = "4"
+    buildInfo.number = ${BUILD_NUMBER}
 
     stage "Configure pip build"
     def rtPip = Artifactory.newPipBuild()
@@ -20,7 +24,7 @@ node("TestSlave") {
 
     stage "Install pip"
     String installPath = Paths.get(pwd(), "scripted-pip-example", "requirements.txt").toString()
-    String pipInitScript = "${env.JENKINS_PIP_ENV_INIT}".toString()
+    String pipInitScript =  System.getenv("JENKINS_PIP_ENV_INIT") ?: ""
     rtPip.install buildInfo: buildInfo, args: "-r " + installPath + " --no-cache-dir --force-reinstall", envActivation: pipInitScript, module: "my-pip-module"
 
     stage "Publish build info"

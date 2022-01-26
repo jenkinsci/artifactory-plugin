@@ -3,6 +3,7 @@ package org.jfrog.hudson.pipeline.declarative.steps.maven;
 import com.google.inject.Inject;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
@@ -17,7 +18,6 @@ import java.io.IOException;
  */
 @SuppressWarnings("unused")
 public class MavenDeployerResolver extends AbstractStepImpl {
-
     BuildDataFile buildDataFile;
 
     @DataBoundConstructor
@@ -27,7 +27,7 @@ public class MavenDeployerResolver extends AbstractStepImpl {
 
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        private transient MavenDeployerResolver step;
+        private transient final MavenDeployerResolver step;
 
         @Inject
         public Execution(MavenDeployerResolver step, StepContext context) throws IOException, InterruptedException {
@@ -36,10 +36,20 @@ public class MavenDeployerResolver extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
+        protected Void runStep() throws Exception {
             String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
             BuildDataFile buildDataFile = step.buildDataFile;
-            DeclarativePipelineUtils.writeBuildDataFile(ws, buildNumber, buildDataFile, new JenkinsBuildInfoLog(listener));
+            DeclarativePipelineUtils.writeBuildDataFile(rootWs, buildNumber, buildDataFile, new JenkinsBuildInfoLog(listener));
+            return null;
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
             return null;
         }
     }

@@ -31,8 +31,7 @@ import hudson.util.DescribableList;
 import jenkins.MasterToSlaveFileCallable;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.client.ArtifactoryHttpClient;
+import org.apache.commons.lang3.StringUtils;
 import org.jfrog.hudson.DeployerOverrider;
 import org.jfrog.hudson.ResolverOverrider;
 import org.jfrog.hudson.util.publisher.PublisherFindImpl;
@@ -41,6 +40,7 @@ import org.jfrog.hudson.util.publisher.PublisherFlexible;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -136,7 +136,7 @@ public abstract class ActionableHelper implements Serializable {
      * @return A list of builders that answer the class definition that are attached to the project.
      */
     public static <T extends Builder> List<T> getBuilder(Project<?, ?> project, Class<T> type) {
-        List<T> result = Lists.newArrayList();
+        List<T> result = new ArrayList<>();
         DescribableList<Builder, Descriptor<Builder>> builders = project.getBuildersList();
         for (Builder builder : builders) {
             if (type.isInstance(builder)) {
@@ -193,7 +193,7 @@ public abstract class ActionableHelper implements Serializable {
     }
 
     public static String getBuildUrl(Run build) {
-        String root = Hudson.getInstance().getRootUrl();
+        String root = Hudson.get().getRootUrl();
         if (StringUtils.isBlank(root)) {
             return "";
         }
@@ -251,21 +251,12 @@ public abstract class ActionableHelper implements Serializable {
     public static String getArtifactoryPluginVersion() {
         String pluginsSortName = "artifactory";
         //Validates Jenkins existence because in some jobs the Jenkins instance is unreachable
-        if (Jenkins.getInstance() != null
-                && Jenkins.getInstance().getPlugin(pluginsSortName) != null
-                && Jenkins.getInstance().getPlugin(pluginsSortName).getWrapper() != null) {
-            return Jenkins.getInstance().getPlugin(pluginsSortName).getWrapper().getVersion();
+        if (Jenkins.get() != null
+                && Jenkins.get().getPlugin(pluginsSortName) != null
+                && Jenkins.get().getPlugin(pluginsSortName).getWrapper() != null) {
+            return Jenkins.get().getPlugin(pluginsSortName).getWrapper().getVersion();
         }
         return "";
-    }
-
-    /**
-     * Returns the default number of retries
-     *
-     * @return the default number of retries
-     */
-    public static int getDefaultConnectionRetries() {
-        return ArtifactoryHttpClient.DEFAULT_CONNECTION_RETRY;
     }
 
     /**
@@ -315,7 +306,7 @@ public abstract class ActionableHelper implements Serializable {
 
     public static Node getNode(Launcher launcher) {
         Node node = null;
-        Jenkins j = Jenkins.getInstance();
+        Jenkins j = Jenkins.get();
         for (Computer c : j.getComputers()) {
             if (c.getChannel() == launcher.getChannel()) {
                 node = c.getNode();

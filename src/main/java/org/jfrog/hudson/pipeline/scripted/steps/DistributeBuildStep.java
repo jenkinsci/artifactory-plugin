@@ -3,7 +3,7 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 import com.google.inject.Inject;
 import hudson.Extension;
 import org.apache.commons.cli.MissingArgumentException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.DistributionExecutor;
@@ -19,7 +19,7 @@ import java.io.IOException;
  */
 
 public class DistributeBuildStep extends AbstractStepImpl {
-
+    static final String STEP_NAME = "artifactoryDistributeBuild";
     private ArtifactoryServer server;
     private DistributionConfig distributionConfig;
 
@@ -48,7 +48,7 @@ public class DistributeBuildStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Boolean run() throws Exception {
+        protected Boolean runStep() throws Exception {
             DistributionConfig distributionConfig = step.getDistributionConfig();
 
             if (StringUtils.isEmpty(distributionConfig.getBuildName())) {
@@ -69,6 +69,16 @@ public class DistributeBuildStep extends AbstractStepImpl {
             new DistributionExecutor(Utils.prepareArtifactoryServer(null, step.getServer()), build, listener, getContext(), distributionConfig).execute();
             return true;
         }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(null, step.getServer());
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
+        }
     }
 
     @Extension
@@ -81,7 +91,7 @@ public class DistributeBuildStep extends AbstractStepImpl {
         @Override
         // The step is invoked by ArtifactoryServer by the step name
         public String getFunctionName() {
-            return "artifactoryDistributeBuild";
+            return STEP_NAME;
         }
 
         @Override

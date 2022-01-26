@@ -17,23 +17,26 @@
 package org.jfrog.hudson.util;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Util;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.Cause;
+import hudson.model.Computer;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.slaves.SlaveComputer;
 import hudson.util.IOUtils;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
-import org.jfrog.build.api.BuildInfoConfigProperties;
-import org.jfrog.build.api.BuildInfoFields;
-import org.jfrog.build.api.BuildRetention;
-import org.jfrog.build.api.Vcs;
+import org.jfrog.build.extractor.ci.BuildInfoConfigProperties;
+import org.jfrog.build.extractor.ci.BuildInfoFields;
+import org.jfrog.build.extractor.ci.BuildRetention;
+import org.jfrog.build.extractor.ci.Vcs;
 import org.jfrog.build.api.util.NullLog;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
@@ -52,8 +55,18 @@ import org.jfrog.hudson.release.ReleaseAction;
 import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
-import java.io.*;
-import java.util.*;
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 
 /**
  * @author Tomer Cohen
@@ -67,6 +80,8 @@ public class ExtractorUtils {
     public static final String EXTRACTOR_USED = "extractor.used";
     public static final String GIT_COMMIT = "GIT_COMMIT";
     public static final String GIT_URL = "GIT_URL";
+    public static final String GIT_BRANCH = "GIT_BRANCH";
+    public static final String GIT_MESSAGE = "GIT_MESSAGE";
 
     private ExtractorUtils() {
         // utility class
@@ -109,10 +124,34 @@ public class ExtractorUtils {
         return url;
     }
 
+    /**
+     * Get the git branch from the Jenkins build environment.
+     *
+     * @param env Th Jenkins build environment.
+     * @return The vcs branch for git.
+     */
+    public static String getVcsBranch(Map<String, String> env) {
+        String branch = env.get(GIT_BRANCH);
+        return branch != null ? branch : "";
+    }
+
+    /**
+     * Get the git message from the Jenkins build environment.
+     *
+     * @param env The Jenkins build environment.
+     * @return The vcs message for git.
+     */
+    public static String getVcsMessage(Map<String, String> env) {
+        String message = env.get(GIT_MESSAGE);
+        return message != null ? message : "";
+    }
+
     public static void addVcsDetailsToEnv(FilePath filePath, EnvVars env, TaskListener listener) throws IOException, InterruptedException {
         Vcs vcs = Utils.extractVcs(filePath, new JenkinsBuildInfoLog(listener));
         env.put(GIT_COMMIT, StringUtils.defaultIfEmpty(vcs.getRevision(), ""));
         env.put(GIT_URL, StringUtils.defaultIfEmpty(vcs.getUrl(), ""));
+        env.put(GIT_BRANCH, StringUtils.defaultIfEmpty(vcs.getBranch(), ""));
+        env.put(GIT_MESSAGE, StringUtils.defaultIfEmpty(vcs.getMessage(), ""));
     }
 
     /*
@@ -168,31 +207,41 @@ public class ExtractorUtils {
             addBuildRootIfNeeded((AbstractBuild) build, configuration);
         }
 
-        if (publisherContext != null) {
-            setPublisherInfo(env, build, pipelineBuildInfo, publisherContext, configuration);
-            publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
-        }
-
-        if (resolverContext != null) {
-            setResolverInfo(configuration, build, resolverContext, env);
+        if (publisherContext != null || resolverContext != null) {
+            setPublisherResolverInfo(env, build, configuration, publisherContext, resolverContext, pipelineBuildInfo);
         }
 
         if (!shouldBypassProxy(resolverContext, publisherContext)) {
             setProxy(configuration);
         }
 
-        if ((Jenkins.getInstance().getPlugin("jira") != null) && (publisherContext != null) &&
+        if ((Jenkins.get().getPlugin("jira") != null) && (publisherContext != null) &&
                 publisherContext.isEnableIssueTrackerIntegration()) {
             new IssuesTrackerHelper(build, listener, publisherContext.isAggregateBuildIssues(),
                     publisherContext.getAggregationBuildStatus()).setIssueTrackerInfo(configuration);
         }
 
-        IncludesExcludes envVarsPatterns = new IncludesExcludes("", "");
-        if (publisherContext != null && publisherContext.getEnvVarsPatterns() != null) {
-            envVarsPatterns = publisherContext.getEnvVarsPatterns();
-        }
-        addEnvVars(env, build, configuration, envVarsPatterns, listener);
+        addEnvVars(env, build, pipelineBuildInfo, publisherContext, configuration, listener);
         return configuration;
+    }
+
+    private static void setPublisherResolverInfo(Map<String, String> env, Run build, ArtifactoryClientConfiguration configuration,
+                                                 PublisherContext publisherContext, ResolverContext resolverContext, BuildInfo pipelineBuildInfo) throws IOException {
+        String buildName = pipelineBuildInfo != null ? pipelineBuildInfo.getName() : BuildUniqueIdentifierHelper.getBuildName(build);
+        configuration.info.setBuildName(buildName);
+        String buildNumber = pipelineBuildInfo != null ? pipelineBuildInfo.getNumber() : BuildUniqueIdentifierHelper.getBuildNumber(build);
+        configuration.info.setBuildNumber(buildNumber);
+        String project = pipelineBuildInfo != null ? pipelineBuildInfo.getProject() : null;
+        configuration.info.setProject(project);
+
+        if (publisherContext != null) {
+            setPublisherInfo(env, build, pipelineBuildInfo, publisherContext, configuration, buildName, buildNumber);
+            publisherContext.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
+        }
+
+        if (resolverContext != null) {
+            setResolverInfo(configuration, build, resolverContext, env);
+        }
     }
 
     private static boolean shouldBypassProxy(ResolverContext resolverContext, PublisherContext publisherContext) {
@@ -205,7 +254,7 @@ public class ExtractorUtils {
     }
 
     private static void setProxy(ArtifactoryClientConfiguration configuration) {
-        Jenkins j = Jenkins.getInstance();
+        Jenkins j = Jenkins.get();
         if (j.proxy != null) {
             configuration.proxy.setHost(j.proxy.name);
             configuration.proxy.setPort(j.proxy.port);
@@ -258,21 +307,14 @@ public class ExtractorUtils {
      * Set all the parameters relevant for publishing artifacts and build info
      */
     private static void setPublisherInfo(Map<String, String> env, Run build, BuildInfo pipelineBuildInfo, PublisherContext context,
-                                         ArtifactoryClientConfiguration configuration) throws IOException {
+                                         ArtifactoryClientConfiguration configuration, String buildName, String buildNumber) throws IOException {
         configuration.setActivateRecorder(Boolean.TRUE);
-        String buildName;
-        String buildNumber;
-        if (pipelineBuildInfo != null) {
-            buildName = pipelineBuildInfo.getName();
-            buildNumber = pipelineBuildInfo.getNumber();
-        } else {
-            buildName = context.isOverrideBuildName() ? context.getCustomBuildName() : BuildUniqueIdentifierHelper.getBuildName(build);
-            buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
-        }
 
-        configuration.info.setBuildName(buildName);
+        if (pipelineBuildInfo == null && context.isOverrideBuildName()) {
+            buildName = context.getCustomBuildName();
+            configuration.info.setBuildName(buildName);
+        }
         configuration.publisher.addMatrixParam(BuildInfoFields.BUILD_NAME, buildName);
-        configuration.info.setBuildNumber(buildNumber);
         configuration.publisher.addMatrixParam(BuildInfoFields.BUILD_NUMBER, buildNumber);
         configuration.info.setArtifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion());
 
@@ -291,6 +333,18 @@ public class ExtractorUtils {
         if (StringUtils.isNotBlank(vcsUrl)) {
             configuration.info.setVcsUrl(vcsUrl);
             configuration.publisher.addMatrixParam(BuildInfoFields.VCS_URL, vcsUrl);
+        }
+
+        String vcsBranch = getVcsBranch(env);
+        if (StringUtils.isNotBlank(vcsBranch)) {
+            configuration.info.setVcsBranch(vcsBranch);
+            configuration.publisher.addMatrixParam(BuildInfoFields.VCS_BRANCH, vcsBranch);
+        }
+
+        String vcsMessage = getVcsMessage(env);
+        if (StringUtils.isNotBlank(vcsMessage)) {
+            configuration.info.setVcsBranch(vcsMessage);
+            configuration.publisher.addMatrixParam(BuildInfoFields.VCS_MESSAGE, vcsMessage);
         }
 
         if (StringUtils.isNotBlank(context.getArtifactsPattern())) {
@@ -393,12 +447,6 @@ public class ExtractorUtils {
         configuration.publisher.setFilterExcludedArtifactsFromBuild(context.isFilterExcludedArtifactsFromBuild());
         configuration.publisher.setPublishBuildInfo(!context.isSkipBuildInfoDeploy());
         configuration.publisher.setRecordAllDependencies(context.isRecordAllDependencies());
-        configuration.setIncludeEnvVars(context.isIncludeEnvVars());
-        IncludesExcludes envVarsPatterns = context.getEnvVarsPatterns();
-        if (envVarsPatterns != null) {
-            configuration.setEnvVarsIncludePatterns(Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env));
-            configuration.setEnvVarsExcludePatterns(Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env));
-        }
         List<String> gradlePublications = context.getGradlePublications();
         if (gradlePublications != null) {
             String publications = String.join(",", gradlePublications);
@@ -434,7 +482,7 @@ public class ExtractorUtils {
      * Get the list of build numbers that are to be kept forever.
      */
     public static List<String> getBuildNumbersNotToBeDeleted(Run build) {
-        List<String> notToDelete = Lists.newArrayList();
+        List<String> notToDelete = new ArrayList<>();
         List<? extends Run<?, ?>> builds = build.getParent().getBuilds();
         for (Run<?, ?> run : builds) {
             if (run.isKeepLog()) {
@@ -478,6 +526,12 @@ public class ExtractorUtils {
                 Properties properties = new Properties();
                 properties.putAll(configuration.getAllRootConfig());
                 properties.putAll(configuration.getAllProperties());
+                // Properties that have the 'artifactory.' prefix are deprecated.
+                // For backward compatibility reasons, both will be added to the props map.
+                // The build-info 2.32.3 is the last version to be using the deprecated properties as its primary.
+                for (String key : properties.stringPropertyNames()) {
+                    properties.put("artifactory." + key, properties.getProperty(key));
+                }
                 OutputStream os = propertiesFile.write();
                 try {
                     properties.store(os, "");
@@ -508,12 +562,11 @@ public class ExtractorUtils {
         publisher.addMatrixParams(params);
     }
 
-    private static void addEnvVars(Map<String, String> env, Run<?, ?> build,
-                                   ArtifactoryClientConfiguration configuration, IncludesExcludes envVarsPatterns, TaskListener listener) {
-        IncludeExcludePatterns patterns = new IncludeExcludePatterns(
-                Util.replaceMacro(envVarsPatterns.getIncludePatterns(), env),
-                Util.replaceMacro(envVarsPatterns.getExcludePatterns(), env)
-        );
+    private static void addEnvVars(Map<String, String> env, Run<?, ?> build, BuildInfo pipelineBuildInfo, PublisherContext publisherContext,
+                                   ArtifactoryClientConfiguration configuration, TaskListener listener) {
+
+        // Allow capturing env during extractors processing and get the calculated patterns
+        IncludeExcludePatterns patterns = setAndGetEnvPatterns(pipelineBuildInfo, publisherContext, env, configuration);
 
         // Add only the jenkins specific environment variables
         MapDifference<String, String> envDifference = Maps.difference(env, System.getenv());
@@ -535,6 +588,38 @@ public class ExtractorUtils {
         }
 
         MultiConfigurationUtils.addMatrixCombination(build, configuration);
+    }
+
+    /**
+     * Allow capturing environment variables during extractor process by configuring the ArtifactoryClientConfiguration.
+     *
+     * @param pipelineBuildInfo - Pipelines build info object or null
+     * @param publisherContext  - Publisher in UI jobs
+     * @param env               - Job's environment variables
+     * @param configuration     - The target artifactory client configuration
+     * @return calculated include-exclude patterns.
+     */
+    private static IncludeExcludePatterns setAndGetEnvPatterns(@Nullable BuildInfo pipelineBuildInfo,
+                                                               @Nullable PublisherContext publisherContext,
+                                                               Map<String, String> env, ArtifactoryClientConfiguration configuration) {
+        IncludesExcludes includesExcludes;
+        if (pipelineBuildInfo != null) {
+            // Pipelines jobs
+            includesExcludes = Utils.getArtifactsIncludeExcludeForDeyployment(pipelineBuildInfo.getEnv().getFilter().getPatternFilter());
+            configuration.setIncludeEnvVars(pipelineBuildInfo.getEnv().isCapture());
+        } else if (publisherContext != null && publisherContext.getEnvVarsPatterns() != null) {
+            // UI based jobs
+            includesExcludes = publisherContext.getEnvVarsPatterns();
+            configuration.setIncludeEnvVars(publisherContext.isIncludeEnvVars());
+        } else {
+            return new IncludeExcludePatterns("", "");
+        }
+
+        String includePatterns = Util.replaceMacro(includesExcludes.getIncludePatterns(), env);
+        String excludePatterns = Util.replaceMacro(includesExcludes.getExcludePatterns(), env);
+        configuration.setEnvVarsIncludePatterns(includePatterns);
+        configuration.setEnvVarsExcludePatterns(excludePatterns);
+        return new IncludeExcludePatterns(includePatterns, excludePatterns);
     }
 
     private static EnvVars getEnvVars(Run<?, ?> build, TaskListener listener) {

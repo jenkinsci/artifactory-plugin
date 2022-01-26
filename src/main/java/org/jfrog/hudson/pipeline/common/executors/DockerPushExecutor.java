@@ -6,6 +6,7 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import org.apache.commons.lang3.StringUtils;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.deployers.CommonDeployer;
@@ -23,13 +24,9 @@ public class DockerPushExecutor extends BuildInfoProcessRunner {
         super(buildInfo, launcher, javaArgs, ws, "", "", envVars, listener, build);
         this.server = pipelineServer;
         this.imageTag = imageTag;
-        this.targetRepo = targetRepo;
+        this.targetRepo = StringUtils.removeEnd(targetRepo, "/");
         this.host = host;
         this.properties = properties;
-        // Remove trailing slash from target repo if needed.
-        if (this.targetRepo != null && this.targetRepo.length() > 0 && this.targetRepo.endsWith("/")) {
-            this.targetRepo = this.targetRepo.substring(0, this.targetRepo.length() - 1);
-        }
     }
 
     public void execute() throws Exception {
@@ -41,7 +38,7 @@ public class DockerPushExecutor extends BuildInfoProcessRunner {
         deployer.setServer(this.server);
         deployer.setProperties(this.properties);
         FilePath tempDir = ExtractorUtils.createAndGetTempDir(ws);
-        EnvExtractor envExtractor = new DockerEnvExtractor(build, buildInfo, deployer, listener, launcher, tempDir, env, imageTag, host);
+        EnvExtractor envExtractor = new DockerEnvExtractor(build, buildInfo, deployer, null, listener, launcher, tempDir, env, imageTag, host);
         super.execute("docker", "org.jfrog.build.extractor.docker.extractor.DockerPush", envExtractor, tempDir);
     }
 

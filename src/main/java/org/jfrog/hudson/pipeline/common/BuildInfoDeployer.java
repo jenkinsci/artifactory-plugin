@@ -4,17 +4,19 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.*;
-import org.jfrog.build.api.builder.BuildInfoBuilder;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.apache.commons.lang3.StringUtils;
+import org.jfrog.build.extractor.builder.BuildInfoBuilder;
+import org.jfrog.build.extractor.ci.BuildInfoProperties;
+import org.jfrog.build.extractor.ci.BuildRetention;
+import org.jfrog.build.extractor.ci.Module;
+import org.jfrog.build.extractor.ci.Vcs;
+import org.jfrog.build.extractor.clientConfiguration.client.artifactory.ArtifactoryManager;
 import org.jfrog.hudson.AbstractBuildInfoDeployer;
 import org.jfrog.hudson.BuildInfoResultAction;
-import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfoAccessor;
+import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,79 +31,71 @@ public class BuildInfoDeployer extends AbstractBuildInfoDeployer {
     private final Map<String, String> sysVars;
     private final Map<String, String> envVars;
     private ArtifactoryConfigurator configurator;
-    private Build buildInfo;
+    private org.jfrog.build.extractor.ci.BuildInfo buildInfo;
     private boolean asyncBuildRetention;
+    private final String platformUrl;
 
-    public BuildInfoDeployer(ArtifactoryConfigurator configurator, ArtifactoryBuildInfoClient client,
-                             Run build, TaskListener listener, BuildInfoAccessor buildinfoAccessor) throws IOException, InterruptedException, NoSuchAlgorithmException {
-        super(configurator, build, listener, client);
+    public BuildInfoDeployer(ArtifactoryConfigurator configurator, ArtifactoryManager artifactoryManager,
+                             Run build, TaskListener listener, BuildInfo deployedBuildInfo, String platformUrl) throws IOException, InterruptedException {
+        super(configurator, build, listener, artifactoryManager);
         this.configurator = configurator;
         this.build = build;
-        envVars = buildinfoAccessor.getEnvVars();
-        sysVars = buildinfoAccessor.getSysVars();
+        this.platformUrl = platformUrl;
+        envVars = deployedBuildInfo.getEnvVars();
+        sysVars = deployedBuildInfo.getSysVars();
         buildInfo = createBuildInfo("Pipeline", "");
-        buildInfo.setBuildRetention(buildinfoAccessor.getRetention().createBuildRetention());
-        asyncBuildRetention = buildinfoAccessor.getRetention().isAsync();
+        buildInfo.setBuildRetention(deployedBuildInfo.getRetention().createBuildRetention());
+        asyncBuildRetention = deployedBuildInfo.getRetention().isAsync();
 
-        if (buildinfoAccessor.getStartDate() != null) {
-            buildInfo.setStartedDate(buildinfoAccessor.getStartDate());
+        if (deployedBuildInfo.getStartDate() != null) {
+            buildInfo.setStartedDate(deployedBuildInfo.getStartDate());
         }
 
-        buildInfo.setModules(new ArrayList<Module>(buildinfoAccessor.getModules()));
+        buildInfo.setModules(new ArrayList<Module>(deployedBuildInfo.getModules()));
 
-        if (StringUtils.isNotEmpty(buildinfoAccessor.getBuildName())) {
-            buildInfo.setName(buildinfoAccessor.getBuildName());
+        if (StringUtils.isNotEmpty(deployedBuildInfo.getName())) {
+            buildInfo.setName(deployedBuildInfo.getName());
         }
 
-        if (StringUtils.isNotEmpty(buildinfoAccessor.getBuildNumber())) {
-            buildInfo.setNumber(buildinfoAccessor.getBuildNumber());
+        if (StringUtils.isNotEmpty(deployedBuildInfo.getNumber())) {
+            buildInfo.setNumber(deployedBuildInfo.getNumber());
         }
 
-        if (buildinfoAccessor.getIssues() != null && !buildinfoAccessor.getIssues().isEmpty()) {
-            buildInfo.setIssues(buildinfoAccessor.getIssues());
+        buildInfo.setProject(deployedBuildInfo.getProject());
+
+        if (deployedBuildInfo.getIssues() != null && !deployedBuildInfo.getConvertedIssues().isEmpty()) {
+            buildInfo.setIssues(deployedBuildInfo.getConvertedIssues());
         }
 
-        addVcsDataToBuild(build, buildinfoAccessor);
+        addVcsDataToBuild(deployedBuildInfo);
     }
 
-    private void addVcsDataToBuild(Run build, BuildInfoAccessor buildinfoAccessor) {
-        List<Vcs> vcsList = getVcsFromGitPlugin(build);
-
-        // If collected VCS in a different flow
-        if (CollectionUtils.isNotEmpty(buildinfoAccessor.getVcs())) {
-            vcsList.addAll(buildinfoAccessor.getVcs());
+    private void addVcsDataToBuild(BuildInfo deployedBuildInfo) {
+        if (CollectionUtils.isEmpty(deployedBuildInfo.getVcs())) {
+            return;
         }
-
+        List<Vcs> vcsList = deployedBuildInfo.getVcs();
         // Keep only distinct values
         vcsList = vcsList.stream().distinct().collect(Collectors.toList());
         buildInfo.setVcs(vcsList);
     }
 
-    private List<Vcs> getVcsFromGitPlugin(Run build) {
-        if (Jenkins.getInstance().getPlugin(PluginsUtils.GIT_PLUGIN_ID) == null) {
-            return new ArrayList<>();
-        }
-        List<Vcs> vcsList = Utils.extractVcsBuildData(build);
-        return vcsList;
-    }
-
     public void deploy() throws IOException {
         String artifactoryUrl = configurator.getArtifactoryServer().getArtifactoryUrl();
-        listener.getLogger().println("Deploying build info to: " + artifactoryUrl + "/api/build");
         BuildRetention retention = buildInfo.getBuildRetention();
         buildInfo.setBuildRetention(null);
-        org.jfrog.build.extractor.retention.Utils.sendBuildAndBuildRetention(client, this.buildInfo, retention, asyncBuildRetention);
+        org.jfrog.build.extractor.retention.Utils.sendBuildAndBuildRetention(artifactoryManager, this.buildInfo, retention, asyncBuildRetention, platformUrl);
         addBuildInfoResultAction(artifactoryUrl);
     }
 
     private void addBuildInfoResultAction(String artifactoryUrl) {
-        synchronized (build.getActions()) {
+        synchronized (build.getAllActions()) {
             BuildInfoResultAction action = build.getAction(BuildInfoResultAction.class);
             if (action == null) {
                 action = new BuildInfoResultAction(build);
-                build.getActions().add(action);
+                build.addAction(action);
             }
-            action.addBuildInfoResults(artifactoryUrl, buildInfo);
+            action.addBuildInfoResults(artifactoryUrl, platformUrl, buildInfo);
         }
     }
 

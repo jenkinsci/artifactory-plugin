@@ -1,0 +1,39 @@
+package integration.pipelines.declarative
+
+node("TestSlave") {
+    def buildName = "declarative:dockerPull test"
+    def buildNumber = "${BUILD_NUMBER}"
+    def host = "${env.JENKINS_ARTIFACTORY_DOCKER_HOST}"
+    def serverId = "Artifactory-1"
+    def domainName = "${env.JENKINS_ARTIFACTORY_DOCKER_PULL_DOMAIN}"
+    if (!domainName.endsWith("/")) {
+        domainName += "/"
+    }
+    def imageName = domainName + "hello-world:latest"
+    def targetRepo = "${env.JENKINS_ARTIFACTORY_DOCKER_PULL_REPO}"
+    stage "rtserverconfig"
+    rtServer(
+            id: serverId,
+            url: "${env.JENKINS_PLATFORM_URL}".replaceFirst('/*$', '')+'/artifactory',
+            username: "${env.JENKINS_PLATFORM_USERNAME}",
+            password: "${env.JENKINS_PLATFORM_ADMIN_TOKEN}"
+    )
+
+    stage('docker pull stage')
+    rtDockerPull(
+            serverId: serverId,
+            image: imageName,
+            buildName: buildName,
+            buildNumber: buildNumber,
+            host: host,
+            sourceRepo: targetRepo
+    )
+
+
+    stage('publish build info')
+    rtPublishBuildInfo(
+            serverId: serverId,
+            buildName: buildName,
+            buildNumber: buildNumber,
+    )
+}

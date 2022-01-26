@@ -9,15 +9,19 @@ public class XrayScanConfig implements Serializable {
 
     private String buildName;
     private String buildNumber;
+    private String project;
     private Boolean failBuild;
+    private Boolean printTable;
 
     public XrayScanConfig() {
     }
 
-    public XrayScanConfig(String buildName, String buildNumber, Boolean failBuild) {
+    public XrayScanConfig(String buildName, String buildNumber, String project, Boolean failBuild, Boolean printTable) {
         this.buildName = buildName;
         this.buildNumber = buildNumber;
+        this.project = project;
         this.failBuild = failBuild;
+        this.printTable = printTable;
     }
 
     public String getBuildName() {
@@ -32,6 +36,10 @@ public class XrayScanConfig implements Serializable {
         return failBuild == null || failBuild;
     }
 
+    public boolean getPrintTable() {
+        return printTable == null || printTable;
+    }
+
     public void setBuildName(String buildName) {
         this.buildName = buildName;
     }
@@ -42,5 +50,17 @@ public class XrayScanConfig implements Serializable {
 
     public void setFailBuild(Boolean failBuild) {
         this.failBuild = failBuild;
+    }
+
+    public void setPrintTable(Boolean printTable) {
+        this.printTable = printTable;
+    }
+
+    public String getProject() {
+        return project;
+    }
+
+    public void setProject(String project) {
+        this.project = project;
     }
 }

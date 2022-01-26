@@ -3,13 +3,14 @@ package org.jfrog.hudson.pipeline.declarative.steps.maven;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import hudson.Extension;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.jfrog.hudson.pipeline.common.executors.MavenExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.builds.MavenBuild;
+import org.jfrog.hudson.pipeline.common.types.deployers.Deployer;
 import org.jfrog.hudson.pipeline.common.types.deployers.MavenDeployer;
 import org.jfrog.hudson.pipeline.common.types.resolvers.MavenResolver;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
@@ -30,14 +31,15 @@ import static org.jfrog.hudson.util.SerializationUtils.createMapper;
  */
 @SuppressWarnings("unused")
 public class MavenStep extends AbstractStepImpl {
-
-    private MavenBuild mavenBuild;
+    static final String STEP_NAME = "rtMavenRun";
+    private final MavenBuild mavenBuild;
+    private final String goals;
+    private final String pom;
     private String customBuildNumber;
     private String customBuildName;
+    private String project;
     private String deployerId;
     private String resolverId;
-    private String goals;
-    private String pom;
 
     @DataBoundConstructor
     public MavenStep(String pom, String goals) {
@@ -57,6 +59,11 @@ public class MavenStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
+    public void setProject(String customProject) {
+        this.project = customProject;
+    }
+
+    @DataBoundSetter
     public void setDeployerId(String deployerId) {
         this.deployerId = deployerId;
     }
@@ -72,13 +79,18 @@ public class MavenStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
+    public void setUseWrapper(boolean useWrapper) {
+        mavenBuild.setUseWrapper(useWrapper);
+    }
+
+    @DataBoundSetter
     public void setOpts(String opts) {
         mavenBuild.setOpts(opts);
     }
 
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        private transient MavenStep step;
+        private transient final MavenStep step;
 
         @Inject
         public Execution(MavenStep step, StepContext context) throws IOException, InterruptedException {
@@ -87,14 +99,32 @@ public class MavenStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
-            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(ws, build, step.customBuildName, step.customBuildNumber);
+        protected Void runStep() throws Exception {
+            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(rootWs, build, step.customBuildName, step.customBuildNumber, step.project);
             setMavenBuild();
             MavenExecutor mavenExecutor = new MavenExecutor(listener, launcher, build, ws, env, step.mavenBuild, step.pom, step.goals, buildInfo);
             mavenExecutor.execute();
             buildInfo = mavenExecutor.getBuildInfo();
-            DeclarativePipelineUtils.saveBuildInfo(buildInfo, ws, build, new JenkinsBuildInfoLog(listener));
+            DeclarativePipelineUtils.saveBuildInfo(buildInfo, rootWs, build, new JenkinsBuildInfoLog(listener));
             return null;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            Deployer deployer = step.mavenBuild.getDeployer();
+            if (deployer != null) {
+                return deployer.getArtifactoryServer();
+            }
+            MavenResolver resolver = step.mavenBuild.getResolver();
+            if (resolver != null) {
+                return resolver.getArtifactoryServer();
+            }
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
 
         private void setMavenBuild() throws IOException, InterruptedException {
@@ -107,7 +137,7 @@ public class MavenStep extends AbstractStepImpl {
             if (StringUtils.isBlank(step.deployerId)) {
                 return;
             }
-            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, MavenDeployerStep.STEP_NAME, step.deployerId);
+            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(rootWs, buildNumber, MavenDeployerStep.STEP_NAME, step.deployerId);
             if (buildDataFile == null) {
                 throw new IOException("Deployer " + step.deployerId + " doesn't exist!");
             }
@@ -128,7 +158,7 @@ public class MavenStep extends AbstractStepImpl {
             if (StringUtils.isBlank(step.resolverId)) {
                 return;
             }
-            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, MavenResolverStep.STEP_NAME, step.resolverId);
+            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(rootWs, buildNumber, MavenResolverStep.STEP_NAME, step.resolverId);
             if (buildDataFile == null) {
                 throw new IOException("Resolver " + step.resolverId + " doesn't exist!");
             }
@@ -142,7 +172,7 @@ public class MavenStep extends AbstractStepImpl {
             if (serverId.isNull()) {
                 throw new IllegalArgumentException("server ID is missing");
             }
-            return DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), serverId.asText());
+            return DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, serverId.asText(), true);
         }
     }
 

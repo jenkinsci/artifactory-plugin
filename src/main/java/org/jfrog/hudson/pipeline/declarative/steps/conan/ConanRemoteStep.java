@@ -2,13 +2,15 @@ package org.jfrog.hudson.pipeline.declarative.steps.conan;
 
 import com.google.inject.Inject;
 import hudson.Extension;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.CredentialsConfig;
+import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.ArtifactoryConfigurator;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.ConanExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
-import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.types.ConanClient;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
@@ -19,11 +21,11 @@ import org.kohsuke.stapler.DataBoundSetter;
 import java.io.IOException;
 
 public class ConanRemoteStep extends AbstractStepImpl {
-
-    private String clientId;
-    private String name;
-    private String serverId;
-    private String repo;
+    static final String STEP_NAME = "rtConanRemote";
+    private final String clientId;
+    private final String name;
+    private final String serverId;
+    private final String repo;
     private boolean force;
     private boolean verifySSL = true;
 
@@ -67,7 +69,7 @@ public class ConanRemoteStep extends AbstractStepImpl {
 
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        private transient ConanRemoteStep step;
+        private transient final ConanRemoteStep step;
 
         @Inject
         public Execution(ConanRemoteStep step, StepContext context) throws IOException, InterruptedException {
@@ -76,11 +78,11 @@ public class ConanRemoteStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
+        protected Void runStep() throws Exception {
             String buildNumber = BuildUniqueIdentifierHelper.getBuildNumber(build);
-            ConanClient conanClient = DeclarativePipelineUtils.buildConanClient(step.getClientId(), buildNumber, ConanClientStep.STEP_NAME, launcher, ws, env);
+            ConanClient conanClient = DeclarativePipelineUtils.buildConanClient(step.getClientId(), buildNumber, ConanClientStep.STEP_NAME, launcher, ws, rootWs, env);
             ConanExecutor conanExecutor = new ConanExecutor(conanClient.getUserPath(), ws, launcher, listener, env, build);
-            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), step.serverId);
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
             // Run conan add remote
             String serverUrl = Utils.buildConanRemoteUrl(server, step.getRepo());
             conanExecutor.execRemoteAdd(step.getName(), serverUrl, step.getForce(), step.getVerifySSL());
@@ -93,6 +95,17 @@ public class ConanRemoteStep extends AbstractStepImpl {
             conanExecutor.execUserAdd(username, password, step.getName());
             return null;
         }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
+            return Utils.prepareArtifactoryServer(null, server);
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
+        }
     }
 
     @Extension
@@ -104,7 +117,7 @@ public class ConanRemoteStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "rtConanRemote";
+            return STEP_NAME;
         }
 
         @Override

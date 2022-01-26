@@ -1,17 +1,13 @@
 package org.jfrog.hudson.pipeline.declarative.steps.generic;
 
 import com.google.inject.Inject;
-import hudson.EnvVars;
-import hudson.FilePath;
-import hudson.model.Run;
-import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.SpecConfiguration;
+import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.EditPropsExecutor;
-import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.SpecUtils;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -22,12 +18,12 @@ import static org.jfrog.build.extractor.clientConfiguration.util.EditPropertiesH
 
 @SuppressWarnings("unused")
 public class EditPropsStep extends AbstractStepImpl {
+    private final EditPropertiesActionType editType;
     protected String serverId;
     protected String spec;
     private String props;
     private String specPath;
     private boolean failNoOp;
-    private EditPropertiesActionType editType;
 
     EditPropsStep(String serverId, EditPropertiesActionType editType) {
         this.serverId = serverId;
@@ -66,10 +62,14 @@ public class EditPropsStep extends AbstractStepImpl {
             this.step = step;
         }
 
-        void editPropsRun(Run build, TaskListener listener, EditPropsStep step, FilePath ws, EnvVars env) throws IOException, InterruptedException {
+        public ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(step.serverId, null);
+        }
+
+        void editPropsRun() throws IOException, InterruptedException {
             // Set Artifactory server
             org.jfrog.hudson.pipeline.common.types.ArtifactoryServer pipelineServer = DeclarativePipelineUtils
-                    .getArtifactoryServer(build, ws, getContext(), step.serverId);
+                    .getArtifactoryServer(build, rootWs, step.serverId, true);
             artifactoryServer = Utils.prepareArtifactoryServer(null, pipelineServer);
 
             // Set spec

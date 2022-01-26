@@ -5,9 +5,9 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.BuildInfoConfigProperties;
-import org.jfrog.build.api.BuildInfoFields;
+import org.apache.commons.lang3.StringUtils;
+import org.jfrog.build.extractor.ci.BuildInfoConfigProperties;
+import org.jfrog.build.extractor.ci.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
 import org.jfrog.hudson.maven3.Maven3Builder;
 import org.jfrog.hudson.pipeline.common.Utils;
@@ -17,7 +17,7 @@ import org.jfrog.hudson.pipeline.common.types.deployers.Deployer;
 import org.jfrog.hudson.pipeline.common.types.deployers.MavenDeployer;
 import org.jfrog.hudson.util.ExtractorUtils;
 
-import static org.jfrog.hudson.pipeline.common.types.deployers.MavenDeployer.addDeployedArtifactsActionFromModules;
+import static org.jfrog.hudson.pipeline.common.types.deployers.Deployer.addDeployedArtifactsActionFromModules;
 
 public class MavenExecutor implements Executor {
 
@@ -67,15 +67,15 @@ public class MavenExecutor implements Executor {
         if (!mavenBuild.getResolver().isEmpty()) {
             extendedEnv.put(BuildInfoConfigProperties.PROP_ARTIFACTORY_RESOLUTION_ENABLED, Boolean.TRUE.toString());
         }
-        Maven3Builder maven3Builder = new Maven3Builder(mavenBuild.getTool(), pom, goals, mavenOpts);
+        Maven3Builder maven3Builder = new Maven3Builder(mavenBuild.getTool(), pom, goals, mavenOpts, mavenBuild.isUseWrapper());
         convertJdkPath(launcher, extendedEnv);
         maven3Builder.perform(build, launcher, listener, extendedEnv, ws, tempDir);
 
         String generatedBuildPath = extendedEnv.get(BuildInfoFields.GENERATED_BUILD_INFO);
-        org.jfrog.build.api.Build generatedBuild = Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath);
+        org.jfrog.build.extractor.ci.BuildInfo generatedBuild = Utils.getGeneratedBuildInfo(build, listener, launcher, generatedBuildPath);
         // Add action only if artifacts were actually deployed.
         if (deployer.isDeployArtifacts()) {
-            addDeployedArtifactsActionFromModules(this.build, deployer.getArtifactoryServer().getArtifactoryUrl(), generatedBuild.getModules());
+            addDeployedArtifactsActionFromModules(this.build, deployer.getArtifactoryServer().getArtifactoryUrl(), generatedBuild.getModules(), DeployDetails.PackageType.MAVEN);
         }
         buildInfo.append(generatedBuild);
 

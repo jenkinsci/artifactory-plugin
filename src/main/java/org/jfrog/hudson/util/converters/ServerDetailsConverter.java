@@ -1,13 +1,13 @@
 package org.jfrog.hudson.util.converters;
 
-import com.google.common.collect.Lists;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import hudson.util.XStream2;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jfrog.hudson.RepositoryConf;
 import org.jfrog.hudson.ServerDetails;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.logging.Logger;
  */
 public class ServerDetailsConverter extends XStream2.PassthruConverter<ServerDetails> {
     Logger logger = Logger.getLogger(ServerDetailsConverter.class.getName());
-    List<String> converterErrors = Lists.newArrayList();
+    List<String> converterErrors = new ArrayList<>();
     // mapping of the old ServerDetails field to the corresponding new field
     private static final Map<String, String> newToOldFields;
 

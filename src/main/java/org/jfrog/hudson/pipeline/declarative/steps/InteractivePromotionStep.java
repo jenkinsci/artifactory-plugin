@@ -4,10 +4,10 @@ import com.google.inject.Inject;
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.pipeline.ArtifactorySynchronousStepExecution;
 import org.jfrog.hudson.pipeline.common.ArtifactoryConfigurator;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
-import org.jfrog.hudson.pipeline.ArtifactorySynchronousStepExecution;
 import org.jfrog.hudson.pipeline.common.types.PromotionConfig;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.release.promotion.UnifiedPromoteBuildAction;
@@ -18,7 +18,6 @@ import java.io.IOException;
 
 @SuppressWarnings("unused")
 public class InteractivePromotionStep extends PromoteBuildStep {
-
     public static final String STEP_NAME = "rtAddInteractivePromotion";
     private String displayName;
 
@@ -39,7 +38,7 @@ public class InteractivePromotionStep extends PromoteBuildStep {
 
     public static class Execution extends ArtifactorySynchronousStepExecution<Boolean> {
 
-        private transient InteractivePromotionStep step;
+        private transient final InteractivePromotionStep step;
 
         @Inject
         public Execution(InteractivePromotionStep step, StepContext context) throws IOException, InterruptedException {
@@ -48,22 +47,33 @@ public class InteractivePromotionStep extends PromoteBuildStep {
         }
 
         @Override
-        protected Boolean run() throws Exception {
-            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), step.serverId);
+        protected Boolean runStep() throws Exception {
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
             ArtifactoryConfigurator configurator = new ArtifactoryConfigurator(Utils.prepareArtifactoryServer(null, server));
             addPromotionAction(configurator);
             return true;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws Exception {
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
+            return Utils.prepareArtifactoryServer(null, server);
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
 
         private void addPromotionAction(ArtifactoryConfigurator configurator) {
             PromotionConfig pipelinePromotionConfig = step.preparePromotionConfig(build);
             org.jfrog.hudson.release.promotion.PromotionConfig promotionConfig = Utils.convertPromotionConfig(pipelinePromotionConfig);
 
-            synchronized (build.getActions()) {
+            synchronized (build.getAllActions()) {
                 UnifiedPromoteBuildAction action = build.getAction(UnifiedPromoteBuildAction.class);
                 if (action == null) {
                     action = new UnifiedPromoteBuildAction(this.build);
-                    build.getActions().add(action);
+                    build.addAction(action);
                 }
                 action.addPromotionCandidate(promotionConfig, configurator, step.displayName);
             }

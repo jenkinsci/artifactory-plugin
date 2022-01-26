@@ -48,7 +48,22 @@ public class DeclarativeITest extends CommonITestsPipeline {
 
     @Test
     public void uploadTest() throws Exception {
-        super.uploadTest("declarative:upload test");
+        super.uploadTest("declarative:upload test", null, "upload");
+    }
+
+    @Test
+    public void platformUploadTest() throws Exception {
+        super.uploadTest("declarative:platform upload test", null, "uploadUsingPlatformConfig");
+    }
+
+    @Test
+    public void uploadUsingProjectTest() throws Exception {
+        super.uploadTest("declarative:project upload test", "jit", "uploadWithProject");
+    }
+
+    @Test
+    public void uploadWithPropsTest() throws Exception {
+        super.uploadWithPropsTest();
     }
 
     @Test
@@ -63,7 +78,17 @@ public class DeclarativeITest extends CommonITestsPipeline {
 
     @Test
     public void mavenTest() throws Exception {
-        super.mavenTest("declarative:maven test");
+        super.mavenTest("declarative:maven test", false);
+    }
+
+    @Test
+    public void mavenWrapperTest() throws Exception {
+        super.mavenTest("declarative:mavenWrapper test", true);
+    }
+
+    @Test
+    public void mavenJibTest() throws Exception {
+        super.mavenJibTest("declarative:mavenJib test");
     }
 
     @Test
@@ -82,8 +107,13 @@ public class DeclarativeITest extends CommonITestsPipeline {
     }
 
     @Test
-    public void npmTest() throws Exception {
-        super.npmTest("npm", "declarative:npm test", "package-name1:0.0.1");
+    public void npmInstallTest() throws Exception {
+        super.npmTest("npmInstall", "declarative:npm install test", "package-name1:0.0.1");
+    }
+
+    @Test
+    public void npmCiTest() throws Exception {
+        super.npmTest("npmCi", "declarative:npm ci test", "package-name1:0.0.1");
     }
 
     @Test
@@ -137,13 +167,18 @@ public class DeclarativeITest extends CommonITestsPipeline {
     }
 
     @Test
+    public void dockerPullTest() throws Exception {
+        super.dockerPullTest("declarative:dockerPull test");
+    }
+
+    @Test
     public void xrayScanFailTrueTest() throws Exception {
-        super.xrayScanTest("declarative:xrayScanFailBuildTrue test", true);
+        super.xrayScanTest("declarative:xrayScanFailBuildTrue test", true, false);
     }
 
     @Test
     public void xrayScanFailFalseTest() throws Exception {
-        super.xrayScanTest("declarative:xrayScanFailBuildFalse test", false);
+        super.xrayScanTest("declarative:xrayScanFailBuildFalse test", false, true);
     }
 
     @Test
@@ -169,5 +204,30 @@ public class DeclarativeITest extends CommonITestsPipeline {
     @Test
     public void buildTriggerNewServerTest() throws Exception {
         super.buildTriggerNewServerTest();
+    }
+
+    @Test
+    public void buildAppendTest() throws Exception {
+        super.buildAppendTest("declarative:buildAppend test");
+    }
+
+    @Test
+    public void rbCreateUpdateSign() throws Exception {
+        super.rbCreateUpdateSign("declarative:createUpdateSign");
+    }
+
+    @Test
+    public void rbCreateDistDel() throws Exception {
+        super.rbCreateDistDel("declarative:createDistributeDelete");
+    }
+
+    @Test
+    public void buildInfoProjects() throws Exception {
+        super.buildInfoProjects("declarative:buildInfoProjects");
+    }
+
+    @Test
+    public void buildRetention() throws Exception {
+        super.buildRetention("declarative:buildRetention");
     }
 }

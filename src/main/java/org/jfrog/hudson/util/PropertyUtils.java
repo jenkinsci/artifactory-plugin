@@ -17,7 +17,6 @@
 package org.jfrog.hudson.util;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -25,12 +24,13 @@ import hudson.Util;
 import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jfrog.hudson.release.gradle.GradleModule;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
@@ -62,7 +62,7 @@ public class PropertyUtils {
     public static Map<String, String> getModulesPropertiesFromPropFile(FilePath gradlePropPath, String[] propKeys)
             throws IOException, InterruptedException {
         Properties gradleProps = loadGradleProperties(gradlePropPath);
-        Map<String, String> versionsByPropKey = Maps.newLinkedHashMap();
+        Map<String, String> versionsByPropKey = new LinkedHashMap<>();
         for (String propKey : propKeys) {
             if (gradleProps.containsKey(propKey)) {
                 versionsByPropKey.put(propKey, gradleProps.getProperty(propKey));

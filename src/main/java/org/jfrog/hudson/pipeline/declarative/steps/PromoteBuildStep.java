@@ -3,12 +3,14 @@ package org.jfrog.hudson.pipeline.declarative.steps;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.model.Run;
-import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.PromotionExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
-import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.types.PromotionConfig;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
@@ -44,6 +46,11 @@ public class PromoteBuildStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
+    public void setProject(String project) {
+        promotionConfig.setProject(project);
+    }
+
+    @DataBoundSetter
     public void setSourceRepo(String sourceRepo) {
         promotionConfig.setSourceRepo(sourceRepo);
     }
@@ -73,19 +80,20 @@ public class PromoteBuildStep extends AbstractStepImpl {
         promotionConfig.setFailFast(failFast);
     }
 
-    PromotionConfig preparePromotionConfig(Run build) {
+    PromotionConfig preparePromotionConfig(Run<?, ?> build) {
         if (StringUtils.isBlank(promotionConfig.getBuildName())) {
             promotionConfig.setBuildName(BuildUniqueIdentifierHelper.getBuildName(build));
         }
         if (StringUtils.isBlank(promotionConfig.getBuildNumber())) {
             promotionConfig.setBuildNumber(BuildUniqueIdentifierHelper.getBuildNumber(build));
         }
+        promotionConfig.setProject(promotionConfig.getProject());
         return promotionConfig;
     }
 
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        private transient PromoteBuildStep step;
+        private transient final PromoteBuildStep step;
 
         @Inject
         public Execution(PromoteBuildStep step, StepContext context) throws IOException, InterruptedException {
@@ -94,11 +102,22 @@ public class PromoteBuildStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
+        protected Void runStep() throws Exception {
             PromotionConfig promotionConfig = step.preparePromotionConfig(build);
-            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), step.serverId);
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
             new PromotionExecutor(Utils.prepareArtifactoryServer(null, server), build, listener, getContext(), promotionConfig).execute();
             return null;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
+            return Utils.prepareArtifactoryServer(null, server);
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 

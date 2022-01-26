@@ -16,7 +16,6 @@
 
 package org.jfrog.hudson.ivy;
 
-import com.google.common.collect.Iterables;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -28,7 +27,7 @@ import hudson.tasks.Ant;
 import hudson.tasks.BuildWrapper;
 import hudson.util.ListBoxModel;
 import hudson.util.XStream2;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jfrog.build.extractor.listener.ArtifactoryBuildListener;
 import org.jfrog.hudson.*;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -355,8 +354,8 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
                 if (!finalPublisherContext.isSkipBuildInfoDeploy() && (result == null ||
                         result.isBetterOrEqualTo(Result.SUCCESS))) {
                     String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(ArtifactoryIvyFreeStyleConfigurator.this, build);
-                    build.getActions().add(0, new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
-                    build.getActions().add(new UnifiedPromoteBuildAction(build, ArtifactoryIvyFreeStyleConfigurator.this));
+                    build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName));
+                    build.addAction(new UnifiedPromoteBuildAction(build, ArtifactoryIvyFreeStyleConfigurator.this));
                 }
 
                 // Aborted action by the user:
@@ -398,7 +397,9 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     private Ant getLastAntBuild(AbstractProject project) {
         if (project instanceof Project) {
             List<Ant> ants = ActionableHelper.getBuilder((Project) project, Ant.class);
-            return Iterables.getLast(ants, null);
+          if (ants != null && !ants.isEmpty()) {
+                return ants.get(ants.size()-1);
+            }
         }
         return null;
     }
@@ -422,7 +423,7 @@ public class ArtifactoryIvyFreeStyleConfigurator extends BuildWrapper implements
     }
 
     public ArtifactoryServer getArtifactoryServer() {
-        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName(), getDescriptor().getArtifactoryServers());
+        return RepositoriesUtils.getArtifactoryServer(getArtifactoryName());
     }
 
     public List<Repository> getReleaseRepositoryList() {

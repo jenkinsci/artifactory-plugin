@@ -3,7 +3,7 @@ package org.jfrog.hudson.pipeline.declarative.steps.go;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import hudson.Extension;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -29,11 +29,13 @@ import java.io.IOException;
  */
 @SuppressWarnings("unused")
 public class GoPublishStep extends AbstractStepImpl {
-
-    private GoBuild goBuild;
+    static final String STEP_NAME = "rtGoPublish";
+    private final GoBuild goBuild;
     private String customBuildNumber;
     private String customBuildName;
+    private String project;
     private String deployerId;
+    private String javaArgs; // Added to allow java remote debugging
     private String path;
     private String module;
     private String version;
@@ -54,8 +56,18 @@ public class GoPublishStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
+    public void setProject(String customProject) {
+        this.project = customProject;
+    }
+
+    @DataBoundSetter
     public void setDeployerId(String deployerId) {
         this.deployerId = deployerId;
+    }
+
+    @DataBoundSetter
+    public void setJavaArgs(String javaArgs) {
+        this.javaArgs = javaArgs;
     }
 
     @DataBoundSetter
@@ -75,7 +87,7 @@ public class GoPublishStep extends AbstractStepImpl {
 
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        private transient GoPublishStep step;
+        private transient final GoPublishStep step;
 
         @Inject
         public Execution(GoPublishStep step, StepContext context) throws IOException, InterruptedException {
@@ -84,24 +96,43 @@ public class GoPublishStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
-            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(ws, build, step.customBuildName, step.customBuildNumber);
+        protected Void runStep() throws Exception {
+            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(rootWs, build, step.customBuildName, step.customBuildNumber, step.project);
             setDeployer(BuildUniqueIdentifierHelper.getBuildNumber(build));
-            GoPublishExecutor goPublishExecutor = new GoPublishExecutor(getContext(), buildInfo, step.goBuild, step.path, step.version, step.module, ws, listener, build);
+            GoPublishExecutor goPublishExecutor = new GoPublishExecutor(listener, buildInfo, launcher, step.goBuild, step.javaArgs, step.path, step.module, ws, env, build, step.version);
             goPublishExecutor.execute();
-            DeclarativePipelineUtils.saveBuildInfo(goPublishExecutor.getBuildInfo(), ws, build, new JenkinsBuildInfoLog(listener));
+            DeclarativePipelineUtils.saveBuildInfo(goPublishExecutor.getBuildInfo(), rootWs, build, new JenkinsBuildInfoLog(listener));
             return null;
         }
 
-        private void setDeployer(String buildNumber) throws IOException, InterruptedException {
-            if (StringUtils.isBlank(step.deployerId)) {
-                return;
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            CommonDeployer resolver = getDeployer(BuildUniqueIdentifierHelper.getBuildNumber(build));
+            if (resolver != null) {
+                return resolver.getArtifactoryServer();
             }
-            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, GoDeployerStep.STEP_NAME, step.deployerId);
+            return  null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
+        }
+
+        private CommonDeployer getDeployer(String buildNumber) throws IOException, InterruptedException {
+            if (StringUtils.isBlank(step.deployerId)) {
+                return null;
+            }
+            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(rootWs, buildNumber, GoDeployerStep.STEP_NAME, step.deployerId);
             if (buildDataFile == null) {
                 throw new IOException("Deployer " + step.deployerId + " doesn't exist!");
             }
-            CommonDeployer deployer = SerializationUtils.createMapper().treeToValue(buildDataFile.get(GoDeployerStep.STEP_NAME), CommonDeployer.class);
+            return SerializationUtils.createMapper().treeToValue(buildDataFile.get(GoDeployerStep.STEP_NAME), CommonDeployer.class);
+        }
+
+        private void setDeployer(String buildNumber) throws IOException, InterruptedException {
+            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(rootWs, buildNumber, GoDeployerStep.STEP_NAME, step.deployerId);
+            CommonDeployer deployer = getDeployer(buildNumber);
             deployer.setServer(getArtifactoryServer(buildNumber, buildDataFile));
             step.goBuild.setDeployer(deployer);
             addProperties(buildDataFile);
@@ -119,7 +150,7 @@ public class GoPublishStep extends AbstractStepImpl {
             if (serverId.isNull()) {
                 throw new IllegalArgumentException("server ID is missing");
             }
-            return DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), serverId.asText());
+            return DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, serverId.asText(), true);
         }
     }
 
@@ -132,7 +163,7 @@ public class GoPublishStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "rtGoPublish";
+            return STEP_NAME;
         }
 
         @Override

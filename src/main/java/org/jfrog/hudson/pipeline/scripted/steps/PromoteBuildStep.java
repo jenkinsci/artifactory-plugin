@@ -3,7 +3,7 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 import com.google.inject.Inject;
 import hudson.Extension;
 import org.apache.commons.cli.MissingArgumentException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.PromotionExecutor;
@@ -15,7 +15,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import java.io.IOException;
 
 public class PromoteBuildStep extends AbstractStepImpl {
-
+    static final String STEP_NAME = "artifactoryPromoteBuild";
     private ArtifactoryServer server;
     private PromotionConfig promotionConfig;
 
@@ -44,7 +44,7 @@ public class PromoteBuildStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Boolean run() throws Exception {
+        protected Boolean runStep() throws Exception {
             PromotionConfig promotionConfig = step.getPromotionConfig();
 
             if (StringUtils.isEmpty(promotionConfig.getBuildName())) {
@@ -65,6 +65,16 @@ public class PromoteBuildStep extends AbstractStepImpl {
             new PromotionExecutor(Utils.prepareArtifactoryServer(null, step.getServer()), build, listener, getContext(), promotionConfig).execute();
             return true;
         }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(null, step.getServer());
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
+        }
     }
 
     @Extension
@@ -77,7 +87,7 @@ public class PromoteBuildStep extends AbstractStepImpl {
         @Override
         // The step is invoked by ArtifactoryServer by the step name
         public String getFunctionName() {
-            return "artifactoryPromoteBuild";
+            return STEP_NAME;
         }
 
         @Override

@@ -2,8 +2,12 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 
 import com.google.inject.Inject;
 import hudson.Extension;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
+import org.jfrog.hudson.pipeline.common.executors.CollectEnvExecutor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.Env;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -13,7 +17,7 @@ import java.io.IOException;
  * Created by romang on 5/2/16.
  */
 public class CollectEnvStep extends AbstractStepImpl {
-
+    static final String STEP_NAME = "collectEnv";
     private Env env;
 
     @DataBoundConstructor
@@ -25,7 +29,7 @@ public class CollectEnvStep extends AbstractStepImpl {
         return env;
     }
 
-    public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Boolean> {
+    public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
         private transient CollectEnvStep step;
 
@@ -36,9 +40,20 @@ public class CollectEnvStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Boolean run() throws Exception {
-            step.getEnv().collectVariables(env, build, listener);
-            return true;
+        protected Void runStep() throws Exception {
+            CollectEnvExecutor collectEnvExecutor = new CollectEnvExecutor(build, listener, ws, step.getEnv(), env);
+            collectEnvExecutor.execute();
+            return null;
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() {
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return null;
         }
     }
 
@@ -51,7 +66,7 @@ public class CollectEnvStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "collectEnv";
+            return STEP_NAME;
         }
 
         @Override

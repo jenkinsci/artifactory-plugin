@@ -5,8 +5,8 @@ import hudson.FilePath;
 import hudson.remoting.Which;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jfrog.build.extractor.BuildInfoExtractor;
 import org.jfrog.hudson.action.ActionableHelper;
 
@@ -39,7 +39,7 @@ public class PluginDependencyHelper {
         }
 
         //Check if the dependencies have already been transferred successfully
-        FilePath remoteDependencyMark = new FilePath(remoteDependencyDir, "ok");
+        FilePath remoteDependencyMark = new FilePath(remoteDependencyDir, "done");
         if (!remoteDependencyMark.exists()) {
 
             File[] localDependencies = localDependencyDir.listFiles();

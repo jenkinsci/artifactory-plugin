@@ -2,7 +2,6 @@ package org.jfrog.hudson.pipeline.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -17,16 +16,25 @@ import jenkins.model.Jenkins;
 import jenkins.plugins.nodejs.NodeJSConstants;
 import jenkins.plugins.nodejs.tools.NodeJSInstallation;
 import jenkins.security.MasterToSlaveCallable;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jenkinsci.plugins.workflow.actions.WorkspaceAction;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
+import org.jenkinsci.plugins.workflow.graph.FlowGraphWalker;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.jfrog.build.api.BuildInfoFields;
-import org.jfrog.build.api.Vcs;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.client.ProxyConfiguration;
+import org.jfrog.build.extractor.ci.BuildInfoFields;
+import org.jfrog.build.extractor.ci.Vcs;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
+import org.jfrog.build.extractor.clientConfiguration.client.distribution.types.DistributionRules;
+import org.jfrog.build.extractor.clientConfiguration.client.distribution.types.ReleaseNotes;
 import org.jfrog.build.extractor.clientConfiguration.util.GitUtils;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.action.ActionableHelper;
@@ -38,10 +46,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.BUILD_NAME;
 import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.BUILD_NUMBER;
+import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.PROJECT;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.*;
 import static org.jfrog.hudson.util.SerializationUtils.createMapper;
 
 /**
@@ -52,6 +66,55 @@ public class Utils {
     public static final String CONAN_USER_HOME = "CONAN_USER_HOME"; // Conan user home environment variable name
     public static final String BUILD_INFO = "buildInfo"; // The build info argument used in pipeline
     private static final String UNIX_SPECIAL_CHARS = "`^<>| ,;!?'\"()[]{}$*\\&#"; // Unix special characters to escape in '/bin/sh' execution
+
+    /**
+     * Extract workspace FilePath from step context.
+     * This is necessary to get the actual subdirectory, which runs the pipeline.
+     *
+     * @param context - The step context
+     * @param build   - The workflow build
+     * @param cwd     - The current working directory
+     * @return the workspace base FilePath.
+     * @throws IOException          if context.get fails.
+     * @throws InterruptedException if context.get fails.
+     */
+    public static FilePath extractRootWorkspace(StepContext context, WorkflowRun build, FilePath cwd) throws IOException, InterruptedException {
+        FilePath flowWorkspace = extractRootWorkspaceFromFlow(build.getExecution());
+        if (flowWorkspace != null) {
+            return flowWorkspace;
+        }
+        Node node = context.get(Node.class);
+        if (node == null) {
+            return cwd;
+        }
+        FilePath ws = node.getWorkspaceFor(build.getParent());
+        return ObjectUtils.defaultIfNull(ws, cwd);
+    }
+
+    /**
+     * Walk all flow nodes and find the top most workspace action. This
+     * action would represent the root workspace for the workflow run.
+     *
+     * @param execution the execution of the workflow run.
+     * @return the root workspace from the flow node tree, or null if none exist.
+     */
+    private static FilePath extractRootWorkspaceFromFlow(FlowExecution execution) {
+        if (execution == null) {
+            return null;
+        }
+        FlowGraphWalker flowWalker = new FlowGraphWalker(execution);
+        FilePath rootPath = null;
+        for (FlowNode node : flowWalker) {
+            WorkspaceAction workspaceAction = node.getAction(WorkspaceAction.class);
+            if (workspaceAction != null) {
+                FilePath rootWorkspace = workspaceAction.getWorkspace();
+                if (rootWorkspace != null) {
+                    rootPath = rootWorkspace;
+                }
+            }
+        }
+        return rootPath;
+    }
 
     /**
      * Prepares Artifactory server either from serverID or from ArtifactoryServer.
@@ -75,7 +138,7 @@ public class Utils {
             return new org.jfrog.hudson.ArtifactoryServer(null, pipelineServer.getUrl(), credentials,
                     credentials, pipelineServer.getConnection().getTimeout(), pipelineServer.isBypassProxy(), pipelineServer.getConnection().getRetry(), pipelineServer.getDeploymentThreads());
         }
-        return RepositoriesUtils.getArtifactoryServer(artifactoryServerID, RepositoriesUtils.getArtifactoryServers());
+        return RepositoriesUtils.getArtifactoryServer(artifactoryServerID);
     }
 
     public static BuildInfo prepareBuildinfo(Run build, BuildInfo buildinfo) {
@@ -108,21 +171,6 @@ public class Utils {
         return buildVariables;
     }
 
-    public static List<Vcs> extractVcsBuildData(Run build) {
-        List<Vcs> result = new ArrayList<Vcs>();
-        List<BuildData> buildData = build.getActions(BuildData.class);
-        if (buildData != null) {
-            for (BuildData data : buildData) {
-                String sha1 = data.getLastBuiltRevision().getSha1String();
-                Iterator<String> iterator = data.getRemoteUrls().iterator();
-                if (iterator.hasNext()) {
-                    result.add(new Vcs(iterator.next(), sha1));
-                }
-            }
-        }
-        return result;
-    }
-
     public static Vcs extractVcs(FilePath filePath, Log log) throws IOException, InterruptedException {
         return filePath.act(new MasterToSlaveFileCallable<Vcs>() {
             public Vcs invoke(File f, VirtualChannel channel) throws IOException {
@@ -132,7 +180,7 @@ public class Utils {
     }
 
     public static Computer getCurrentComputer(Launcher launcher) {
-        Jenkins j = Jenkins.getInstance();
+        Jenkins j = Jenkins.get();
         for (Computer c : j.getComputers()) {
             if (c.getChannel() == launcher.getChannel()) {
                 return c;
@@ -166,7 +214,7 @@ public class Utils {
         return result;
     }
 
-    public static org.jfrog.build.api.Build getGeneratedBuildInfo(Run build, TaskListener listener, Launcher launcher, String jsonBuildPath) {
+    public static org.jfrog.build.extractor.ci.BuildInfo getGeneratedBuildInfo(Run build, TaskListener listener, Launcher launcher, String jsonBuildPath) {
         ObjectMapper mapper = createMapper();
         FilePath generatedBuildInfoFilePath = null;
         InputStream inputStream = null;
@@ -176,10 +224,10 @@ public class Utils {
             inputStream = generatedBuildInfoFilePath.read();
             IOUtils.copy(inputStream, writer, "UTF-8");
             String buildInfoFileContent = writer.toString();
-            if (StringUtils.isBlank(buildInfoFileContent)) {
-                return new org.jfrog.build.api.Build();
+            if (isBlank(buildInfoFileContent)) {
+                return new org.jfrog.build.extractor.ci.BuildInfo();
             }
-            return mapper.readValue(buildInfoFileContent, org.jfrog.build.api.Build.class);
+            return mapper.readValue(buildInfoFileContent, org.jfrog.build.extractor.ci.BuildInfo.class);
         } catch (Exception e) {
             listener.error("Couldn't read generated build info at : " + jsonBuildPath);
             throw new Run.RunnerAbortedException();
@@ -238,7 +286,7 @@ public class Utils {
 
     public static String getJavaPathBuilder(String jdkBinPath, Launcher launcher) {
         StringBuilder javaPathBuilder = new StringBuilder();
-        if (StringUtils.isNotBlank(jdkBinPath)) {
+        if (isNotBlank(jdkBinPath)) {
             javaPathBuilder.append(jdkBinPath).append("/");
         }
         javaPathBuilder.append("java");
@@ -326,7 +374,7 @@ public class Utils {
     public static void appendBuildInfo(CpsScript cpsScript, Map<String, Object> stepVariables) {
         BuildInfo buildInfo = (BuildInfo) stepVariables.get(BUILD_INFO);
         if (buildInfo == null) {
-            buildInfo = (BuildInfo) cpsScript.invokeMethod("newBuildInfo", Maps.newLinkedHashMap());
+            buildInfo = (BuildInfo) cpsScript.invokeMethod("newBuildInfo", new LinkedHashMap<>());
             stepVariables.put(BUILD_INFO, buildInfo);
         }
         buildInfo.setCpsScript(cpsScript);
@@ -369,12 +417,20 @@ public class Utils {
 
     public static void addVcsDetailsToProps(EnvVars env, ArrayListMultimap<String, String> properties) {
         String revision = ExtractorUtils.getVcsRevision(env);
-        if (StringUtils.isNotBlank(revision)) {
+        if (isNotBlank(revision)) {
             properties.put(BuildInfoFields.VCS_REVISION, revision);
         }
         String gitUrl = ExtractorUtils.getVcsUrl(env);
-        if (StringUtils.isNotBlank(gitUrl)) {
+        if (isNotBlank(gitUrl)) {
             properties.put(BuildInfoFields.VCS_URL, gitUrl);
+        }
+        String gitBranch = ExtractorUtils.getVcsBranch(env);
+        if (isNotBlank(gitBranch)) {
+            properties.put(BuildInfoFields.VCS_BRANCH, gitBranch);
+        }
+        String gitMessage = ExtractorUtils.getVcsMessage(env);
+        if (isNotBlank(gitMessage)) {
+            properties.put(BuildInfoFields.VCS_MESSAGE, gitMessage);
         }
     }
 
@@ -419,7 +475,7 @@ public class Utils {
         }
         Node node = ActionableHelper.getNode(launcher);
         String nodeJsHome = nodeInstallation.forNode(node, listener).forEnvironment(env).getHome();
-        if (StringUtils.isBlank(nodeJsHome)) {
+        if (isBlank(nodeJsHome)) {
             logger.error("Couldn't find NodeJS home");
             throw new Run.RunnerAbortedException();
         }
@@ -440,7 +496,7 @@ public class Utils {
     }
 
     private static NodeJSInstallation getNpmInstallation(String nodeTool) {
-        NodeJSInstallation[] installations = Jenkins.getInstance().getDescriptorByType(NodeJSInstallation.DescriptorImpl.class).getInstallations();
+        NodeJSInstallation[] installations = Jenkins.get().getDescriptorByType(NodeJSInstallation.DescriptorImpl.class).getInstallations();
         return Arrays.stream(installations)
                 .filter(i -> nodeTool.equals(i.getName()))
                 .findFirst()
@@ -449,6 +505,7 @@ public class Utils {
 
     public static XrayScanConfig createXrayScanConfig(Map<String, Object> xrayScanParams) {
         final String failBuild = "failBuild";
+        final String printTable = "printTable";
 
         List<String> mandatoryArgumentsAsList = Arrays.asList(BUILD_NAME, BUILD_NUMBER);
         if (!xrayScanParams.keySet().containsAll(mandatoryArgumentsAsList)) {
@@ -456,13 +513,14 @@ public class Utils {
         }
 
         Set<String> xrayScanParamsSet = xrayScanParams.keySet();
-        List<String> keysAsList = Arrays.asList(BUILD_NAME, BUILD_NUMBER, failBuild);
+        List<String> keysAsList = Arrays.asList(BUILD_NAME, BUILD_NUMBER, PROJECT, failBuild, printTable);
         if (!keysAsList.containsAll(xrayScanParamsSet)) {
             throw new IllegalArgumentException("Only the following arguments are allowed: " + keysAsList.toString());
         }
 
         return new XrayScanConfig((String) xrayScanParams.get(BUILD_NAME),
-                (String) xrayScanParams.get(BUILD_NUMBER), (Boolean) xrayScanParams.get(failBuild));
+                (String) xrayScanParams.get(BUILD_NUMBER), (String) xrayScanParams.get(PROJECT), (Boolean) xrayScanParams.get(failBuild),
+                (Boolean) xrayScanParams.get(printTable));
     }
 
     public static FilePath createConanTempHome(FilePath ws) throws Exception {
@@ -495,5 +553,43 @@ public class Utils {
         }
         serverURL.append("api/conan/").append(repo);
         return serverURL.toString();
+    }
+
+    /**
+     * Create release notes for a release bundle.
+     *
+     * @param releaseNotesPath   - Release notes file path
+     * @param releaseNotesSyntax - Release notes syntax. Can be one of: "markdown", "asciidoc", "plain_text".
+     * @return release notes or null if path is missing.
+     * @throws IOException in case of errors during reading the release notes file.
+     */
+    public static ReleaseNotes createReleaseNotes(String releaseNotesPath, String releaseNotesSyntax) throws IOException {
+        if (isBlank(releaseNotesPath)) {
+            return null;
+        }
+        String content = FileUtils.readFileToString(new File(releaseNotesPath), StandardCharsets.UTF_8.name());
+        ReleaseNotes releaseNotes = new ReleaseNotes();
+        releaseNotes.setContent(content);
+        releaseNotes.setSyntax(isBlank(releaseNotesSyntax) ? ReleaseNotes.Syntax.plain_text : ReleaseNotes.Syntax.valueOf(releaseNotesSyntax));
+        return releaseNotes;
+    }
+
+    /**
+     * Create distribution rules for distributing and deleting a release bundle.
+     *
+     * @param countryCodes - Semicolon-separated list of wildcard filters for site country codes
+     * @param siteName     - Wildcard filter for site name
+     * @param cityName     - Wildcard filter for site city name
+     * @return list of distribution rules
+     * @throws IOException in case of errors during reading the release notes file or a wrong input.
+     */
+    public static List<DistributionRules> createDistributionRules(List<String> countryCodes, String siteName, String cityName) throws IOException {
+        DistributionRules distributionRules = new DistributionRules();
+        distributionRules.setCountryCodes(countryCodes);
+        distributionRules.setSiteName(siteName);
+        distributionRules.setCityName(cityName);
+        List<DistributionRules> distributionRulesList = new ArrayList<>();
+        distributionRulesList.add(distributionRules);
+        return distributionRulesList;
     }
 }

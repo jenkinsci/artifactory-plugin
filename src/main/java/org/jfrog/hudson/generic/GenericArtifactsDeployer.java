@@ -1,6 +1,8 @@
 package org.jfrog.hudson.generic;
 
-import com.google.common.collect.*;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Util;
@@ -10,15 +12,15 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.StringUtils;
-import org.jfrog.build.api.Artifact;
-import org.jfrog.build.api.BuildInfoFields;
-import org.jfrog.build.api.builder.ArtifactBuilder;
+import org.apache.commons.lang3.StringUtils;
+import org.jfrog.build.extractor.builder.ArtifactBuilder;
+import org.jfrog.build.extractor.ci.Artifact;
+import org.jfrog.build.extractor.ci.BuildInfoFields;
 import org.jfrog.build.api.util.FileChecksumCalculator;
 import org.jfrog.build.api.util.Log;
 import org.jfrog.build.client.ProxyConfiguration;
-import org.jfrog.build.extractor.clientConfiguration.ArtifactoryBuildInfoClientBuilder;
-import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
+import org.jfrog.build.extractor.clientConfiguration.ArtifactoryManagerBuilder;
+import org.jfrog.build.extractor.clientConfiguration.client.artifactory.ArtifactoryManager;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
 import org.jfrog.build.extractor.clientConfiguration.util.PublishedItemsHelper;
 import org.jfrog.build.extractor.clientConfiguration.util.spec.SpecsHelper;
@@ -26,11 +28,18 @@ import org.jfrog.build.extractor.clientConfiguration.util.spec.UploadSpecHelper;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
 import org.jfrog.hudson.pipeline.common.Utils;
-import org.jfrog.hudson.util.*;
+import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
+import org.jfrog.hudson.util.Credentials;
+import org.jfrog.hudson.util.JenkinsBuildInfoLog;
+import org.jfrog.hudson.util.PropertyUtils;
+import org.jfrog.hudson.util.SpecUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,7 +60,7 @@ public class GenericArtifactsDeployer {
     private BuildListener listener;
     private CredentialsConfig credentialsConfig;
     private EnvVars env;
-    private List<Artifact> artifactsToDeploy = Lists.newArrayList();
+    private List<Artifact> artifactsToDeploy = new ArrayList<>();
 
     public GenericArtifactsDeployer(Run build, ArtifactoryGenericConfigurator configurator,
                                     BuildListener listener, CredentialsConfig credentialsConfig)
@@ -144,38 +153,36 @@ public class GenericArtifactsDeployer {
             this.threads = threads;
         }
 
-        public List<Artifact> invoke(File workspace, VirtualChannel channel) throws IOException, InterruptedException {
+        public List<Artifact> invoke(File workspace, VirtualChannel channel) throws IOException {
             Log log = new JenkinsBuildInfoLog(listener);
 
-            // Create ArtifactoryClientBuilder
-            ArtifactoryBuildInfoClientBuilder clientBuilder = server.createBuildInfoClientBuilder(credentials, proxyConfiguration, log);
+            // Create ArtifactoryManagerBuilder
+            ArtifactoryManagerBuilder artifactoryManagerBuilder = server.createArtifactoryManagerBuilder(credentials, proxyConfiguration, log);
 
             // Option 1. Upload - Use file specs.
             if (StringUtils.isNotEmpty(spec)) {
                 SpecsHelper specsHelper = new SpecsHelper(log);
                 try {
-                    return specsHelper.uploadArtifactsBySpec(spec, threads, workspace, buildProperties, clientBuilder);
-                } catch (InterruptedException e) {
-                    throw e;
+                    return specsHelper.uploadArtifactsBySpec(spec, threads, workspace, buildProperties, artifactoryManagerBuilder);
                 } catch (Exception e) {
                     throw new RuntimeException("Failed uploading artifacts by spec", e);
                 }
             }
 
             // Option 2. Generic deploy - Fetch the artifacts details from workspace by using 'patternPairs'.
-            Set<DeployDetails> artifactsToDeploy = Sets.newHashSet();
+            Set<DeployDetails> artifactsToDeploy = new HashSet<>();
             Multimap<String, File> targetPathToFilesMap = buildTargetPathToFiles(workspace);
             for (Map.Entry<String, File> entry : targetPathToFilesMap.entries()) {
                 artifactsToDeploy.addAll(buildDeployDetailsFromFileEntry(entry));
             }
-            try (ArtifactoryBuildInfoClient client = clientBuilder.build()) {
-                deploy(client, artifactsToDeploy);
+            try (ArtifactoryManager artifactoryManager = artifactoryManagerBuilder.build()) {
+                deploy(artifactoryManager, artifactsToDeploy);
                 return convertDeployDetailsToArtifacts(artifactsToDeploy);
             }
         }
 
         private List<Artifact> convertDeployDetailsToArtifacts(Set<DeployDetails> details) {
-            List<Artifact> result = Lists.newArrayList();
+            List<Artifact> result = new ArrayList<>();
             for (DeployDetails detail : details) {
                 String ext = FilenameUtils.getExtension(detail.getFile().getName());
                 Artifact artifact = new ArtifactBuilder(detail.getFile().getName()).md5(detail.getMd5())
@@ -185,10 +192,10 @@ public class GenericArtifactsDeployer {
             return result;
         }
 
-        public void deploy(ArtifactoryBuildInfoClient client, Set<DeployDetails> artifactsToDeploy)
+        public void deploy(ArtifactoryManager artifactoryManager, Set<DeployDetails> artifactsToDeploy)
                 throws IOException {
             for (DeployDetails deployDetail : artifactsToDeploy) {
-                client.deployArtifact(deployDetail);
+                artifactoryManager.upload(deployDetail);
             }
         }
 
@@ -217,7 +224,7 @@ public class GenericArtifactsDeployer {
 
         private Set<DeployDetails> buildDeployDetailsFromFileEntry(Map.Entry<String, File> fileEntry)
                 throws IOException {
-            Set<DeployDetails> result = Sets.newHashSet();
+            Set<DeployDetails> result = new HashSet<>();
             String targetPath = fileEntry.getKey();
             File artifactFile = fileEntry.getValue();
             String path;
@@ -229,7 +236,7 @@ public class GenericArtifactsDeployer {
             path = StringUtils.replace(path, "//", "/");
 
             // calculate the sha1 checksum that is not given by Jenkins and add it to the deploy artifactsToDeploy
-            Map<String, String> checksums = Maps.newHashMap();
+            Map<String, String> checksums = new HashMap<>();
             try {
                 checksums = FileChecksumCalculator.calculateChecksums(artifactFile, SHA1, MD5);
             } catch (NoSuchAlgorithmException e) {

@@ -1,23 +1,23 @@
 package org.jfrog.hudson.util;
 
-import com.google.common.collect.Sets;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.plugins.jira.JiraSite;
 import hudson.plugins.jira.model.JiraIssue;
 import hudson.plugins.jira.selector.AbstractIssueSelector;
 import hudson.plugins.jira.selector.DefaultIssueSelector;
-import org.jfrog.build.api.Issue;
-import org.jfrog.build.api.IssueTracker;
-import org.jfrog.build.api.Issues;
-import org.jfrog.build.api.IssuesTrackerFields;
-import org.jfrog.build.api.builder.BuildInfoBuilder;
+import org.jfrog.build.extractor.builder.BuildInfoBuilder;
+import org.jfrog.build.extractor.ci.Issue;
+import org.jfrog.build.extractor.ci.IssueTracker;
+import org.jfrog.build.extractor.ci.Issues;
+import org.jfrog.build.extractor.ci.IssuesTrackerFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.util.IssuesTrackerUtils;
 import org.jfrog.hudson.util.plugins.PluginsUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -44,7 +44,7 @@ public class IssuesTrackerHelper {
             issueTrackerVersion = getJiraVersion(site);
             StringBuilder affectedIssuesBuilder = new StringBuilder();
             StringBuilder deploymentPropertiesBuilder = new StringBuilder();
-            Set<String> issueIds = Sets.newHashSet(manuallyCollectIssues(build, site, listener));
+            Set<String> issueIds = new HashSet<>(manuallyCollectIssues(build, site, listener));
             for (String issueId : issueIds) {
                 if (!site.existsIssue(issueId)) {
                     continue;

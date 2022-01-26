@@ -7,7 +7,6 @@ import org.jfrog.hudson.pipeline.declarative.steps.common.DeployerResolverBase;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class DotnetResolverStep extends DeployerResolverBase {
-
     static final String STEP_NAME = "rtDotnetResolver";
 
     @DataBoundConstructor

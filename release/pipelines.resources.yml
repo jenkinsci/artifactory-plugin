@@ -1,0 +1,18 @@
+resources:
+  - name: jenkinsSnapshotGit
+    type: GitRepo
+    configuration:
+      path: jfrog/jenkins-artifactory-plugin
+      gitProvider: il_automation
+      branches:
+        include: master
+
+  - name: jenkinsReleaseGit
+    type: GitRepo
+    configuration:
+      path: jfrog/jenkins-artifactory-plugin
+      gitProvider: il_automation
+      buildOn:
+        commit: false
+      branches:
+        include: master

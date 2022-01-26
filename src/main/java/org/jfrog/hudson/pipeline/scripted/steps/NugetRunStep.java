@@ -5,16 +5,18 @@ import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.executors.NugetRunExecutor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.builds.NugetBuild;
+import org.jfrog.hudson.pipeline.common.types.resolvers.Resolver;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
 
 public class NugetRunStep extends AbstractStepImpl {
-
+    static final String STEP_NAME = "artifactoryNugetRun";
     private BuildInfo buildInfo;
     private NugetBuild nugetBuild;
     private String javaArgs;
@@ -41,10 +43,24 @@ public class NugetRunStep extends AbstractStepImpl {
         }
 
         @Override
-        protected BuildInfo run() throws Exception {
+        protected BuildInfo runStep() throws Exception {
             NugetRunExecutor nugetRunExecutor = new NugetRunExecutor(step.buildInfo, launcher, step.nugetBuild, step.javaArgs, step.args, ws, step.module, env, listener, build);
             nugetRunExecutor.execute();
             return nugetRunExecutor.getBuildInfo();
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() {
+            Resolver resolver = step.nugetBuild.getResolver();
+            if (resolver != null) {
+                return resolver.getArtifactoryServer();
+            }
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 
@@ -57,7 +73,7 @@ public class NugetRunStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "artifactoryNugetRun";
+            return STEP_NAME;
         }
 
         @Override

@@ -2,10 +2,15 @@ package org.jfrog.hudson.pipeline.declarative.steps;
 
 import com.google.inject.Inject;
 import hudson.Extension;
-import org.jenkinsci.plugins.workflow.steps.*;
+import hudson.FilePath;
+import org.apache.commons.lang3.ObjectUtils;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.pipeline.ArtifactorySynchronousStepExecution;
+import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.PublishBuildInfoExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
-import org.jfrog.hudson.pipeline.ArtifactorySynchronousStepExecution;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -15,11 +20,11 @@ import java.io.IOException;
 
 @SuppressWarnings("unused")
 public class PublishBuildInfoStep extends AbstractStepImpl {
-
     public static final String STEP_NAME = "rtPublishBuildInfo";
+    private final String serverId;
     private String buildNumber;
     private String buildName;
-    private String serverId;
+    private String project;
 
     @DataBoundConstructor
     public PublishBuildInfoStep(String serverId) {
@@ -32,13 +37,18 @@ public class PublishBuildInfoStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
+    public void setProject(String project) {
+        this.project = project;
+    }
+
+    @DataBoundSetter
     public void setBuildNumber(String buildNumber) {
         this.buildNumber = buildNumber;
     }
 
     public static class Execution extends ArtifactorySynchronousStepExecution<Void> {
 
-        private transient PublishBuildInfoStep step;
+        private transient final PublishBuildInfoStep step;
 
         @Inject
         public Execution(PublishBuildInfoStep step, StepContext context) throws IOException, InterruptedException {
@@ -47,14 +57,30 @@ public class PublishBuildInfoStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
-            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(ws, build, step.buildName, step.buildNumber);
+        protected Void runStep() throws Exception {
+            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(rootWs, build, step.buildName, step.buildNumber, step.project);
             if (buildInfo == null) {
-                throw new RuntimeException("Build " + DeclarativePipelineUtils.createBuildInfoId(build, step.buildName, step.buildNumber) + " does not exist!");
+                throw new RuntimeException("Build " + DeclarativePipelineUtils.createBuildInfoId(build, step.buildName, step.buildNumber, step.project) + " does not exist!");
             }
-            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), step.serverId);
-            new PublishBuildInfoExecutor(build, listener, buildInfo, server, ws).execute();
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
+            /* If the user runs rtPublishBuildInfo on the master, there may be no workspace.
+             * In that case, we would prefer to try to collect the VCS from the root workspace of the job.
+             * Caveat - if the Git repository does not in the root workspace, the extract VCS will return an empty VCS object.
+             */
+            FilePath vcsWorkspace = ObjectUtils.defaultIfNull(ws, rootWs);
+            new PublishBuildInfoExecutor(build, listener, buildInfo, server, vcsWorkspace).execute();
             return null;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws Exception {
+            ArtifactoryServer server = DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, step.serverId, true);
+            return Utils.prepareArtifactoryServer(null, server);
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 

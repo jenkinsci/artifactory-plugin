@@ -5,10 +5,12 @@ import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
 import org.jfrog.hudson.pipeline.common.executors.PipInstallExecutor;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.builds.PipBuild;
+import org.jfrog.hudson.pipeline.common.types.resolvers.Resolver;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -17,7 +19,7 @@ import java.io.IOException;
  * Created by Bar Belity on 07/07/2020.
  */
 public class PipInstallStep extends AbstractStepImpl {
-
+    static final String STEP_NAME = "artifactoryPipRun";
     private BuildInfo buildInfo;
     private PipBuild pipBuild;
     private String javaArgs;
@@ -46,10 +48,24 @@ public class PipInstallStep extends AbstractStepImpl {
         }
 
         @Override
-        protected BuildInfo run() throws Exception {
+        protected BuildInfo runStep() throws Exception {
             PipInstallExecutor pipInstallExecutor = new PipInstallExecutor(step.buildInfo, launcher, step.pipBuild, step.javaArgs, step.args, ws, step.envActivation, step.module, env, listener, build);
             pipInstallExecutor.execute();
             return pipInstallExecutor.getBuildInfo();
+        }
+
+        @Override
+        public ArtifactoryServer getUsageReportServer() {
+            Resolver resolver = step.pipBuild.getResolver();
+            if (resolver != null) {
+                return resolver.getArtifactoryServer();
+            }
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 
@@ -62,7 +78,7 @@ public class PipInstallStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "artifactoryPipRun";
+            return STEP_NAME;
         }
 
         @Override

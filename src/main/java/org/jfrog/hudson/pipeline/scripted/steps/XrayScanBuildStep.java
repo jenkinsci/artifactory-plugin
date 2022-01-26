@@ -3,6 +3,7 @@ package org.jfrog.hudson.pipeline.scripted.steps;
 import com.google.inject.Inject;
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.steps.*;
+import org.jfrog.hudson.pipeline.common.Utils;
 import org.jfrog.hudson.pipeline.common.executors.XrayExecutor;
 import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.ArtifactorySynchronousNonBlockingStepExecution;
@@ -14,7 +15,7 @@ import java.io.IOException;
 
 @SuppressWarnings("unused")
 public class XrayScanBuildStep extends AbstractStepImpl {
-
+    static final String STEP_NAME = "xrayScanBuild";
     private ArtifactoryServer server;
     private XrayScanConfig xrayScanConfig;
 
@@ -43,12 +44,22 @@ public class XrayScanBuildStep extends AbstractStepImpl {
         }
 
         @Override
-        protected XrayScanResult run() throws Exception {
+        protected XrayScanResult runStep() throws Exception {
             XrayScanConfig xrayScanConfig = step.getXrayScanConfig();
             ArtifactoryServer server = step.getServer();
             XrayExecutor xrayExecutor = new XrayExecutor(xrayScanConfig, listener, server, build);
             xrayExecutor.execute();
             return xrayExecutor.getXrayScanResult();
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() {
+            return Utils.prepareArtifactoryServer(null, step.getServer());
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
     }
 
@@ -62,7 +73,7 @@ public class XrayScanBuildStep extends AbstractStepImpl {
         @Override
         // The step is invoked by ArtifactoryServer by the step name
         public String getFunctionName() {
-            return "xrayScanBuild";
+            return STEP_NAME;
         }
 
         @Override

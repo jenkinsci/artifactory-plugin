@@ -3,7 +3,7 @@ package org.jfrog.hudson.pipeline.declarative.steps.npm;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import hudson.Extension;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -14,6 +14,7 @@ import org.jfrog.hudson.pipeline.common.types.ArtifactoryServer;
 import org.jfrog.hudson.pipeline.common.types.buildInfo.BuildInfo;
 import org.jfrog.hudson.pipeline.common.types.builds.NpmBuild;
 import org.jfrog.hudson.pipeline.common.types.deployers.CommonDeployer;
+import org.jfrog.hudson.pipeline.common.types.resolvers.Resolver;
 import org.jfrog.hudson.pipeline.declarative.BuildDataFile;
 import org.jfrog.hudson.pipeline.declarative.utils.DeclarativePipelineUtils;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
@@ -32,10 +33,12 @@ import java.io.IOException;
  */
 @SuppressWarnings("unused")
 public class NpmPublishStep extends AbstractStepImpl {
+    static final String STEP_NAME = "rtNpmPublish";
 
-    private NpmBuild npmBuild;
+    private final NpmBuild npmBuild;
     private String customBuildNumber;
     private String customBuildName;
+    private String project;
     private String deployerId;
     private String javaArgs; // Added to allow java remote debugging
     private String path;
@@ -54,6 +57,11 @@ public class NpmPublishStep extends AbstractStepImpl {
     @DataBoundSetter
     public void setBuildName(String customBuildName) {
         this.customBuildName = customBuildName;
+    }
+
+    @DataBoundSetter
+    public void setProject(String customProject) {
+        this.project = customProject;
     }
 
     @DataBoundSetter
@@ -83,7 +91,7 @@ public class NpmPublishStep extends AbstractStepImpl {
 
     public static class Execution extends ArtifactorySynchronousNonBlockingStepExecution<Void> {
 
-        private transient NpmPublishStep step;
+        private transient final NpmPublishStep step;
 
         @Inject
         public Execution(NpmPublishStep step, StepContext context) throws IOException, InterruptedException {
@@ -92,21 +100,36 @@ public class NpmPublishStep extends AbstractStepImpl {
         }
 
         @Override
-        protected Void run() throws Exception {
-            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(ws, build, step.customBuildName, step.customBuildNumber);
+        protected Void runStep() throws Exception {
+            BuildInfo buildInfo = DeclarativePipelineUtils.getBuildInfo(rootWs, build, step.customBuildName, step.customBuildNumber, step.project);
             setDeployer(BuildUniqueIdentifierHelper.getBuildNumber(build));
             Utils.addNpmToPath(ws, listener, env, launcher, step.npmBuild.getTool());
             NpmPublishExecutor npmPublishExecutor = new NpmPublishExecutor(listener, buildInfo, launcher, step.npmBuild, step.javaArgs, step.path, step.module, ws, env, build);
             npmPublishExecutor.execute();
-            DeclarativePipelineUtils.saveBuildInfo(npmPublishExecutor.getBuildInfo(), ws, build, new JenkinsBuildInfoLog(listener));
+            DeclarativePipelineUtils.saveBuildInfo(npmPublishExecutor.getBuildInfo(), rootWs, build, new JenkinsBuildInfoLog(listener));
             return null;
+        }
+
+        @Override
+        public org.jfrog.hudson.ArtifactoryServer getUsageReportServer() throws IOException, InterruptedException {
+            setDeployer(BuildUniqueIdentifierHelper.getBuildNumber(build));
+            Resolver resolver = step.npmBuild.getResolver();
+            if (resolver != null) {
+                return resolver.getArtifactoryServer();
+            }
+            return null;
+        }
+
+        @Override
+        public String getUsageReportFeatureName() {
+            return STEP_NAME;
         }
 
         private void setDeployer(String buildNumber) throws IOException, InterruptedException {
             if (StringUtils.isBlank(step.deployerId)) {
                 return;
             }
-            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(ws, buildNumber, NpmDeployerStep.STEP_NAME, step.deployerId);
+            BuildDataFile buildDataFile = DeclarativePipelineUtils.readBuildDataFile(rootWs, buildNumber, NpmDeployerStep.STEP_NAME, step.deployerId);
             if (buildDataFile == null) {
                 throw new IOException("Deployer " + step.deployerId + " doesn't exist!");
             }
@@ -128,7 +151,7 @@ public class NpmPublishStep extends AbstractStepImpl {
             if (serverId.isNull()) {
                 throw new IllegalArgumentException("server ID is missing");
             }
-            return DeclarativePipelineUtils.getArtifactoryServer(build, ws, getContext(), serverId.asText());
+            return DeclarativePipelineUtils.getArtifactoryServer(build, rootWs, serverId.asText(), true);
         }
     }
 
@@ -141,7 +164,7 @@ public class NpmPublishStep extends AbstractStepImpl {
 
         @Override
         public String getFunctionName() {
-            return "rtNpmPublish";
+            return STEP_NAME;
         }
 
         @Override
