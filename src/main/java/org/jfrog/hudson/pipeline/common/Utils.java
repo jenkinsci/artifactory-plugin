@@ -6,7 +6,6 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.*;
-import hudson.plugins.git.util.BuildData;
 import hudson.remoting.Channel;
 import hudson.remoting.LocalChannel;
 import hudson.remoting.VirtualChannel;
@@ -49,11 +48,7 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.BUILD_NAME;
-import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.BUILD_NUMBER;
-import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.PROJECT;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.jfrog.hudson.pipeline.common.types.ArtifactoryServer.*;
 import static org.jfrog.hudson.util.SerializationUtils.createMapper;
@@ -309,7 +304,7 @@ public class Utils {
     public static PromotionConfig createPromotionConfig(Map<String, Object> promotionParams, boolean isTargetRepositoryMandatory) {
         final String targetRepository = "targetRepo";
         List<String> mandatoryParams = new ArrayList<>(Arrays.asList(BUILD_NAME, BUILD_NUMBER));
-        List<String> allowedParams = Arrays.asList(BUILD_NAME, BUILD_NUMBER, targetRepository, "sourceRepo", "status", "comment", "includeDependencies", "copy", "failFast");
+        List<String> allowedParams = Arrays.asList(BUILD_NAME, BUILD_NUMBER, "project", targetRepository, "sourceRepo", "status", "comment", "includeDependencies", "copy", "failFast");
 
         if (isTargetRepositoryMandatory) {
             mandatoryParams.add(targetRepository);
@@ -330,6 +325,7 @@ public class Utils {
         org.jfrog.hudson.release.promotion.PromotionConfig promotionConfig = new org.jfrog.hudson.release.promotion.PromotionConfig();
         promotionConfig.setBuildName(pipelinePromotionConfig.getBuildName());
         promotionConfig.setBuildNumber(pipelinePromotionConfig.getBuildNumber());
+        promotionConfig.setProject(pipelinePromotionConfig.getProject());
         promotionConfig.setTargetRepo(pipelinePromotionConfig.getTargetRepo());
         promotionConfig.setSourceRepo(pipelinePromotionConfig.getSourceRepo());
         promotionConfig.setStatus(pipelinePromotionConfig.getStatus());
