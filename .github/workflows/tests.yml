@@ -88,8 +88,8 @@ jobs:
           git clone https://github.com/docker-java/docker-java.git
           cd docker-java
           git checkout 8e77a694
-          ./mvnw versions:set -DnewVersion=3.2.x-8e77a694
-          ./mvnw install -DskipTests
+          ./mvnw versions:set -DnewVersion="3.2.x-8e77a694" -B
+          ./mvnw install -DskipTests -B
           cd ..
 
       - name: Run tests
