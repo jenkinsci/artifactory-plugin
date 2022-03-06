@@ -20,7 +20,6 @@ import hudson.model.BuildBadgeAction;
 import hudson.model.Run;
 import org.apache.commons.lang3.StringUtils;
 import org.jfrog.build.extractor.ci.BuildInfo;
-import org.jfrog.build.extractor.clientConfiguration.client.JFrogService;
 import org.jfrog.hudson.util.BuildUniqueIdentifierHelper;
 
 import java.util.List;
@@ -28,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
 import static org.jfrog.build.extractor.BuildInfoExtractorUtils.createBuildInfoUrl;
+import static org.jfrog.build.extractor.UrlUtils.encodeUrlPathPart;
 
 /**
  * Result of the redeploy publisher. Currently only a link to Artifactory build info.
@@ -89,7 +89,7 @@ public class BuildInfoResultAction implements BuildBadgeAction {
     }
 
     private PublishedBuildDetails createBuildInfoIdentifier(String artifactoryUrl, String buildName, String buildNumber, String platformUrl, String startedBuildTimestamp, String project) {
-        return new PublishedBuildDetails(artifactoryUrl, JFrogService.encodeUrl(buildName), JFrogService.encodeUrl(buildNumber), platformUrl, startedBuildTimestamp, project);
+        return new PublishedBuildDetails(artifactoryUrl, encodeUrlPathPart(buildName), encodeUrlPathPart(buildNumber), platformUrl, startedBuildTimestamp, project);
     }
 
     private PublishedBuildDetails createBuildInfoIdentifier(String artifactoryUrl, Run build, BuildInfo buildInfo, String platformUrl) {
