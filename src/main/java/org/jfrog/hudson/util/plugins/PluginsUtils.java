@@ -12,6 +12,7 @@ import hudson.model.Queue;
 import hudson.model.queue.Tasks;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -23,35 +24,38 @@ import org.jfrog.hudson.ArtifactoryBuilder;
 import org.jfrog.hudson.util.Credentials;
 
 import java.net.URL;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class PluginsUtils {
     public static final String MULTIJOB_PLUGIN_ID = "jenkins-multijob-plugin";
-    public static final String GIT_PLUGIN_ID = "git";
     public static final String PROMOTION_BUILD_PLUGIN_CLASS = "PromotionProcess";
     public static final String JIRA_REST_SERVERINFO_ENDPOINT = "rest/api/2/serverInfo";
 
     private static ObjectMapper mapper;
 
+    /**
+     * Populate credentials list from the Jenkins Credentials plugin. In use in UI jobs only.
+     *
+     * @param project - Jenkins project
+     * @return credentials list
+     */
     public static ListBoxModel fillPluginCredentials(Item project) {
         if (project == null || !project.hasPermission(Item.CONFIGURE)) {
             return new StandardListBoxModel();
         }
-        return fillPluginCredentials(project, ACL.SYSTEM);
-    }
-
-    public static ListBoxModel fillPluginCredentials(Item project, Authentication authentication) {
         List<DomainRequirement> domainRequirements = Collections.emptyList();
         return new StandardListBoxModel()
                 .includeEmptyValue()
-                .includeMatchingAs(
-                        authentication,
-                        project,
-                        StandardCredentials.class,
-                        domainRequirements,
+                // Add project scoped credentials:
+                .includeMatchingAs(ACL.SYSTEM, project, StandardCredentials.class, domainRequirements,
+                        CredentialsMatchers.anyOf(
+                                CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class),
+                                CredentialsMatchers.instanceOf(StringCredentials.class),
+                                CredentialsMatchers.instanceOf(StandardCertificateCredentials.class)
+                        ))
+                // Add Jenkins system scoped credentials
+                .includeMatchingAs(ACL.SYSTEM, Jenkins.get(), StandardCredentials.class, domainRequirements,
                         CredentialsMatchers.anyOf(
                                 CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class),
                                 CredentialsMatchers.instanceOf(StringCredentials.class),
@@ -62,13 +66,7 @@ public class PluginsUtils {
 
     public static Credentials usernamePasswordCredentialsLookup(String credentialsId, Item item) {
         UsernamePasswordCredentials usernamePasswordCredentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
-                        UsernamePasswordCredentials.class,
-                        item,
-                        item instanceof Queue.Task
-                                ? Tasks.getAuthenticationOf((Queue.Task) item)
-                                : ACL.SYSTEM,
-                        Collections.<DomainRequirement>emptyList()),
+                lookupCredentials(UsernamePasswordCredentials.class, item),
                 CredentialsMatchers.withId(credentialsId)
         );
 
@@ -80,18 +78,28 @@ public class PluginsUtils {
     }
 
     public static StringCredentials accessTokenCredentialsLookup(String credentialsId, Item item) {
-        StringCredentials accessTokenPasswordCredentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
-                        StringCredentials.class,
-                        item,
-                        item instanceof Queue.Task
-                                ? Tasks.getAuthenticationOf((Queue.Task) item)
-                                : ACL.SYSTEM,
-                        Collections.<DomainRequirement>emptyList()),
+        return CredentialsMatchers.firstOrNull(
+                lookupCredentials(StringCredentials.class, item),
                 CredentialsMatchers.withId(credentialsId)
         );
+    }
 
-        return accessTokenPasswordCredentials;
+    /**
+     * Return job and Jenkins scoped credentials.
+     *
+     * @param type - UsernamePasswordCredentials or StringCredentials
+     * @param item - The Jenkins job
+     * @return job and Jenkins scoped credentials.
+     */
+    private static <C extends com.cloudbees.plugins.credentials.Credentials> Iterable<C> lookupCredentials(Class<C> type, Item item) {
+        Set<C> credentials = new HashSet<>();
+        Authentication authentication = item instanceof Queue.Task ? Tasks.getAuthenticationOf((Queue.Task) item) : ACL.SYSTEM;
+
+        // Add credentials from a Pipeline project/item
+        credentials.addAll(CredentialsProvider.lookupCredentials(type, item, authentication, Collections.emptyList()));
+        // Add credentials from the Jenkins instance scope
+        credentials.addAll(CredentialsProvider.lookupCredentials(type, Jenkins.get(), authentication, Collections.emptyList()));
+        return credentials;
     }
 
     public static boolean isUseCredentialsPlugin() {
@@ -111,7 +119,6 @@ public class PluginsUtils {
      * If Credentials Plugin is enabled. Retrieves this value from the ArtifactoryBuilder class.
      *
      * @return Is Credentials Plugin enabled(true) or disabled(false)
-     * @throws IllegalStateException
      */
 
     public static boolean isCredentialsPluginEnabled() {
@@ -143,10 +150,9 @@ public class PluginsUtils {
         }
     }
 
-    private static ObjectMapper lazyInitMapper() {
+    private static void lazyInitMapper() {
         if (mapper == null) {
             mapper = new ObjectMapper();
         }
-        return mapper;
     }
 }
