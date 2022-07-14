@@ -95,6 +95,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private String customBuildName;
     private boolean overrideBuildName;
 
+    private String project;
     /**
      * @deprecated: Use org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator#getDeployerCredentialsConfig()
      */
@@ -133,7 +134,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                          String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
                                          String defaultPromotionTargetRepository,
                                          boolean filterExcludedArtifactsFromBuild, String artifactoryCombinationFilter,
-                                         String customBuildName, boolean overrideBuildName) {
+                                         String customBuildName, boolean overrideBuildName,
+                                         String project) {
         this.deployerDetails = deployerDetails;
         this.resolverDetails = resolverDetails;
         this.deployerCredentialsConfig = deployerCredentialsConfig;
@@ -165,6 +167,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.artifactoryCombinationFilter = artifactoryCombinationFilter;
         this.customBuildName = customBuildName;
         this.overrideBuildName = overrideBuildName;
+        this.project = project;
     }
 
     /**
@@ -342,6 +345,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
 
     private String cleanString(String artifactPattern) {
         return StringUtils.removeEnd(StringUtils.removeStart(artifactPattern, "\""), "\"");
+    }
+
+    public String getProject() {
+        return project;
     }
 
     @Override
@@ -530,13 +537,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 if (result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     if (isDeployBuildInfo()) {
                         String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(ArtifactoryGradleConfigurator.this, build);
-                        build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName, ""));
+                        build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName, project));
                         ArtifactoryGradleConfigurator configurator =
                                 ActionableHelper.getBuildWrapper(build.getProject(),
                                         ArtifactoryGradleConfigurator.class);
                         if (configurator != null) {
                             if (isAllowPromotionOfNonStagedBuilds()) {
-                                build.addAction(new UnifiedPromoteBuildAction(build, ArtifactoryGradleConfigurator.this, ""));
+                                build.addAction(new UnifiedPromoteBuildAction(build, ArtifactoryGradleConfigurator.this, project));
                             }
                         }
                     }

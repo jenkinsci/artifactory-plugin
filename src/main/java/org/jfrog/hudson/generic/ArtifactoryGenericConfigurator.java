@@ -100,6 +100,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
     @Deprecated
     private final String matrixParams = null;
 
+    private String project;
+
     @DataBoundConstructor
     public ArtifactoryGenericConfigurator(ServerDetails specsDeployerDetails, ServerDetails specsResolverDetails,
                                           ServerDetails legacyDeployerDetails, ServerDetails legacyResolverDetails,
@@ -114,7 +116,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                                           boolean multiConfProject,
                                           String artifactoryCombinationFilter,
                                           String customBuildName,
-                                          boolean overrideBuildName) {
+                                          boolean overrideBuildName,
+                                          String project) {
         this.specsDeployerDetails = specsDeployerDetails;
         this.specsResolverDetails = specsResolverDetails;
         this.legacyDeployerDetails = legacyDeployerDetails;
@@ -137,6 +140,7 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         this.artifactoryCombinationFilter = artifactoryCombinationFilter;
         this.customBuildName = customBuildName;
         this.overrideBuildName = overrideBuildName;
+        this.project = project;
     }
 
     /**
@@ -343,6 +347,10 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
         return RepositoriesUtils.collectRepositories(legacyDeployerDetails.getDeploySnapshotRepository().getKeyFromSelect());
     }
 
+    public String getProject() {
+        return project;
+    }
+
     @Override
     public Collection<? extends Action> getProjectActions(AbstractProject project) {
         if (isOverrideBuildName()) {
@@ -423,8 +431,8 @@ public class ArtifactoryGenericConfigurator extends BuildWrapper implements Depl
                                     listener, deployedArtifacts, buildDependencies, publishedDependencies).deploy();
                             String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(ArtifactoryGenericConfigurator.this, build);
                             // add the result action (prefer always the same index)
-                            build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName, ""));
-                            build.addAction(new UnifiedPromoteBuildAction(build, ArtifactoryGenericConfigurator.this, ""));
+                            build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName, project));
+                            build.addAction(new UnifiedPromoteBuildAction(build, ArtifactoryGenericConfigurator.this, project));
                         }
                     }
 
