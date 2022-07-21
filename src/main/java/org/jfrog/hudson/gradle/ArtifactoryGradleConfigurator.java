@@ -94,7 +94,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
     private String artifactoryCombinationFilter;
     private String customBuildName;
     private boolean overrideBuildName;
-
+    // JFrog project key
+    private String project;
     /**
      * @deprecated: Use org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator#getDeployerCredentialsConfig()
      */
@@ -133,7 +134,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                                          String aggregationBuildStatus, boolean allowPromotionOfNonStagedBuilds,
                                          String defaultPromotionTargetRepository,
                                          boolean filterExcludedArtifactsFromBuild, String artifactoryCombinationFilter,
-                                         String customBuildName, boolean overrideBuildName) {
+                                         String customBuildName, boolean overrideBuildName,
+                                         String project) {
         this.deployerDetails = deployerDetails;
         this.resolverDetails = resolverDetails;
         this.deployerCredentialsConfig = deployerCredentialsConfig;
@@ -165,6 +167,7 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         this.artifactoryCombinationFilter = artifactoryCombinationFilter;
         this.customBuildName = customBuildName;
         this.overrideBuildName = overrideBuildName;
+        this.project = project;
     }
 
     /**
@@ -344,6 +347,10 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         return StringUtils.removeEnd(StringUtils.removeStart(artifactPattern, "\""), "\"");
     }
 
+    public String getProject() {
+        return project;
+    }
+
     @Override
     public Action getProjectAction(AbstractProject job) {
         return super.getProjectAction(job);
@@ -400,13 +407,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
         if (gradleBuild != null) {
             // The ConcurrentBuildSetupSync helper class is used to make sure that the code
             // inside its setUp() method is invoked by only one job in this build
-            // (matrix project builds include more that one job) and that all other jobs
-            // wait till the seUup() method finishes.
+            // (matrix project builds include more than one job) and that all other jobs
+            // wait till the setUp() method finishes.
             new ConcurrentJobsHelper.ConcurrentBuildSetupSync(build, totalBuilds) {
                 @Override
                 public void setUp() {
                     // Obtain the current build and use it to store the configured switches and tasks.
-                    // We store them because we override them during the build and we'll need
+                    // We store them because we override them during the build, and we'll need
                     // their original values at the tear down stage so that they can be restored.
                     ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.getConcurrentBuild(build);
 
@@ -505,12 +512,12 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 if (gradleBuild != null) {
                     // The ConcurrentBuildTearDownSync helper class is used to make sure that the code
                     // inside its tearDown() method is invoked by only one job in this build
-                    // (matrix project builds include more that one job) and that this
+                    // (matrix project builds include more than one job) and that this
                     // job is the last one running.
                     new ConcurrentJobsHelper.ConcurrentBuildTearDownSync(build, result) {
                         @Override
                         public void tearDown() {
-                            // Restore the original switches and tasks of this build (we overrided their
+                            // Restore the original switches and tasks of this build (we override their
                             // values in the setUp stage):
                             ConcurrentJobsHelper.ConcurrentBuild concurrentBuild = ConcurrentJobsHelper.getConcurrentBuild(build);
                             String switches = concurrentBuild.getParam("switches");
@@ -530,13 +537,13 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 if (result != null && result.isBetterOrEqualTo(Result.SUCCESS)) {
                     if (isDeployBuildInfo()) {
                         String buildName = BuildUniqueIdentifierHelper.getBuildNameConsiderOverride(ArtifactoryGradleConfigurator.this, build);
-                        build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName, ""));
+                        build.addAction(new BuildInfoResultAction(getArtifactoryUrl(), build, buildName, project));
                         ArtifactoryGradleConfigurator configurator =
                                 ActionableHelper.getBuildWrapper(build.getProject(),
                                         ArtifactoryGradleConfigurator.class);
                         if (configurator != null) {
                             if (isAllowPromotionOfNonStagedBuilds()) {
-                                build.addAction(new UnifiedPromoteBuildAction(build, ArtifactoryGradleConfigurator.this, ""));
+                                build.addAction(new UnifiedPromoteBuildAction(build, ArtifactoryGradleConfigurator.this, project));
                             }
                         }
                     }
@@ -588,7 +595,8 @@ public class ArtifactoryGradleConfigurator extends BuildWrapper implements Deplo
                 .filterExcludedArtifactsFromBuild(isFilterExcludedArtifactsFromBuild())
                 .artifactoryPluginVersion(ActionableHelper.getArtifactoryPluginVersion())
                 .overrideBuildName(isOverrideBuildName())
-                .customBuildName(getCustomBuildName());
+                .customBuildName(getCustomBuildName())
+                .project(getProject());
     }
 
     public boolean isRelease(AbstractBuild build) {
