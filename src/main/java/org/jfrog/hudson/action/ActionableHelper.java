@@ -145,16 +145,30 @@ public abstract class ActionableHelper implements Serializable {
         return result;
     }
 
-    public static Cause.UpstreamCause getUpstreamCause(Run build) {
-        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
-        if (action != null) {
-            for (Cause cause : action.getCauses()) {
+
+    /**
+     * During pipeline run, jenkins tried to serialize the pipeline state, therefore, Cause.UserIdCause should not be assigned to a local variable.
+     * In order to get Cause.UserIdCause properties, use the getter below.
+     * @param build
+     * @return
+     */
+    private static Cause.UpstreamCause getUpstreamCause(Run build) {
+        if (ActionableHelper.getLatestAction(build, CauseAction.class) != null) {
+            for (Cause cause : ActionableHelper.getLatestAction(build, CauseAction.class).getCauses()) {
                 if (cause instanceof Cause.UpstreamCause) {
                     return (Cause.UpstreamCause) cause;
                 }
             }
         }
         return null;
+    }
+
+    public static String getUpstreamProject(Run build) {
+        return ActionableHelper.getUpstreamCause(build) != null ? ActionableHelper.getUpstreamCause(build).getUpstreamProject() : null;
+    }
+
+    public static Integer getUpstreamBuild(Run build) {
+        return ActionableHelper.getUpstreamCause(build) != null ? ActionableHelper.getUpstreamCause(build).getUpstreamBuild() : null;
     }
 
     /**
@@ -171,20 +185,15 @@ public abstract class ActionableHelper implements Serializable {
      * @return The user id caused triggered the build of default principal if not found
      */
     public static String getUserCausePrincipal(Run build, String defaultPrincipal) {
-        Cause.UserIdCause userCause = getUserCause(build);
-        String principal = defaultPrincipal;
-        if (userCause != null && userCause.getUserId() != null) {
-            principal = userCause.getUserId();
-        }
-        return principal;
+        String principal = getUserCause(build);
+        return StringUtils.isBlank(principal) ? defaultPrincipal : principal;
     }
 
-    private static Cause.UserIdCause getUserCause(Run build) {
-        CauseAction action = ActionableHelper.getLatestAction(build, CauseAction.class);
-        if (action != null) {
-            for (Cause cause : action.getCauses()) {
+    private static String getUserCause(Run build) {
+        if (ActionableHelper.getLatestAction(build, CauseAction.class) != null) {
+            for (Cause cause : ActionableHelper.getLatestAction(build, CauseAction.class).getCauses()) {
                 if (cause instanceof Cause.UserIdCause) {
-                    return (Cause.UserIdCause) cause;
+                    return ((Cause.UserIdCause) cause).getUserId();
                 }
             }
         }
