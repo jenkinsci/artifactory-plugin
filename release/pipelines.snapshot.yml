@@ -38,7 +38,7 @@ pipelines:
             - jf mvnc --repo-resolve-releases ecosys-jenkins-repos --repo-resolve-snapshots ecosys-releases-snapshots --repo-deploy-snapshots ecosys-oss-snapshot-local --repo-deploy-releases ecosys-oss-release-local
 
             # Run audit
-            - jf audit --fail=false
+            # - jf audit --fail=false #TODO uncomment
 
             # Delete former snapshots to make sure the release bundle will not contain the same artifacts
             - jf rt del "ecosys-oss-snapshot-local/org/jenkins-ci/plugins/artifactory/*" --quiet
