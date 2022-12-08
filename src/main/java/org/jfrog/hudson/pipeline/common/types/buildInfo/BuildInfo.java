@@ -21,6 +21,8 @@ import org.jfrog.build.extractor.ci.Dependency;
 import org.jfrog.build.extractor.ci.Module;
 import org.jfrog.build.extractor.ci.Vcs;
 import org.jfrog.build.client.DeployableArtifactDetail;
+import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
+import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
 import org.jfrog.build.extractor.clientConfiguration.client.artifactory.ArtifactoryManager;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployableArtifactsUtils;
@@ -352,7 +354,15 @@ public class BuildInfo implements Serializable {
     }
 
     public void filterVariables() {
-        this.getEnv().filter();
+        // Filter env variables.
+        IncludeExcludePatterns pattern = this.getEnv().filter();
+        // Filter module properties.
+        for (Module module : modules) {
+            Properties properties = module.getProperties();
+            if (properties != null) {
+                properties.entrySet().removeIf(key -> PatternMatcher.pathConflicts(key.getKey().toString(), pattern));
+            }
+        }
     }
 
     public void captureVariables(EnvVars envVars, Run build, TaskListener listener) {
