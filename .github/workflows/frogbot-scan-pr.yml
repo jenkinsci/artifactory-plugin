@@ -36,3 +36,6 @@ jobs:
           # [Mandatory]
           # The GitHub token automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Set Frogbot log level to debug
+          JFROG_CLI_LOG_LEVEL: DEBUG
