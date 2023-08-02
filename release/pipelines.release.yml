@@ -66,7 +66,7 @@ pipelines:
               JFROG_CLI_BUILD_NAME=$JFROG_CLI_BUILD_NAME
               JFROG_CLI_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
               JFROG_CLI_BUILD_PROJECT=$JFROG_CLI_BUILD_PROJECT
-              jf mvn clean install -U -B
+              jf mvn clean install -U -B -DskipTests
             - jf rt bag && jf rt bce
             - jf rt bp
 
@@ -79,7 +79,7 @@ pipelines:
             - jf mvnc
               --server-id-resolve internal --repo-resolve-releases ecosys-jenkins-repos --repo-resolve-snapshots ecosys-releases-snapshots
               --server-id-deploy jenkins --repo-deploy-releases releases --repo-deploy-snapshots snapshots
-            - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME jf mvn clean install -U -B
+            - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME jf mvn clean install -U -B -DskipTests
 
             # Update next development version
             - env -i PATH=$PATH M2_HOME=$M2_HOME HOME=$HOME jf mvn versions:set -DnewVersion=$NEXT_DEVELOPMENT_VERSION -B
