@@ -22,7 +22,10 @@ import com.google.common.collect.Maps;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Util;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.Computer;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.slaves.SlaveComputer;
 import hudson.util.IOUtils;
 import jenkins.model.Jenkins;
@@ -37,6 +40,7 @@ import org.jfrog.build.extractor.ci.Vcs;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
+import org.jfrog.build.extractor.clientConfiguration.util.encryption.EncryptionKeyPair;
 import org.jfrog.build.extractor.clientConfiguration.util.spec.SpecsHelper;
 import org.jfrog.hudson.ArtifactoryServer;
 import org.jfrog.hudson.CredentialsConfig;
@@ -52,8 +56,26 @@ import org.jfrog.hudson.util.plugins.MultiConfigurationUtils;
 import org.jfrog.hudson.util.publisher.PublisherContext;
 
 import javax.annotation.Nullable;
-import java.io.*;
-import java.util.*;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Tomer Cohen
@@ -201,7 +223,7 @@ public class ExtractorUtils {
      * @param resolverContext  A context for resolver settings
      */
     public static ArtifactoryClientConfiguration addBuilderInfoArguments(Map<String, String> env, Run build, TaskListener listener,
-                                                                         PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws, hudson.Launcher launcher)
+                                                                         PublisherContext publisherContext, ResolverContext resolverContext, FilePath ws, hudson.Launcher launcher, boolean skipEncryption)
             throws Exception {
         ArtifactoryClientConfiguration configuration = getArtifactoryClientConfiguration(env, build,
                 null, listener, publisherContext, resolverContext);
@@ -212,7 +234,7 @@ public class ExtractorUtils {
         // Create tempdir for properties file
         FilePath tempDir = createAndGetTempDir(ws);
 
-        persistConfiguration(configuration, env, tempDir, launcher);
+        persistConfiguration(configuration, env, tempDir, launcher, skipEncryption);
         return configuration;
     }
 
@@ -549,37 +571,47 @@ public class ExtractorUtils {
     }
 
     public static void persistConfiguration(ArtifactoryClientConfiguration configuration, Map<String, String> env, FilePath ws,
-                                            hudson.Launcher launcher) throws IOException, InterruptedException {
+                                            hudson.Launcher launcher, boolean skipEncryption) throws IOException, InterruptedException {
+        FilePath propertiesFile = createPropertiesFile(ws);
+        setPersistConfigurationEnv(configuration, propertiesFile, env);
+        savePropertiesToFile(configuration, propertiesFile, env, launcher, skipEncryption);
+    }
+
+    private static FilePath createPropertiesFile(FilePath ws) throws IOException, InterruptedException {
         FilePath propertiesFile = ws.createTextTempFile("buildInfo", ".properties", "");
         ActionableHelper.deleteFilePathOnExit(propertiesFile);
+        return propertiesFile;
+    }
+
+    private static void setPersistConfigurationEnv(ArtifactoryClientConfiguration configuration, FilePath propertiesFile,
+                                                   Map<String, String> env) {
         configuration.setPropertiesFile(propertiesFile.getRemote());
         env.put("BUILDINFO_PROPFILE", propertiesFile.getRemote());
         env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFile.getRemote());
-        // Jenkins prefixes env variables with 'env' but we need it clean..
+        // Jenkins prefixes env variables with 'env' but we need it clean.
         System.setProperty(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFile.getRemote());
-        if (!(getComputer(launcher) instanceof SlaveComputer)) {
-            configuration.persistToPropertiesFile();
-        } else {
-            try {
-                Properties properties = new Properties();
-                properties.putAll(configuration.getAllRootConfig());
-                properties.putAll(configuration.getAllProperties());
-                // Properties that have the 'artifactory.' prefix are deprecated.
-                // For backward compatibility reasons, both will be added to the props map.
-                // The build-info 2.32.3 is the last version to be using the deprecated properties as its primary.
-                for (String key : properties.stringPropertyNames()) {
-                    properties.put("artifactory." + key, properties.getProperty(key));
-                }
-                OutputStream os = propertiesFile.write();
-                try {
-                    properties.store(os, "");
-                } finally {
-                    IOUtils.closeQuietly(os);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+    }
+
+    private static void savePropertiesToFile(ArtifactoryClientConfiguration configuration, FilePath propertiesFile,
+                                             Map<String, String> env, hudson.Launcher launcher, boolean skipEncryption) {
+        try (OutputStream outputStream = isSlaveEnvironment(launcher) ?
+                Files.newOutputStream(new File(configuration.getPropertiesFile()).getCanonicalFile().toPath()) :
+                propertiesFile.write()) {
+            if (skipEncryption) {
+                configuration.persistToPropertiesFile();
+            } else {
+                EncryptionKeyPair keyPair = configuration.persistToEncryptedPropertiesFile(outputStream);
+                env.put(BuildInfoConfigProperties.PROP_PROPS_FILE_KEY, keyPair.getStringSecretKey());
+                env.put(BuildInfoConfigProperties.PROP_PROPS_FILE_KEY_IV, keyPair.getStringIv());
             }
+        } catch (IOException | InterruptedException | InvalidAlgorithmParameterException | NoSuchPaddingException |
+                 IllegalBlockSizeException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    private static boolean isSlaveEnvironment(hudson.Launcher launcher) {
+        return (getComputer(launcher) instanceof SlaveComputer);
     }
 
     private static Computer getComputer(hudson.Launcher launcher) {
