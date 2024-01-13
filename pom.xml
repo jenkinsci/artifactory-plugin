@@ -41,8 +41,8 @@
         <!--Skip integration tests unless explicitly requested with -DskipITs=false-->
         <skipITs>true</skipITs>
 
-        <buildinfo.version>2.41.11</buildinfo.version>
-        <buildinfo.gradle.version>5.1.13</buildinfo.gradle.version>
+        <buildinfo.version>2.41.12</buildinfo.version>
+        <buildinfo.gradle.version>5.1.14</buildinfo.gradle.version>
     </properties>
 
     <repositories>
@@ -465,7 +465,25 @@
                     <groupId>org.jenkins-ci.plugins</groupId>
                     <artifactId>branch-api</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.atlassian.jira</groupId>
+                    <artifactId>jira-rest-java-client-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.atlassian.jira</groupId>
+                    <artifactId>jira-rest-java-client-core</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.atlassian.jira</groupId>
+            <artifactId>jira-rest-java-client-api</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.atlassian.jira</groupId>
+            <artifactId>jira-rest-java-client-core</artifactId>
+            <version>5.2.5</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
