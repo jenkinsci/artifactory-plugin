@@ -52,6 +52,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.jfrog.build.api.BuildInfoConfigProperties.ENV_PROPERTIES_FILE_KEY;
+import static org.jfrog.build.api.BuildInfoConfigProperties.ENV_PROPERTIES_FILE_KEY_IV;
+
 /**
  * Class for setting up the {@link Environment} for a {@link MavenModuleSet} project. Responsible for adding the new
  * maven opts with the location of the plugin.
@@ -67,6 +70,8 @@ public class MavenExtractorEnvironment extends Environment {
     private final EnvVars envVars;
     private String propertiesFilePath;
     private final hudson.Launcher launcher;
+    private String propertiesFileKeyIv;
+    private String propertiesFileKey;
 
     // the build env vars method may be called again from another setUp of a wrapper so we need this flag to
     // attempt only once certain operations (like copying file or changing maven opts).
@@ -140,6 +145,8 @@ public class MavenExtractorEnvironment extends Environment {
                 ArtifactoryClientConfiguration configuration = ExtractorUtils.addBuilderInfoArguments(
                         env, build, buildListener, publisherContext, resolverContext, build.getWorkspace(), launcher, false);
                 propertiesFilePath = configuration.getPropertiesFile();
+                propertiesFileKey = env.get(ENV_PROPERTIES_FILE_KEY);
+                propertiesFileKeyIv = env.get(ENV_PROPERTIES_FILE_KEY_IV);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -148,7 +155,7 @@ public class MavenExtractorEnvironment extends Environment {
         if (resolver != null) {
             env.put(BuildInfoConfigProperties.PROP_ARTIFACTORY_RESOLUTION_ENABLED, Boolean.TRUE.toString());
         }
-        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
+        addPropertiesFileEnv(env);
     }
 
     private boolean isCheckoutPerformed(Map<String, String> env) {
@@ -215,6 +222,21 @@ public class MavenExtractorEnvironment extends Environment {
                 .build();
 
         return context;
+    }
+
+    /**
+     * buildEnvVars gets triggered multiple times - for ArtifactoryMaven3Native, ArtifactoryRedeployPublisher, and other instances.
+     * Yet, for efficiency, we initialize the build info arguments just once.
+     * Subsequently, the function integrates the required environment variables into subsequent invocations.
+     *
+     * @param env - The job's environment variables
+     */
+    private void addPropertiesFileEnv(Map<String, String> env) {
+        env.put(BuildInfoConfigProperties.PROP_PROPS_FILE, propertiesFilePath);
+        if (StringUtils.isNoneBlank(propertiesFileKey, propertiesFileKeyIv)) {
+            env.put(ENV_PROPERTIES_FILE_KEY, propertiesFileKey);
+            env.put(ENV_PROPERTIES_FILE_KEY_IV, propertiesFileKeyIv);
+        }
     }
 
     @Extension
