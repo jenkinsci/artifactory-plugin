@@ -109,6 +109,11 @@ public class AbstractBuildInfoDeployer {
             builder.vcs(vcsList);
         }
 
+        String vcsUrl = ExtractorUtils.getVcsUrl(env);
+        if (StringUtils.isNotBlank(vcsUrl)) {
+            builder.vcsUrl(vcsUrl);
+        }
+        
         addBuildInfoProperties(builder);
 
         if ((Jenkins.get().getPlugin("jira") != null) && configurator.isEnableIssueTrackerIntegration()) {
