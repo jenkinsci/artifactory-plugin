@@ -19,6 +19,7 @@
                             <a href="${publishedBuildDetails.buildInfoUrl}" target="_blank">
                                 ${publishedBuildDetails.displayName}
                             </a>
+                            <br/>
                         </td>
                     </tr>
                 </j:forEach>
